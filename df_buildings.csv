@@ -1,3 +1,3 @@
 ogc_fid,pand_id,meestvoorkomendelabel,gem_hoogte,gem_bouwlagen,b3_dak_type,b3_opp_dak_plat,b3_opp_dak_schuin,x,y,lon,lat,postcode,area,perimeter,height,bouwjaar,age_range,average_wwr,building_function,residential_type,non_residential_type,north_side,east_side,south_side,west_side,building_orientation,building_orientation_cardinal
-4136730,1.41E+13,A,6.5,1,multiple horizontal,77.25,15.88000011,230537.465,582426.737,6.518203,53.223112,9745DZ,93,53,6.5,1999,1992-2005,0.2,residential,Two-and-a-half-story House,,facade,shared,facade,Facade,47.56956671,N
-4136731,2.51E+13,B,8,2,single pitched,50,25.5,230600.123,582500.456,6.5185,53.2235,9745EA,120,60,8,2018,2015 and later,0.35,non_residential,,Meeting Function,shared,Facade,facade,facade,135,S
+4136730,1.41E+13,A,6,3,multiple horizontal,77.25,15.88000011,230537.465,582426.737,6.518203,53.223112,9745DZ,30,20,6.5,1999,1992-2005,0.2,residential,Two-and-a-half-story House,,facade,shared,facade,facade,47.56956671,N
+4136732,2.51E+13,B,8,2,single pitched,50,25.5,230600.123,582500.456,6.5185,53.2235,9745EA,120,60,8,2018,2015 and later,0.35,non_residential,,Meeting Function,shared,shared,facade,facade,135,S

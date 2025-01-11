@@ -1,4 +1,8 @@
-# D:\Documents\E_Plus_2029_py\geomz\zoning.py
+# D:\Documents\E_Plus_2030_py\geomz\zoning.py
+# --------------------------------------------------------------------------
+# This module handles the creation of zones (perimeter + core or single)
+# for each floor in a building, plus optional interzone linking. 
+# --------------------------------------------------------------------------
 
 from .geometry import polygon_area, inward_offset_polygon
 
@@ -7,6 +11,10 @@ def link_surfaces(surface_a, surface_b):
     Cross-link two surfaces as interzone partitions:
       1) Both Outside_Boundary_Condition = "Surface"
       2) Each references the other's name
+
+    This is used for:
+      - Perimeter zone to core zone partitions
+      - Floor-to-ceiling linking between stories (in building.py)
     """
     surface_a.Outside_Boundary_Condition = "Surface"
     surface_b.Outside_Boundary_Condition = "Surface"
@@ -31,26 +39,28 @@ def create_zone_surfaces(
     idf : geomeppy.IDF
         The IDF to which we add surfaces.
     zone_name : str
-        Name of the new Zone object.
+        Name of the new Zone object (e.g. "Zone1", "Zone2_Core", etc.).
     base_poly : list of (x,y,z)
-        4 corner points (in order) for the zone’s base.
+        4 corner points (in order) for the zone’s base polygon.
     wall_height : float
-        Height of the walls.
+        Height of the walls for this floor (e.g. 2.5 m).
     floor_bc : str
-        BC for the floor (e.g. "Ground", "Adiabatic", "Outdoors", etc.).
+        Boundary Condition for the floor (e.g. "Ground", "Adiabatic", "Outdoors").
     wall_bcs : list of str or dict
-        4 items for the wall boundary conditions. If a dict, e.g. {"bc": "Surface", "adj_surf_name": "..."},
-        it can store info for cross-linking.
+        4 items for the wall boundary conditions (one per edge).
+        If a dict, e.g. {"bc": "Surface", "adj_surf_name": "..."},
+        we can store info for cross-linking. If just a string, e.g. "Outdoors" or "Adiabatic".
     is_top_floor : bool
-        If True => create a roof with Outdoors, else => a ceiling with Adiabatic.
+        If True => create a roof with Outdoors, else => a ceiling with "Adiabatic" (or a placeholder
+        that can later be changed to "Surface" if linking to the floor above).
 
     Returns
     -------
     (zone_name, base_poly, top_poly, created_surfaces)
-      zone_name : str
-      base_poly : list of points (x,y,z)
-      top_poly  : list of points (x,y,z)
-      created_surfaces : list of BUILDINGSURFACE:DETAILED created
+      zone_name        : str
+      base_poly        : list of points (x,y,z) for the floor polygon
+      top_poly         : list of points (x,y,z) for the upper polygon (floor + wall_height)
+      created_surfaces : list of BUILDINGSURFACE:DETAILED objects created
     """
     zone = idf.newidfobject("ZONE")
     zone.Name = zone_name
@@ -64,6 +74,7 @@ def create_zone_surfaces(
     floor_surf.Zone_Name = zone_name
     floor_surf.Outside_Boundary_Condition = floor_bc
 
+    # If we have "Outdoors", we set SunExposed, WindExposed; else NoSun/NoWind
     if floor_bc.lower() == "outdoors":
         floor_surf.Sun_Exposure = "SunExposed"
         floor_surf.Wind_Exposure = "WindExposed"
@@ -76,6 +87,7 @@ def create_zone_surfaces(
     created_surfaces.append(floor_surf)
 
     # ===== Walls =====
+    # The top polygon is base_poly + wall_height in Z
     top_poly = [(p[0], p[1], p[2] + wall_height) for p in base_poly]
     for i in range(4):
         p1 = base_poly[i]
@@ -91,6 +103,7 @@ def create_zone_surfaces(
 
         bc_info = wall_bcs[i]
         if isinstance(bc_info, dict):
+            # If bc_info is a dict => can specify 'bc' and optionally 'adj_surf_name'
             bc_str = bc_info.get("bc", "Adiabatic")
             wall_obj.Outside_Boundary_Condition = bc_str
             if bc_str.lower() == "outdoors":
@@ -100,8 +113,8 @@ def create_zone_surfaces(
                 wall_obj.Sun_Exposure = "NoSun"
                 wall_obj.Wind_Exposure = "NoWind"
 
+            # If "Surface", optionally set the adjacent surface name
             if bc_str.lower() == "surface":
-                # Optionally set the adjacent surface name
                 adj_name = bc_info.get("adj_surf_name", "")
                 wall_obj.Outside_Boundary_Condition_Object = adj_name
         else:
@@ -119,6 +132,7 @@ def create_zone_surfaces(
 
     # ===== Ceiling or Roof =====
     if is_top_floor:
+        # For top floors, we create a roof surface with "Outdoors"
         top_surf = idf.newidfobject("BUILDINGSURFACE:DETAILED")
         top_surf.Name = f"{zone_name}_Roof"
         top_surf.Surface_Type = "Roof"
@@ -129,6 +143,8 @@ def create_zone_surfaces(
         top_surf.setcoords(top_poly)
         created_surfaces.append(top_surf)
     else:
+        # For intermediate floors, we typically do "Ceiling" with "Adiabatic"
+        # so it can be changed to "Surface" if we link it to the floor above.
         top_surf = idf.newidfobject("BUILDINGSURFACE:DETAILED")
         top_surf.Name = f"{zone_name}_Ceiling"
         top_surf.Surface_Type = "Ceiling"
@@ -139,7 +155,8 @@ def create_zone_surfaces(
         top_surf.setcoords(top_poly)
         created_surfaces.append(top_surf)
 
-    return zone_name, base_poly, top_poly, created_surfaces
+    # Return a 4-tuple: (zone_name, base_poly, top_poly, created_surfaces)
+    return (zone_name, base_poly, top_poly, created_surfaces)
 
 
 def create_zones_with_perimeter_depth(
@@ -159,9 +176,18 @@ def create_zones_with_perimeter_depth(
 
     Returns
     -------
-    dict : { zone_name => (base_polygon, top_polygon, list_of_surfaces) }
-    """
+    dict : { zone_name => (zname, bpoly, tpoly, list_of_surfaces) }
 
+    Explanation:
+      - "floor_type" can be "Ground" for the 1st floor (so floor BC="Ground"), or "Internal" for higher floors (so floor BC="Adiabatic" initially).
+      - "edge_types" might be ["facade", "shared", ...], each mapping to "Outdoors" or "Adiabatic".
+      - "has_core" => if True, we do perimeter+core. Otherwise, a single zone.
+
+    The final dict has keys = zone_name ("Zone1", "Zone1_Core", etc.),
+    each mapping to a tuple of 4 items: (zname, base_poly, top_poly, surfs_list).
+    That means index [3] is the list of surfaces, so we can do zone_data[zname][3]
+    in building.py.
+    """
     def edge_to_bc(e):
         """
         Convert textual edge label to an EnergyPlus BC string:
@@ -169,37 +195,40 @@ def create_zones_with_perimeter_depth(
           - "shared" => "Adiabatic"
           - anything else => "Outdoors"
         """
-        low = e.lower().strip()
-        if low == "facade":
+        e_lower = e.lower().strip()
+        if e_lower == "facade":
             return "Outdoors"
-        elif low == "shared":
+        elif e_lower == "shared":
             return "Adiabatic"
         else:
             return "Outdoors"
 
     zone_data = {}
 
-    # Decide floor boundary
+    # Decide the floor boundary condition
     if floor_type.lower() == "ground":
         floor_bc = "Ground"
     else:
+        # For intermediate floors, we temporarily set "Adiabatic"
+        # The code in building.py can link surfaces for multi-story conduction.
         floor_bc = "Adiabatic"
 
-    # Attempt inward offset for core
+    # Try to offset the polygon inward for a core
     A, B, C, D = base_poly
     inner_poly = None
     if has_core:
         inner_poly = inward_offset_polygon(A, B, C, D, perimeter_depth)
         if inner_poly:
             A2, B2, C2, D2 = inner_poly
+            # Check if that offset polygon is large enough
             if polygon_area([A2, B2, C2, D2]) < 1e-3:
-                inner_poly = None  # not valid
+                inner_poly = None  # not valid => discard
 
-    # Single-zone fallback
+    # ================= Single-Zone Case =================
     if not inner_poly:
-        # No core => just one zone
+        # Means no valid core => only one zone
         wall_bcs = [edge_to_bc(e) for e in edge_types]
-        zname, bpoly, tpoly, surf_list = create_zone_surfaces(
+        zname, bpoly, tpoly, surfs = create_zone_surfaces(
             idf,
             f"Zone{floor_i}",
             base_poly,
@@ -208,11 +237,14 @@ def create_zones_with_perimeter_depth(
             wall_bcs,
             is_top_floor
         )
-        zone_data[zname] = (bpoly, tpoly, surf_list)
+        # Store 4 items => so we can do zone_data[zname][3] = surfaces later
+        zone_data[zname] = (zname, bpoly, tpoly, surfs)
         return zone_data
 
-    # If we do have perimeter+core
+    # ================= Perimeter + Core Case =================
     A2, B2, C2, D2 = inner_poly
+
+    # We'll create 4 perimeter zones + 1 core zone
 
     # 1) Front perimeter
     front_bc = edge_to_bc(edge_types[0])
@@ -228,7 +260,7 @@ def create_zones_with_perimeter_depth(
         front_walls,
         is_top_floor
     )
-    zone_data[zf] = (fbpoly, ftpoly, fsurfs)
+    zone_data[zf] = (zf, fbpoly, ftpoly, fsurfs)
 
     # 2) Right perimeter
     right_bc = edge_to_bc(edge_types[1])
@@ -243,7 +275,7 @@ def create_zones_with_perimeter_depth(
         right_walls,
         is_top_floor
     )
-    zone_data[zr] = (rbpoly, rtpoly, rsurfs)
+    zone_data[zr] = (zr, rbpoly, rtpoly, rsurfs)
 
     # 3) Rear perimeter
     rear_bc = edge_to_bc(edge_types[2])
@@ -258,7 +290,7 @@ def create_zones_with_perimeter_depth(
         rear_walls,
         is_top_floor
     )
-    zone_data[zre] = (rebpoly, retpoly, resurfs)
+    zone_data[zre] = (zre, rebpoly, retpoly, resurfs)
 
     # 4) Left perimeter
     left_bc = edge_to_bc(edge_types[3])
@@ -273,7 +305,7 @@ def create_zones_with_perimeter_depth(
         left_walls,
         is_top_floor
     )
-    zone_data[zl] = (lbpoly, ltpoly, lsurfs)
+    zone_data[zl] = (zl, lbpoly, ltpoly, lsurfs)
 
     # 5) Core
     #
@@ -290,44 +322,43 @@ def create_zones_with_perimeter_depth(
         core_bc,
         is_top_floor
     )
-    zone_data[zc] = (cbpoly, ctpoly, csurfs)
+    zone_data[zc] = (zc, cbpoly, ctpoly, csurfs)
 
-    # ===================== Cross-Linking =====================
+    # ===================== Cross-Linking Perimeter->Core =====================
     #
     # We assume:
-    #  - The perimeter zone "Wall_2" (index=3 in the surfaces array) is the interior partition
-    #  - The matching core zone side is "Wall_x". We'll pick them by index below.
+    #  - The perimeter zone "Wall_2" (index=2 => array position=3 in the surfaces array) 
+    #    is the interior partition to the core.
+    #  - The matching core zone side is "Wall_x", using reversed polygon indexing logic.
     #
-    # Because we reversed the core polygon, each perimeter edge B2->A2 should match an edge A2->B2
-    # in the core. We just have to ensure we pick the correct wall indexes. You can adjust as needed.
+    # Because we reversed the core polygon, each perimeter edge B2->A2 lines up with A2->B2
+    # in the core. We just have to ensure we pick the correct wall indexes.
 
-    # Helper: return the i-th wall object from the created_surfaces list
-    # 0=Floor, 1=Wall_0, 2=Wall_1, 3=Wall_2, 4=Wall_3, 5=Roof/Ceiling
     def get_wall(surfs, wall_idx):
-        return surfs[1 + wall_idx]  # skip 0=Floor
+        """
+        For surfs array: 
+          index 0 => Floor, 
+          index 1..4 => Walls, 
+          index 5 => Ceiling/Roof
+        So the perimeter interior wall (index=2) => surfs[1+2] => surfs[3].
+        """
+        return surfs[1 + wall_idx]
 
-    # front perimeter interior wall => index=2 => array position=3
+    # front perimeter interior => index=2 => surfs[3]
     front_interior = get_wall(fsurfs, 2)
-    # right perimeter interior => also the 3rd wall => index=2
     right_interior = get_wall(rsurfs, 2)
-    # rear perimeter interior => index=2
-    rear_interior = get_wall(resurfs, 2)
-    # left perimeter interior => index=2
-    left_interior = get_wall(lsurfs, 2)
+    rear_interior  = get_wall(resurfs, 2)
+    left_interior  = get_wall(lsurfs, 2)
 
     # In the core zone, we have reversed the polygon. We'll map:
     #   - front perimeter => core wall_3
     #   - right perimeter => core wall_2
     #   - rear perimeter  => core wall_1
     #   - left perimeter  => core wall_0
-    #
-    # This matches the reversed order of points: [A2->D2->C2->B2].
-    # You can confirm or swap if needed.
-
-    core_wall_front = get_wall(csurfs, 3)  # "Wall_3"
-    core_wall_right = get_wall(csurfs, 2)  # "Wall_2"
-    core_wall_rear  = get_wall(csurfs, 1)  # "Wall_1"
-    core_wall_left  = get_wall(csurfs, 0)  # "Wall_0"
+    core_wall_front = get_wall(csurfs, 3)
+    core_wall_right = get_wall(csurfs, 2)
+    core_wall_rear  = get_wall(csurfs, 1)
+    core_wall_left  = get_wall(csurfs, 0)
 
     link_surfaces(front_interior, core_wall_front)
     link_surfaces(right_interior, core_wall_right)

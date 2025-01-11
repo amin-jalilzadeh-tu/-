@@ -1,0 +1,431 @@
+Folder: D:\Documents\E_Plus_2030_py\validation
+
+
+
+
+
+# main.py
+from validation.validate_results import (
+    validate_data, bar_chart_metrics,
+    save_metrics_to_csv, check_for_calibration
+)
+
+def main():
+    real_data_csv = r"D:\Documents\E_Plus_2030_py\output\results\mock_merged_daily_mean.csv"
+    sim_data_csv  = "D:/Documents/E_Plus_2030_py/output/results/merged_daily_mean.csv"
+
+
+    print("=== Starting Validation ===")
+    metric_results = validate_data(
+        real_data_path=real_data_csv,
+        sim_data_path=sim_data_csv,
+        threshold_cv_rmse=30.0
+    )
+
+    # Print a summary of metrics for each Building-Variable combo
+    print("\n=== Validation Summary ===")
+    for key, mvals in metric_results.items():
+        b_id, var_name = key
+        print(f"Building={b_id}, Var={var_name} => "
+              f"MBE={mvals['MBE']:.2f}, CV(RMSE)={mvals['CVRMSE']:.2f}, "
+              f"NMBE={mvals['NMBE']:.2f}, Pass={mvals['Pass']}")
+
+    # 1) Save metrics to CSV
+    save_metrics_to_csv(metric_results, output_csv="validation_report.csv")
+
+    # 2) Check if any building/variable fails
+    check_for_calibration(metric_results)
+
+    # 3) Show a bar chart with CV(RMSE) across all items:
+    bar_chart_metrics(metric_results, title="CV(RMSE) Validation Results")
+
+if __name__ == "__main__":
+    main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  File: compare_sims_with_measured.py
+  --- File Contents Start ---
+# validation/compare_sims_with_measured.py
+import pandas as pd
+
+def load_csv_as_df(real_data_path, sim_data_path):
+    """
+    Loads real and simulated data from CSV into DataFrames.
+    """
+    print(f"[DEBUG] Loading real data from: {real_data_path}")
+    print(f"[DEBUG] Loading sim data  from: {sim_data_path}")
+
+    df_real = pd.read_csv(real_data_path)
+    df_sim  = pd.read_csv(sim_data_path)
+
+    print("[DEBUG] df_real shape:", df_real.shape)
+    print("[DEBUG] df_sim  shape:", df_sim.shape)
+    print("[DEBUG] df_real columns:", df_real.columns.to_list())
+    print("[DEBUG] df_sim columns: ", df_sim.columns.to_list())
+    return df_real, df_sim
+
+def align_data_for_variable(df_real, df_sim, building_id, variable_name):
+    """
+    Returns aligned arrays of sim vs. obs for a given building & variable.
+    Expects wide-format columns like: '01-Jan', '02-Jan', ...
+    """
+    # 1) Subset real
+    real_sel = df_real[
+        (df_real['BuildingID'] == building_id) &
+        (df_real['VariableName'] == variable_name)
+    ]
+    # 2) Subset sim
+    sim_sel = df_sim[
+        (df_sim['BuildingID'] == building_id) &
+        (df_sim['VariableName'] == variable_name)
+    ]
+
+    print(f"   > Aligning for Bldg={building_id}, Var={variable_name}")
+    print(f"   > real_sel shape={real_sel.shape}, sim_sel shape={sim_sel.shape}")
+
+    if real_sel.empty or sim_sel.empty:
+        # Return empty arrays if there's no data to compare
+        return [], [], pd.DataFrame()
+
+    # 3) Melt them from wide to long
+    real_long = real_sel.melt(
+        id_vars=['BuildingID','VariableName'],
+        var_name='Date', 
+        value_name='Value'
+    ).dropna(subset=['Value'])
+
+    sim_long = sim_sel.melt(
+        id_vars=['BuildingID','VariableName'],
+        var_name='Date', 
+        value_name='Value'
+    ).dropna(subset=['Value'])
+
+    print("   > real_long shape=", real_long.shape)
+    print("   > sim_long  shape=", sim_long.shape)
+
+    # 4) Merge on 'Date'
+    merged = pd.merge(
+        real_long[['Date','Value']], 
+        sim_long[['Date','Value']],
+        on='Date', how='inner', suffixes=('_obs','_sim')
+    )
+
+    print("   > merged shape=", merged.shape)
+    return merged['Value_sim'].values, merged['Value_obs'].values, merged
+
+  --- File Contents End ---
+
+  File: main.py
+  --- File Contents Start ---
+# main.py
+from validation.validate_results import validate_data, bar_chart_metrics
+
+def main():
+    real_data_csv = "D:/Documents/E_Plus_2030_py/output/mock_data.csv"
+    sim_data_csv  = "D:/Documents/E_Plus_2030_py/output/results/merged_daily_mean.csv"
+
+    print("=== Starting Validation ===")
+    metric_results = validate_data(real_data_csv, sim_data_csv,
+                                   threshold_cv_rmse=30.0)
+
+    # Print a summary of metrics for each Building-Variable combo
+    print("\n=== Validation Summary ===")
+    for key, mvals in metric_results.items():
+        b_id, var_name = key
+        print(f"Building={b_id}, Var={var_name} => "
+              f"MBE={mvals['MBE']:.2f}, CV(RMSE)={mvals['CVRMSE']:.2f}, "
+              f"NMBE={mvals['NMBE']:.2f}, Pass={mvals['Pass']}")
+
+    # Show a bar chart with CV(RMSE) across all items:
+    bar_chart_metrics(metric_results, title="CV(RMSE) Validation Results")
+
+if __name__ == "__main__":
+    main()
+
+  --- File Contents End ---
+
+  File: metrics.py
+  --- File Contents Start ---
+# validation/metrics.py
+import numpy as np
+
+def mean_bias_error(sim_values, obs_values):
+    """
+    MBE = ( sum(obs_i - sim_i) / sum(obs_i) ) * 100
+    """
+    sim = np.array(sim_values, dtype=float)
+    obs = np.array(obs_values, dtype=float)
+    denominator = np.sum(obs)
+    if denominator == 0:
+        return float('nan')
+    mbe = (np.sum(obs - sim) / denominator) * 100.0
+    return mbe
+
+def cv_rmse(sim_values, obs_values):
+    """
+    CV(RMSE) = ( RMSE / mean(obs) ) * 100
+    """
+    sim = np.array(sim_values, dtype=float)
+    obs = np.array(obs_values, dtype=float)
+    obs_mean = np.mean(obs)
+    if obs_mean == 0:
+        return float('nan')
+    mse = np.mean((obs - sim)**2)
+    rmse = np.sqrt(mse)
+    return (rmse / obs_mean) * 100.0
+
+def nmbe(sim_values, obs_values):
+    """
+    NMBE = 100 * ( sum(obs_i - sim_i) / (n * mean(obs)) )
+    """
+    sim = np.array(sim_values, dtype=float)
+    obs = np.array(obs_values, dtype=float)
+    n = len(sim)
+    obs_mean = np.mean(obs)
+    if obs_mean == 0:
+        return float('nan')
+    nmbe_val = 100.0 * (np.sum(obs - sim) / (n * obs_mean))
+    return nmbe_val
+
+  --- File Contents End ---
+
+  File: validate_results.py
+  --- File Contents Start ---
+# validation/validate_results.py
+import os
+import pandas as pd
+
+from validation.compare_sims_with_measured import load_csv_as_df, align_data_for_variable
+from validation.metrics import mean_bias_error, cv_rmse, nmbe
+from validation.visualize import (
+    plot_time_series_comparison,
+    scatter_plot_comparison,
+    bar_chart_metrics
+)
+
+
+def validate_data(real_data_path, sim_data_path, threshold_cv_rmse=30.0):
+    """
+    Returns a dictionary with validation metrics for each Building/Variable.
+    Also generates timeseries and scatter plots for quick visual checks.
+    """
+    df_real, df_sim = load_csv_as_df(real_data_path, sim_data_path)
+
+    # Unique IDs from the real dataset
+    unique_buildings = df_real['BuildingID'].unique()
+    unique_vars      = df_real['VariableName'].unique()
+
+    results = {}
+    for b_id in unique_buildings:
+        for var_name in unique_vars:
+            # Debug prints:
+            print(f"\n--- Checking building={b_id}, var={var_name} ---")
+
+            sim_vals, obs_vals, merged_df = align_data_for_variable(
+                df_real, df_sim, building_id=b_id, variable_name=var_name
+            )
+            if len(sim_vals) == 0 or len(obs_vals) == 0:
+                print(f"  => No data to compare. Skipping metrics.")
+                continue
+
+            # Compute metrics
+            this_mbe  = mean_bias_error(sim_vals, obs_vals)
+            this_cv   = cv_rmse(sim_vals, obs_vals)
+            this_nmbe = nmbe(sim_vals, obs_vals)
+
+            pass_fail = False
+            if this_cv is not None and not (this_cv is float('nan')):
+                pass_fail = (this_cv < threshold_cv_rmse)
+
+            results[(b_id, var_name)] = {
+                'MBE': this_mbe,
+                'CVRMSE': this_cv,
+                'NMBE': this_nmbe,
+                'Pass': pass_fail
+            }
+
+            # Quick side-by-side time-series plot
+            plot_time_series_comparison(merged_df, b_id, var_name)
+            # Quick scatter
+            scatter_plot_comparison(merged_df, b_id, var_name)
+
+    return results
+
+
+def save_metrics_to_csv(metric_results, output_csv="validation_report.csv"):
+    """
+    Saves the metric_results dictionary to a CSV file.
+    metric_results is in the form:
+      {
+        (b_id, var_name): {
+           'MBE':  float,
+           'CVRMSE': float,
+           'NMBE': float,
+           'Pass': bool
+        },
+        ...
+      }
+    """
+    rows = []
+    for (bldg, var), vals in metric_results.items():
+        row = {
+            "BuildingID": bldg,
+            "VariableName": var,
+            "MBE": vals['MBE'],
+            "CVRMSE": vals['CVRMSE'],
+            "NMBE": vals['NMBE'],
+            "Pass": vals['Pass']
+        }
+        rows.append(row)
+
+    df = pd.DataFrame(rows)
+    df.to_csv(output_csv, index=False)
+    print(f"[INFO] Validation metrics saved to {output_csv}")
+
+
+def check_for_calibration(metric_results):
+    """
+    Examines the metric_results and identifies any BuildingID/Variable that fails the threshold.
+    If 'Pass' == False, we could trigger a calibration pipeline.
+
+    In a real scenario, we might feed these to a calibrate_model() function or similar.
+    """
+    for (bldg, var), vals in metric_results.items():
+        if not vals['Pass']:
+            # Here is where you'd call your calibration logic, e.g.:
+            # calibrate_model(building_id=bldg, variable=var, reason="High CV(RMSE)")
+            print(f"[CALIBRATION] Building={bldg}, Variable={var}: "
+                  f"CV(RMSE)={vals['CVRMSE']:.2f}% > threshold => Trigger calibration steps...")
+            # (Placeholder) possibly log or store in DB, then re-run pipeline, etc.
+
+  --- File Contents End ---
+
+  File: visualize.py
+  --- File Contents Start ---
+# validation/visualize.py
+import matplotlib.pyplot as plt
+
+def plot_time_series_comparison(merged_df, building_id, variable_name):
+    """
+    Creates a simple line plot comparing sim vs. obs over time 
+    (e.g., 01-Jan, 02-Jan, etc.).
+    merged_df has columns: Date, Value_obs, Value_sim
+    """
+    if merged_df.empty:
+        print(f"[DEBUG] No data to plot for Bldg={building_id}, Var={variable_name}")
+        return
+
+    x_vals = merged_df['Date']  # might be strings like '01-Jan'
+    obs_vals = merged_df['Value_obs']
+    sim_vals = merged_df['Value_sim']
+
+    plt.figure(figsize=(10,6))
+    plt.plot(x_vals, obs_vals, 'o-', label='Observed')
+    plt.plot(x_vals, sim_vals, 's-', label='Simulated')
+
+    plt.title(f"Building {building_id} - {variable_name}")
+    plt.xlabel("Date")
+    plt.ylabel("Value")
+    plt.legend()
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+def scatter_plot_comparison(merged_df, building_id, variable_name):
+    """
+    Creates a scatter plot of Observed vs. Simulated for a quick correlation check.
+    """
+    if merged_df.empty:
+        print(f"[DEBUG] No data to plot scatter for Bldg={building_id}, Var={variable_name}")
+        return
+
+    obs_vals = merged_df['Value_obs']
+    sim_vals = merged_df['Value_sim']
+
+    plt.figure(figsize=(6,6))
+    plt.scatter(obs_vals, sim_vals, alpha=0.7)
+    # 1:1 line
+    mn, mx = min(obs_vals.min(), sim_vals.min()), max(obs_vals.max(), sim_vals.max())
+    plt.plot([mn, mx], [mn, mx], color='red', linestyle='--', label='1:1 line')
+
+    plt.title(f"Scatter Comparison: Bldg={building_id}, Var={variable_name}")
+    plt.xlabel("Observed")
+    plt.ylabel("Simulated")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+def bar_chart_metrics(metric_dict, title="Validation Metrics"):
+    """
+    Suppose metric_dict is e.g.:
+      {
+        (0, 'Cooling'): {'MBE': 2.3, 'CVRMSE': 18.5, 'NMBE': -0.4, 'Pass': True},
+        (0, 'Heating'): { ... },
+        (1, 'Cooling'): { ... },
+        ...
+      }
+    We'll create a bar chart of CV(RMSE) across all keys.
+    """
+    import numpy as np
+
+    if not metric_dict:
+        print("[DEBUG] No metrics to plot - metric_dict is empty.")
+        return
+
+    labels = []
+    cvrmse_values = []
+    pass_status = []
+
+    for (b_id, var), mvals in metric_dict.items():
+        label = f"B{b_id}-{var}"
+        labels.append(label)
+        cvrmse_values.append(mvals['CVRMSE'])
+        pass_status.append(mvals['Pass'])
+
+    x = range(len(labels))
+
+    plt.figure(figsize=(10,5))
+    bars = plt.bar(x, cvrmse_values, color='blue', alpha=0.6)
+
+    # Color code pass/fail if you want:
+    for i, bar in enumerate(bars):
+        if pass_status[i]:
+            bar.set_color('green')
+        else:
+            bar.set_color('red')
+
+    plt.xticks(list(x), labels, rotation=45, ha='right')
+    plt.ylabel("CV(RMSE) (%)")
+    plt.title(title)
+
+    if cvrmse_values:
+        plt.ylim(0, max(cvrmse_values)*1.1)
+    plt.tight_layout()
+    plt.show()
+
+  --- File Contents End ---
+
+================================================================================
+
+Folder: D:\Documents\E_Plus_2030_py\validation\__pycache__
+
+================================================================================
+

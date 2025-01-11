@@ -1,0 +1,3298 @@
+standard_dwelling_insulation_data = {
+    # 2-under-1-roof
+    ("2-under-1-roof", "<1965", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.94,
+        "standard_value_kWh_m2": 80.46,
+        "heat_demand_Q_H_nd_kWh_m2": 253.23
+    },
+    ("2-under-1-roof", "<1965", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.94,
+        "standard_value_kWh_m2": 80.46,
+        "heat_demand_Q_H_nd_kWh_m2": 197.00
+    },
+    ("2-under-1-roof", "<1965", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.94,
+        "standard_value_kWh_m2": 80.46,
+        "heat_demand_Q_H_nd_kWh_m2": 70.58
+    },
+    ("2-under-1-roof", "<1965", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.94,
+        "standard_value_kWh_m2": 80.46,
+        "heat_demand_Q_H_nd_kWh_m2": 70.58
+    },
+    ("2-under-1-roof", "<1965", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.94,
+        "standard_value_kWh_m2": 80.46,
+        "heat_demand_Q_H_nd_kWh_m2": 53.29
+    },
+    ("2-under-1-roof", "1965-1974", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.77,
+        "heat_demand_Q_H_nd_kWh_m2": 204.90
+    },
+    ("2-under-1-roof", "1965-1974", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.77,
+        "heat_demand_Q_H_nd_kWh_m2": 183.50
+    },
+    ("2-under-1-roof", "1965-1974", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.77,
+        "heat_demand_Q_H_nd_kWh_m2": 65.77
+    },
+    ("2-under-1-roof", "1965-1974", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.77,
+        "heat_demand_Q_H_nd_kWh_m2": 65.77
+    },
+    ("2-under-1-roof", "1965-1974", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.77,
+        "heat_demand_Q_H_nd_kWh_m2": 49.38
+    },
+    ("2-under-1-roof", "1975-1991", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.90,
+        "standard_value_kWh_m2": 79.16,
+        "heat_demand_Q_H_nd_kWh_m2": 150.49
+    },
+    ("2-under-1-roof", "1975-1991", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.90,
+        "standard_value_kWh_m2": 79.16,
+        "heat_demand_Q_H_nd_kWh_m2": 139.06
+    },
+    ("2-under-1-roof", "1975-1991", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.90,
+        "standard_value_kWh_m2": 79.16,
+        "heat_demand_Q_H_nd_kWh_m2": 68.13
+    },
+    ("2-under-1-roof", "1975-1991", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.90,
+        "standard_value_kWh_m2": 79.16,
+        "heat_demand_Q_H_nd_kWh_m2": 68.13
+    },
+    ("2-under-1-roof", "1975-1991", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.90,
+        "standard_value_kWh_m2": 79.16,
+        "heat_demand_Q_H_nd_kWh_m2": 51.35
+    },
+    ("2-under-1-roof", "1992-2005", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.88,
+        "standard_value_kWh_m2": 78.01,
+        "heat_demand_Q_H_nd_kWh_m2": 107.98
+    },
+    ("2-under-1-roof", "1992-2005", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.88,
+        "standard_value_kWh_m2": 78.01,
+        "heat_demand_Q_H_nd_kWh_m2": 107.98
+    },
+    ("2-under-1-roof", "1992-2005", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.88,
+        "standard_value_kWh_m2": 78.01,
+        "heat_demand_Q_H_nd_kWh_m2": 62.32
+    },
+    ("2-under-1-roof", "1992-2005", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.88,
+        "standard_value_kWh_m2": 78.01,
+        "heat_demand_Q_H_nd_kWh_m2": 62.32
+    },
+    ("2-under-1-roof", "1992-2005", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.88,
+        "standard_value_kWh_m2": 78.01,
+        "heat_demand_Q_H_nd_kWh_m2": 46.40
+    },
+    ("2-under-1-roof", "2006-2014", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.83,
+        "standard_value_kWh_m2": 76.05,
+        "heat_demand_Q_H_nd_kWh_m2": 96.38
+    },
+    ("2-under-1-roof", "2006-2014", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.83,
+        "standard_value_kWh_m2": 76.05,
+        "heat_demand_Q_H_nd_kWh_m2": 94.34
+    },
+    ("2-under-1-roof", "2006-2014", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.83,
+        "standard_value_kWh_m2": 76.05,
+        "heat_demand_Q_H_nd_kWh_m2": 62.28
+    },
+    ("2-under-1-roof", "2006-2014", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.83,
+        "standard_value_kWh_m2": 76.05,
+        "heat_demand_Q_H_nd_kWh_m2": 62.28
+    },
+    ("2-under-1-roof", "2006-2014", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.83,
+        "standard_value_kWh_m2": 76.05,
+        "heat_demand_Q_H_nd_kWh_m2": 46.32
+    },
+    ("2-under-1-roof", "2015-2018", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.53,
+        "standard_value_kWh_m2": 64.19,
+        "heat_demand_Q_H_nd_kWh_m2": 75.41
+    },
+    ("2-under-1-roof", "2015-2018", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.53,
+        "standard_value_kWh_m2": 64.19,
+        "heat_demand_Q_H_nd_kWh_m2": 72.24
+    },
+    ("2-under-1-roof", "2015-2018", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.53,
+        "standard_value_kWh_m2": 64.19,
+        "heat_demand_Q_H_nd_kWh_m2": 51.57
+    },
+    ("2-under-1-roof", "2015-2018", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.53,
+        "standard_value_kWh_m2": 64.19,
+        "heat_demand_Q_H_nd_kWh_m2": 51.57
+    },
+    ("2-under-1-roof", "2015-2018", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.53,
+        "standard_value_kWh_m2": 64.19,
+        "heat_demand_Q_H_nd_kWh_m2": 34.86
+    },
+
+    # Corner Townhouse
+    ("Corner Townhouse", "<1946", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 169.22,
+        "heat_demand_Q_H_nd_kWh_m2": 312.84
+    },
+    ("Corner Townhouse", "<1946", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 169.22,
+        "heat_demand_Q_H_nd_kWh_m2": 259.57
+    },
+    ("Corner Townhouse", "<1946", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 169.22,
+        "heat_demand_Q_H_nd_kWh_m2": 73.82
+    },
+    ("Corner Townhouse", "<1946", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 169.22,
+        "heat_demand_Q_H_nd_kWh_m2": 73.82
+    },
+    ("Corner Townhouse", "<1946", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 169.22,
+        "heat_demand_Q_H_nd_kWh_m2": 56.60
+    },
+    ("Corner townhouse", "1946-1964", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.03,
+        "standard_value_kWh_m2": 84.24,
+        "heat_demand_Q_H_nd_kWh_m2": 258.12
+    },
+    ("Corner townhouse", "1946-1964", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.03,
+        "standard_value_kWh_m2": 84.24,
+        "heat_demand_Q_H_nd_kWh_m2": 208.22
+    },
+    ("Corner townhouse", "1946-1964", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.03,
+        "standard_value_kWh_m2": 84.24,
+        "heat_demand_Q_H_nd_kWh_m2": 70.49
+    },
+    ("Corner townhouse", "1946-1964", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.03,
+        "standard_value_kWh_m2": 84.24,
+        "heat_demand_Q_H_nd_kWh_m2": 70.49
+    },
+    ("Corner townhouse", "1946-1964", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.03,
+        "standard_value_kWh_m2": 84.24,
+        "heat_demand_Q_H_nd_kWh_m2": 53.89
+    },
+    ("Corner townhouse", "1965-1974", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.81,
+        "standard_value_kWh_m2": 75.55,
+        "heat_demand_Q_H_nd_kWh_m2": 205.35
+    },
+    ("Corner townhouse", "1965-1974", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.81,
+        "standard_value_kWh_m2": 75.55,
+        "heat_demand_Q_H_nd_kWh_m2": 183.59
+    },
+    ("Corner townhouse", "1965-1974", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.81,
+        "standard_value_kWh_m2": 75.55,
+        "heat_demand_Q_H_nd_kWh_m2": 65.02
+    },
+    ("Corner townhouse", "1965-1974", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.81,
+        "standard_value_kWh_m2": 75.55,
+        "heat_demand_Q_H_nd_kWh_m2": 65.02
+    },
+    ("Corner townhouse", "1965-1974", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.81,
+        "standard_value_kWh_m2": 75.55,
+        "heat_demand_Q_H_nd_kWh_m2": 48.71
+    },
+    ("Corner townhouse", "1975-1991", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.78,
+        "heat_demand_Q_H_nd_kWh_m2": 144.97
+    },
+    ("Corner townhouse", "1975-1991", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.78,
+        "heat_demand_Q_H_nd_kWh_m2": 132.32
+    },
+    ("Corner townhouse", "1975-1991", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.78,
+        "heat_demand_Q_H_nd_kWh_m2": 65.02
+    },
+    ("Corner townhouse", "1975-1991", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.78,
+        "heat_demand_Q_H_nd_kWh_m2": 65.02
+    },
+    ("Corner townhouse", "1975-1991", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.78,
+        "heat_demand_Q_H_nd_kWh_m2": 48.71
+    },
+    ("Corner townhouse", "1992-2005", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.78,
+        "heat_demand_Q_H_nd_kWh_m2": 144.97
+    },
+    ("Corner townhouse", "1992-2005", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.78,
+        "heat_demand_Q_H_nd_kWh_m2": 132.32
+    },
+    ("Corner townhouse", "1992-2005", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.78,
+        "heat_demand_Q_H_nd_kWh_m2": 65.02
+    },
+    ("Corner townhouse", "1992-2005", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.78,
+        "heat_demand_Q_H_nd_kWh_m2": 65.02
+    },
+    ("Corner townhouse", "1992-2005", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.78,
+        "heat_demand_Q_H_nd_kWh_m2": 48.71
+    },
+
+    # Corner row house
+    ("Corner row house", "2015-2018", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.85,
+        "standard_value_kWh_m2": 76.86,
+        "heat_demand_Q_H_nd_kWh_m2": 91.77
+    },
+    ("Corner row house", "2015-2018", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.85,
+        "standard_value_kWh_m2": 76.86,
+        "heat_demand_Q_H_nd_kWh_m2": 91.77
+    },
+    ("Corner row house", "2015-2018", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.85,
+        "standard_value_kWh_m2": 76.86,
+        "heat_demand_Q_H_nd_kWh_m2": 61.54
+    },
+    ("Corner row house", "2015-2018", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.85,
+        "standard_value_kWh_m2": 76.86,
+        "heat_demand_Q_H_nd_kWh_m2": 61.54
+    },
+    ("Corner row house", "2015-2018", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.85,
+        "standard_value_kWh_m2": 76.86,
+        "heat_demand_Q_H_nd_kWh_m2": 45.75
+    },
+    ("Corner row house", "2006-2014", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 74.55
+    },
+    ("Corner row house", "2006-2014", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 73.66
+    },
+    ("Corner row house", "2006-2014", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 47.05
+    },
+    ("Corner row house", "2006-2014", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 47.05
+    },
+    ("Corner row house", "2006-2014", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 29.45
+    },
+    ("Corner row house", "1992-2005", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 79.30
+    },
+    ("Corner row house", "1992-2005", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 98.25
+    },
+    ("Corner row house", "1992-2005", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Corner row house", "1992-2005", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Corner row house", "1992-2005", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 29.60
+    },
+    ("Corner row house", "1975-1991", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.09,
+        "standard_value_kWh_m2": 49.08,
+        "heat_demand_Q_H_nd_kWh_m2": 112.77
+    },
+    ("Corner row house", "1975-1991", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.09,
+        "standard_value_kWh_m2": 49.08,
+        "heat_demand_Q_H_nd_kWh_m2": 98.25
+    },
+    ("Corner row house", "1975-1991", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.09,
+        "standard_value_kWh_m2": 49.08,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Corner row house", "1975-1991", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.09,
+        "standard_value_kWh_m2": 49.08,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Corner row house", "1975-1991", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.09,
+        "standard_value_kWh_m2": 49.08,
+        "heat_demand_Q_H_nd_kWh_m2": 29.60
+    },
+
+    # Detached house
+    ("Detached house", "<1965", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.24,
+        "standard_value_kWh_m2": 92.76,
+        "heat_demand_Q_H_nd_kWh_m2": 287.73
+    },
+    ("Detached house", "<1965", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.24,
+        "standard_value_kWh_m2": 92.76,
+        "heat_demand_Q_H_nd_kWh_m2": 213.58
+    },
+    ("Detached house", "<1965", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.24,
+        "standard_value_kWh_m2": 92.76,
+        "heat_demand_Q_H_nd_kWh_m2": 79.46
+    },
+    ("Detached house", "<1965", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.24,
+        "standard_value_kWh_m2": 92.76,
+        "heat_demand_Q_H_nd_kWh_m2": 79.46
+    },
+    ("Detached house", "<1965", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.24,
+        "standard_value_kWh_m2": 92.76,
+        "heat_demand_Q_H_nd_kWh_m2": 62.30
+    },
+    ("Detached house", "1965-1974", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.12,
+        "standard_value_kWh_m2": 87.83,
+        "heat_demand_Q_H_nd_kWh_m2": 224.85
+    },
+    ("Detached house", "1965-1974", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.12,
+        "standard_value_kWh_m2": 87.83,
+        "heat_demand_Q_H_nd_kWh_m2": 204.89
+    },
+    ("Detached house", "1965-1974", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.12,
+        "standard_value_kWh_m2": 87.83,
+        "heat_demand_Q_H_nd_kWh_m2": 72.80
+    },
+    ("Detached house", "1965-1974", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.12,
+        "standard_value_kWh_m2": 87.83,
+        "heat_demand_Q_H_nd_kWh_m2": 72.80
+    },
+    ("Detached house", "1965-1974", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.12,
+        "standard_value_kWh_m2": 87.83,
+        "heat_demand_Q_H_nd_kWh_m2": 56.01
+    },
+    ("Detached house", "1975-1991", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.30,
+        "heat_demand_Q_H_nd_kWh_m2": 166.91
+    },
+    ("Detached house", "1975-1991", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.30,
+        "heat_demand_Q_H_nd_kWh_m2": 157.33
+    },
+    ("Detached house", "1975-1991", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.30,
+        "heat_demand_Q_H_nd_kWh_m2": 75.34
+    },
+    ("Detached house", "1975-1991", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.30,
+        "heat_demand_Q_H_nd_kWh_m2": 75.34
+    },
+    ("Detached house", "1975-1991", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.30,
+        "heat_demand_Q_H_nd_kWh_m2": 58.51
+    },
+    ("Detached house", "1992-2005", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.24,
+        "heat_demand_Q_H_nd_kWh_m2": 122.16
+    },
+    ("Detached house", "1992-2005", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.24,
+        "heat_demand_Q_H_nd_kWh_m2": 122.16
+    },
+    ("Detached house", "1992-2005", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.24,
+        "heat_demand_Q_H_nd_kWh_m2": 69.97
+    },
+    ("Detached house", "1992-2005", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.24,
+        "heat_demand_Q_H_nd_kWh_m2": 69.97
+    },
+    ("Detached house", "1992-2005", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.24,
+        "heat_demand_Q_H_nd_kWh_m2": 54.17
+    },
+    ("Detached house", "2006-2014", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 84.75,
+        "heat_demand_Q_H_nd_kWh_m2": 104.39
+    },
+    ("Detached house", "2006-2014", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 84.75,
+        "heat_demand_Q_H_nd_kWh_m2": 104.39
+    },
+    ("Detached house", "2006-2014", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 84.75,
+        "heat_demand_Q_H_nd_kWh_m2": 68.79
+    },
+    ("Detached house", "2006-2014", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 84.75,
+        "heat_demand_Q_H_nd_kWh_m2": 68.79
+    },
+    ("Detached house", "2006-2014", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 84.75,
+        "heat_demand_Q_H_nd_kWh_m2": 52.73
+    },
+    ("Detached house", "2015-2018", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.27,
+        "standard_value_kWh_m2": 93.61,
+        "heat_demand_Q_H_nd_kWh_m2": 91.37
+    },
+    ("Detached house", "2015-2018", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.27,
+        "standard_value_kWh_m2": 93.61,
+        "heat_demand_Q_H_nd_kWh_m2": 91.37
+    },
+    ("Detached house", "2015-2018", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.27,
+        "standard_value_kWh_m2": 93.61,
+        "heat_demand_Q_H_nd_kWh_m2": 64.31
+    },
+    ("Detached house", "2015-2018", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.27,
+        "standard_value_kWh_m2": 93.61,
+        "heat_demand_Q_H_nd_kWh_m2": 64.31
+    },
+    ("Detached house", "2015-2018", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.27,
+        "standard_value_kWh_m2": 93.61,
+        "heat_demand_Q_H_nd_kWh_m2": 48.69
+    },
+
+    # Porte-Cochere row house
+    ("Porte-Cochere row house", "Before 1946", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 207.55
+    },
+    ("Porte-Cochere row house", "Before 1946", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 176.55
+    },
+    ("Porte-Cochere row house", "Before 1946", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 51.63
+    },
+    ("Porte-Cochere row house", "Before 1946", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 51.63
+    },
+    ("Porte-Cochere row house", "Before 1946", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 32.53
+    },
+    ("Porte-Cochere row house", "1946-1964", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 207.55
+    },
+    ("Porte-Cochere row house", "1946-1964", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 176.55
+    },
+    ("Porte-Cochere row house", "1946-1964", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 51.63
+    },
+    ("Porte-Cochere row house", "1946-1964", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 51.63
+    },
+    ("Porte-Cochere row house", "1946-1964", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 32.53
+    },
+
+    # Portico row house
+    ("Portico row house", "2015-2018", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 59.69,
+        "heat_demand_Q_H_nd_kWh_m2": 82.04
+    },
+    ("Portico row house", "2015-2018", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 59.69,
+        "heat_demand_Q_H_nd_kWh_m2": 73.66
+    },
+    ("Portico row house", "2015-2018", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 59.69,
+        "heat_demand_Q_H_nd_kWh_m2": 55.53
+    },
+    ("Portico row house", "2015-2018", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 59.69,
+        "heat_demand_Q_H_nd_kWh_m2": 55.53
+    },
+    ("Portico row house", "2015-2018", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 59.69,
+        "heat_demand_Q_H_nd_kWh_m2": 35.34
+    },
+    ("Portico row house", "2006-2014", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 74.55
+    },
+    ("Portico row house", "2006-2014", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 73.66
+    },
+    ("Portico row house", "2006-2014", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 47.05
+    },
+    ("Portico row house", "2006-2014", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 47.05
+    },
+    ("Portico row house", "2006-2014", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 29.45
+    },
+    ("Portico row house", "1992-2005", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 79.30
+    },
+    ("Portico row house", "1992-2005", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 98.25
+    },
+    ("Portico row house", "1992-2005", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Portico row house", "1992-2005", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Portico row house", "1992-2005", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 29.60
+    },
+    ("Portico row house", "1975-1991", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.09,
+        "standard_value_kWh_m2": 49.08,
+        "heat_demand_Q_H_nd_kWh_m2": 112.77
+    },
+    ("Portico row house", "1975-1991", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.09,
+        "standard_value_kWh_m2": 49.08,
+        "heat_demand_Q_H_nd_kWh_m2": 98.25
+    },
+    ("Portico row house", "1975-1991", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.09,
+        "standard_value_kWh_m2": 49.08,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Portico row house", "1975-1991", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.09,
+        "standard_value_kWh_m2": 49.08,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Portico row house", "1975-1991", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.09,
+        "standard_value_kWh_m2": 49.08,
+        "heat_demand_Q_H_nd_kWh_m2": 29.60
+    },
+    ("Portico row house", "1965-1974", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.01,
+        "standard_value_kWh_m2": 45.38,
+        "heat_demand_Q_H_nd_kWh_m2": 153.62
+    },
+    ("Portico row house", "1965-1974", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.01,
+        "standard_value_kWh_m2": 45.38,
+        "heat_demand_Q_H_nd_kWh_m2": 120.66
+    },
+    ("Portico row house", "1965-1974", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.01,
+        "standard_value_kWh_m2": 45.38,
+        "heat_demand_Q_H_nd_kWh_m2": 46.98
+    },
+    ("Portico row house", "1965-1974", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.01,
+        "standard_value_kWh_m2": 45.38,
+        "heat_demand_Q_H_nd_kWh_m2": 46.98
+    },
+    ("Portico row house", "1965-1974", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.01,
+        "standard_value_kWh_m2": 45.38,
+        "heat_demand_Q_H_nd_kWh_m2": 29.60
+    },
+
+    # Middle row house
+    ("Middle row house", "2015-2018", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.99,
+        "heat_demand_Q_H_nd_kWh_m2": 68.83
+    },
+    ("Middle row house", "2015-2018", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.99,
+        "heat_demand_Q_H_nd_kWh_m2": 68.83
+    },
+    ("Middle row house", "2015-2018", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.99,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Middle row house", "2015-2018", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.99,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Middle row house", "2015-2018", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.99,
+        "heat_demand_Q_H_nd_kWh_m2": 30.41
+    },
+    ("Middle row house", "2006-2014", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.38,
+        "standard_value_kWh_m2": 58.27,
+        "heat_demand_Q_H_nd_kWh_m2": 74.45
+    },
+    ("Middle row house", "2006-2014", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.38,
+        "standard_value_kWh_m2": 58.27,
+        "heat_demand_Q_H_nd_kWh_m2": 74.45
+    },
+    ("Middle row house", "2006-2014", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.38,
+        "standard_value_kWh_m2": 58.27,
+        "heat_demand_Q_H_nd_kWh_m2": 49.63
+    },
+    ("Middle row house", "2006-2014", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.38,
+        "standard_value_kWh_m2": 58.27,
+        "heat_demand_Q_H_nd_kWh_m2": 49.63
+    },
+    ("Middle row house", "2006-2014", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.38,
+        "standard_value_kWh_m2": 58.27,
+        "heat_demand_Q_H_nd_kWh_m2": 34.45
+    },
+    ("Middle row house", "1992-2005", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 92.04
+    },
+    ("Middle row house", "1992-2005", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 81.44
+    },
+    ("Middle row house", "1992-2005", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 51.01
+    },
+    ("Middle row house", "1992-2005", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 51.01
+    },
+    ("Middle row house", "1992-2005", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 34.96
+    },
+    ("Middle row house", "1975-1991", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 163.16
+    },
+    ("Middle row house", "1975-1991", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 141.92
+    },
+    ("Middle row house", "1975-1991", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 51.28
+    },
+    ("Middle row house", "1975-1991", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 51.28
+    },
+    ("Middle row house", "1975-1991", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 34.45
+    },
+    ("Middle row house", "1965-1974", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 163.16
+    },
+    ("Middle row house", "1965-1974", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 141.92
+    },
+    ("Middle row house", "1965-1974", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 55.28
+    },
+    ("Middle row house", "1965-1974", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 55.28
+    },
+    ("Middle row house", "1965-1974", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 34.88
+    },
+    ("Middle row house", "1946-1964", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 199.62
+    },
+    ("Middle row house", "1946-1964", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 162.53
+    },
+    ("Middle row house", "1946-1964", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 53.57
+    },
+    ("Middle row house", "1946-1964", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 53.57
+    },
+    ("Middle row house", "1946-1964", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 37.16
+    },
+
+    # Middle Townhouse
+    ("Middle Townhouse", "Before 1946", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 234.06
+    },
+    ("Middle Townhouse", "Before 1946", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 160.74
+    },
+    ("Middle Townhouse", "Before 1946", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 55.84
+    },
+    ("Middle Townhouse", "Before 1946", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 55.84
+    },
+    ("Middle Townhouse", "Before 1946", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 39.02
+    },
+
+    # Middle row house
+    ("Middle row house", "2006-2014", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.38,
+        "standard_value_kWh_m2": 58.27,
+        "heat_demand_Q_H_nd_kWh_m2": 74.45
+    },
+    ("Middle row house", "2006-2014", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.38,
+        "standard_value_kWh_m2": 58.27,
+        "heat_demand_Q_H_nd_kWh_m2": 74.45
+    },
+    ("Middle row house", "2006-2014", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.38,
+        "standard_value_kWh_m2": 58.27,
+        "heat_demand_Q_H_nd_kWh_m2": 49.63
+    },
+    ("Middle row house", "2006-2014", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.38,
+        "standard_value_kWh_m2": 58.27,
+        "heat_demand_Q_H_nd_kWh_m2": 49.63
+    },
+    ("Middle row house", "2006-2014", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.38,
+        "standard_value_kWh_m2": 58.27,
+        "heat_demand_Q_H_nd_kWh_m2": 34.45
+    },
+    ("Middle row house", "1992-2005", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 92.04
+    },
+    ("Middle row house", "1992-2005", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 81.44
+    },
+    ("Middle row house", "1992-2005", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 51.01
+    },
+    ("Middle row house", "1992-2005", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 51.01
+    },
+    ("Middle row house", "1992-2005", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 34.96
+    },
+    ("Middle row house", "1975-1991", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 163.16
+    },
+    ("Middle row house", "1975-1991", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 141.92
+    },
+    ("Middle row house", "1975-1991", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 51.28
+    },
+    ("Middle row house", "1975-1991", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 51.28
+    },
+    ("Middle row house", "1975-1991", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 34.45
+    },
+    ("Middle row house", "1965-1974", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 163.16
+    },
+    ("Middle row house", "1965-1974", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 141.92
+    },
+    ("Middle row house", "1965-1974", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 55.28
+    },
+    ("Middle row house", "1965-1974", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 55.28
+    },
+    ("Middle row house", "1965-1974", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 34.88
+    },
+    ("Middle row house", "1946-1964", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 199.62
+    },
+    ("Middle row house", "1946-1964", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 162.53
+    },
+    ("Middle row house", "1946-1964", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 53.57
+    },
+    ("Middle row house", "1946-1964", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 53.57
+    },
+    ("Middle row house", "1946-1964", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 37.16
+    },
+
+    # Middle Townhouse
+    ("Middle Townhouse", "Before 1946", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 234.06
+    },
+    ("Middle Townhouse", "Before 1946", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 160.74
+    },
+    ("Middle Townhouse", "Before 1946", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 55.84
+    },
+    ("Middle Townhouse", "Before 1946", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 55.84
+    },
+    ("Middle Townhouse", "Before 1946", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 39.02
+    },
+
+    # Corner row house
+    ("Corner row house", "2015-2018", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.85,
+        "standard_value_kWh_m2": 76.86,
+        "heat_demand_Q_H_nd_kWh_m2": 91.77
+    },
+    ("Corner row house", "2015-2018", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.85,
+        "standard_value_kWh_m2": 76.86,
+        "heat_demand_Q_H_nd_kWh_m2": 91.77
+    },
+    ("Corner row house", "2015-2018", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.85,
+        "standard_value_kWh_m2": 76.86,
+        "heat_demand_Q_H_nd_kWh_m2": 61.54
+    },
+    ("Corner row house", "2015-2018", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.85,
+        "standard_value_kWh_m2": 76.86,
+        "heat_demand_Q_H_nd_kWh_m2": 61.54
+    },
+    ("Corner row house", "2015-2018", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.85,
+        "standard_value_kWh_m2": 76.86,
+        "heat_demand_Q_H_nd_kWh_m2": 45.75
+    },
+    ("Corner row house", "2006-2014", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 74.55
+    },
+    ("Corner row house", "2006-2014", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 73.66
+    },
+    ("Corner row house", "2006-2014", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 47.05
+    },
+    ("Corner row house", "2006-2014", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 47.05
+    },
+    ("Corner row house", "2006-2014", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 29.45
+    },
+    ("Corner row house", "1992-2005", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 79.30
+    },
+    ("Corner row house", "1992-2005", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 98.25
+    },
+    ("Corner row house", "1992-2005", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Corner row house", "1992-2005", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Corner row house", "1992-2005", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 29.60
+    },
+
+    # Middle row house
+    ("Middle row house", "2015-2018", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.99,
+        "heat_demand_Q_H_nd_kWh_m2": 68.83
+    },
+    ("Middle row house", "2015-2018", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.99,
+        "heat_demand_Q_H_nd_kWh_m2": 68.83
+    },
+    ("Middle row house", "2015-2018", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.99,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Middle row house", "2015-2018", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.99,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Middle row house", "2015-2018", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.99,
+        "heat_demand_Q_H_nd_kWh_m2": 30.41
+    },
+    ("Middle row house", "2006-2014", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.38,
+        "standard_value_kWh_m2": 58.27,
+        "heat_demand_Q_H_nd_kWh_m2": 74.45
+    },
+    ("Middle row house", "2006-2014", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.38,
+        "standard_value_kWh_m2": 58.27,
+        "heat_demand_Q_H_nd_kWh_m2": 74.45
+    },
+    ("Middle row house", "2006-2014", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.38,
+        "standard_value_kWh_m2": 58.27,
+        "heat_demand_Q_H_nd_kWh_m2": 49.63
+    },
+    ("Middle row house", "2006-2014", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.38,
+        "standard_value_kWh_m2": 58.27,
+        "heat_demand_Q_H_nd_kWh_m2": 49.63
+    },
+    ("Middle row house", "2006-2014", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.38,
+        "standard_value_kWh_m2": 58.27,
+        "heat_demand_Q_H_nd_kWh_m2": 34.45
+    },
+    ("Middle row house", "1992-2005", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 92.04
+    },
+    ("Middle row house", "1992-2005", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 81.44
+    },
+    ("Middle row house", "1992-2005", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 51.01
+    },
+    ("Middle row house", "1992-2005", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 51.01
+    },
+    ("Middle row house", "1992-2005", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 34.96
+    },
+    ("Middle row house", "1975-1991", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 163.16
+    },
+    ("Middle row house", "1975-1991", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 141.92
+    },
+    ("Middle row house", "1975-1991", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 51.28
+    },
+    ("Middle row house", "1975-1991", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 51.28
+    },
+    ("Middle row house", "1975-1991", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 34.45
+    },
+    ("Middle row house", "1965-1974", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 163.16
+    },
+    ("Middle row house", "1965-1974", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 141.92
+    },
+    ("Middle row house", "1965-1974", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 55.28
+    },
+    ("Middle row house", "1965-1974", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 55.28
+    },
+    ("Middle row house", "1965-1974", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 34.88
+    },
+    ("Middle row house", "1946-1964", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 199.62
+    },
+    ("Middle row house", "1946-1964", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 162.53
+    },
+    ("Middle row house", "1946-1964", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 53.57
+    },
+    ("Middle row house", "1946-1964", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 53.57
+    },
+    ("Middle row house", "1946-1964", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 37.16
+    },
+
+    # Middle Townhouse
+    ("Middle Townhouse", "Before 1946", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 234.06
+    },
+    ("Middle Townhouse", "Before 1946", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 160.74
+    },
+    ("Middle Townhouse", "Before 1946", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 55.84
+    },
+    ("Middle Townhouse", "Before 1946", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 55.84
+    },
+    ("Middle Townhouse", "Before 1946", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 39.02
+    },
+
+    # Middle row house
+    ("Middle row house", "2015-2018", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.99,
+        "heat_demand_Q_H_nd_kWh_m2": 68.83
+    },
+    ("Middle row house", "2015-2018", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.99,
+        "heat_demand_Q_H_nd_kWh_m2": 68.83
+    },
+    ("Middle row house", "2015-2018", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.99,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Middle row house", "2015-2018", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.99,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Middle row house", "2015-2018", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.99,
+        "heat_demand_Q_H_nd_kWh_m2": 30.41
+    },
+    ("Middle row house", "1992-2005", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 92.04
+    },
+    ("Middle row house", "1992-2005", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 81.44
+    },
+    ("Middle row house", "1992-2005", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 51.01
+    },
+    ("Middle row house", "1992-2005", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 51.01
+    },
+    ("Middle row house", "1992-2005", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 34.96
+    },
+    ("Middle row house", "1975-1991", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 163.16
+    },
+    ("Middle row house", "1975-1991", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 141.92
+    },
+    ("Middle row house", "1975-1991", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 51.28
+    },
+    ("Middle row house", "1975-1991", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 51.28
+    },
+    ("Middle row house", "1975-1991", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 34.45
+    },
+    ("Middle row house", "1965-1974", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 163.16
+    },
+    ("Middle row house", "1965-1974", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 141.92
+    },
+    ("Middle row house", "1965-1974", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 55.28
+    },
+    ("Middle row house", "1965-1974", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 55.28
+    },
+    ("Middle row house", "1965-1974", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 34.88
+    },
+    ("Middle row house", "1946-1964", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 199.62
+    },
+    ("Middle row house", "1946-1964", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 162.53
+    },
+    ("Middle row house", "1946-1964", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 53.57
+    },
+    ("Middle row house", "1946-1964", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 53.57
+    },
+    ("Middle row house", "1946-1964", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 37.16
+    },
+
+    # Detached house
+    ("Detached house", "2006-2014", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 84.75,
+        "heat_demand_Q_H_nd_kWh_m2": 104.39
+    },
+    ("Detached house", "2006-2014", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 84.75,
+        "heat_demand_Q_H_nd_kWh_m2": 104.39
+    },
+    ("Detached house", "2006-2014", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 84.75,
+        "heat_demand_Q_H_nd_kWh_m2": 68.79
+    },
+    ("Detached house", "2006-2014", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 84.75,
+        "heat_demand_Q_H_nd_kWh_m2": 68.79
+    },
+    ("Detached house", "2006-2014", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 84.75,
+        "heat_demand_Q_H_nd_kWh_m2": 52.73
+    },
+    ("Detached house", "2015-2018", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.27,
+        "standard_value_kWh_m2": 93.61,
+        "heat_demand_Q_H_nd_kWh_m2": 91.37
+    },
+    ("Detached house", "2015-2018", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.27,
+        "standard_value_kWh_m2": 93.61,
+        "heat_demand_Q_H_nd_kWh_m2": 91.37
+    },
+    ("Detached house", "2015-2018", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.27,
+        "standard_value_kWh_m2": 93.61,
+        "heat_demand_Q_H_nd_kWh_m2": 64.31
+    },
+    ("Detached house", "2015-2018", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.27,
+        "standard_value_kWh_m2": 93.61,
+        "heat_demand_Q_H_nd_kWh_m2": 64.31
+    },
+    ("Detached house", "2015-2018", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.27,
+        "standard_value_kWh_m2": 93.61,
+        "heat_demand_Q_H_nd_kWh_m2": 48.69
+    },
+    ("Detached house", "1992-2005", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.24,
+        "heat_demand_Q_H_nd_kWh_m2": 122.16
+    },
+    ("Detached house", "1992-2005", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.24,
+        "heat_demand_Q_H_nd_kWh_m2": 122.16
+    },
+    ("Detached house", "1992-2005", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.24,
+        "heat_demand_Q_H_nd_kWh_m2": 69.97
+    },
+    ("Detached house", "1992-2005", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.24,
+        "heat_demand_Q_H_nd_kWh_m2": 69.97
+    },
+    ("Detached house", "1992-2005", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.24,
+        "heat_demand_Q_H_nd_kWh_m2": 54.17
+    },
+    ("Detached house", "1975-1991", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.30,
+        "heat_demand_Q_H_nd_kWh_m2": 166.91
+    },
+    ("Detached house", "1975-1991", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.30,
+        "heat_demand_Q_H_nd_kWh_m2": 157.33
+    },
+    ("Detached house", "1975-1991", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.30,
+        "heat_demand_Q_H_nd_kWh_m2": 75.34
+    },
+    ("Detached house", "1975-1991", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.30,
+        "heat_demand_Q_H_nd_kWh_m2": 75.34
+    },
+    ("Detached house", "1975-1991", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.30,
+        "heat_demand_Q_H_nd_kWh_m2": 58.51
+    },
+    ("Detached house", "1965-1974", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.12,
+        "standard_value_kWh_m2": 87.83,
+        "heat_demand_Q_H_nd_kWh_m2": 224.85
+    },
+    ("Detached house", "1965-1974", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.12,
+        "standard_value_kWh_m2": 87.83,
+        "heat_demand_Q_H_nd_kWh_m2": 204.89
+    },
+    ("Detached house", "1965-1974", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.12,
+        "standard_value_kWh_m2": 87.83,
+        "heat_demand_Q_H_nd_kWh_m2": 72.80
+    },
+    ("Detached house", "1965-1974", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.12,
+        "standard_value_kWh_m2": 87.83,
+        "heat_demand_Q_H_nd_kWh_m2": 72.80
+    },
+    ("Detached house", "1965-1974", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.12,
+        "standard_value_kWh_m2": 87.83,
+        "heat_demand_Q_H_nd_kWh_m2": 56.01
+    },
+    ("Detached house", "1992-2005", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.24,
+        "heat_demand_Q_H_nd_kWh_m2": 122.16
+    },
+    ("Detached house", "1992-2005", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.24,
+        "heat_demand_Q_H_nd_kWh_m2": 122.16
+    },
+    ("Detached house", "1992-2005", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.24,
+        "heat_demand_Q_H_nd_kWh_m2": 69.97
+    },
+    ("Detached house", "1992-2005", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.24,
+        "heat_demand_Q_H_nd_kWh_m2": 69.97
+    },
+    ("Detached house", "1992-2005", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.24,
+        "heat_demand_Q_H_nd_kWh_m2": 54.17
+    },
+    ("Detached house", "2006-2014", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 84.75,
+        "heat_demand_Q_H_nd_kWh_m2": 104.39
+    },
+    ("Detached house", "2006-2014", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 84.75,
+        "heat_demand_Q_H_nd_kWh_m2": 104.39
+    },
+    ("Detached house", "2006-2014", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 84.75,
+        "heat_demand_Q_H_nd_kWh_m2": 68.79
+    },
+    ("Detached house", "2006-2014", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 84.75,
+        "heat_demand_Q_H_nd_kWh_m2": 68.79
+    },
+    ("Detached house", "2006-2014", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 84.75,
+        "heat_demand_Q_H_nd_kWh_m2": 52.73
+    },
+    ("Detached house", "2015-2018", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.27,
+        "standard_value_kWh_m2": 93.61,
+        "heat_demand_Q_H_nd_kWh_m2": 91.37
+    },
+    ("Detached house", "2015-2018", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.27,
+        "standard_value_kWh_m2": 93.61,
+        "heat_demand_Q_H_nd_kWh_m2": 91.37
+    },
+    ("Detached house", "2015-2018", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.27,
+        "standard_value_kWh_m2": 93.61,
+        "heat_demand_Q_H_nd_kWh_m2": 64.31
+    },
+    ("Detached house", "2015-2018", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.27,
+        "standard_value_kWh_m2": 93.61,
+        "heat_demand_Q_H_nd_kWh_m2": 64.31
+    },
+    ("Detached house", "2015-2018", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.27,
+        "standard_value_kWh_m2": 93.61,
+        "heat_demand_Q_H_nd_kWh_m2": 48.69
+    },
+
+    # Porte-Cochere row house
+    ("Porte-Cochere row house", "1946-1964", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 207.55
+    },
+    ("Porte-Cochere row house", "1946-1964", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 176.55
+    },
+    ("Porte-Cochere row house", "1946-1964", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 51.63
+    },
+    ("Porte-Cochere row house", "1946-1964", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 51.63
+    },
+    ("Porte-Cochere row house", "1946-1964", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 32.53
+    },
+
+    # Portico row house
+    ("Portico row house", "2015-2018", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 59.69,
+        "heat_demand_Q_H_nd_kWh_m2": 82.04
+    },
+    ("Portico row house", "2015-2018", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 59.69,
+        "heat_demand_Q_H_nd_kWh_m2": 73.66
+    },
+    ("Portico row house", "2015-2018", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 59.69,
+        "heat_demand_Q_H_nd_kWh_m2": 55.53
+    },
+    ("Portico row house", "2015-2018", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 59.69,
+        "heat_demand_Q_H_nd_kWh_m2": 55.53
+    },
+    ("Portico row house", "2015-2018", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 59.69,
+        "heat_demand_Q_H_nd_kWh_m2": 35.34
+    },
+    ("Portico row house", "2006-2014", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 74.55
+    },
+    ("Portico row house", "2006-2014", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 73.66
+    },
+    ("Portico row house", "2006-2014", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 47.05
+    },
+    ("Portico row house", "2006-2014", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 47.05
+    },
+    ("Portico row house", "2006-2014", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 29.45
+    },
+    ("Portico row house", "1992-2005", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 79.30
+    },
+    ("Portico row house", "1992-2005", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 98.25
+    },
+    ("Portico row house", "1992-2005", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Portico row house", "1992-2005", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Portico row house", "1992-2005", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 29.60
+    },
+    ("Portico row house", "1975-1991", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.09,
+        "standard_value_kWh_m2": 49.08,
+        "heat_demand_Q_H_nd_kWh_m2": 112.77
+    },
+    ("Portico row house", "1975-1991", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.09,
+        "standard_value_kWh_m2": 49.08,
+        "heat_demand_Q_H_nd_kWh_m2": 98.25
+    },
+    ("Portico row house", "1975-1991", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.09,
+        "standard_value_kWh_m2": 49.08,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Portico row house", "1975-1991", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.09,
+        "standard_value_kWh_m2": 49.08,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Portico row house", "1975-1991", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.09,
+        "standard_value_kWh_m2": 49.08,
+        "heat_demand_Q_H_nd_kWh_m2": 29.60
+    },
+    ("Portico row house", "1965-1974", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.01,
+        "standard_value_kWh_m2": 45.38,
+        "heat_demand_Q_H_nd_kWh_m2": 153.62
+    },
+    ("Portico row house", "1965-1974", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.01,
+        "standard_value_kWh_m2": 45.38,
+        "heat_demand_Q_H_nd_kWh_m2": 120.66
+    },
+    ("Portico row house", "1965-1974", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.01,
+        "standard_value_kWh_m2": 45.38,
+        "heat_demand_Q_H_nd_kWh_m2": 46.98
+    },
+    ("Portico row house", "1965-1974", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.01,
+        "standard_value_kWh_m2": 45.38,
+        "heat_demand_Q_H_nd_kWh_m2": 46.98
+    },
+    ("Portico row house", "1965-1974", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.01,
+        "standard_value_kWh_m2": 45.38,
+        "heat_demand_Q_H_nd_kWh_m2": 29.60
+    },
+
+    # Middle Townhouse
+    ("Middle Townhouse", "Before 1946", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 234.06
+    },
+    ("Middle Townhouse", "Before 1946", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 160.74
+    },
+    ("Middle Townhouse", "Before 1946", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 55.84
+    },
+    ("Middle Townhouse", "Before 1946", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 55.84
+    },
+    ("Middle Townhouse", "Before 1946", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 39.02
+    },
+
+    # Middle row house
+    ("Middle row house", "1992-2005", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 92.04
+    },
+    ("Middle row house", "1992-2005", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 81.44
+    },
+    ("Middle row house", "1992-2005", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 51.01
+    },
+    ("Middle row house", "1992-2005", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 51.01
+    },
+    ("Middle row house", "1992-2005", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 34.96
+    },
+    ("Middle row house", "1975-1991", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 163.16
+    },
+    ("Middle row house", "1975-1991", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 141.92
+    },
+    ("Middle row house", "1975-1991", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 51.28
+    },
+    ("Middle row house", "1975-1991", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 51.28
+    },
+    ("Middle row house", "1975-1991", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 34.45
+    },
+    ("Middle row house", "1965-1974", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 163.16
+    },
+    ("Middle row house", "1965-1974", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 141.92
+    },
+    ("Middle row house", "1965-1974", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 55.28
+    },
+    ("Middle row house", "1965-1974", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 55.28
+    },
+    ("Middle row house", "1965-1974", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 34.88
+    },
+    ("Middle row house", "1946-1964", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 199.62
+    },
+    ("Middle row house", "1946-1964", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 162.53
+    },
+    ("Middle row house", "1946-1964", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 53.57
+    },
+    ("Middle row house", "1946-1964", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 53.57
+    },
+    ("Middle row house", "1946-1964", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 37.16
+    },
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+6. Standard Dwelling Insulation Data
+
+
+
+
+standard_dwelling_insulation_data = {
+    ("2-under-1-roof", "2006-2014", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.83,
+        "standard_value_kWh_m2": 76.05,
+        "heat_demand_Q_H_nd_kWh_m2": 96.38
+    },
+    ("2-under-1-roof", "2006-2014", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.83,
+        "standard_value_kWh_m2": 76.05,
+        "heat_demand_Q_H_nd_kWh_m2": 94.34
+    },
+    ("2-under-1-roof", "2006-2014", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.83,
+        "standard_value_kWh_m2": 76.05,
+        "heat_demand_Q_H_nd_kWh_m2": 62.28
+    },
+    ("2-under-1-roof", "2006-2014", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.83,
+        "standard_value_kWh_m2": 76.05,
+        "heat_demand_Q_H_nd_kWh_m2": 62.28
+    },
+    ("2-under-1-roof", "2006-2014", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.83,
+        "standard_value_kWh_m2": 76.05,
+        "heat_demand_Q_H_nd_kWh_m2": 46.32
+    }
+}
+
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("2-under-1-roof", "1992-2005", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.88,
+        "standard_value_kWh_m2": 78.01,
+        "heat_demand_Q_H_nd_kWh_m2": 107.98
+    },
+    ("2-under-1-roof", "1992-2005", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.88,
+        "standard_value_kWh_m2": 78.01,
+        "heat_demand_Q_H_nd_kWh_m2": 107.98
+    },
+    ("2-under-1-roof", "1992-2005", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.88,
+        "standard_value_kWh_m2": 78.01,
+        "heat_demand_Q_H_nd_kWh_m2": 62.32
+    },
+    ("2-under-1-roof", "1992-2005", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.88,
+        "standard_value_kWh_m2": 78.01,
+        "heat_demand_Q_H_nd_kWh_m2": 62.32
+    },
+    ("2-under-1-roof", "1992-2005", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.88,
+        "standard_value_kWh_m2": 78.01,
+        "heat_demand_Q_H_nd_kWh_m2": 46.40
+    }
+}
+
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("2-under-1-roof", "1975-1991", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.90,
+        "standard_value_kWh_m2": 79.16,
+        "heat_demand_Q_H_nd_kWh_m2": 150.49
+    },
+    ("2-under-1-roof", "1975-1991", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.90,
+        "standard_value_kWh_m2": 79.16,
+        "heat_demand_Q_H_nd_kWh_m2": 139.06
+    },
+    ("2-under-1-roof", "1975-1991", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.90,
+        "standard_value_kWh_m2": 79.16,
+        "heat_demand_Q_H_nd_kWh_m2": 68.13
+    },
+    ("2-under-1-roof", "1975-1991", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.90,
+        "standard_value_kWh_m2": 79.16,
+        "heat_demand_Q_H_nd_kWh_m2": 68.13
+    },
+    ("2-under-1-roof", "1975-1991", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.90,
+        "standard_value_kWh_m2": 79.16,
+        "heat_demand_Q_H_nd_kWh_m2": 51.35
+    }
+}
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("2-under-1-roof", "2015-2018", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.53,
+        "standard_value_kWh_m2": 64.19,
+        "heat_demand_Q_H_nd_kWh_m2": 75.41
+    },
+    ("2-under-1-roof", "2015-2018", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.53,
+        "standard_value_kWh_m2": 64.19,
+        "heat_demand_Q_H_nd_kWh_m2": 72.24
+    },
+    ("2-under-1-roof", "2015-2018", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.53,
+        "standard_value_kWh_m2": 64.19,
+        "heat_demand_Q_H_nd_kWh_m2": 51.57
+    },
+    ("2-under-1-roof", "2015-2018", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.53,
+        "standard_value_kWh_m2": 64.19,
+        "heat_demand_Q_H_nd_kWh_m2": 51.57
+    },
+    ("2-under-1-roof", "2015-2018", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.53,
+        "standard_value_kWh_m2": 64.19,
+        "heat_demand_Q_H_nd_kWh_m2": 34.86
+    }
+}
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("2-under-1-roof", "<1965", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.94,
+        "standard_value_kWh_m2": 80.46,
+        "heat_demand_Q_H_nd_kWh_m2": 253.23
+    },
+    ("2-under-1-roof", "<1965", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.94,
+        "standard_value_kWh_m2": 80.46,
+        "heat_demand_Q_H_nd_kWh_m2": 197.00
+    },
+    ("2-under-1-roof", "<1965", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.94,
+        "standard_value_kWh_m2": 80.46,
+        "heat_demand_Q_H_nd_kWh_m2": 70.58
+    },
+    ("2-under-1-roof", "<1965", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.94,
+        "standard_value_kWh_m2": 80.46,
+        "heat_demand_Q_H_nd_kWh_m2": 70.58
+    },
+    ("2-under-1-roof", "<1965", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.94,
+        "standard_value_kWh_m2": 80.46,
+        "heat_demand_Q_H_nd_kWh_m2": 53.29
+    }
+}
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("2-under-1-roof", "1965-1974", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.77,
+        "heat_demand_Q_H_nd_kWh_m2": 204.90
+    },
+    ("2-under-1-roof", "1965-1974", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.77,
+        "heat_demand_Q_H_nd_kWh_m2": 183.50
+    },
+    ("2-under-1-roof", "1965-1974", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.77,
+        "heat_demand_Q_H_nd_kWh_m2": 65.77
+    },
+    ("2-under-1-roof", "1965-1974", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.77,
+        "heat_demand_Q_H_nd_kWh_m2": 65.77
+    },
+    ("2-under-1-roof", "1965-1974", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.77,
+        "heat_demand_Q_H_nd_kWh_m2": 49.38
+    }
+}
+
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Corner townhouse", "1965-1974", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.81,
+        "standard_value_kWh_m2": 75.55,
+        "heat_demand_Q_H_nd_kWh_m2": 205.35
+    },
+    ("Corner townhouse", "1965-1974", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.81,
+        "standard_value_kWh_m2": 75.55,
+        "heat_demand_Q_H_nd_kWh_m2": 183.59
+    },
+    ("Corner townhouse", "1965-1974", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.81,
+        "standard_value_kWh_m2": 75.55,
+        "heat_demand_Q_H_nd_kWh_m2": 65.02
+    },
+    ("Corner townhouse", "1965-1974", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.81,
+        "standard_value_kWh_m2": 75.55,
+        "heat_demand_Q_H_nd_kWh_m2": 65.02
+    },
+    ("Corner townhouse", "1965-1974", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.81,
+        "standard_value_kWh_m2": 75.55,
+        "heat_demand_Q_H_nd_kWh_m2": 48.71
+    }
+}
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Corner townhouse", "1946-1964", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.03,
+        "standard_value_kWh_m2": 84.24,
+        "heat_demand_Q_H_nd_kWh_m2": 258.12
+    },
+    ("Corner townhouse", "1946-1964", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.03,
+        "standard_value_kWh_m2": 84.24,
+        "heat_demand_Q_H_nd_kWh_m2": 208.22
+    },
+    ("Corner townhouse", "1946-1964", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.03,
+        "standard_value_kWh_m2": 84.24,
+        "heat_demand_Q_H_nd_kWh_m2": 70.49
+    },
+    ("Corner townhouse", "1946-1964", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.03,
+        "standard_value_kWh_m2": 84.24,
+        "heat_demand_Q_H_nd_kWh_m2": 70.49
+    },
+    ("Corner townhouse", "1946-1964", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.03,
+        "standard_value_kWh_m2": 84.24,
+        "heat_demand_Q_H_nd_kWh_m2": 53.89
+    }
+}
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Corner Townhouse", "<1946", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 169.22,
+        "heat_demand_Q_H_nd_kWh_m2": 312.84
+    },
+    ("Corner Townhouse", "<1946", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 169.22,
+        "heat_demand_Q_H_nd_kWh_m2": 259.57
+    },
+    ("Corner Townhouse", "<1946", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 169.22,
+        "heat_demand_Q_H_nd_kWh_m2": 73.82
+    },
+    ("Corner Townhouse", "<1946", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 169.22,
+        "heat_demand_Q_H_nd_kWh_m2": 73.82
+    },
+    ("Corner Townhouse", "<1946", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 169.22,
+        "heat_demand_Q_H_nd_kWh_m2": 56.60
+    }
+}
+
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Corner row house", "2015-2018", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.85,
+        "standard_value_kWh_m2": 76.86,
+        "heat_demand_Q_H_nd_kWh_m2": 91.77
+    },
+    ("Corner row house", "2015-2018", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.85,
+        "standard_value_kWh_m2": 76.86,
+        "heat_demand_Q_H_nd_kWh_m2": 91.77
+    },
+    ("Corner row house", "2015-2018", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.85,
+        "standard_value_kWh_m2": 76.86,
+        "heat_demand_Q_H_nd_kWh_m2": 61.54
+    },
+    ("Corner row house", "2015-2018", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.85,
+        "standard_value_kWh_m2": 76.86,
+        "heat_demand_Q_H_nd_kWh_m2": 61.54
+    },
+    ("Corner row house", "2015-2018", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.85,
+        "standard_value_kWh_m2": 76.86,
+        "heat_demand_Q_H_nd_kWh_m2": 45.75
+    }
+}
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Corner townhouse", "2006-2014", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.85,
+        "standard_value_kWh_m2": 76.86,
+        "heat_demand_Q_H_nd_kWh_m2": 91.77
+    },
+    ("Corner townhouse", "2006-2014", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.85,
+        "standard_value_kWh_m2": 76.86,
+        "heat_demand_Q_H_nd_kWh_m2": 91.77
+    },
+    ("Corner townhouse", "2006-2014", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.85,
+        "standard_value_kWh_m2": 76.86,
+        "heat_demand_Q_H_nd_kWh_m2": 61.54
+    },
+    ("Corner townhouse", "2006-2014", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.85,
+        "standard_value_kWh_m2": 76.86,
+        "heat_demand_Q_H_nd_kWh_m2": 61.54
+    },
+    ("Corner townhouse", "2006-2014", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.85,
+        "standard_value_kWh_m2": 76.86,
+        "heat_demand_Q_H_nd_kWh_m2": 45.75
+    }
+}
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Corner townhouse", "1992-2005", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.78,
+        "heat_demand_Q_H_nd_kWh_m2": 144.97
+    },
+    ("Corner townhouse", "1992-2005", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.78,
+        "heat_demand_Q_H_nd_kWh_m2": 132.32
+    },
+    ("Corner townhouse", "1992-2005", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.78,
+        "heat_demand_Q_H_nd_kWh_m2": 65.02
+    },
+    ("Corner townhouse", "1992-2005", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.78,
+        "heat_demand_Q_H_nd_kWh_m2": 65.02
+    },
+    ("Corner townhouse", "1992-2005", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.78,
+        "heat_demand_Q_H_nd_kWh_m2": 48.71
+    }
+}
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Corner townhouse", "1975-1991", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.78,
+        "heat_demand_Q_H_nd_kWh_m2": 144.97
+    },
+    ("Corner townhouse", "1975-1991", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.78,
+        "heat_demand_Q_H_nd_kWh_m2": 132.32
+    },
+    ("Corner townhouse", "1975-1991", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.78,
+        "heat_demand_Q_H_nd_kWh_m2": 65.02
+    },
+    ("Corner townhouse", "1975-1991", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.78,
+        "heat_demand_Q_H_nd_kWh_m2": 65.02
+    },
+    ("Corner townhouse", "1975-1991", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.78,
+        "heat_demand_Q_H_nd_kWh_m2": 48.71
+    }
+}
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Detached house", "<1965", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.24,
+        "standard_value_kWh_m2": 92.76,
+        "heat_demand_Q_H_nd_kWh_m2": 287.73
+    },
+    ("Detached house", "<1965", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.24,
+        "standard_value_kWh_m2": 92.76,
+        "heat_demand_Q_H_nd_kWh_m2": 213.58
+    },
+    ("Detached house", "<1965", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.24,
+        "standard_value_kWh_m2": 92.76,
+        "heat_demand_Q_H_nd_kWh_m2": 79.46
+    },
+    ("Detached house", "<1965", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.24,
+        "standard_value_kWh_m2": 92.76,
+        "heat_demand_Q_H_nd_kWh_m2": 79.46
+    },
+    ("Detached house", "<1965", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.24,
+        "standard_value_kWh_m2": 92.76,
+        "heat_demand_Q_H_nd_kWh_m2": 62.30
+    }
+}
+
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Detached house", "2015-2018", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.27,
+        "standard_value_kWh_m2": 93.61,
+        "heat_demand_Q_H_nd_kWh_m2": 91.37
+    },
+    ("Detached house", "2015-2018", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.27,
+        "standard_value_kWh_m2": 93.61,
+        "heat_demand_Q_H_nd_kWh_m2": 91.37
+    },
+    ("Detached house", "2015-2018", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.27,
+        "standard_value_kWh_m2": 93.61,
+        "heat_demand_Q_H_nd_kWh_m2": 64.31
+    },
+    ("Detached house", "2015-2018", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.27,
+        "standard_value_kWh_m2": 93.61,
+        "heat_demand_Q_H_nd_kWh_m2": 64.31
+    },
+    ("Detached house", "2015-2018", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.27,
+        "standard_value_kWh_m2": 93.61,
+        "heat_demand_Q_H_nd_kWh_m2": 48.69
+    }
+}
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Detached house", "2006-2014", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 84.75,
+        "heat_demand_Q_H_nd_kWh_m2": 104.39
+    },
+    ("Detached house", "2006-2014", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 84.75,
+        "heat_demand_Q_H_nd_kWh_m2": 104.39
+    },
+    ("Detached house", "2006-2014", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 84.75,
+        "heat_demand_Q_H_nd_kWh_m2": 68.79
+    },
+    ("Detached house", "2006-2014", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 84.75,
+        "heat_demand_Q_H_nd_kWh_m2": 68.79
+    },
+    ("Detached house", "2006-2014", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.04,
+        "standard_value_kWh_m2": 84.75,
+        "heat_demand_Q_H_nd_kWh_m2": 52.73
+    }
+}
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Detached house", "1992-2005", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.24,
+        "heat_demand_Q_H_nd_kWh_m2": 122.16
+    },
+    ("Detached house", "1992-2005", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.24,
+        "heat_demand_Q_H_nd_kWh_m2": 122.16
+    },
+    ("Detached house", "1992-2005", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.24,
+        "heat_demand_Q_H_nd_kWh_m2": 69.97
+    },
+    ("Detached house", "1992-2005", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.24,
+        "heat_demand_Q_H_nd_kWh_m2": 69.97
+    },
+    ("Detached house", "1992-2005", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.24,
+        "heat_demand_Q_H_nd_kWh_m2": 54.17
+    }
+}
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Detached house", "1975-1991", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.30,
+        "heat_demand_Q_H_nd_kWh_m2": 166.91
+    },
+    ("Detached house", "1975-1991", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.30,
+        "heat_demand_Q_H_nd_kWh_m2": 157.33
+    },
+    ("Detached house", "1975-1991", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.30,
+        "heat_demand_Q_H_nd_kWh_m2": 75.34
+    },
+    ("Detached house", "1975-1991", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.30,
+        "heat_demand_Q_H_nd_kWh_m2": 75.34
+    },
+    ("Detached house", "1975-1991", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.18,
+        "standard_value_kWh_m2": 90.30,
+        "heat_demand_Q_H_nd_kWh_m2": 58.51
+    }
+}
+
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Detached house", "1965-1974", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.12,
+        "standard_value_kWh_m2": 87.83,
+        "heat_demand_Q_H_nd_kWh_m2": 224.85
+    },
+    ("Detached house", "1965-1974", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.12,
+        "standard_value_kWh_m2": 87.83,
+        "heat_demand_Q_H_nd_kWh_m2": 204.89
+    },
+    ("Detached house", "1965-1974", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.12,
+        "standard_value_kWh_m2": 87.83,
+        "heat_demand_Q_H_nd_kWh_m2": 72.80
+    },
+    ("Detached house", "1965-1974", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.12,
+        "standard_value_kWh_m2": 87.83,
+        "heat_demand_Q_H_nd_kWh_m2": 72.80
+    },
+    ("Detached house", "1965-1974", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 2.12,
+        "standard_value_kWh_m2": 87.83,
+        "heat_demand_Q_H_nd_kWh_m2": 56.01
+    }
+}
+
+
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Porte-Cochere row house", "Before 1946", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 207.55
+    },
+    ("Porte-Cochere row house", "Before 1946", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 176.55
+    },
+    ("Porte-Cochere row house", "Before 1946", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 51.63
+    },
+    ("Porte-Cochere row house", "Before 1946", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 51.63
+    },
+    ("Porte-Cochere row house", "Before 1946", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 32.53
+    }
+}
+
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Portico row house", "2015-2018", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 59.69,
+        "heat_demand_Q_H_nd_kWh_m2": 82.04
+    },
+    ("Portico row house", "2015-2018", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 59.69,
+        "heat_demand_Q_H_nd_kWh_m2": 73.66
+    },
+    ("Portico row house", "2015-2018", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 59.69,
+        "heat_demand_Q_H_nd_kWh_m2": 55.53
+    },
+    ("Portico row house", "2015-2018", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 59.69,
+        "heat_demand_Q_H_nd_kWh_m2": 55.53
+    },
+    ("Portico row house", "2015-2018", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 59.69,
+        "heat_demand_Q_H_nd_kWh_m2": 35.34
+    }
+}
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Portico row house", "2006-2014", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 74.55
+    },
+    ("Portico row house", "2006-2014", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 73.66
+    },
+    ("Portico row house", "2006-2014", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 47.05
+    },
+    ("Portico row house", "2006-2014", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 47.05
+    },
+    ("Portico row house", "2006-2014", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.28,
+        "heat_demand_Q_H_nd_kWh_m2": 29.45
+    }
+}
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Portico row house", "1992-2005", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 79.30
+    },
+    ("Portico row house", "1992-2005", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 98.25
+    },
+    ("Portico row house", "1992-2005", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Portico row house", "1992-2005", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Portico row house", "1992-2005", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.07,
+        "standard_value_kWh_m2": 48.03,
+        "heat_demand_Q_H_nd_kWh_m2": 29.60
+    }
+}
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Portico row house", "1975-1991", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.09,
+        "standard_value_kWh_m2": 49.08,
+        "heat_demand_Q_H_nd_kWh_m2": 112.77
+    },
+    ("Portico row house", "1975-1991", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.09,
+        "standard_value_kWh_m2": 49.08,
+        "heat_demand_Q_H_nd_kWh_m2": 98.25
+    },
+    ("Portico row house", "1975-1991", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.09,
+        "standard_value_kWh_m2": 49.08,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Portico row house", "1975-1991", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.09,
+        "standard_value_kWh_m2": 49.08,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Portico row house", "1975-1991", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.09,
+        "standard_value_kWh_m2": 49.08,
+        "heat_demand_Q_H_nd_kWh_m2": 29.60
+    }
+}
+
+
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Portico row house", "1965-1974", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.01,
+        "standard_value_kWh_m2": 45.38,
+        "heat_demand_Q_H_nd_kWh_m2": 153.62
+    },
+    ("Portico row house", "1965-1974", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.01,
+        "standard_value_kWh_m2": 45.38,
+        "heat_demand_Q_H_nd_kWh_m2": 120.66
+    },
+    ("Portico row house", "1965-1974", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.01,
+        "standard_value_kWh_m2": 45.38,
+        "heat_demand_Q_H_nd_kWh_m2": 46.98
+    },
+    ("Portico row house", "1965-1974", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.01,
+        "standard_value_kWh_m2": 45.38,
+        "heat_demand_Q_H_nd_kWh_m2": 46.98
+    },
+    ("Portico row house", "1965-1974", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.01,
+        "standard_value_kWh_m2": 45.38,
+        "heat_demand_Q_H_nd_kWh_m2": 29.60
+    }
+}
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Porte-Cochere row house", "1946-1964", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 207.55
+    },
+    ("Porte-Cochere row house", "1946-1964", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 176.55
+    },
+    ("Porte-Cochere row house", "1946-1964", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 51.63
+    },
+    ("Porte-Cochere row house", "1946-1964", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 51.63
+    },
+    ("Porte-Cochere row house", "1946-1964", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.13,
+        "standard_value_kWh_m2": 104.42,
+        "heat_demand_Q_H_nd_kWh_m2": 32.53
+    }
+}
+
+
+
+
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Middle Townhouse", "Before 1946", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 234.06
+    },
+    ("Middle Townhouse", "Before 1946", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 160.74
+    },
+    ("Middle Townhouse", "Before 1946", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 55.84
+    },
+    ("Middle Townhouse", "Before 1946", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 55.84
+    },
+    ("Middle Townhouse", "Before 1946", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.46,
+        "standard_value_kWh_m2": 107.79,
+        "heat_demand_Q_H_nd_kWh_m2": 39.02
+    }
+}
+
+
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Middle row house", "2015-2018", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.99,
+        "heat_demand_Q_H_nd_kWh_m2": 68.83
+    },
+    ("Middle row house", "2015-2018", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.99,
+        "heat_demand_Q_H_nd_kWh_m2": 68.83
+    },
+    ("Middle row house", "2015-2018", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.99,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Middle row house", "2015-2018", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.99,
+        "heat_demand_Q_H_nd_kWh_m2": 46.78
+    },
+    ("Middle row house", "2015-2018", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.99,
+        "heat_demand_Q_H_nd_kWh_m2": 30.41
+    }
+}
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Middle row house", "1992-2005", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 92.04
+    },
+    ("Middle row house", "1992-2005", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 81.44
+    },
+    ("Middle row house", "1992-2005", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 51.01
+    },
+    ("Middle row house", "1992-2005", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 51.01
+    },
+    ("Middle row house", "1992-2005", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.45,
+        "standard_value_kWh_m2": 61.03,
+        "heat_demand_Q_H_nd_kWh_m2": 34.96
+    }
+}
+
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Middle row house", "1975-1991", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 163.16
+    },
+    ("Middle row house", "1975-1991", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 141.92
+    },
+    ("Middle row house", "1975-1991", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 51.28
+    },
+    ("Middle row house", "1975-1991", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 51.28
+    },
+    ("Middle row house", "1975-1991", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.35,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 34.45
+    }
+}
+
+
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Middle row house", "1965-1974", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 163.16
+    },
+    ("Middle row house", "1965-1974", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 141.92
+    },
+    ("Middle row house", "1965-1974", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 55.28
+    },
+    ("Middle row house", "1965-1974", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 55.28
+    },
+    ("Middle row house", "1965-1974", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.36,
+        "standard_value_kWh_m2": 57.54,
+        "heat_demand_Q_H_nd_kWh_m2": 34.88
+    }
+}
+
+
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Middle row house", "1946-1964", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 199.62
+    },
+    ("Middle row house", "1946-1964", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 162.53
+    },
+    ("Middle row house", "1946-1964", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 53.57
+    },
+    ("Middle row house", "1946-1964", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 53.57
+    },
+    ("Middle row house", "1946-1964", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.47,
+        "standard_value_kWh_m2": 61.61,
+        "heat_demand_Q_H_nd_kWh_m2": 37.16
+    }
+}
+
+
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("Middle row house", "2006-2014", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.38,
+        "standard_value_kWh_m2": 58.27,
+        "heat_demand_Q_H_nd_kWh_m2": 74.45
+    },
+    ("Middle row house", "2006-2014", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.38,
+        "standard_value_kWh_m2": 58.27,
+        "heat_demand_Q_H_nd_kWh_m2": 74.45
+    },
+    ("Middle row house", "2006-2014", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.38,
+        "standard_value_kWh_m2": 58.27,
+        "heat_demand_Q_H_nd_kWh_m2": 49.63
+    },
+    ("Middle row house", "2006-2014", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.38,
+        "standard_value_kWh_m2": 58.27,
+        "heat_demand_Q_H_nd_kWh_m2": 49.63
+    },
+    ("Middle row house", "2006-2014", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.38,
+        "standard_value_kWh_m2": 58.27,
+        "heat_demand_Q_H_nd_kWh_m2": 34.45
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

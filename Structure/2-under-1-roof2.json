@@ -1,0 +1,1791 @@
+# 1965
+
+1. Characteristic Data
+
+characteristic_data = {
+    ("2-under-1-roof", "<1965", "pre_calibration"): {
+        "usable_floor_area_m2": 122.89,
+        "number_of_floors_within_dwelling": 3,
+        "number_of_floors_entire_building": 3,
+        "number_of_units_entire_building": 1,
+        "building_type": "Single-family with roof",
+        "type_of_unit_variant": "Corner",
+        "building_height_m": 9.00,
+        "ground_floor_boundary": "Crawl space"
+    }
+}
+
+2. Building Envelope Data
+
+building_envelop_data = {
+    ("2-under-1-roof", "<1965", "scenario1", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 68.95,
+            "R_value_range": (2.5, 2.5),
+            "U_value_range": (0.36, 0.36)
+        },
+        "solid_wall": {
+            "area_m2": 103.3,
+            "R_value_range": (2.5, 2.5),
+            "U_value_range": (0.37, 0.37)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 84.14,
+            "R_value_range": (2.5, 2.5),
+            "U_value_range": (0.37, 0.37)
+        },
+        "windows": {
+            "area_m2": 27.22,
+            "U_value_range": (2.9, 2.9)
+        },
+        "doors": {
+            "area_m2": 6.93,
+            "U_value_range": (3.4, 3.4)
+        }
+    },
+    ("2-under-1-roof", "<1965", "scenario2", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 68.95,
+            "R_value_range": (2.5, 2.5),
+            "U_value_range": (0.36, 0.36)
+        },
+        "solid_wall": {
+            "area_m2": 103.3,
+            "R_value_range": (2.5, 2.5),
+            "U_value_range": (0.37, 0.37)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 84.14,
+            "R_value_range": (2.5, 2.5),
+            "U_value_range": (0.37, 0.37)
+        },
+        "windows": {
+            "area_m2": 27.22,
+            "U_value_range": (2.9, 2.9)
+        },
+        "doors": {
+            "area_m2": 6.93,
+            "U_value_range": (3.4, 3.4)
+        }
+    },
+    ("2-under-1-roof", "<1965", "scenario3", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 68.95,
+            "R_value_range": (3.5, 3.5),
+            "U_value_range": (0.27, 0.27)
+        },
+        "solid_wall": {
+            "area_m2": 103.3,
+            "R_value_range": (2.5, 2.5),
+            "U_value_range": (0.37, 0.37)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 84.14,
+            "R_value_range": (3.5, 3.5),
+            "U_value_range": (0.27, 0.27)
+        },
+        "windows": {
+            "area_m2": 27.22,
+            "U_value_range": (1.4, 1.4)
+        },
+        "doors": {
+            "area_m2": 6.93,
+            "U_value_range": (1.4, 1.4)
+        }
+    },
+    ("2-under-1-roof", "<1965", "scenario4", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 68.95,
+            "R_value_range": (3.5, 3.5),
+            "U_value_range": (0.27, 0.27)
+        },
+        "solid_wall": {
+            "area_m2": 103.3,
+            "R_value_range": (2.5, 2.5),
+            "U_value_range": (0.37, 0.37)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 84.14,
+            "R_value_range": (3.5, 3.5),
+            "U_value_range": (0.27, 0.27)
+        },
+        "windows": {
+            "area_m2": 27.22,
+            "U_value_range": (1.4, 1.4)
+        },
+        "doors": {
+            "area_m2": 6.93,
+            "U_value_range": (1.4, 1.4)
+        }
+    },
+    ("2-under-1-roof", "<1965", "scenario5", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 68.95,
+            "R_value_range": (3.5, 3.5),
+            "U_value_range": (0.27, 0.27)
+        },
+        "solid_wall": {
+            "area_m2": 103.3,
+            "R_value_range": (2.5, 2.5),
+            "U_value_range": (0.37, 0.37)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 84.14,
+            "R_value_range": (3.5, 3.5),
+            "U_value_range": (0.27, 0.27)
+        },
+        "windows": {
+            "area_m2": 27.22,
+            "U_value_range": (1.4, 1.4)
+        },
+        "doors": {
+            "area_m2": 6.93,
+            "U_value_range": (1.4, 1.4)
+        }
+    }
+}
+
+3. Ventilation Data
+
+ventilation_data = {
+    ("2-under-1-roof", "<1965", "scenario1", "pre_calibration"): {
+        "ventilation_system": "Fully natural ventilation",
+        "ventilation_provision": "A1 standard",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "\"Forfaitair\" (default)"
+    },
+    ("2-under-1-roof", "<1965", "scenario2", "pre_calibration"): {
+        "ventilation_system": "Fully natural ventilation",
+        "ventilation_provision": "A1 standard",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "\"Forfaitair\" (default)"
+    },
+    ("2-under-1-roof", "<1965", "scenario3", "pre_calibration"): {
+        "ventilation_system": "Natural supply, mechanical exhaust",
+        "ventilation_provision": "C5a (pressure supply, CO₂ exhaust, zoning)",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "0.7 dm³/s·m²"
+    },
+    ("2-under-1-roof", "<1965", "scenario4", "pre_calibration"): {
+        "ventilation_system": "Natural supply, mechanical exhaust",
+        "ventilation_provision": "C5a (pressure supply, CO₂ exhaust, zoning)",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "0.7 dm³/s·m²"
+    },
+    ("2-under-1-roof", "<1965", "scenario5", "pre_calibration"): {
+        "ventilation_system": "Fully mechanical (balanced)",
+        "ventilation_provision": "Central heat recovery (WTW), CO₂ multi-zone",
+        "heat_recovery": "With heat recovery",
+        "air_tightness_qv10": "0.4 dm³/s·m²"
+    }
+}
+
+4. Space Heating Data
+
+space_heating_data = {
+    ("2-under-1-roof", "<1965", "scenario1", "pre_calibration"): {
+        "main_heating": "Boiler CR",
+        "system_type": "Individual",
+        "heating_appliance": "Gas boiler",
+        "boiler_air_heating": "CR-boiler",
+        "emission_system": "Radiators",
+        "temperature_regime": "90/70 °C"
+    },
+    ("2-under-1-roof", "<1965", "scenario2", "pre_calibration"): {
+        "main_heating": "Boiler HR107",
+        "system_type": "Individual",
+        "heating_appliance": "Gas boiler",
+        "boiler_air_heating": "HR107-boiler",
+        "emission_system": "Radiators",
+        "temperature_regime": "90/70 °C"
+    },
+    ("2-under-1-roof", "<1965", "scenario3", "pre_calibration"): {
+        "main_heating": "Boiler HR107",
+        "system_type": "Individual",
+        "heating_appliance": "Gas boiler",
+        "boiler_air_heating": "HR107-boiler",
+        "emission_system": "Radiators",
+        "temperature_regime": "55/47 °C"
+    },
+    ("2-under-1-roof", "<1965", "scenario4", "pre_calibration"): {
+        "main_heating": "Electric heat pump",
+        "system_type": "Individual",
+        "heating_appliance": "Electric heat pump",
+        "boiler_air_heating": "(Not applicable)",
+        "emission_system": "Radiators",
+        "temperature_regime": "55/47 °C"
+    },
+    ("2-under-1-roof", "<1965", "scenario5", "pre_calibration"): {
+        "main_heating": "Electric heat pump",
+        "system_type": "Individual",
+        "heating_appliance": "Electric heat pump",
+        "boiler_air_heating": "(Not applicable)",
+        "emission_system": "Radiators",
+        "temperature_regime": "55/47 °C"
+    }
+}
+
+5. Domestic Hot Water Data
+
+domestic_hot_water_data = {
+    ("2-under-1-roof", "<1965", "scenario1", "pre_calibration"): {
+        "dhw_system": "Individual gas combi boiler with gas label",
+        "installation_type": "Individual",
+        "specific_appliance": "Gas combi boiler (gaskeur)",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "<1965", "scenario2", "pre_calibration"): {
+        "dhw_system": "Individual gas combi boiler with gas label HR/CW",
+        "installation_type": "Individual",
+        "specific_appliance": "Gas combi boiler (gaskeur) HR/CW",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "<1965", "scenario3", "pre_calibration"): {
+        "dhw_system": "Individual gas combi boiler with gas label HR/CW",
+        "installation_type": "Individual",
+        "specific_appliance": "Gas combi boiler (gaskeur) HR/CW",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "<1965", "scenario4", "pre_calibration"): {
+        "dhw_system": "Individual heat pump (combi)",
+        "installation_type": "Individual",
+        "specific_appliance": "Combi heat pump",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "<1965", "scenario5", "pre_calibration"): {
+        "dhw_system": "Individual heat pump (combi)",
+        "installation_type": "Individual",
+        "specific_appliance": "Combi heat pump",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    }
+}
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("2-under-1-roof", "<1965", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.94,
+        "standard_value_kWh_m2": 80.46,
+        "heat_demand_Q_H_nd_kWh_m2": 253.23
+    },
+    ("2-under-1-roof", "<1965", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.94,
+        "standard_value_kWh_m2": 80.46,
+        "heat_demand_Q_H_nd_kWh_m2": 197.00
+    },
+    ("2-under-1-roof", "<1965", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.94,
+        "standard_value_kWh_m2": 80.46,
+        "heat_demand_Q_H_nd_kWh_m2": 70.58
+    },
+    ("2-under-1-roof", "<1965", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.94,
+        "standard_value_kWh_m2": 80.46,
+        "heat_demand_Q_H_nd_kWh_m2": 70.58
+    },
+    ("2-under-1-roof", "<1965", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.94,
+        "standard_value_kWh_m2": 80.46,
+        "heat_demand_Q_H_nd_kWh_m2": 53.29
+    }
+}
+
+
+
+# 1965 - 1974
+
+1. Characteristic Data
+
+characteristic_data = {
+    ("2-under-1-roof", "1965-1974", "pre_calibration"): {
+        "usable_floor_area_m2": 133.99,
+        "number_of_floors_within_dwelling": 3,
+        "number_of_floors_entire_building": 3,
+        "number_of_units_entire_building": 1,
+        "building_type": "Single-family with roof",
+        "type_of_unit_variant": "Corner",
+        "building_height_m": 9.00,
+        "ground_floor_boundary": "Crawl space"
+    }
+}
+
+2. Building Envelope Data
+
+building_envelop_data = {
+    ("2-under-1-roof", "1965-1974", "scenario1", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 61.45,
+            "R_value_range": (0.17, 0.17),
+            "U_value_range": (2.33, 2.33)
+        },
+        "solid_wall": {
+            "area_m2": 91.68,
+            "R_value_range": (0.43, 0.43),
+            "U_value_range": (1.67, 1.67)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 72.62,
+            "R_value_range": (0.86, 0.86),
+            "U_value_range": (0.97, 0.97)
+        },
+        "windows": {
+            "area_m2": 30.19,
+            "U_value_range": (5.10, 5.10)
+        },
+        "doors": {
+            "area_m2": 6.24,
+            "U_value_range": (3.40, 3.40)
+        }
+    },
+    ("2-under-1-roof", "1965-1974", "scenario2", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 61.45,
+            "R_value_range": (0.17, 0.17),
+            "U_value_range": (2.33, 2.33)
+        },
+        "solid_wall": {
+            "area_m2": 91.68,
+            "R_value_range": (0.43, 0.43),
+            "U_value_range": (1.67, 1.67)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 72.62,
+            "R_value_range": (0.86, 0.86),
+            "U_value_range": (0.97, 0.97)
+        },
+        "windows": {
+            "area_m2": 30.19,
+            "U_value_range": (2.90, 2.90)
+        },
+        "doors": {
+            "area_m2": 6.24,
+            "U_value_range": (3.40, 3.40)
+        }
+    },
+    ("2-under-1-roof", "1965-1974", "scenario3", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 61.45,
+            "R_value_range": (1.94, 1.94),
+            "U_value_range": (1.67, 1.67)
+        },
+        "solid_wall": {
+            "area_m2": 91.68,
+            "R_value_range": (1.70, 1.70),
+            "U_value_range": (0.53, 0.53)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 72.62,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "windows": {
+            "area_m2": 30.19,
+            "U_value_range": (1.40, 1.40)
+        },
+        "doors": {
+            "area_m2": 6.24,
+            "U_value_range": (1.40, 1.40)
+        }
+    },
+    ("2-under-1-roof", "1965-1974", "scenario4", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 61.45,
+            "R_value_range": (1.94, 1.94),
+            "U_value_range": (1.67, 1.67)
+        },
+        "solid_wall": {
+            "area_m2": 91.68,
+            "R_value_range": (1.70, 1.70),
+            "U_value_range": (0.53, 0.53)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 72.62,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "windows": {
+            "area_m2": 30.19,
+            "U_value_range": (1.40, 1.40)
+        },
+        "doors": {
+            "area_m2": 6.24,
+            "U_value_range": (1.40, 1.40)
+        }
+    },
+    ("2-under-1-roof", "1965-1974", "scenario5", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 61.45,
+            "R_value_range": (1.94, 1.94),
+            "U_value_range": (1.67, 1.67)
+        },
+        "solid_wall": {
+            "area_m2": 91.68,
+            "R_value_range": (1.70, 1.70),
+            "U_value_range": (0.53, 0.53)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 72.62,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "windows": {
+            "area_m2": 30.19,
+            "U_value_range": (1.40, 1.40)
+        },
+        "doors": {
+            "area_m2": 6.24,
+            "U_value_range": (1.40, 1.40)
+        }
+    }
+}
+
+3. Ventilation Data
+
+ventilation_data = {
+    ("2-under-1-roof", "1965-1974", "scenario1", "pre_calibration"): {
+        "ventilation_system": "Fully natural ventilation",
+        "ventilation_provision": "A1 standard",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "\"Forfaitair\" (default)"
+    },
+    ("2-under-1-roof", "1965-1974", "scenario2", "pre_calibration"): {
+        "ventilation_system": "Fully natural ventilation",
+        "ventilation_provision": "A1 standard",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "\"Forfaitair\" (default)"
+    },
+    ("2-under-1-roof", "1965-1974", "scenario3", "pre_calibration"): {
+        "ventilation_system": "Natural supply, mechanical exhaust",
+        "ventilation_provision": "C5a (pressure supply, CO₂ exhaust, zoning)",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "0.7 dm³/s·m²"
+    },
+    ("2-under-1-roof", "1965-1974", "scenario4", "pre_calibration"): {
+        "ventilation_system": "Natural supply, mechanical exhaust",
+        "ventilation_provision": "C5a (pressure supply, CO₂ exhaust, zoning)",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "0.7 dm³/s·m²"
+    },
+    ("2-under-1-roof", "1965-1974", "scenario5", "pre_calibration"): {
+        "ventilation_system": "Fully mechanical (balanced)",
+        "ventilation_provision": "Central heat recovery (WTW), CO₂ multi-zone",
+        "heat_recovery": "With heat recovery",
+        "air_tightness_qv10": "0.4 dm³/s·m²"
+    }
+}
+
+4. Space Heating Data
+
+space_heating_data = {
+    ("2-under-1-roof", "1965-1974", "scenario1", "pre_calibration"): {
+        "main_heating": "Boiler CR",
+        "system_type": "Individual",
+        "heating_appliance": "Gas boiler",
+        "boiler_air_heating": "CR-boiler",
+        "emission_system": "Radiators",
+        "temperature_regime": "90/70 °C"
+    },
+    ("2-under-1-roof", "1965-1974", "scenario2", "pre_calibration"): {
+        "main_heating": "Boiler HR107",
+        "system_type": "Individual",
+        "heating_appliance": "Gas boiler",
+        "boiler_air_heating": "HR107-boiler",
+        "emission_system": "Radiators",
+        "temperature_regime": "90/70 °C"
+    },
+    ("2-under-1-roof", "1965-1974", "scenario3", "pre_calibration"): {
+        "main_heating": "Boiler HR107",
+        "system_type": "Individual",
+        "heating_appliance": "Gas boiler",
+        "boiler_air_heating": "HR107-boiler",
+        "emission_system": "Radiators",
+        "temperature_regime": "55/47 °C"
+    },
+    ("2-under-1-roof", "1965-1974", "scenario4", "pre_calibration"): {
+        "main_heating": "Electric heat pump",
+        "system_type": "Individual",
+        "heating_appliance": "Electric heat pump",
+        "boiler_air_heating": "(Not applicable)",
+        "emission_system": "Radiators",
+        "temperature_regime": "55/47 °C"
+    },
+    ("2-under-1-roof", "1965-1974", "scenario5", "pre_calibration"): {
+        "main_heating": "Electric heat pump",
+        "system_type": "Individual",
+        "heating_appliance": "Electric heat pump",
+        "boiler_air_heating": "(Not applicable)",
+        "emission_system": "Radiators",
+        "temperature_regime": "55/47 °C"
+    }
+}
+
+5. Domestic Hot Water Data
+
+domestic_hot_water_data = {
+    ("2-under-1-roof", "1965-1974", "scenario1", "pre_calibration"): {
+        "dhw_system": "Individual gas combi boiler with gas label",
+        "installation_type": "Individual",
+        "specific_appliance": "Gas combi boiler (gaskeur)",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "1965-1974", "scenario2", "pre_calibration"): {
+        "dhw_system": "Individual gas combi boiler with gas label HR/CW",
+        "installation_type": "Individual",
+        "specific_appliance": "Gas combi boiler (gaskeur) HR/CW",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "1965-1974", "scenario3", "pre_calibration"): {
+        "dhw_system": "Individual gas combi boiler with gas label HR/CW",
+        "installation_type": "Individual",
+        "specific_appliance": "Gas combi boiler (gaskeur) HR/CW",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "1965-1974", "scenario4", "pre_calibration"): {
+        "dhw_system": "Individual heat pump (combi)",
+        "installation_type": "Individual",
+        "specific_appliance": "Combi heat pump",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "1965-1974", "scenario5", "pre_calibration"): {
+        "dhw_system": "Individual heat pump (combi)",
+        "installation_type": "Individual",
+        "specific_appliance": "Combi heat pump",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    }
+}
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("2-under-1-roof", "1965-1974", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.77,
+        "heat_demand_Q_H_nd_kWh_m2": 204.90
+    },
+    ("2-under-1-roof", "1965-1974", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.82,
+        "standard_value_kWh_m2": 75.77,
+        "heat_demand_Q_H_nd_kWh_m2": 183.50
+    },
+    
+
+# 1975 - 1991
+
+1. Characteristic Data
+
+characteristic_data = {
+    ("2-under-1-roof", "1975-1991", "pre_calibration"): {
+        "usable_floor_area_m2": 129.80,
+        "number_of_floors_within_dwelling": 3,
+        "number_of_floors_entire_building": 3,
+        "number_of_units_entire_building": 1,
+        "building_type": "Single-family with roof",
+        "type_of_unit_variant": "Corner",
+        "building_height_m": 9.00,
+        "ground_floor_boundary": "Crawl space"
+    }
+}
+
+2. Building Envelope Data
+
+building_envelop_data = {
+    ("2-under-1-roof", "1975-1991", "scenario1", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 61.40,
+            "R_value_range": (0.52, 0.52),
+            "U_value_range": (1.28, 1.28)
+        },
+        "solid_wall": {
+            "area_m2": 94.22,
+            "R_value_range": (1.30, 1.30),
+            "U_value_range": (0.68, 0.68)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 79.20,
+            "R_value_range": (1.30, 1.30),
+            "U_value_range": (0.68, 0.68)
+        },
+        "windows": {
+            "area_m2": 24.23,
+            "U_value_range": (4.00, 4.00)
+        },
+        "doors": {
+            "area_m2": 6.51,
+            "U_value_range": (3.40, 3.40)
+        }
+    },
+    ("2-under-1-roof", "1975-1991", "scenario2", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 61.40,
+            "R_value_range": (1.30, 1.30),
+            "U_value_range": (0.64, 0.64)
+        },
+        "solid_wall": {
+            "area_m2": 94.22,
+            "R_value_range": (1.30, 1.30),
+            "U_value_range": (0.68, 0.68)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 79.20,
+            "R_value_range": (1.30, 1.30),
+            "U_value_range": (0.68, 0.68)
+        },
+        "windows": {
+            "area_m2": 24.23,
+            "U_value_range": (2.90, 2.90)
+        },
+        "doors": {
+            "area_m2": 6.51,
+            "U_value_range": (3.40, 3.40)
+        }
+    },
+    ("2-under-1-roof", "1975-1991", "scenario3", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 61.40,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "solid_wall": {
+            "area_m2": 94.22,
+            "R_value_range": (1.70, 1.70),
+            "U_value_range": (0.53, 0.53)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 79.20,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "windows": {
+            "area_m2": 24.23,
+            "U_value_range": (1.40, 1.40)
+        },
+        "doors": {
+            "area_m2": 6.51,
+            "U_value_range": (1.40, 1.40)
+        }
+    },
+    ("2-under-1-roof", "1975-1991", "scenario4", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 61.40,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "solid_wall": {
+            "area_m2": 94.22,
+            "R_value_range": (1.70, 1.70),
+            "U_value_range": (0.53, 0.53)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 79.20,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "windows": {
+            "area_m2": 24.23,
+            "U_value_range": (1.40, 1.40)
+        },
+        "doors": {
+            "area_m2": 6.51,
+            "U_value_range": (1.40, 1.40)
+        }
+    },
+    ("2-under-1-roof", "1975-1991", "scenario5", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 61.40,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "solid_wall": {
+            "area_m2": 94.22,
+            "R_value_range": (1.70, 1.70),
+            "U_value_range": (0.53, 0.53)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 79.20,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "windows": {
+            "area_m2": 24.23,
+            "U_value_range": (1.40, 1.40)
+        },
+        "doors": {
+            "area_m2": 6.51,
+            "U_value_range": (1.40, 1.40)
+        }
+    }
+}
+
+3. Ventilation Data
+
+ventilation_data = {
+    ("2-under-1-roof", "1975-1991", "scenario1", "pre_calibration"): {
+        "ventilation_system": "Fully natural ventilation",
+        "ventilation_provision": "A1 standard",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "\"Forfaitair\" (default)"
+    },
+    ("2-under-1-roof", "1975-1991", "scenario2", "pre_calibration"): {
+        "ventilation_system": "Fully natural ventilation",
+        "ventilation_provision": "A1 standard",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "\"Forfaitair\" (default)"
+    },
+    ("2-under-1-roof", "1975-1991", "scenario3", "pre_calibration"): {
+        "ventilation_system": "Natural supply, mechanical exhaust",
+        "ventilation_provision": "C5a (pressure supply, CO₂ exhaust, zoning)",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "0.7 dm³/s·m²"
+    },
+    ("2-under-1-roof", "1975-1991", "scenario4", "pre_calibration"): {
+        "ventilation_system": "Natural supply, mechanical exhaust",
+        "ventilation_provision": "C5a (pressure supply, CO₂ exhaust, zoning)",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "0.7 dm³/s·m²"
+    },
+    ("2-under-1-roof", "1975-1991", "scenario5", "pre_calibration"): {
+        "ventilation_system": "Fully mechanical (balanced)",
+        "ventilation_provision": "Central heat recovery (WTW), CO₂ multi-zone",
+        "heat_recovery": "With heat recovery",
+        "air_tightness_qv10": "0.4 dm³/s·m²"
+    }
+}
+
+4. Space Heating Data
+
+space_heating_data = {
+    ("2-under-1-roof", "1975-1991", "scenario1", "pre_calibration"): {
+        "main_heating": "Boiler VR-boiler",
+        "system_type": "Individual",
+        "heating_appliance": "Boiler",
+        "boiler_air_heating": "VR-boiler",
+        "emission_system": "Radiators",
+        "temperature_regime": "90/70 °C"
+    },
+    ("2-under-1-roof", "1975-1991", "scenario2", "pre_calibration"): {
+        "main_heating": "Boiler HR107",
+        "system_type": "Individual",
+        "heating_appliance": "Boiler",
+        "boiler_air_heating": "HR107-boiler",
+        "emission_system": "Radiators",
+        "temperature_regime": "90/70 °C"
+    },
+    ("2-under-1-roof", "1975-1991", "scenario3", "pre_calibration"): {
+        "main_heating": "Boiler HR107",
+        "system_type": "Individual",
+        "heating_appliance": "Boiler",
+        "boiler_air_heating": "HR107-boiler",
+        "emission_system": "Radiators",
+        "temperature_regime": "55/47 °C"
+    },
+    ("2-under-1-roof", "1975-1991", "scenario4", "pre_calibration"): {
+        "main_heating": "Electric heat pump",
+        "system_type": "Individual",
+        "heating_appliance": "Electric heat pump",
+        "boiler_air_heating": "(Not applicable)",
+        "emission_system": "Radiators",
+        "temperature_regime": "55/47 °C"
+    },
+    ("2-under-1-roof", "1975-1991", "scenario5", "pre_calibration"): {
+        "main_heating": "Electric heat pump",
+        "system_type": "Individual",
+        "heating_appliance": "Electric heat pump",
+        "boiler_air_heating": "(Not applicable)",
+        "emission_system": "Radiators",
+        "temperature_regime": "55/47 °C"
+    }
+}
+
+5. Domestic Hot Water Data
+
+domestic_hot_water_data = {
+    ("2-under-1-roof", "1975-1991", "scenario1", "pre_calibration"): {
+        "dhw_system": "Individual gas combi boiler with gas label",
+        "installation_type": "Individual",
+        "specific_appliance": "Gas combi boiler (gaskeur)",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "1975-1991", "scenario2", "pre_calibration"): {
+        "dhw_system": "Individual gas combi boiler with gas label HR/CW",
+        "installation_type": "Individual",
+        "specific_appliance": "Gas combi boiler (gaskeur) HR/CW",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "1975-1991", "scenario3", "pre_calibration"): {
+        "dhw_system": "Individual gas combi boiler with gas label HR/CW",
+        "installation_type": "Individual",
+        "specific_appliance": "Gas combi boiler (gaskeur) HR/CW",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "1975-1991", "scenario4", "pre_calibration"): {
+        "dhw_system": "Individual heat pump (combi)",
+        "installation_type": "Individual",
+        "specific_appliance": "Combi heat pump",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "1975-1991", "scenario5", "pre_calibration"): {
+        "dhw_system": "Individual heat pump (combi)",
+        "installation_type": "Individual",
+        "specific_appliance": "Combi heat pump",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    }
+}
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("2-under-1-roof", "1975-1991", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.90,
+        "standard_value_kWh_m2": 79.16,
+        "heat_demand_Q_H_nd_kWh_m2": 150.49
+    },
+    ("2-under-1-roof", "1975-1991", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.90,
+        "standard_value_kWh_m2": 79.16,
+        "heat_demand_Q_H_nd_kWh_m2": 139.06
+    },
+    ("2-under-1-roof", "1975-1991", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.90,
+        "standard_value_kWh_m2": 79.16,
+        "heat_demand_Q_H_nd_kWh_m2": 68.13
+    },
+    ("2-under-1-roof", "1975-1991", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.90,
+        "standard_value_kWh_m2": 79.16,
+        "heat_demand_Q_H_nd_kWh_m2": 68.13
+    },
+    ("2-under-1-roof", "1975-1991", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.90,
+        "standard_value_kWh_m2": 79.16,
+        "heat_demand_Q_H_nd_kWh_m2": 51.35
+    }
+}
+
+
+
+# 1992 - 2005
+
+1. Characteristic Data
+
+characteristic_data = {
+    ("2-under-1-roof", "1992-2005", "pre_calibration"): {
+        "usable_floor_area_m2": 143.90,
+        "number_of_floors_within_dwelling": 3,
+        "number_of_floors_entire_building": 3,
+        "number_of_units_entire_building": 1,
+        "building_type": "Single-family with roof",
+        "type_of_unit_variant": "Corner",
+        "building_height_m": 9.00,
+        "ground_floor_boundary": "Crawl space"
+    }
+}
+
+2. Building Envelope Data
+
+building_envelop_data = {
+    ("2-under-1-roof", "1992-2005", "scenario1", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 68.95,
+            "R_value_range": (2.50, 2.50),
+            "U_value_range": (0.36, 0.36)
+        },
+        "solid_wall": {
+            "area_m2": 103.30,
+            "R_value_range": (1.30, 1.30),
+            "U_value_range": (0.68, 0.68)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 84.14,
+            "R_value_range": (2.50, 2.50),
+            "U_value_range": (0.37, 0.37)
+        },
+        "windows": {
+            "area_m2": 27.22,
+            "U_value_range": (2.90, 2.90)
+        },
+        "doors": {
+            "area_m2": 6.93,
+            "U_value_range": (3.40, 3.40)
+        }
+    },
+    ("2-under-1-roof", "1992-2005", "scenario2", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 68.95,
+            "R_value_range": (2.50, 2.50),
+            "U_value_range": (0.36, 0.36)
+        },
+        "solid_wall": {
+            "area_m2": 103.30,
+            "R_value_range": (1.30, 1.30),
+            "U_value_range": (0.68, 0.68)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 84.14,
+            "R_value_range": (2.50, 2.50),
+            "U_value_range": (0.37, 0.37)
+        },
+        "windows": {
+            "area_m2": 27.22,
+            "U_value_range": (2.90, 2.90)
+        },
+        "doors": {
+            "area_m2": 6.93,
+            "U_value_range": (3.40, 3.40)
+        }
+    },
+    ("2-under-1-roof", "1992-2005", "scenario3", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 68.95,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "solid_wall": {
+            "area_m2": 103.30,
+            "R_value_range": (1.70, 1.70),
+            "U_value_range": (0.53, 0.53)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 84.14,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "windows": {
+            "area_m2": 27.22,
+            "U_value_range": (1.40, 1.40)
+        },
+        "doors": {
+            "area_m2": 6.93,
+            "U_value_range": (1.40, 1.40)
+        }
+    },
+    ("2-under-1-roof", "1992-2005", "scenario4", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 68.95,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "solid_wall": {
+            "area_m2": 103.30,
+            "R_value_range": (1.70, 1.70),
+            "U_value_range": (0.53, 0.53)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 84.14,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "windows": {
+            "area_m2": 27.22,
+            "U_value_range": (1.40, 1.40)
+        },
+        "doors": {
+            "area_m2": 6.93,
+            "U_value_range": (1.40, 1.40)
+        }
+    },
+    ("2-under-1-roof", "1992-2005", "scenario5", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 68.95,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "solid_wall": {
+            "area_m2": 103.30,
+            "R_value_range": (1.70, 1.70),
+            "U_value_range": (0.53, 0.53)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 84.14,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "windows": {
+            "area_m2": 27.22,
+            "U_value_range": (1.40, 1.40)
+        },
+        "doors": {
+            "area_m2": 6.93,
+            "U_value_range": (1.40, 1.40)
+        }
+    }
+}
+
+3. Ventilation Data
+
+ventilation_data = {
+    ("2-under-1-roof", "1992-2005", "scenario1", "pre_calibration"): {
+        "ventilation_system": "Natural supply, mechanical exhaust",
+        "ventilation_provision": "C1 standard",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "\"Forfaitair\" (default)"
+    },
+    ("2-under-1-roof", "1992-2005", "scenario2", "pre_calibration"): {
+        "ventilation_system": "Natural supply, mechanical exhaust",
+        "ventilation_provision": "C1 standard",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "\"Forfaitair\" (default)"
+    },
+    ("2-under-1-roof", "1992-2005", "scenario3", "pre_calibration"): {
+        "ventilation_system": "Natural supply, mechanical exhaust",
+        "ventilation_provision": "C5a (pressure supply, CO₂ exhaust, zoning)",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "0.7 dm³/s·m²"
+    },
+    ("2-under-1-roof", "1992-2005", "scenario4", "pre_calibration"): {
+        "ventilation_system": "Natural supply, mechanical exhaust",
+        "ventilation_provision": "C5a (pressure supply, CO₂ exhaust, zoning)",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "0.7 dm³/s·m²"
+    },
+    ("2-under-1-roof", "1992-2005", "scenario5", "pre_calibration"): {
+        "ventilation_system": "Fully mechanical (balanced)",
+        "ventilation_provision": "Central heat recovery (WTW), CO₂ multi-zone",
+        "heat_recovery": "With heat recovery",
+        "air_tightness_qv10": "0.4 dm³/s·m²"
+    }
+}
+
+4. Space Heating Data
+
+space_heating_data = {
+    ("2-under-1-roof", "1992-2005", "scenario1", "pre_calibration"): {
+        "main_heating": "Boiler HR100-boiler",
+        "system_type": "Individual",
+        "heating_appliance": "Boiler",
+        "boiler_air_heating": "HR100-boiler",
+        "emission_system": "Radiators",
+        "temperature_regime": "90/70 °C"
+    },
+    ("2-under-1-roof", "1992-2005", "scenario2", "pre_calibration"): {
+        "main_heating": "Boiler HR107",
+        "system_type": "Individual",
+        "heating_appliance": "Boiler",
+        "boiler_air_heating": "HR107-boiler",
+        "emission_system": "Radiators",
+        "temperature_regime": "90/70 °C"
+    },
+    ("2-under-1-roof", "1992-2005", "scenario3", "pre_calibration"): {
+        "main_heating": "Boiler HR107",
+        "system_type": "Individual",
+        "heating_appliance": "Boiler",
+        "boiler_air_heating": "HR107-boiler",
+        "emission_system": "Radiators",
+        "temperature_regime": "55/47 °C"
+    },
+    ("2-under-1-roof", "1992-2005", "scenario4", "pre_calibration"): {
+        "main_heating": "Electric heat pump",
+        "system_type": "Individual",
+        "heating_appliance": "Electric heat pump",
+        "boiler_air_heating": "(Not applicable)",
+        "emission_system": "Radiators",
+        "temperature_regime": "55/47 °C"
+    },
+    ("2-under-1-roof", "1992-2005", "scenario5", "pre_calibration"): {
+        "main_heating": "Electric heat pump",
+        "system_type": "Individual",
+        "heating_appliance": "Electric heat pump",
+        "boiler_air_heating": "(Not applicable)",
+        "emission_system": "Radiators",
+        "temperature_regime": "55/47 °C"
+    }
+}
+
+5. Domestic Hot Water Data
+
+domestic_hot_water_data = {
+    ("2-under-1-roof", "1992-2005", "scenario1", "pre_calibration"): {
+        "dhw_system": "Individual gas combi boiler with gas label HR/CW",
+        "installation_type": "Individual",
+        "specific_appliance": "Gas combi boiler (gaskeur HR/CW)",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "1992-2005", "scenario2", "pre_calibration"): {
+        "dhw_system": "Individual gas combi boiler with gas label HR/CW",
+        "installation_type": "Individual",
+        "specific_appliance": "Gas combi boiler (gaskeur HR/CW)",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "1992-2005", "scenario3", "pre_calibration"): {
+        "dhw_system": "Individual gas combi boiler with gas label HR/CW",
+        "installation_type": "Individual",
+        "specific_appliance": "Gas combi boiler (gaskeur HR/CW)",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "1992-2005", "scenario4", "pre_calibration"): {
+        "dhw_system": "Individual combi heat pump",
+        "installation_type": "Individual",
+        "specific_appliance": "Combi heat pump",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "1992-2005", "scenario5", "pre_calibration"): {
+        "dhw_system": "Individual combi heat pump",
+        "installation_type": "Individual",
+        "specific_appliance": "Combi heat pump",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    }
+}
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("2-under-1-roof", "1992-2005", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.88,
+        "standard_value_kWh_m2": 78.01,
+        "heat_demand_Q_H_nd_kWh_m2": 107.98
+    },
+    ("2-under-1-roof", "1992-2005", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.88,
+        "standard_value_kWh_m2": 78.01,
+        "heat_demand_Q_H_nd_kWh_m2": 107.98
+    },
+    ("2-under-1-roof", "1992-2005", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.88,
+        "standard_value_kWh_m2": 78.01,
+        "heat_demand_Q_H_nd_kWh_m2": 62.32
+    },
+    ("2-under-1-roof", "1992-2005", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.88,
+        "standard_value_kWh_m2": 78.01,
+        "heat_demand_Q_H_nd_kWh_m2": 62.32
+    },
+    ("2-under-1-roof", "1992-2005", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.88,
+        "standard_value_kWh_m2": 78.01,
+        "heat_demand_Q_H_nd_kWh_m2": 46.40
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 2006 - 2014    
+
+
+1. Characteristic Data
+
+characteristic_data = {
+    ("2-under-1-roof", "2006-2014", "pre_calibration"): {
+        "usable_floor_area_m2": 152.35,
+        "number_of_floors_within_dwelling": 3,
+        "number_of_floors_entire_building": 3,
+        "number_of_units_entire_building": 1,
+        "building_type": "Single-family with roof",
+        "type_of_unit_variant": "Corner",
+        "building_height_m": 9.00,
+        "ground_floor_boundary": "Crawl space"
+    }
+}
+
+2. Building Envelope Data
+
+building_envelop_data = {
+    ("2-under-1-roof", "2006-2014", "scenario1", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 68.08,
+            "R_value_range": (2.50, 2.50),
+            "U_value_range": (0.36, 0.36)
+        },
+        "solid_wall": {
+            "area_m2": 109.66,
+            "R_value_range": (2.50, 2.50),
+            "U_value_range": (0.37, 0.37)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 84.30,
+            "R_value_range": (2.50, 2.50),
+            "U_value_range": (0.37, 0.37)
+        },
+        "windows": {
+            "area_m2": 28.26,
+            "U_value_range": (2.00, 2.00)
+        },
+        "doors": {
+            "area_m2": 8.36,
+            "U_value_range": (3.40, 3.40)
+        }
+    },
+    ("2-under-1-roof", "2006-2014", "scenario2", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 68.08,
+            "R_value_range": (2.50, 2.50),
+            "U_value_range": (0.36, 0.36)
+        },
+        "solid_wall": {
+            "area_m2": 109.66,
+            "R_value_range": (2.50, 2.50),
+            "U_value_range": (0.37, 0.37)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 84.30,
+            "R_value_range": (2.50, 2.50),
+            "U_value_range": (0.37, 0.37)
+        },
+        "windows": {
+            "area_m2": 28.26,
+            "U_value_range": (1.80, 1.80)
+        },
+        "doors": {
+            "area_m2": 8.36,
+            "U_value_range": (3.40, 3.40)
+        }
+    },
+    ("2-under-1-roof", "2006-2014", "scenario3", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 68.08,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "solid_wall": {
+            "area_m2": 109.66,
+            "R_value_range": (2.50, 2.50),
+            "U_value_range": (0.37, 0.37)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 84.30,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "windows": {
+            "area_m2": 28.26,
+            "U_value_range": (1.40, 1.40)
+        },
+        "doors": {
+            "area_m2": 8.36,
+            "U_value_range": (1.40, 1.40)
+        }
+    },
+    ("2-under-1-roof", "2006-2014", "scenario4", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 68.08,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "solid_wall": {
+            "area_m2": 109.66,
+            "R_value_range": (2.50, 2.50),
+            "U_value_range": (0.37, 0.37)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 84.30,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "windows": {
+            "area_m2": 28.26,
+            "U_value_range": (1.40, 1.40)
+        },
+        "doors": {
+            "area_m2": 8.36,
+            "U_value_range": (1.40, 1.40)
+        }
+    },
+    ("2-under-1-roof", "2006-2014", "scenario5", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 68.08,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "solid_wall": {
+            "area_m2": 109.66,
+            "R_value_range": (2.50, 2.50),
+            "U_value_range": (0.37, 0.37)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 84.30,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "windows": {
+            "area_m2": 28.26,
+            "U_value_range": (1.40, 1.40)
+        },
+        "doors": {
+            "area_m2": 8.36,
+            "U_value_range": (1.40, 1.40)
+        }
+    }
+}
+
+3. Ventilation Data
+
+ventilation_data = {
+    ("2-under-1-roof", "2006-2014", "scenario1", "pre_calibration"): {
+        "ventilation_system": "Natural supply, mechanical exhaust",
+        "ventilation_provision": "C1 standard",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "\"Forfaitair\" (default)"
+    },
+    ("2-under-1-roof", "2006-2014", "scenario2", "pre_calibration"): {
+        "ventilation_system": "Natural supply, mechanical exhaust",
+        "ventilation_provision": "C1 standard",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "\"Forfaitair\" (default)"
+    },
+    ("2-under-1-roof", "2006-2014", "scenario3", "pre_calibration"): {
+        "ventilation_system": "Natural supply, mechanical exhaust",
+        "ventilation_provision": "C5a (pressure supply, CO₂ exhaust, zoning)",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "0.7 dm³/s·m²"
+    },
+    ("2-under-1-roof", "2006-2014", "scenario4", "pre_calibration"): {
+        "ventilation_system": "Natural supply, mechanical exhaust",
+        "ventilation_provision": "C5a (pressure supply, CO₂ exhaust, zoning)",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "0.7 dm³/s·m²"
+    },
+    ("2-under-1-roof", "2006-2014", "scenario5", "pre_calibration"): {
+        "ventilation_system": "Fully mechanical (balanced)",
+        "ventilation_provision": "Central heat recovery (WTW), CO₂ multi-zone",
+        "heat_recovery": "With heat recovery",
+        "air_tightness_qv10": "0.4 dm³/s·m²"
+    }
+}
+
+4. Space Heating Data
+
+space_heating_data = {
+    ("2-under-1-roof", "2006-2014", "scenario1", "pre_calibration"): {
+        "main_heating": "Boiler HR107-boiler",
+        "system_type": "Individual",
+        "heating_appliance": "Boiler",
+        "boiler_air_heating": "HR107-boiler",
+        "emission_system": "Radiators",
+        "temperature_regime": "90/70 °C"
+    },
+    ("2-under-1-roof", "2006-2014", "scenario2", "pre_calibration"): {
+        "main_heating": "Boiler HR107",
+        "system_type": "Individual",
+        "heating_appliance": "Boiler",
+        "boiler_air_heating": "HR107-boiler",
+        "emission_system": "Radiators",
+        "temperature_regime": "90/70 °C"
+    },
+    ("2-under-1-roof", "2006-2014", "scenario3", "pre_calibration"): {
+        "main_heating": "Boiler HR107",
+        "system_type": "Individual",
+        "heating_appliance": "Boiler",
+        "boiler_air_heating": "HR107-boiler",
+        "emission_system": "Radiators",
+        "temperature_regime": "55/47 °C"
+    },
+    ("2-under-1-roof", "2006-2014", "scenario4", "pre_calibration"): {
+        "main_heating": "Electric heat pump",
+        "system_type": "Individual",
+        "heating_appliance": "Electric heat pump",
+        "boiler_air_heating": "(Not applicable)",
+        "emission_system": "Radiators",
+        "temperature_regime": "55/47 °C"
+    },
+    ("2-under-1-roof", "2006-2014", "scenario5", "pre_calibration"): {
+        "main_heating": "Electric heat pump",
+        "system_type": "Individual",
+        "heating_appliance": "Electric heat pump",
+        "boiler_air_heating": "(Not applicable)",
+        "emission_system": "Radiators",
+        "temperature_regime": "55/47 °C"
+    }
+}
+
+5. Domestic Hot Water Data
+
+domestic_hot_water_data = {
+    ("2-under-1-roof", "2006-2014", "scenario1", "pre_calibration"): {
+        "dhw_system": "Individual gas combi boiler with gas label HR/CW",
+        "installation_type": "Individual",
+        "specific_appliance": "Gas combi boiler (gaskeur HR/CW)",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "2006-2014", "scenario2", "pre_calibration"): {
+        "dhw_system": "Individual gas combi boiler with gas label HR/CW",
+        "installation_type": "Individual",
+        "specific_appliance": "Gas combi boiler (gaskeur HR/CW)",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "2006-2014", "scenario3", "pre_calibration"): {
+        "dhw_system": "Individual gas combi boiler with gas label HR/CW",
+        "installation_type": "Individual",
+        "specific_appliance": "Gas combi boiler (gaskeur HR/CW)",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "2006-2014", "scenario4", "pre_calibration"): {
+        "dhw_system": "Individual combi heat pump",
+        "installation_type": "Individual",
+        "specific_appliance": "Combi heat pump",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "2006-2014", "scenario5", "pre_calibration"): {
+        "dhw_system": "Individual combi heat pump",
+        "installation_type": "Individual",
+        "specific_appliance": "Combi heat pump",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    }
+}
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("2-under-1-roof", "2006-2014", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.83,
+        "standard_value_kWh_m2": 76.05,
+        "heat_demand_Q_H_nd_kWh_m2": 96.38
+    },
+    ("2-under-1-roof", "2006-2014", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.83,
+        "standard_value_kWh_m2": 76.05,
+        "heat_demand_Q_H_nd_kWh_m2": 94.34
+    },
+    ("2-under-1-roof", "2006-2014", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.83,
+        "standard_value_kWh_m2": 76.05,
+        "heat_demand_Q_H_nd_kWh_m2": 62.28
+    },
+    ("2-under-1-roof", "2006-2014", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.83,
+        "standard_value_kWh_m2": 76.05,
+        "heat_demand_Q_H_nd_kWh_m2": 62.28
+    },
+    ("2-under-1-roof", "2006-2014", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.83,
+        "standard_value_kWh_m2": 76.05,
+        "heat_demand_Q_H_nd_kWh_m2": 46.32
+    }
+}
+
+# 2015 - 2018 
+
+
+1. Characteristic Data
+
+characteristic_data = {
+    ("2-under-1-roof", "2015-2018", "pre_calibration"): {
+        "usable_floor_area_m2": 159.89,
+        "number_of_floors_within_dwelling": 3,
+        "number_of_floors_entire_building": 3,
+        "number_of_units_entire_building": 1,
+        "building_type": "Single-family with roof",
+        "type_of_unit_variant": "Corner",
+        "building_height_m": 9.00,
+        "ground_floor_boundary": "Crawl space"
+    }
+}
+
+2. Building Envelope Data
+
+building_envelop_data = {
+    ("2-under-1-roof", "2015-2018", "scenario1", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 66.06,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "solid_wall": {
+            "area_m2": 93.94,
+            "R_value_range": (4.50, 4.50),
+            "U_value_range": (0.21, 0.21)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 75.85,
+            "R_value_range": (6.00, 6.00),
+            "U_value_range": (0.16, 0.16)
+        },
+        "windows": {
+            "area_m2": 21.34,
+            "U_value_range": (1.80, 1.80)
+        },
+        "doors": {
+            "area_m2": 7.23,
+            "U_value_range": (3.40, 3.40)
+        }
+    },
+    ("2-under-1-roof", "2015-2018", "scenario2", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 66.06,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "solid_wall": {
+            "area_m2": 93.94,
+            "R_value_range": (4.50, 4.50),
+            "U_value_range": (0.21, 0.21)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 75.85,
+            "R_value_range": (6.00, 6.00),
+            "U_value_range": (0.16, 0.16)
+        },
+        "windows": {
+            "area_m2": 21.34,
+            "U_value_range": (1.80, 1.80)
+        },
+        "doors": {
+            "area_m2": 7.23,
+            "U_value_range": (2.00, 2.00)
+        }
+    },
+    ("2-under-1-roof", "2015-2018", "scenario3", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 66.06,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "solid_wall": {
+            "area_m2": 93.94,
+            "R_value_range": (4.50, 4.50),
+            "U_value_range": (0.21, 0.21)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 75.85,
+            "R_value_range": (6.00, 6.00),
+            "U_value_range": (0.16, 0.16)
+        },
+        "windows": {
+            "area_m2": 21.34,
+            "U_value_range": (1.40, 1.40)
+        },
+        "doors": {
+            "area_m2": 7.23,
+            "U_value_range": (1.40, 1.40)
+        }
+    },
+    ("2-under-1-roof", "2015-2018", "scenario4", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 66.06,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "solid_wall": {
+            "area_m2": 93.94,
+            "R_value_range": (4.50, 4.50),
+            "U_value_range": (0.21, 0.21)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 75.85,
+            "R_value_range": (6.00, 6.00),
+            "U_value_range": (0.16, 0.16)
+        },
+        "windows": {
+            "area_m2": 21.34,
+            "U_value_range": (1.40, 1.40)
+        },
+        "doors": {
+            "area_m2": 7.23,
+            "U_value_range": (1.40, 1.40)
+        }
+    },
+    ("2-under-1-roof", "2015-2018", "scenario5", "pre_calibration"): {
+        "ground_floor": {
+            "area_m2": 66.06,
+            "R_value_range": (3.50, 3.50),
+            "U_value_range": (0.27, 0.27)
+        },
+        "solid_wall": {
+            "area_m2": 93.94,
+            "R_value_range": (4.50, 4.50),
+            "U_value_range": (0.21, 0.21)
+        },
+        "sloping_flat_roof": {
+            "area_m2": 75.85,
+            "R_value_range": (6.00, 6.00),
+            "U_value_range": (0.16, 0.16)
+        },
+        "windows": {
+            "area_m2": 21.34,
+            "U_value_range": (1.40, 1.40)
+        },
+        "doors": {
+            "area_m2": 7.23,
+            "U_value_range": (1.40, 1.40)
+        }
+    }
+}
+
+3. Ventilation Data
+
+ventilation_data = {
+    ("2-under-1-roof", "2015-2018", "scenario1", "pre_calibration"): {
+        "ventilation_system": "Natural supply, mechanical exhaust",
+        "ventilation_provision": "C1 standard",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "\"Forfaitair\" (default)"
+    },
+    ("2-under-1-roof", "2015-2018", "scenario2", "pre_calibration"): {
+        "ventilation_system": "Natural supply, mechanical exhaust",
+        "ventilation_provision": "C1 standard",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "\"Forfaitair\" (default)"
+    },
+    ("2-under-1-roof", "2015-2018", "scenario3", "pre_calibration"): {
+        "ventilation_system": "Natural supply, mechanical exhaust",
+        "ventilation_provision": "C5a (pressure supply, CO₂ exhaust, zoning)",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "0.7 dm³/s·m²"
+    },
+    ("2-under-1-roof", "2015-2018", "scenario4", "pre_calibration"): {
+        "ventilation_system": "Natural supply, mechanical exhaust",
+        "ventilation_provision": "C5a (pressure supply, CO₂ exhaust, zoning)",
+        "heat_recovery": "None",
+        "air_tightness_qv10": "0.7 dm³/s·m²"
+    },
+    ("2-under-1-roof", "2015-2018", "scenario5", "pre_calibration"): {
+        "ventilation_system": "Fully mechanical (balanced)",
+        "ventilation_provision": "Central heat recovery (WTW), CO₂ multi-zone",
+        "heat_recovery": "With heat recovery",
+        "air_tightness_qv10": "0.4 dm³/s·m²"
+    }
+}
+
+4. Space Heating Data
+
+space_heating_data = {
+    ("2-under-1-roof", "2015-2018", "scenario1", "pre_calibration"): {
+        "main_heating": "Boiler HR107-boiler",
+        "system_type": "Individual",
+        "heating_appliance": "Boiler",
+        "boiler_air_heating": "HR107-boiler",
+        "emission_system": "Radiators",
+        "temperature_regime": "90/70 °C"
+    },
+    ("2-under-1-roof", "2015-2018", "scenario2", "pre_calibration"): {
+        "main_heating": "Boiler HR107",
+        "system_type": "Individual",
+        "heating_appliance": "Boiler",
+        "boiler_air_heating": "HR107-boiler",
+        "emission_system": "Radiators",
+        "temperature_regime": "90/70 °C"
+    },
+    ("2-under-1-roof", "2015-2018", "scenario3", "pre_calibration"): {
+        "main_heating": "Boiler HR107",
+        "system_type": "Individual",
+        "heating_appliance": "Boiler",
+        "boiler_air_heating": "HR107-boiler",
+        "emission_system": "Radiators",
+        "temperature_regime": "55/47 °C"
+    },
+    ("2-under-1-roof", "2015-2018", "scenario4", "pre_calibration"): {
+        "main_heating": "Electric heat pump",
+        "system_type": "Individual",
+        "heating_appliance": "Electric heat pump",
+        "boiler_air_heating": "(Not applicable)",
+        "emission_system": "Radiators",
+        "temperature_regime": "55/47 °C"
+    },
+    ("2-under-1-roof", "2015-2018", "scenario5", "pre_calibration"): {
+        "main_heating": "Electric heat pump",
+        "system_type": "Individual",
+        "heating_appliance": "Electric heat pump",
+        "boiler_air_heating": "(Not applicable)",
+        "emission_system": "Radiators",
+        "temperature_regime": "55/47 °C"
+    }
+}
+
+5. Domestic Hot Water Data
+
+domestic_hot_water_data = {
+    ("2-under-1-roof", "2015-2018", "scenario1", "pre_calibration"): {
+        "dhw_system": "Individual gas combi boiler with gas label HR/CW",
+        "installation_type": "Individual",
+        "specific_appliance": "Gas combi boiler (gaskeur HR/CW)",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "2015-2018", "scenario2", "pre_calibration"): {
+        "dhw_system": "Individual gas combi boiler with gas label HR/CW",
+        "installation_type": "Individual",
+        "specific_appliance": "Gas combi boiler (gaskeur HR/CW)",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "2015-2018", "scenario3", "pre_calibration"): {
+        "dhw_system": "Individual gas combi boiler with gas label HR/CW",
+        "installation_type": "Individual",
+        "specific_appliance": "Gas combi boiler (gaskeur HR/CW)",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "2015-2018", "scenario4", "pre_calibration"): {
+        "dhw_system": "Individual combi heat pump",
+        "installation_type": "Individual",
+        "specific_appliance": "Combi heat pump",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    },
+    ("2-under-1-roof", "2015-2018", "scenario5", "pre_calibration"): {
+        "dhw_system": "Individual combi heat pump",
+        "installation_type": "Individual",
+        "specific_appliance": "Combi heat pump",
+        "cw_class_hot_water_comfort": "CW4/5/6",
+        "shower_heat_recovery_present": "No"
+    }
+}
+
+6. Standard Dwelling Insulation Data
+
+standard_dwelling_insulation_data = {
+    ("2-under-1-roof", "2015-2018", "scenario1", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.53,
+        "standard_value_kWh_m2": 64.19,
+        "heat_demand_Q_H_nd_kWh_m2": 75.41
+    },
+    ("2-under-1-roof", "2015-2018", "scenario2", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.53,
+        "standard_value_kWh_m2": 64.19,
+        "heat_demand_Q_H_nd_kWh_m2": 72.24
+    },
+    ("2-under-1-roof", "2015-2018", "scenario3", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.53,
+        "standard_value_kWh_m2": 64.19,
+        "heat_demand_Q_H_nd_kWh_m2": 51.57
+    },
+    ("2-under-1-roof", "2015-2018", "scenario4", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.53,
+        "standard_value_kWh_m2": 64.19,
+        "heat_demand_Q_H_nd_kWh_m2": 51.57
+    },
+    ("2-under-1-roof", "2015-2018", "scenario5", "pre_calibration"): {
+        "form_factor_A_loss_A_use_m2_per_m2": 1.53,
+        "standard_value_kWh_m2": 64.19,
+        "heat_demand_Q_H_nd_kWh_m2": 34.86
+    }
+}
+
+
+
+
+
+
+

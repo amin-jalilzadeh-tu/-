@@ -59,7 +59,6 @@ def pick_val_with_range(
 
     return chosen
 
-
 def assign_dhw_parameters(
     building_id: int,
     dhw_key: str,
@@ -189,7 +188,7 @@ def assign_dhw_parameters(
             sched_even_rng = override_range(sched_even_rng, row)
 
     # 3c) If building is Residential & occupant_density is (None, None), compute from building_row
-    if building_row is not None:  # <-- Avoid ambiguous truth-value for pandas Series
+    if building_row is not None:
         bldg_func = str(building_row.get("building_function", "")).lower()
         if "residential" in bldg_func:
             # occupant_density = area / occupant_count
@@ -201,6 +200,7 @@ def assign_dhw_parameters(
                     occupant_count += 0.01 * (area - 50)
                 occupant_count = max(1, occupant_count)
 
+            # if occupant_density range is None => set to small band around computed
             if occdens_rng == (None, None):
                 occupant_density_val = area / occupant_count
                 occupant_density_min = 0.9 * occupant_density_val
@@ -212,18 +212,72 @@ def assign_dhw_parameters(
         assigned_dhw_log[building_id] = {}
 
     # 4) Pick final numeric values for each parameter
-    occupant_density = pick_val_with_range(occdens_rng, strategy, assigned_dhw_log.get(building_id), "occupant_density_m2_per_person")
-    liters_pp_day    = pick_val_with_range(liters_rng, strategy, assigned_dhw_log.get(building_id), "liters_per_person_per_day")
-    tank_vol         = pick_val_with_range(vol_rng, strategy, assigned_dhw_log.get(building_id), "default_tank_volume_liters")
-    heater_cap       = pick_val_with_range(cap_rng, strategy, assigned_dhw_log.get(building_id), "default_heater_capacity_w")
-    setpoint_c       = pick_val_with_range(setp_rng, strategy, assigned_dhw_log.get(building_id), "setpoint_c")
-    usage_split      = pick_val_with_range(usplit_rng, strategy, assigned_dhw_log.get(building_id), "usage_split_factor")
-    peak_hrs         = pick_val_with_range(peak_rng, strategy, assigned_dhw_log.get(building_id), "peak_hours")
-
-    sch_morn  = pick_val_with_range(sched_morn_rng, strategy, assigned_dhw_log.get(building_id), "sched_morning")
-    sch_peak  = pick_val_with_range(sched_peak_rng, strategy, assigned_dhw_log.get(building_id), "sched_peak")
-    sch_after = pick_val_with_range(sched_aftern_rng, strategy, assigned_dhw_log.get(building_id), "sched_afternoon")
-    sch_even  = pick_val_with_range(sched_even_rng, strategy, assigned_dhw_log.get(building_id), "sched_evening")
+    occupant_density = pick_val_with_range(
+        occdens_rng,
+        strategy,
+        assigned_dhw_log.get(building_id),
+        "occupant_density_m2_per_person"
+    )
+    liters_pp_day = pick_val_with_range(
+        liters_rng,
+        strategy,
+        assigned_dhw_log.get(building_id),
+        "liters_per_person_per_day"
+    )
+    tank_vol = pick_val_with_range(
+        vol_rng,
+        strategy,
+        assigned_dhw_log.get(building_id),
+        "default_tank_volume_liters"
+    )
+    heater_cap = pick_val_with_range(
+        cap_rng,
+        strategy,
+        assigned_dhw_log.get(building_id),
+        "default_heater_capacity_w"
+    )
+    setpoint_c = pick_val_with_range(
+        setp_rng,
+        strategy,
+        assigned_dhw_log.get(building_id),
+        "setpoint_c"
+    )
+    usage_split = pick_val_with_range(
+        usplit_rng,
+        strategy,
+        assigned_dhw_log.get(building_id),
+        "usage_split_factor"
+    )
+    peak_hrs = pick_val_with_range(
+        peak_rng,
+        strategy,
+        assigned_dhw_log.get(building_id),
+        "peak_hours"
+    )
+    sch_morn = pick_val_with_range(
+        sched_morn_rng,
+        strategy,
+        assigned_dhw_log.get(building_id),
+        "sched_morning"
+    )
+    sch_peak = pick_val_with_range(
+        sched_peak_rng,
+        strategy,
+        assigned_dhw_log.get(building_id),
+        "sched_peak"
+    )
+    sch_after = pick_val_with_range(
+        sched_aftern_rng,
+        strategy,
+        assigned_dhw_log.get(building_id),
+        "sched_afternoon"
+    )
+    sch_even = pick_val_with_range(
+        sched_even_rng,
+        strategy,
+        assigned_dhw_log.get(building_id),
+        "sched_evening"
+    )
 
     # 5) If use_nta => override occupant usage from building_row in a second pass
     if use_nta and (building_row is not None):
@@ -238,14 +292,17 @@ def assign_dhw_parameters(
                 occupant_count = 1 + 0.01 * (area - 50)
             occupant_count = max(1, occupant_count)
 
+            # occupant_density => area / occupant_count
+            occupant_density = area / occupant_count
+
+            # total daily liters => occupant_count * 45
             total_daily_liters = occupant_count * 45.0
             liters_pp_day = total_daily_liters / occupant_count
+
+            # Update assigned_dhw_log if present
             if assigned_dhw_log and building_id in assigned_dhw_log:
                 assigned_dhw_log[building_id]["liters_per_person_per_day"] = liters_pp_day
-
-            occupant_density = None
-            if assigned_dhw_log and building_id in assigned_dhw_log:
-                assigned_dhw_log[building_id]["occupant_density_m2_per_person"] = None
+                assigned_dhw_log[building_id]["occupant_density_m2_per_person"] = occupant_density
 
         else:
             # Non-res => daily liters from area-based approach
@@ -264,6 +321,7 @@ def assign_dhw_parameters(
                 new_liters_pp_day = daily_liters
 
             liters_pp_day = new_liters_pp_day
+
             if assigned_dhw_log and building_id in assigned_dhw_log:
                 assigned_dhw_log[building_id]["liters_per_person_per_day"] = liters_pp_day
                 assigned_dhw_log[building_id]["occupant_density_m2_per_person"] = occupant_density

@@ -1,0 +1,8 @@
+{
+  "base_output_dir": "D:/Sim_Results",
+  "output_csv": "D:/merged_as_is.csv",
+  "convert_to_daily": false,
+  "daily_aggregator": "mean",
+  "convert_to_monthly": false,
+  "monthly_aggregator": "mean"
+}
