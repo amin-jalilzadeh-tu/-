@@ -11,31 +11,60 @@ from validation.visualize import (
 )
 
 
-def validate_data(real_data_path, sim_data_path, threshold_cv_rmse=30.0):
+
+def validate_data(
+    real_data_path, 
+    sim_data_path, 
+    threshold_cv_rmse=30.0,
+    real_bldg_ids=None,     # optional: which building IDs to include from real data
+    sim_bldg_ids=None       # optional: which building IDs to include from sim data
+):
     """
     Returns a dictionary with validation metrics for each Building/Variable.
     Also generates timeseries and scatter plots for quick visual checks.
+
+    :param real_data_path: path to CSV with real (observed) data
+    :param sim_data_path:  path to CSV with sim (model) data
+    :param threshold_cv_rmse: float, threshold for pass/fail
+    :param real_bldg_ids: list of building IDs to filter from real data
+    :param sim_bldg_ids:  list of building IDs to filter from sim data
     """
+
     df_real, df_sim = load_csv_as_df(real_data_path, sim_data_path)
 
-    # Unique IDs from the real dataset
+    # ------------------------------------------------------------
+    # (1) Optionally filter by building IDs in real_data
+    # ------------------------------------------------------------
+    if real_bldg_ids is not None:
+        df_real = df_real[df_real['BuildingID'].isin(real_bldg_ids)]
+        print(f"[DEBUG] Filtered real data to these building IDs: {real_bldg_ids}")
+
+    # ------------------------------------------------------------
+    # (2) Optionally filter by building IDs in sim_data
+    # ------------------------------------------------------------
+    if sim_bldg_ids is not None:
+        df_sim = df_sim[df_sim['BuildingID'].isin(sim_bldg_ids)]
+        print(f"[DEBUG] Filtered sim data to these building IDs: {sim_bldg_ids}")
+
+    # Now proceed with your existing approach:
     unique_buildings = df_real['BuildingID'].unique()
     unique_vars      = df_real['VariableName'].unique()
 
     results = {}
     for b_id in unique_buildings:
         for var_name in unique_vars:
-            # Debug prints:
             print(f"\n--- Checking building={b_id}, var={var_name} ---")
 
             sim_vals, obs_vals, merged_df = align_data_for_variable(
-                df_real, df_sim, building_id=b_id, variable_name=var_name
+                df_real, df_sim, 
+                building_id=b_id, 
+                variable_name=var_name
             )
             if len(sim_vals) == 0 or len(obs_vals) == 0:
                 print(f"  => No data to compare. Skipping metrics.")
                 continue
 
-            # Compute metrics
+            # --- Compute metrics ---
             this_mbe  = mean_bias_error(sim_vals, obs_vals)
             this_cv   = cv_rmse(sim_vals, obs_vals)
             this_nmbe = nmbe(sim_vals, obs_vals)
@@ -51,9 +80,8 @@ def validate_data(real_data_path, sim_data_path, threshold_cv_rmse=30.0):
                 'Pass': pass_fail
             }
 
-            # Quick side-by-side time-series plot
+            # Plot
             plot_time_series_comparison(merged_df, b_id, var_name)
-            # Quick scatter
             scatter_plot_comparison(merged_df, b_id, var_name)
 
     return results
