@@ -1,83 +1,61 @@
-# fenez/data_materials_residential.py
-
 residential_materials_data = {
-    # Example: Two-and-a-half-story House, <1965, scenario1, pre_calibration
-    ("Two-and-a-half-story House", "<1965", "scenario1", "pre_calibration"): {
+    ('Apartment', '1946-1964', 'scenario1', 'post_calibration'): {
         "roughness": "MediumRough",
-        "wwr_range": (0.2, 0.3),
-
-        # older style top-level references
-        "material_opaque_lookup": "Concrete_200mm",
-        "material_window_lookup": "Glazing_Clear_3mm_Post",
-
-        # new sub-elements
-        "ground_floor": {
-            "area_m2": 68.95,
-            "R_value_range": (2.5, 2.5),
-            "U_value_range": (0.36, 0.36),
-            "material_opaque_lookup": "InsulationBoard_R2"
-        },
-        "solid_wall": {
-            "area_m2": 103.3,
-            "R_value_range": (2.5, 2.5),
-            "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": "Concrete_200mm"
-        },
-        "sloping_flat_roof": {
-            "area_m2": 84.14,
-            "R_value_range": (2.5, 2.5),
-            "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": "Concrete_200mm"
-        },
-        "windows": {
-            "area_m2": 27.22,
-            "U_value_range": (2.9, 2.9),
-            "material_window_lookup": "Glazing_Clear_3mm"
-        },
+        "wwr_range": (0.22, 0.22),
+        "material_opaque_lookup": "DoorPanel_Range",
+        "material_window_lookup": "Glazing_Clear_3mm",
         "doors": {
-            "area_m2": 6.93,
+            "area_m2": 5.67,
+            "R_value_range": (None, None),
             "U_value_range": (3.4, 3.4),
-            "material_opaque_lookup": "DoorPanel_Range"
-        }
-    },
-
-    # Another example for scenario2 or different age range
-    ("Two-and-a-half-story House", "<1965", "scenario1", "post_calibration"): {
-        "roughness": "Smooth",
-        "wwr_range": (0.25, 0.25),
-
-        "material_opaque_lookup": "Concrete_200mm",
-        "material_window_lookup": "Glazing_Clear_3mm_Post",
-
+            "material_opaque_lookup": "DoorPanel_Range",
+            "material_window_lookup": "Glazing_Clear_3mm",
+        },
+        "exterior_wall": {
+            "area_m2": 25.03,
+            "R_value_range": (0.35, 1.92),
+            "U_value_range": (1.92, 1.92),
+            "material_opaque_lookup": "Concrete_200mm",
+            "material_window_lookup": "Glazing_Clear_3mm",
+        },
+        "flat_roof": {
+            "area_m2": 57.25,
+            "R_value_range": (0.22, 2.56),
+            "U_value_range": (2.37, 2.56),
+            "material_opaque_lookup": "Insulated_Roof_R5",
+            "material_window_lookup": "Glazing_Clear_3mm",
+        },
         "ground_floor": {
-            "area_m2": 70.0,
-            "R_value_range": (3.0, 3.0),
-            "U_value_range": (0.33, 0.33),
-            "material_opaque_lookup": "InsulationBoard_R2"
+            "area_m2": 22.33,
+            "R_value_range": (0.15, 0.15),
+            "U_value_range": (2.44, 2.44),
+            "material_opaque_lookup": "GroundContactFloor_Generic",
+            "material_window_lookup": "Glazing_Clear_3mm",
         },
-        "solid_wall": {
-            "area_m2": 105.0,
-            "R_value_range": (3.0, 3.0),
-            "U_value_range": (0.33, 0.33),
-            "material_opaque_lookup": "Concrete_200mm"
+        "inter_floor": {
+            "area_m2": 60.0,
+            "R_value_range": (2.0, 2.0),
+            "U_value_range": (0.5, 0.5),
+            "material_opaque_lookup": "InternalFloor_Generic",
+            "material_window_lookup": "Glazing_Clear_3mm",
         },
-        "sloping_flat_roof": {
-            "area_m2": 82.0,
-            "R_value_range": (3.0, 3.0),
-            "U_value_range": (0.33, 0.33),
-            "material_opaque_lookup": "Concrete_200mm"
+        "interior_wall": {
+            "area_m2": 50.0,
+            "R_value_range": (1.5, 1.5),
+            "U_value_range": (0.67, 0.67),
+            "material_opaque_lookup": "InteriorWall_Generic",
+            "material_window_lookup": "Glazing_Clear_3mm",
         },
         "windows": {
-            "area_m2": 25.0,
-            "U_value_range": (2.7, 3.0),
-            "material_window_lookup": "Glazing_Clear_3mm"
+            "area_m2": 19.86,
+            "R_value_range": (None, None),
+            "U_value_range": (1.4, 5.1),
+            "material_opaque_lookup": "DoorPanel_Range",
+            "material_window_lookup": "Glazing_Clear_3mm",
         },
-        "doors": {
-            "area_m2": 7.0,
-            "U_value_range": (3.2, 3.4),
-            "material_opaque_lookup": "DoorPanel_Range"
-        }
     },
 
-    # more combos...
-}
+    ('Apartment', '1946-1964', 'scenario1', 'pre_calibration'): {
+        "roughness": "MediumRough",
+        "wwr_range": (0.22, 0.22),
+        "material_opaque_lookup": "DoorPanel_Range",

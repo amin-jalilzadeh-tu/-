@@ -16,33 +16,34 @@ def add_HVAC_Ideal_to_all_zones(
     along with schedules & setpoints derived from hvac_lookup ranges
     and user_config_hvac overrides.
 
-    1) We now pass additional fields from building_row
-       (residential_type, non_residential_type, age_range, scenario)
-       to the assign_hvac_ideal_parameters function.
+    Steps:
+      1) Gather building-level parameters from assign_hvac_ideal_parameters(...),
+         which returns a single dictionary 'hvac_params' (including final picks + ranges).
+         That dictionary is also stored in assigned_hvac_log[bldg_id]["hvac_params"].
 
-    2) The returned hvac_params includes day/night setpoints, supply temps,
-       and optionally schedule_details.
+      2) Create or update the necessary schedules in the IDF for heating/cooling setpoints.
+      3) For each zone, create or update:
+         - ZONECONTROL:THERMOSTAT
+         - THERMOSTATSETPOINT:DUALSETPOINT
+         - ZONEHVAC:EQUIPMENTCONNECTIONS
+         - ZONEHVAC:EQUIPMENTLIST
+         - ZONEHVAC:IDEALLOADSAIRSYSTEM
+         Then store zone-level info in assigned_hvac_log[bldg_id]["zones"][zone_name].
 
-    3) We then create or update the IDF schedules and objects as before.
+    Returns:
+      None. (IDF is modified in-place; logging is stored in assigned_hvac_log if provided.)
     """
 
-    # Extract new fields (if absent, provide default)
+    # 1) Extract building info from building_row
     bldg_id = building_row.get("ogc_fid", 0)
-
-    # building_function => "residential" or "non_residential"
     bldg_func = building_row.get("building_function", "residential")
-
-    # subtypes
     res_type = building_row.get("residential_type", "Two-and-a-half-story House")
     nonres_type = building_row.get("non_residential_type", "Meeting Function")
-
-    # age range => "1900-2000", "2000-2024", etc.
     age_range = building_row.get("age_range", "1900-2000")
-
-    # scenario => "scenario1", "scenario2"
     scenario = building_row.get("scenario", "scenario1")
 
-    # Then proceed:
+    # 2) Call the function that picks HVAC setpoints + ranges
+    #    => returns a single dictionary of final picks & ranges
     hvac_params = assign_hvac_ideal_parameters(
         building_id=bldg_id,
         building_function=bldg_func,
@@ -56,41 +57,47 @@ def add_HVAC_Ideal_to_all_zones(
         user_config_hvac=user_config_hvac,
         assigned_hvac_log=assigned_hvac_log
     )
-    # e.g., hvac_params["heating_day_setpoint"] => 19.8
-    # etc.
+    # Example contents of hvac_params:
+    # {
+    #   "heating_day_setpoint": 20.28, "heating_day_setpoint_range": (19.0,21.0),
+    #   "heating_night_setpoint": 15.03, "heating_night_setpoint_range": (15.0,16.0),
+    #   "cooling_day_setpoint": 24.55, ...
+    #   "max_heating_supply_air_temp": 52.36, ...
+    #   "schedule_details": {...}
+    # }
 
-    # 2) Create or update your SCHEDULETYPELIMITS if needed
+    # If assigned_hvac_log is not None, we already have hvac_params stored under
+    # assigned_hvac_log[bldg_id]["hvac_params"] (done inside assign_hvac_values.py).
+
+    # 3) Ensure schedule type limits exist
     if not idf.getobject("SCHEDULETYPELIMITS", "Temperature"):
-        idf.newidfobject(
-            "SCHEDULETYPELIMITS",
-            Name="Temperature",
-            Lower_Limit_Value=-100,
-            Upper_Limit_Value=200,
-            Numeric_Type="CONTINUOUS"
-        )
+        stl = idf.newidfobject("SCHEDULETYPELIMITS")
+        stl.Name = "Temperature"
+        stl.Lower_Limit_Value = -100
+        stl.Upper_Limit_Value = 200
+        stl.Numeric_Type = "CONTINUOUS"
 
     if not idf.getobject("SCHEDULETYPELIMITS", "ControlType"):
-        idf.newidfobject(
-            "SCHEDULETYPELIMITS",
-            Name="ControlType",
-            Lower_Limit_Value=0,
-            Upper_Limit_Value=4,
-            Numeric_Type="DISCRETE"
-        )
+        stl = idf.newidfobject("SCHEDULETYPELIMITS")
+        stl.Name = "ControlType"
+        stl.Lower_Limit_Value = 0
+        stl.Upper_Limit_Value = 4
+        stl.Numeric_Type = "DISCRETE"
 
-    # 3) Create or update the Control Type schedule
+    # 4) Create a control type schedule if missing
     if not idf.getobject("SCHEDULE:COMPACT", "ZONE CONTROL TYPE SCHEDULE"):
         sc = idf.newidfobject("SCHEDULE:COMPACT")
         sc.Name = "ZONE CONTROL TYPE SCHEDULE"
         sc.Schedule_Type_Limits_Name = "ControlType"
         sc.Field_1 = "Through: 12/31"
         sc.Field_2 = "For: AllDays"
-        sc.Field_3 = "Until: 24:00,4"
+        sc.Field_3 = "Until: 24:00,4"  # dual setpoint
 
-    # 4) Build or update the Heating Setpoint schedule.
-    #    We'll keep the day from 7:00-19:00 as the 'day' setpoint,
-    #    and outside of that as 'night' setpoint. 
-    #    You can refine if you want more detail from hvac_params["schedule_details"].
+    # 5) Build or update the Heating Setpoint schedule (simplified example)
+    #    We'll define day from 07:00-19:00 => day setpoint
+    #    else => night setpoint
+    h_day = hvac_params["heating_day_setpoint"]
+    h_night = hvac_params["heating_night_setpoint"]
 
     if not idf.getobject("SCHEDULE:COMPACT", "ZONE HEATING SETPOINTS"):
         sc = idf.newidfobject("SCHEDULE:COMPACT")
@@ -98,26 +105,58 @@ def add_HVAC_Ideal_to_all_zones(
         sc.Schedule_Type_Limits_Name = "Temperature"
         sc.Field_1 = "Through: 12/31"
         sc.Field_2 = "For: AllDays"
-        sc.Field_3 = f"Until: 07:00,{hvac_params['heating_night_setpoint']:.2f}"
-        sc.Field_4 = f"Until: 19:00,{hvac_params['heating_day_setpoint']:.2f}"
-        sc.Field_5 = f"Until: 24:00,{hvac_params['heating_night_setpoint']:.2f}"
+        sc.Field_3 = f"Until: 07:00,{h_night:.2f}"
+        sc.Field_4 = f"Until: 19:00,{h_day:.2f}"
+        sc.Field_5 = f"Until: 24:00,{h_night:.2f}"
+    else:
+        # If the schedule object exists, you might update it similarly
+        sc = idf.getobject("SCHEDULE:COMPACT", "ZONE HEATING SETPOINTS".upper())
+        sc.Field_3 = f"Until: 07:00,{h_night:.2f}"
+        sc.Field_4 = f"Until: 19:00,{h_day:.2f}"
+        sc.Field_5 = f"Until: 24:00,{h_night:.2f}"
 
-    # 5) Build or update the Cooling Setpoint schedule in a similar manner
+    # 6) Build or update the Cooling Setpoint schedule
+    c_day = hvac_params["cooling_day_setpoint"]
+    c_night = hvac_params["cooling_night_setpoint"]
+
     if not idf.getobject("SCHEDULE:COMPACT", "ZONE COOLING SETPOINTS"):
         sc = idf.newidfobject("SCHEDULE:COMPACT")
         sc.Name = "ZONE COOLING SETPOINTS"
         sc.Schedule_Type_Limits_Name = "Temperature"
         sc.Field_1 = "Through: 12/31"
         sc.Field_2 = "For: AllDays"
-        sc.Field_3 = f"Until: 07:00,{hvac_params['cooling_night_setpoint']:.2f}"
-        sc.Field_4 = f"Until: 19:00,{hvac_params['cooling_day_setpoint']:.2f}"
-        sc.Field_5 = f"Until: 24:00,{hvac_params['cooling_night_setpoint']:.2f}"
+        sc.Field_3 = f"Until: 07:00,{c_night:.2f}"
+        sc.Field_4 = f"Until: 19:00,{c_day:.2f}"
+        sc.Field_5 = f"Until: 24:00,{c_night:.2f}"
+    else:
+        sc = idf.getobject("SCHEDULE:COMPACT", "ZONE COOLING SETPOINTS".upper())
+        sc.Field_3 = f"Until: 07:00,{c_night:.2f}"
+        sc.Field_4 = f"Until: 19:00,{c_day:.2f}"
+        sc.Field_5 = f"Until: 24:00,{c_night:.2f}"
 
-    # 6) Now loop over each zone & create the Ideal Loads & ThermostatSetpoint:DualSetpoint
-    for zone_obj in idf.idfobjects["ZONE"]:
+    # 7) For each zone, create:
+    #    - ZONECONTROL:THERMOSTAT + THERMOSTATSETPOINT:DUALSETPOINT
+    #    - ZONEHVAC:EQUIPMENTCONNECTIONS + ZONEHVAC:EQUIPMENTLIST
+    #    - ZONEHVAC:IDEALLOADSAIRSYSTEM
+
+    max_heat_temp = hvac_params["max_heating_supply_air_temp"]
+    min_cool_temp = hvac_params["min_cooling_supply_air_temp"]
+
+    zones = idf.idfobjects["ZONE"]
+    if not zones:
+        print("[HVAC] No zones found; skipping.")
+        return
+
+    # If we want to store zone-level data
+    if assigned_hvac_log is not None and bldg_id not in assigned_hvac_log:
+        assigned_hvac_log[bldg_id] = {}
+    if assigned_hvac_log is not None and "zones" not in assigned_hvac_log[bldg_id]:
+        assigned_hvac_log[bldg_id]["zones"] = {}
+
+    for zone_obj in zones:
         zone_name = zone_obj.Name
 
-        # 6a) Thermostat
+        # 7a) Thermostat
         existing_thermo = [
             t for t in idf.idfobjects["ZONECONTROL:THERMOSTAT"]
             if (
@@ -130,12 +169,10 @@ def add_HVAC_Ideal_to_all_zones(
         if not existing_thermo:
             thermo = idf.newidfobject("ZONECONTROL:THERMOSTAT")
             thermo.Name = f"{zone_name} CONTROLS"
-
             if hasattr(thermo, "Zone_or_ZoneList_or_Space_or_SpaceList_Name"):
                 thermo.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zone_name
             else:
                 thermo.Zone_or_ZoneList_Name = zone_name
-
             thermo.Control_Type_Schedule_Name = "ZONE CONTROL TYPE SCHEDULE"
             thermo.Control_1_Object_Type = "ThermostatSetpoint:DualSetpoint"
             thermo.Control_1_Name = f"{zone_name} SETPOINTS"
@@ -145,11 +182,14 @@ def add_HVAC_Ideal_to_all_zones(
             dual.Name = f"{zone_name} SETPOINTS"
             dual.Heating_Setpoint_Temperature_Schedule_Name = "ZONE HEATING SETPOINTS"
             dual.Cooling_Setpoint_Temperature_Schedule_Name = "ZONE COOLING SETPOINTS"
+        else:
+            # If it exists, you might update it or skip
+            pass
 
-        # 6b) EquipmentConnections
+        # 7b) EquipmentConnections
         existing_equip_conns = [
             ec for ec in idf.idfobjects["ZONEHVAC:EQUIPMENTCONNECTIONS"]
-            if (ec.Zone_Name == zone_name)
+            if ec.Zone_Name == zone_name
         ]
         if not existing_equip_conns:
             eq_conn = idf.newidfobject("ZONEHVAC:EQUIPMENTCONNECTIONS")
@@ -160,10 +200,10 @@ def add_HVAC_Ideal_to_all_zones(
             eq_conn.Zone_Air_Node_Name = f"{zone_name} NODE"
             eq_conn.Zone_Return_Air_Node_or_NodeList_Name = f"{zone_name} OUTLET"
 
-        # 6c) ZoneHVAC:EquipmentList
+        # 7c) EquipmentList
         existing_equip_lists = [
             el for el in idf.idfobjects["ZONEHVAC:EQUIPMENTLIST"]
-            if (el.Name == f"{zone_name} EQUIPMENT")
+            if el.Name == f"{zone_name} EQUIPMENT"
         ]
         if not existing_equip_lists:
             eq_list = idf.newidfobject("ZONEHVAC:EQUIPMENTLIST")
@@ -174,10 +214,10 @@ def add_HVAC_Ideal_to_all_zones(
             eq_list.Zone_Equipment_1_Cooling_Sequence = 1
             eq_list.Zone_Equipment_1_Heating_or_NoLoad_Sequence = 1
 
-        # 6d) Add or update the IdealLoads system
+        # 7d) IdealLoads
         existing_ideal = [
             ild for ild in idf.idfobjects["ZONEHVAC:IDEALLOADSAIRSYSTEM"]
-            if (ild.Name == f"{zone_name} Ideal Loads")
+            if ild.Name == f"{zone_name} Ideal Loads"
         ]
         if not existing_ideal:
             ideal = idf.newidfobject("ZONEHVAC:IDEALLOADSAIRSYSTEM")
@@ -186,27 +226,46 @@ def add_HVAC_Ideal_to_all_zones(
             ideal.Zone_Supply_Air_Node_Name = f"{zone_name} INLETS"
             ideal.Zone_Exhaust_Air_Node_Name = ""
             ideal.System_Inlet_Air_Node_Name = ""
-            ideal.Maximum_Heating_Supply_Air_Temperature = hvac_params["max_heating_supply_air_temp"]
-            ideal.Minimum_Cooling_Supply_Air_Temperature = hvac_params["min_cooling_supply_air_temp"]
+            ideal.Maximum_Heating_Supply_Air_Temperature = max_heat_temp
+            ideal.Minimum_Cooling_Supply_Air_Temperature = min_cool_temp
             ideal.Maximum_Heating_Supply_Air_Humidity_Ratio = 0.015
-            ideal.Minimum_Cooling_Supply_Air_Humidity_Ratio = 0.009
+            # ideal.Minimum_Cooling_Air_Flow_Fraction = "Autosize"  <-- remove or conditionally set
+            if hasattr(ideal, "Minimum_Cooling_Air_Flow_Fraction"):
+                ideal.Minimum_Cooling_Air_Flow_Fraction = "Autosize"
+
+            #ideal.Minimum_Cooling_Air_Flow_Fraction = "Autosize"
             ideal.Heating_Limit = "NoLimit"
-            ideal.Maximum_Heating_Air_Flow_Rate = "autosize"
+            ideal.Maximum_Heating_Air_Flow_Rate = "Autosize"
             ideal.Cooling_Limit = "NoLimit"
-            ideal.Maximum_Cooling_Air_Flow_Rate = "autosize"
+            ideal.Maximum_Cooling_Air_Flow_Rate = "Autosize"
             ideal.Dehumidification_Control_Type = "ConstantSupplyHumidityRatio"
             ideal.Humidification_Control_Type = "ConstantSupplyHumidityRatio"
         else:
-            # Update if it already exists
-            existing_ideal[0].Maximum_Heating_Supply_Air_Temperature = hvac_params["max_heating_supply_air_temp"]
-            existing_ideal[0].Minimum_Cooling_Supply_Air_Temperature = hvac_params["min_cooling_supply_air_temp"]
+            # Update the existing IdealLoads object
+            ideal = existing_ideal[0]
+            ideal.Maximum_Heating_Supply_Air_Temperature = max_heat_temp
+            ideal.Minimum_Cooling_Supply_Air_Temperature = min_cool_temp
 
-        # 6e) NodeList for supply inlets
+        # 7e) NodeList for supply inlets
         existing_inlet_list = idf.getobject("NODELIST", f"{zone_name} INLETS")
         if not existing_inlet_list:
             nlist = idf.newidfobject("NODELIST")
             nlist.Name = f"{zone_name} INLETS"
             nlist.Node_1_Name = f"{zone_name} INLET"
 
+        # 7f) Store zone-level data in assigned_hvac_log
+        if assigned_hvac_log is not None:
+            if "zones" not in assigned_hvac_log[bldg_id]:
+                assigned_hvac_log[bldg_id]["zones"] = {}
+            if zone_name not in assigned_hvac_log[bldg_id]["zones"]:
+                assigned_hvac_log[bldg_id]["zones"][zone_name] = {}
+
+            assigned_hvac_log[bldg_id]["zones"][zone_name]["hvac_object_name"] = ideal.Name
+            assigned_hvac_log[bldg_id]["zones"][zone_name]["hvac_object_type"] = "ZONEHVAC:IDEALLOADSAIRSYSTEM"
+            assigned_hvac_log[bldg_id]["zones"][zone_name]["heating_setpoint_schedule"] = "ZONE HEATING SETPOINTS"
+            assigned_hvac_log[bldg_id]["zones"][zone_name]["cooling_setpoint_schedule"] = "ZONE COOLING SETPOINTS"
+            assigned_hvac_log[bldg_id]["zones"][zone_name]["thermostat_name"] = f"{zone_name} CONTROLS"
+            assigned_hvac_log[bldg_id]["zones"][zone_name]["thermostat_dualsetpoint_name"] = f"{zone_name} SETPOINTS"
+
     # Done
-    return
+    print(f"[add_HVAC_Ideal_to_all_zones] Completed HVAC setup for building {bldg_id}.")

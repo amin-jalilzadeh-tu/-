@@ -9,62 +9,28 @@ def get_building_category_and_subtype(building_row):
     Adjust the logic as needed, depending on how your CSV or DB fields
     are structured.
 
-    Example:
-      - If building_row["building_function"] is "Residential" or "Non-Residential",
-        we treat that as the high-level category.
-      - For sub_type, we might read "Corner House", "Office Function", etc.
+    If building_row["building_function"] is something like "Residential"
+    or "Meeting Function", use that as your sub_type.
+    If building_row["building_function"] says "Residential", set building_category="Residential".
+    Otherwise, assume building_category="Non-Residential".
 
-    If the row does not have enough detail, we fallback to a default.
+    Update as necessary for your own classification logic.
     """
-    # Try to get building_category directly
-    building_category = building_row.get("building_category", "").strip()
-    sub_type = building_row.get("building_subtype", "").strip()
+    bldg_func = building_row.get("building_function", "").strip()
+    if not bldg_func:
+        # fallback
+        return ("Non-Residential", "Other Use Function")
 
-    # If empty, fallback to building_function
-    if not building_category:
-        func = building_row.get("building_function", "").lower()
-        if "resid" in func:    # e.g. "residential"
-            building_category = "Residential"
-        else:
-            building_category = "Non-Residential"
+    # Example simple logic:
+    if "resid" in bldg_func.lower():
+        building_category = "Residential"
+        sub_type = bldg_func  # e.g. "Residential" or "Corner House"
+    else:
+        building_category = "Non-Residential"
+        sub_type = bldg_func  # e.g. "Office Function", "Meeting Function"
 
-    # If sub_type was not set, try to read from building_function
-    # or default to "Other Use Function"
-    if not sub_type:
-        sub_type_candidate = building_row.get("building_function", "").strip()
-        # If it's obviously one of your sub-types, use it:
-        if sub_type_candidate in [
-            "Corner House", "Apartment", "Terrace or Semi-detached House",
-            "Detached House", "Two-and-a-half-story House",
-            "Meeting Function", "Healthcare Function", "Sport Function",
-            "Cell Function", "Retail Function", "Industrial Function",
-            "Accommodation Function", "Office Function",
-            "Education Function", "Other Use Function"
-        ]:
-            sub_type = sub_type_candidate
-        else:
-            # Fallback if not recognized
-            sub_type = "Other Use Function"
+    return (building_category, sub_type)
 
-    return building_category, sub_type
-
-    """
-    1) Determine building_category (Residential/Non-Residential) and sub_type
-       (e.g., "Office Function", "Corner House", etc.).
-    2) Retrieve assigned lighting parameters (lights_wm2, parasitic_wm2, tD, tN).
-    3) Create schedules in IDF:
-       - A lighting schedule with weekday/weekend blocks (create_lighting_schedule).
-       - An always-on parasitic schedule (create_parasitic_schedule).
-    4) Add LIGHTS/ELECTRICEQUIPMENT objects to each zone in the IDF.
-
-    :param idf: Eppy IDF object or similar
-    :param building_row: dict with building data (building_function, etc.)
-    :param calibration_stage: "pre_calibration" or "post_calibration"
-    :param strategy: "A" (midpoint) or "B" (random selection) for picking from range
-    :param random_seed: optional, for reproducible random
-    :param user_config: optional override table
-    :param assigned_values_log: optional dict to store final picks
-    """
 
 def add_lights_and_parasitics(
     idf,
@@ -74,16 +40,18 @@ def add_lights_and_parasitics(
     random_seed=None,
     user_config=None,
     assigned_values_log=None,
-    zonelist_name="ALL_ZONES"   # <--- new parameter for convenience
+    zonelist_name="ALL_ZONES"
 ):
     """
     1) Determine building_category (Residential/Non-Residential) and sub_type.
-    2) Retrieve assigned lighting parameters (lights_wm2, parasitic_wm2, tD, tN).
+    2) Retrieve assigned lighting parameters (including fraction fields).
     3) Create schedules in IDF:
-       - A lighting schedule with weekday/weekend blocks
-       - An always-on parasitic schedule
-    4) Add LIGHTS/ELECTRICEQUIPMENT objects referencing a ZoneList in the IDF
-       (instead of creating them per Zone).
+       - A lighting schedule for the LIGHTS object
+       - An always-on parasitic schedule for ELECTRICEQUIPMENT
+    4) Add LIGHTS and ELECTRICEQUIPMENT objects referencing a ZoneList in the IDF.
+
+    The assigned parameters and final picks are stored in assigned_values_log[ogc_fid]
+    if assigned_values_log is provided.
     """
 
     # 1) Get building_category / sub_type
@@ -92,20 +60,30 @@ def add_lights_and_parasitics(
     # 2) Retrieve lighting parameters
     bldg_id = int(building_row.get("ogc_fid", 0))
 
-    params = assign_lighting_parameters(
+    assigned_dict = assign_lighting_parameters(
         building_id=bldg_id,
         building_type=sub_type,
+        # Optional:
+        # age_range=building_row.get("age_range", None),
         calibration_stage=calibration_stage,
         strategy=strategy,
         random_seed=random_seed,
         user_config=user_config,
-        assigned_log=assigned_values_log
+        assigned_log=assigned_values_log  # logs the final sub-dict structure
     )
 
-    lights_wm2 = params["lights_wm2"]
-    parasitic_wm2 = params["parasitic_wm2"]
-    tD = params["tD"]
-    tN = params["tN"]
+    # Extract main power densities
+    lights_wm2 = assigned_dict["lights_wm2"]["assigned_value"]
+    parasitic_wm2 = assigned_dict["parasitic_wm2"]["assigned_value"]
+
+    # Extract fraction parameters for LIGHTS
+    lights_frac_radiant = assigned_dict["lights_fraction_radiant"]["assigned_value"]
+    lights_frac_visible = assigned_dict["lights_fraction_visible"]["assigned_value"]
+    lights_frac_replace = assigned_dict["lights_fraction_replaceable"]["assigned_value"]
+
+    # Extract fraction parameters for EQUIPMENT
+    equip_frac_radiant = assigned_dict["equip_fraction_radiant"]["assigned_value"]
+    equip_frac_lost = assigned_dict["equip_fraction_lost"]["assigned_value"]
 
     # 3) Create schedules
     lights_sched_name = create_lighting_schedule(
@@ -116,31 +94,32 @@ def add_lights_and_parasitics(
     )
     paras_sched_name = create_parasitic_schedule(idf, sched_name="ParasiticSchedule")
 
-    # 4) Reference the existing ZoneList instead of looping through each zone.
-    #
-    #    Make sure `create_zonelist(idf, "ALL_ZONES")` has been called
-    #    *before* calling this function, so that zonelist_name is valid.
-    #
-    #    Add a single LIGHTS object for the entire ZoneList:
+    # 4) Add a single LIGHTS object for the entire ZoneList
     lights_obj = idf.newidfobject("LIGHTS")
     lights_obj.Name = f"Lights_{zonelist_name}"
     lights_obj.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zonelist_name
     lights_obj.Schedule_Name = lights_sched_name
     lights_obj.Design_Level_Calculation_Method = "Watts/Area"
     lights_obj.Watts_per_Zone_Floor_Area = lights_wm2
-    lights_obj.Fraction_Radiant = 0.7
-    lights_obj.Fraction_Visible = 0.2
-    lights_obj.Fraction_Replaceable = 1.0
 
-    #    And a single ELECTRICEQUIPMENT object for parasitic loads:
+    # Apply fraction fields
+    lights_obj.Fraction_Radiant = lights_frac_radiant
+    lights_obj.Fraction_Visible = lights_frac_visible
+    lights_obj.Fraction_Replaceable = lights_frac_replace
+
+    # Add ELECTRICEQUIPMENT object for parasitic loads
     eq_obj = idf.newidfobject("ELECTRICEQUIPMENT")
-    eq_obj.Name = f"Lighting_Parasitic_{zonelist_name}"
+    eq_obj.Name = f"Parasitic_{zonelist_name}"
     eq_obj.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zonelist_name
     eq_obj.Schedule_Name = paras_sched_name
     eq_obj.Design_Level_Calculation_Method = "Watts/Area"
     eq_obj.Watts_per_Zone_Floor_Area = parasitic_wm2
-    eq_obj.Fraction_Radiant = 0.0
-    eq_obj.Fraction_Lost = 1.0
 
-    # Optionally return references to the newly created objects
+    # Apply fraction fields
+    eq_obj.Fraction_Radiant = equip_frac_radiant
+    eq_obj.Fraction_Lost = equip_frac_lost
+
+    # Optionally, you can also set eq_obj.Fraction_Visible if needed,
+    # but typically for "Parasitic" loads we do not.
+
     return lights_obj, eq_obj
