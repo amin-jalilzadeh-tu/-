@@ -1,10 +1,8 @@
-# DHW/water_heater.py
+# water_heater.py
 
 from .assign_dhw_values import assign_dhw_parameters
 from .parameters import calculate_dhw_parameters
 from .schedules import create_dhw_schedules
-from .dhw_lookup import dhw_lookup  # If needed for table lookups, etc.
-
 
 def add_dhw_to_idf(
     idf,
@@ -23,20 +21,20 @@ def add_dhw_to_idf(
     3) Merge with user_config_dhw if any.
     4) Calculate occupant_count, daily usage, peak flow, etc.
     5) Create schedules, then WaterHeater:Mixed object in the IDF.
-    6) Log the water heater object name, schedule names, occupant_count, daily_liters, etc.
+    6) Log object names and all relevant fields in assigned_dhw_log for debugging or future Eppy edits.
     """
 
-    # 1) Decide or retrieve the building's DHW key
-    #    e.g. building_row["dhw_key"] = "Apartment" or "Office Function" or fallback
-    dhw_building_key = building_row.get("dhw_key", "Detached House")
-    bldg_id = building_row.get("ogc_fid", 0)  # or whatever key identifies the building
+    # Identify the building ID (or fallback to 0)
+    bldg_id = building_row.get("ogc_fid", 0)
 
-    # Make sure the assigned_dhw_log has an entry for this building
+    # Ensure assigned_dhw_log has a dict for this building
     if assigned_dhw_log is not None and bldg_id not in assigned_dhw_log:
         assigned_dhw_log[bldg_id] = {}
 
-    # 2) Assign from dhw_lookup, with user overrides
-    #    This function logs final param + range in assigned_dhw_log if provided
+    # Decide which DHW key to use, e.g., "Apartment" or "Office Function"
+    dhw_building_key = building_row.get("dhw_key", "Detached House")
+
+    # 1) Assign final picks from dhw_lookup (with user overrides, if any)
     assigned = assign_dhw_parameters(
         building_id=bldg_id,
         dhw_key=dhw_building_key,
@@ -44,23 +42,24 @@ def add_dhw_to_idf(
         strategy=strategy,
         random_seed=random_seed,
         user_config_dhw=user_config_dhw,
-        assigned_dhw_log=assigned_dhw_log,
+        assigned_dhw_log=assigned_dhw_log,  # logging final picks + range
         building_row=building_row,
         use_nta=use_nta
     )
 
-    # occupant_count if present
+    # 2) Calculate occupant_count, daily liters, etc.
     occupant_count = building_row.get("occupant_count", None)
     floor_area_m2 = building_row.get("floor_area_m2", building_row.get("area", None))
-
-    # 3) Calculate occupant_count, daily liters, peak flow, etc.
     params = calculate_dhw_parameters(
         assigned,
         floor_area_m2=floor_area_m2,
         occupant_count=occupant_count
+        # If you want to log derived values here, pass assigned_dhw_log + bldg_id
+        # assigned_dhw_log=assigned_dhw_log,
+        # building_id=bldg_id
     )
 
-    # If we want to log occupant_count, daily_liters, etc. in the assigned_dhw_log, do it:
+    # Optionally log derived occupant_count, daily_liters, etc. here:
     if assigned_dhw_log and bldg_id in assigned_dhw_log:
         assigned_dhw_log[bldg_id]["dhw_occupant_count"] = params["occupant_count"]
         assigned_dhw_log[bldg_id]["dhw_daily_liters"] = params["daily_liters"]
@@ -68,7 +67,7 @@ def add_dhw_to_idf(
         assigned_dhw_log[bldg_id]["dhw_tank_volume_m3"] = params["tank_volume_m3"]
         assigned_dhw_log[bldg_id]["dhw_heater_capacity_w"] = params["heater_capacity_w"]
 
-    # 4) Build schedules for use fraction & setpoint
+    # 3) Build schedules for use fraction & setpoint
     frac_sched_name, setpoint_sched_name = create_dhw_schedules(
         idf,
         schedule_name_suffix=name_suffix,
@@ -79,15 +78,15 @@ def add_dhw_to_idf(
         evening_val=assigned["sched_evening"]
     )
 
-    # Possibly log the schedule names as well
+    # Optionally log schedule names
     if assigned_dhw_log and bldg_id in assigned_dhw_log:
         assigned_dhw_log[bldg_id]["dhw_fraction_schedule"] = frac_sched_name
         assigned_dhw_log[bldg_id]["dhw_setpoint_schedule"] = setpoint_sched_name
 
-    # 5) Create the WaterHeater:Mixed object
+    # 4) Create the WaterHeater:Mixed object in E+
     wh_name = f"{name_suffix}_WaterHeater"
 
-    # Decide fuel type & heater efficiency
+    # Simple logic: if it's a Non-Residential "Function", use gas + eff=0.8, else electric + eff=0.9
     if "Function" in dhw_building_key:
         fuel_type = "NaturalGas"
         heater_eff = 0.8
@@ -120,16 +119,27 @@ def add_dhw_to_idf(
         Use_Flow_Rate_Fraction_Schedule_Name=frac_sched_name
     )
 
-    # 6) Log the WaterHeater object name
+    # 5) Log the newly created WaterHeater object name & fields
     if assigned_dhw_log and bldg_id in assigned_dhw_log:
         assigned_dhw_log[bldg_id]["dhw_waterheater_object_name"] = wh_obj.Name
         assigned_dhw_log[bldg_id]["dhw_heater_fuel_type"] = fuel_type
         assigned_dhw_log[bldg_id]["dhw_heater_thermal_eff"] = heater_eff
 
+        # If you want a more 'fenestration-like' breakdown:
+        wh_key = "dhw_waterheater"
+        assigned_dhw_log[bldg_id][f"{wh_key}.obj_type"] = "WATERHEATER:MIXED"
+        assigned_dhw_log[bldg_id][f"{wh_key}.Name"] = wh_obj.Name
+        assigned_dhw_log[bldg_id][f"{wh_key}.Tank_Volume"] = wh_obj.Tank_Volume
+        assigned_dhw_log[bldg_id][f"{wh_key}.Setpoint_Temperature_Schedule_Name"] = wh_obj.Setpoint_Temperature_Schedule_Name
+        assigned_dhw_log[bldg_id][f"{wh_key}.Heater_Maximum_Capacity"] = wh_obj.Heater_Maximum_Capacity
+        assigned_dhw_log[bldg_id][f"{wh_key}.Heater_Fuel_Type"] = wh_obj.Heater_Fuel_Type
+        assigned_dhw_log[bldg_id][f"{wh_key}.Heater_Thermal_Efficiency"] = wh_obj.Heater_Thermal_Efficiency
+        assigned_dhw_log[bldg_id][f"{wh_key}.Use_Flow_Rate_Fraction_Schedule_Name"] = wh_obj.Use_Flow_Rate_Fraction_Schedule_Name
+
     # Optional debug prints
     print(f"[DHW] building_id={bldg_id}, dhw_key={dhw_building_key}")
-    print(f"     occupant_count={params['occupant_count']}, daily_liters={params['daily_liters']:.1f}")
-    print(f"     setpoint={params['setpoint_c']:.1f} C, tank_volume={params['tank_volume_m3']:.3f} m³")
+    print(f"     occupant_count={params['occupant_count']} daily_liters={params['daily_liters']:.1f}")
+    print(f"     setpoint={params['setpoint_c']:.1f}C, tank_volume={params['tank_volume_m3']:.3f} m³")
     print(f"     schedules => {frac_sched_name}, {setpoint_sched_name}")
     print(f"     WATERHEATER => {wh_obj.Name}, fuel={fuel_type}, eff={heater_eff}")
 
