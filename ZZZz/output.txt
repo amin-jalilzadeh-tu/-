@@ -1,1287 +1,1717 @@
-Folder: D:\Documents\E_Plus_2030_py\DHW
+Folder: D:\Documents\E_Plus_2030_py\ventilation
 
-  File: assign_dhw_values.py
+  File: add_ventilation.py
   --- File Contents Start ---
-# DHW/assign_dhw_values.py
+# ventilation/add_ventilation.py
+
+from ventilation.assign_ventilation_values import (
+    assign_ventilation_params_with_overrides
+)
+from ventilation.schedules import (
+    create_always_on_schedule,
+    create_day_night_schedule,
+    create_workhours_schedule
+)
+from ventilation.create_ventilation_systems import create_ventilation_system
+from ventilation.calc_functions import (
+    calc_infiltration,
+    calc_required_ventilation_flow
+)
+from ventilation.mappings import (
+    safe_lower,
+    map_age_range_to_year_key,
+    map_infiltration_key,
+    map_usage_key
+)
+
+def add_ventilation_to_idf(
+    idf,
+    building_row,
+    calibration_stage="pre_calibration",
+    strategy="A",            # "A" => pick midpoint, "B" => random, ...
+    random_seed=None,
+    user_config_vent=None,
+    assigned_vent_log=None
+):
+    """
+    Adds infiltration + ventilation to the IDF based on building_row data
+    (using assign_ventilation_params_with_overrides). Creates infiltration
+    and (optionally) ventilation objects in each zone. Also logs both
+    building-level and zone-level picks to assigned_vent_log.
+
+    Args:
+        idf: geomeppy IDF object
+        building_row: dict-like row containing e.g. "ogc_fid", "building_function", "age_range", "scenario", "area"
+        calibration_stage: str, e.g. "pre_calibration" or "post_calibration"
+        strategy: str, e.g. "A" => midpoint, "B" => random
+        random_seed: int or None
+        user_config_vent: list of user override dicts for ventilation
+        assigned_vent_log: dict to store final building-level & zone-level picks
+
+    Returns:
+        None. (The IDF is modified in place; the picks are stored in assigned_vent_log if provided.)
+    """
+
+    # 1) Ensure key schedules exist (the default ones)
+    if not idf.getobject("SCHEDULE:CONSTANT", "AlwaysOnSched"):
+        create_always_on_schedule(idf, "AlwaysOnSched")
+    if not idf.getobject("SCHEDULE:COMPACT", "VentSched_DayNight"):
+        create_day_night_schedule(idf, "VentSched_DayNight")
+    if not idf.getobject("SCHEDULE:COMPACT", "WorkHoursSched"):
+        create_workhours_schedule(idf, "WorkHoursSched")
+
+    # 2) Extract building info
+    bldg_id = building_row.get("ogc_fid", 0)
+    bldg_func = safe_lower(building_row.get("building_function", "residential"))
+    if bldg_func not in ("residential", "non_residential"):
+        bldg_func = "residential"
+
+    age_range_str = building_row.get("age_range", "2015 and later")
+    scenario = building_row.get("scenario", "scenario1")
+    floor_area_m2 = building_row.get("area", 100.0)
+
+    # 3) Decide infiltration key, usage key, etc.
+    infiltration_key = map_infiltration_key(building_row)
+    usage_key = map_usage_key(building_row)
+    is_res = (bldg_func == "residential")
+
+    # 4) Call the function that picks infiltration_base, year_factor, schedules, etc.
+    assigned_vent = assign_ventilation_params_with_overrides(
+        building_id=bldg_id,
+        building_function=bldg_func,
+        age_range=age_range_str,
+        scenario=scenario,
+        calibration_stage=calibration_stage,
+        strategy=strategy,
+        random_seed=random_seed,
+        user_config_vent=user_config_vent,
+        assigned_vent_log=None,        # We'll do the logging here instead
+        infiltration_key=infiltration_key,
+        year_key=map_age_range_to_year_key(age_range_str),
+        is_residential=is_res,
+        default_flow_exponent=0.67
+    )
+
+    # 5) Unpack the chosen building-level picks
+    infiltration_base   = assigned_vent["infiltration_base"]
+    infiltration_rng    = assigned_vent["infiltration_base_range"]
+    year_factor         = assigned_vent["year_factor"]
+    year_factor_rng     = assigned_vent["year_factor_range"]
+    fan_pressure        = assigned_vent["fan_pressure"]
+    fan_pressure_rng    = assigned_vent["fan_pressure_range"]
+    f_ctrl              = assigned_vent["f_ctrl"]
+    f_ctrl_rng          = assigned_vent["f_ctrl_range"]
+    hrv_eff             = assigned_vent["hrv_eff"]
+    hrv_eff_rng         = assigned_vent["hrv_eff_range"]
+
+    infiltration_sched  = assigned_vent["infiltration_schedule_name"]
+    ventilation_sched   = assigned_vent["ventilation_schedule_name"]
+    system_type         = assigned_vent["system_type"]
+    flow_exponent       = assigned_vent["flow_exponent"]
+
+    # 6) Print or debug
+    print(
+        f"[VENT OVERRIDES] bldg={bldg_id}, infiltration_base={infiltration_base}, "
+        f"year_factor={year_factor}, sys={system_type}, f_ctrl={f_ctrl}, "
+        f"fanP={fan_pressure}, hrv_eff={hrv_eff}, infiltration_sched={infiltration_sched}, "
+        f"vent_sched={ventilation_sched}"
+    )
+
+    # 7) Calculate total infiltration & ventilation flows for the building
+    infiltration_m3_s_total = calc_infiltration(
+        infiltration_base=infiltration_base,
+        year_factor=year_factor,
+        flow_exponent=flow_exponent,
+        floor_area_m2=floor_area_m2
+    )
+    vent_flow_m3_s_total = calc_required_ventilation_flow(
+        building_function=bldg_func,
+        f_ctrl_val=f_ctrl,
+        floor_area_m2=floor_area_m2,
+        usage_key=usage_key
+    )
+
+    # 7b) Retrieve zones
+    zones = idf.idfobjects["ZONE"]
+    if not zones:
+        print("[VENT] No zones found, skipping creation of infiltration/ventilation objects.")
+        return
+
+    n_zones = len(zones)
+    infiltration_per_zone = infiltration_m3_s_total / n_zones
+    vent_per_zone = vent_flow_m3_s_total / n_zones
+
+    # 8) If we want to store building-level data in assigned_vent_log
+    if assigned_vent_log is not None:
+        if bldg_id not in assigned_vent_log:
+            assigned_vent_log[bldg_id] = {}
+
+        assigned_vent_log[bldg_id]["building_params"] = {
+            # Numeric picks + ranges
+            "infiltration_base": infiltration_base,
+            "infiltration_base_range": infiltration_rng,
+            "year_factor": year_factor,
+            "year_factor_range": year_factor_rng,
+            "fan_pressure": fan_pressure,
+            "fan_pressure_range": fan_pressure_rng,
+            "f_ctrl": f_ctrl,
+            "f_ctrl_range": f_ctrl_rng,
+            "hrv_eff": hrv_eff,
+            "hrv_eff_range": hrv_eff_rng,
+            # Schedules
+            "infiltration_schedule_name": infiltration_sched,
+            "ventilation_schedule_name": ventilation_sched,
+            "system_type": system_type,
+            "flow_exponent": flow_exponent,
+            # Flows for entire building
+            "infiltration_total_m3_s": infiltration_m3_s_total,
+            "ventilation_total_m3_s": vent_flow_m3_s_total
+        }
+
+        # We'll create a sub-dict for zone-level data
+        assigned_vent_log[bldg_id]["zones"] = {}
+
+    print(
+        f"[VENTILATION] Building {bldg_id}, system={system_type}, infiltration={infiltration_m3_s_total:.3f} m3/s, "
+        f"vent={vent_flow_m3_s_total:.3f} m3/s, #zones={n_zones}"
+    )
+
+    # 9) For each zone => create infiltration + ventilation objects
+    for zone_obj in zones:
+        zone_name = zone_obj.Name
+
+        iobj, vobj = create_ventilation_system(
+            idf=idf,
+            building_function=bldg_func,
+            system_type=system_type,
+            zone_name=zone_name,
+            infiltration_m3_s=infiltration_per_zone,
+            vent_flow_m3_s=vent_per_zone,
+            infiltration_sched_name=infiltration_sched,
+            ventilation_sched_name=ventilation_sched,
+            pick_strategy="random" if strategy == "B" else "midpoint"
+        )
+
+        print(
+            f"   => Created infiltration for {zone_name}: {infiltration_per_zone:.4f} m3/s, "
+            f"ventilation: {vent_per_zone:.4f} m3/s"
+        )
+
+        # 9b) Log zone-level data
+        if assigned_vent_log is not None:
+            assigned_vent_log[bldg_id]["zones"][zone_name] = {
+                "infiltration_object_name": iobj.Name,
+                "infiltration_object_type": iobj.key,
+                "infiltration_flow_m3_s": infiltration_per_zone,
+                "infiltration_schedule_name": infiltration_sched,
+                # If system_type != "D", we have vobj => ZONEVENTILATION:DESIGNFLOWRATE
+                # If system_type == "D", vobj might be the same as iobj or None
+                #   Actually in create_ventilation_system, iobj is infiltration, vobj is either
+                #   a ZONEVENTILATION:DESIGNFLOWRATE or an IdealLoads object (for system D).
+                "ventilation_object_name": vobj.Name if vobj else None,
+                "ventilation_object_type": vobj.key if vobj else None,
+                "ventilation_flow_m3_s": vent_per_zone if vobj else 0.0,
+                "ventilation_schedule_name": ventilation_sched
+            }
+
+    # 10) If system_type == "D", optionally confirm HRV on IdealLoads
+    # (The create_ventilation_system already sets sensible HRV if the IDD field exists).
+    if system_type == "D" and hrv_eff > 0.0:
+        for zone_obj in zones:
+            zone_name = zone_obj.Name
+            ideal_name = f"{zone_name} Ideal Loads"
+            ideal_obj = idf.getobject("ZONEHVAC:IDEALLOADSAIRSYSTEM", ideal_name)
+            if not ideal_obj:
+                print(f"[VENT WARNING] {zone_name}: Ideal Loads not found for system D, can't set HRV.")
+            else:
+                if hasattr(ideal_obj, "Sensible_Heat_Recovery_Effectiveness"):
+                    # It's presumably set in create_ventilation_system, but you could confirm or adjust:
+                    print(f"      -> {zone_name} IdealLoads has HRV = {hrv_eff:.2f}")
+                else:
+                    print(f"      -> {zone_name} IdealLoads object lacks HRV fields in IDD.")
+
+  --- File Contents End ---
+
+  File: assign_ventilation_values.py
+  --- File Contents Start ---
+# ventilation/assign_ventilation_values.py
+
+# ventilation/assign_ventilation_params_with_overrides.py
 
 import random
-from .dhw_lookup import dhw_lookup
+from .ventilation_lookup import ventilation_lookup
 
-def find_dhw_overrides(building_id, dhw_key, user_config):
+def find_vent_overrides(
+    building_id,
+    building_function,
+    age_range,
+    scenario,
+    calibration_stage,
+    user_config
+):
     """
-    Helper function to search user_config_dhw for any overrides 
-    specific to this building_id and dhw_key.
+    Return a list of user_config rows that match all provided criteria:
+      - building_id
+      - building_function
+      - age_range
+      - scenario
+      - calibration_stage
     """
     matches = []
-    for row in (user_config or []):
-        if "building_id" in row:
-            if row["building_id"] != building_id:
+    if user_config:
+        for row in user_config:
+            # building_id match if present
+            if "building_id" in row and row["building_id"] != building_id:
                 continue
-        if "dhw_key" in row:
-            if row["dhw_key"] != dhw_key:
+            # building_function match if present
+            if "building_function" in row and row["building_function"] != building_function:
                 continue
-        matches.append(row)
+            # age_range match if present
+            if "age_range" in row and row["age_range"] != age_range:
+                continue
+            # scenario match if present
+            if "scenario" in row and row["scenario"] != scenario:
+                continue
+            # calibration_stage match if present
+            if "calibration_stage" in row and row["calibration_stage"] != calibration_stage:
+                continue
+            matches.append(row)
     return matches
+
 
 def pick_val_with_range(
     rng_tuple,
-    strategy: str = "A",
-    log_dict: dict = None,      # dictionary to store final value & range
-    param_name: str = None      # e.g. "liters_per_person_per_day"
+    strategy="A",
+    log_dict=None,
+    param_name=None
 ):
     """
-    rng_tuple = (min_val, max_val)
-    strategy  = "A" => pick midpoint
-                "B" => random.uniform(min_val, max_val)
-                else => pick min_val as fallback
-    
-    If log_dict is provided, store the final chosen value and (min_val, max_val)
-    in e.g. log_dict[param_name] and log_dict[f"{param_name}_range"].
+    rng_tuple = (min_val, max_val) or None.
+    strategy  = "A"=>midpoint, "B"=>random, "C"=>pick min, etc.
+    log_dict  => optional dictionary for storing final picks.
+    param_name=> e.g. "infiltration_base", "fan_pressure", etc.
+
+    Returns the chosen numeric value.
+    Also logs (param_name + param_name_range) if log_dict is provided.
     """
-    min_val, max_val = rng_tuple
+    if rng_tuple is None:
+        return 0.0  # fallback => 0
 
-    # If no valid range => return None
-    if min_val is None and max_val is None:
-        chosen = None
-        if log_dict is not None and param_name is not None:
-            log_dict[f"{param_name}_range"] = (None, None)
-            log_dict[param_name] = None
-        return chosen
+    min_v, max_v = rng_tuple
 
-    # Otherwise, pick a final value based on strategy
-    if strategy == "A":  
-        chosen = (min_val + max_val) / 2.0  # midpoint
-    elif strategy == "B":  
-        chosen = random.uniform(min_val, max_val)
+    # pick final
+    if strategy == "A":
+        chosen = (min_v + max_v) / 2.0
+    elif strategy == "B":
+        chosen = random.uniform(min_v, max_v)
+    elif strategy == "C":
+        chosen = min_v  # pick min
     else:
-        chosen = min_val  # fallback => pick lower bound
+        chosen = min_v  # default => pick min
 
-    # Store in the log if provided
-    if log_dict is not None and param_name is not None:
-        log_dict[f"{param_name}_range"] = (min_val, max_val)
+    if log_dict is not None and param_name:
+        # store the numeric range
+        log_dict[f"{param_name}_range"] = (min_v, max_v)
+        # store the final
         log_dict[param_name] = chosen
 
     return chosen
 
-def assign_dhw_parameters(
-    building_id: int,
-    dhw_key: str,
-    calibration_stage: str = "pre_calibration",
-    strategy: str = "A",
-    random_seed: int = None,
-    user_config_dhw: list = None,
-    assigned_dhw_log: dict = None,
-    building_row: dict = None,
-    use_nta: bool = False
+
+def assign_ventilation_params_with_overrides(
+    building_id=None,
+    building_function="residential",
+    age_range="2015 and later",
+    scenario="scenario1",
+    calibration_stage="pre_calibration",
+    strategy="A",         # "A" => midpoint, "B" => random, "C" => min, etc.
+    random_seed=None,
+    user_config_vent=None,     # possibly a list of override rows
+    assigned_vent_log=None,    # dictionary to store final picks if desired
+    infiltration_key=None,     # e.g. "two_and_a_half_story_house"
+    year_key=None,             # e.g. "1970-1992"
+    is_residential=True,
+    default_flow_exponent=0.67
 ):
     """
-    Returns a dict of selected DHW parameter values from dhw_lookup + user overrides:
-        - occupant_density_m2_per_person
-        - liters_per_person_per_day
-        - default_tank_volume_liters
-        - default_heater_capacity_w
-        - setpoint_c
-        - usage_split_factor
-        - peak_hours
-        - sched_morning
-        - sched_peak
-        - sched_afternoon
-        - sched_evening
+    Returns a dict containing:
+        {
+          "infiltration_base": float,
+          "infiltration_base_range": (min, max),
+          "year_factor": float,
+          "year_factor_range": (min, max),
+          "system_type": str,
+          "fan_pressure": float,
+          "fan_pressure_range": (min, max),
+          "f_ctrl": float,
+          "f_ctrl_range": (min, max),
+          "hrv_eff": float,
+          "hrv_eff_range": (min, max),
+          "infiltration_schedule_name": str,
+          "ventilation_schedule_name": str,
+          "flow_exponent": default_flow_exponent
+        }
 
     Steps:
-      1) Identify the param ranges from dhw_lookup[calibration_stage][dhw_key], 
-         or fallback if not found.
-      2) Gather user_config overrides (if any) for this building_id & dhw_key,
-         then override the param ranges accordingly.
-      3) If the building is Residential and occupant_density_m2_per_person_range 
-         is (None, None), compute occupant density from building_row's area 
-         (and occupant_count formula, if desired).
-      4) Use the chosen strategy ("A", "B", or fallback) to pick final numeric values.
-      5) If use_nta=True => override occupant usage with occupant_count & liters 
-         as per your custom logic in the code (area-based or occupant-based).
-      6) Return a dict of final values and (optionally) store them in assigned_dhw_log.
+      1) Look up default ranges from ventilation_lookup (scenario, calibration_stage).
+      2) Merge user overrides => modifies these ranges or sets fixed values.
+      3) Use 'strategy' to pick final numeric values from each range.
+      4) Return the final assigned dictionary, which includes both final picks & range info.
+      5) Optionally log them to assigned_vent_log if provided.
     """
-
-    # optional reproducibility
     if random_seed is not None:
         random.seed(random_seed)
 
-    # 1) Determine the calibration stage dictionary
-    if calibration_stage not in dhw_lookup:
+    # 1) Fallback checks
+    if scenario not in ventilation_lookup:
+        scenario = "scenario1"
+    if calibration_stage not in ventilation_lookup[scenario]:
         calibration_stage = "pre_calibration"
-    stage_dict = dhw_lookup[calibration_stage]
 
-    # If dhw_key not found => fallback
-    if dhw_key not in stage_dict:
-        fallback = {
-            "occupant_density_m2_per_person": None,
-            "liters_per_person_per_day": 50.0,
-            "default_tank_volume_liters": 200.0,
-            "default_heater_capacity_w": 4000.0,
-            "setpoint_c": 60.0,
-            "usage_split_factor": 0.6,
-            "peak_hours": 2.0,
-            "sched_morning": 0.7,
-            "sched_peak": 1.0,
-            "sched_afternoon": 0.2,
-            "sched_evening": 0.8
-        }
-        # If we're logging assigned values:
-        if assigned_dhw_log is not None:
-            assigned_dhw_log[building_id] = {}
-            for k, v in fallback.items():
-                assigned_dhw_log[building_id][k] = v
-                assigned_dhw_log[building_id][f"{k}_range"] = (v, v)
-        return fallback
+    stage_dict = ventilation_lookup[scenario][calibration_stage]
 
-    # Found param ranges
-    param_ranges = stage_dict[dhw_key]
+    # Prepare a local dictionary for logging (if assigned_vent_log is used).
+    # We'll store picks in log_dict and also keep them in the final 'assigned' dict.
+    log_dict = None
+    if assigned_vent_log is not None:
+        if building_id not in assigned_vent_log:
+            assigned_vent_log[building_id] = {}
+        log_dict = assigned_vent_log[building_id]
 
-    # 2) Gather user config overrides
-    matches = find_dhw_overrides(building_id, dhw_key, user_config_dhw)
+    # 2) Default infiltration_base range from infiltration_key
+    if is_residential:
+        res_infil = stage_dict["residential_infiltration_range"]
+        infiltration_base_rng = res_infil.get(infiltration_key, (1.0, 1.0))
+        sys_ctrl_ranges = stage_dict["system_control_range_res"]
+    else:
+        nonres_infil = stage_dict["non_res_infiltration_range"]
+        infiltration_base_rng = nonres_infil.get(infiltration_key, (0.5, 0.5))
+        sys_ctrl_ranges = stage_dict["system_control_range_nonres"]
 
-    def override_range(current_range, override_dict):
+    # 3) year_factor range
+    year_factor_rng = stage_dict["year_factor_range"].get(year_key, (1.0, 1.0))
+
+    # 4) default system_type => "A" if residential else "D"
+    default_system_type = "A" if is_residential else "D"
+    system_type_final = default_system_type
+
+    # 5) fan_pressure => can be looked up from stage_dict["fan_pressure_range"] if needed
+    #    but often it may not be subdivided by infiltration_key. We'll store a fallback
+    fan_pressure_rng = (0.0, 0.0)
+    if "fan_pressure_range" in stage_dict:
+        # Example: we might have:
+        #  stage_dict["fan_pressure_range"] = {
+        #     "res_mech":(40,60), "nonres_intake":(90,110), ...
+        #  }
+        # But we don't necessarily know which subkey to pick. 
+        # For now let's keep it as (0,0) unless user override sets it.
+        pass
+
+    # 6) f_ctrl => pick from system_control_range (depending on system_type)
+    if system_type_final in sys_ctrl_ranges:
+        f_ctrl_rng = sys_ctrl_ranges[system_type_final].get("f_ctrl_range", (1.0, 1.0))
+    else:
+        f_ctrl_rng = (1.0, 1.0)
+
+    # 7) HRV => only relevant if system_type=="D"
+    hrv_eff_rng = (0.0, 0.0)
+    if "hrv_sensible_eff_range" in stage_dict:
+        hrv_eff_rng = stage_dict["hrv_sensible_eff_range"]
+
+    # 8) apply user overrides
+    #    We'll scan for rows that match (bldg_id, building_function, etc.) 
+    #    and override infiltration_base, year_factor, system_type, fan_pressure, f_ctrl, hrv_eff, schedules, ...
+    matches = find_vent_overrides(
+        building_id or 0,
+        building_function or "residential",
+        age_range or "2015 and later",
+        scenario or "scenario1",
+        calibration_stage,
+        user_config_vent
+    )
+
+    def override_range(current_range, row):
         """
-        Convert override row to new (min_val, max_val) or (fixed_value, fixed_value).
+        If row has 'fixed_value', convert it to (val, val).
+        If row has 'min_val' and 'max_val', return that tuple.
+        Otherwise return current_range.
         """
-        if "fixed_value" in override_dict:
-            fv = override_dict["fixed_value"]
-            return (fv, fv)
-        if "min_val" in override_dict and "max_val" in override_dict:
-            return (override_dict["min_val"], override_dict["max_val"])
+        if "fixed_value" in row:
+            val = row["fixed_value"]
+            # if numeric, store as (val,val). If string, we'll handle separately below.
+            try:
+                f = float(val)
+                return (f, f)
+            except (ValueError, TypeError):
+                # it's a string => return current_range, let separate logic handle
+                return current_range
+        elif "min_val" in row and "max_val" in row:
+            return (row["min_val"], row["max_val"])
         return current_range
 
-    # 3) Extract param ranges from param_ranges
-    occdens_rng = param_ranges.get("occupant_density_m2_per_person_range", (None, None))
-    liters_rng  = param_ranges.get("liters_per_person_per_day_range", (50.0, 50.0))
-    vol_rng     = param_ranges.get("default_tank_volume_liters_range", (200.0, 200.0))
-    cap_rng     = param_ranges.get("default_heater_capacity_w_range", (4000.0, 4000.0))
-    setp_rng    = param_ranges.get("setpoint_c_range", (60.0, 60.0))
-    usplit_rng  = param_ranges.get("usage_split_factor_range", (0.6, 0.6))
-    peak_rng    = param_ranges.get("peak_hours_range", (2.0, 2.0))
+    # Potential placeholders for schedule overrides
+    infiltration_sched_name = "AlwaysOnSched"
+    ventilation_sched_name  = "VentSched_DayNight"
 
-    sched_morn_rng   = param_ranges.get("sched_morning_range", (0.7, 0.7))
-    sched_peak_rng   = param_ranges.get("sched_peak_range", (1.0, 1.0))
-    sched_aftern_rng = param_ranges.get("sched_afternoon_range", (0.2, 0.2))
-    sched_even_rng   = param_ranges.get("sched_evening_range", (0.8, 0.8))
-
-    # 3b) Apply any user_config overrides
     for row in matches:
-        pname = row.get("param_name")
-        if pname == "occupant_density_m2_per_person":
-            occdens_rng = override_range(occdens_rng, row)
-        elif pname == "liters_per_person_per_day":
-            liters_rng = override_range(liters_rng, row)
-        elif pname == "default_tank_volume_liters":
-            vol_rng = override_range(vol_rng, row)
-        elif pname == "default_heater_capacity_w":
-            cap_rng = override_range(cap_rng, row)
-        elif pname == "setpoint_c":
-            setp_rng = override_range(setp_rng, row)
-        elif pname == "usage_split_factor":
-            usplit_rng = override_range(usplit_rng, row)
-        elif pname == "peak_hours":
-            peak_rng = override_range(peak_rng, row)
-        elif pname == "sched_morning":
-            sched_morn_rng = override_range(sched_morn_rng, row)
-        elif pname == "sched_peak":
-            sched_peak_rng = override_range(sched_peak_rng, row)
-        elif pname == "sched_afternoon":
-            sched_aftern_rng = override_range(sched_aftern_rng, row)
-        elif pname == "sched_evening":
-            sched_even_rng = override_range(sched_even_rng, row)
+        pname = row.get("param_name", "")
+        if pname == "infiltration_base":
+            infiltration_base_rng = override_range(infiltration_base_rng, row)
 
-    # 3c) If building is Residential & occupant_density is (None, None), compute from building_row
-    if building_row is not None:
-        bldg_func = str(building_row.get("building_function", "")).lower()
-        if "residential" in bldg_func:
-            # occupant_density = area / occupant_count
-            area = building_row.get("area", 80.0)
-            occupant_count = building_row.get("occupant_count", None)
-            if occupant_count is None:
-                occupant_count = 1
-                if area > 50:
-                    occupant_count += 0.01 * (area - 50)
-                occupant_count = max(1, occupant_count)
+        elif pname == "year_factor":
+            year_factor_rng = override_range(year_factor_rng, row)
 
-            # if occupant_density range is None => set to small band around computed
-            if occdens_rng == (None, None):
-                occupant_density_val = area / occupant_count
-                occupant_density_min = 0.9 * occupant_density_val
-                occupant_density_max = 1.1 * occupant_density_val
-                occdens_rng = (occupant_density_min, occupant_density_max)
+        elif pname == "system_type":
+            # If user sets a fixed_value => override system_type_final
+            if "fixed_value" in row:
+                system_type_final = row["fixed_value"]
 
-    # set up sub-log if needed
-    if assigned_dhw_log is not None and building_id not in assigned_dhw_log:
-        assigned_dhw_log[building_id] = {}
+        elif pname == "fan_pressure":
+            fan_pressure_rng = override_range(fan_pressure_rng, row)
 
-    # 4) Pick final numeric values for each parameter
-    occupant_density = pick_val_with_range(
-        occdens_rng,
-        strategy,
-        assigned_dhw_log.get(building_id),
-        "occupant_density_m2_per_person"
-    )
-    liters_pp_day = pick_val_with_range(
-        liters_rng,
-        strategy,
-        assigned_dhw_log.get(building_id),
-        "liters_per_person_per_day"
-    )
-    tank_vol = pick_val_with_range(
-        vol_rng,
-        strategy,
-        assigned_dhw_log.get(building_id),
-        "default_tank_volume_liters"
-    )
-    heater_cap = pick_val_with_range(
-        cap_rng,
-        strategy,
-        assigned_dhw_log.get(building_id),
-        "default_heater_capacity_w"
-    )
-    setpoint_c = pick_val_with_range(
-        setp_rng,
-        strategy,
-        assigned_dhw_log.get(building_id),
-        "setpoint_c"
-    )
-    usage_split = pick_val_with_range(
-        usplit_rng,
-        strategy,
-        assigned_dhw_log.get(building_id),
-        "usage_split_factor"
-    )
-    peak_hrs = pick_val_with_range(
-        peak_rng,
-        strategy,
-        assigned_dhw_log.get(building_id),
-        "peak_hours"
-    )
-    sch_morn = pick_val_with_range(
-        sched_morn_rng,
-        strategy,
-        assigned_dhw_log.get(building_id),
-        "sched_morning"
-    )
-    sch_peak = pick_val_with_range(
-        sched_peak_rng,
-        strategy,
-        assigned_dhw_log.get(building_id),
-        "sched_peak"
-    )
-    sch_after = pick_val_with_range(
-        sched_aftern_rng,
-        strategy,
-        assigned_dhw_log.get(building_id),
-        "sched_afternoon"
-    )
-    sch_even = pick_val_with_range(
-        sched_even_rng,
-        strategy,
-        assigned_dhw_log.get(building_id),
-        "sched_evening"
-    )
+        elif pname == "f_ctrl":
+            f_ctrl_rng = override_range(f_ctrl_rng, row)
 
-    # 5) If use_nta => override occupant usage from building_row in a second pass
-    if use_nta and (building_row is not None):
-        bfunc = str(building_row.get("building_function", "")).lower()
-        area  = building_row.get("area", 80.0)
+        elif pname == "hrv_eff":
+            hrv_eff_rng = override_range(hrv_eff_rng, row)
 
-        if "residential" in bfunc:
-            # occupant_count from area
-            if area <= 50:
-                occupant_count = 1
-            else:
-                occupant_count = 1 + 0.01 * (area - 50)
-            occupant_count = max(1, occupant_count)
+        elif pname == "infiltration_schedule_name":
+            # override infiltration_sched_name if fixed_value is present
+            if "fixed_value" in row:
+                infiltration_sched_name = row["fixed_value"]
 
-            # occupant_density => area / occupant_count
-            occupant_density = area / occupant_count
+        elif pname == "ventilation_schedule_name":
+            # override ventilation_sched_name if fixed_value is present
+            if "fixed_value" in row:
+                ventilation_sched_name = row["fixed_value"]
 
-            # total daily liters => occupant_count * 45
-            total_daily_liters = occupant_count * 45.0
-            liters_pp_day = total_daily_liters / occupant_count
+    # 8b) If system_type_final == "D", we might pick from hrv_eff_rng 
+    #     but if it's "A","B","C", set hrv_eff to 0
+    # (We do that picking below with pick_val_with_range.)
 
-            # Update assigned_dhw_log if present
-            if assigned_dhw_log and building_id in assigned_dhw_log:
-                assigned_dhw_log[building_id]["liters_per_person_per_day"] = liters_pp_day
-                assigned_dhw_log[building_id]["occupant_density_m2_per_person"] = occupant_density
+    # 9) pick final infiltration_base, year_factor, fan_pressure, f_ctrl, hrv_eff
+    #    storing into a local dictionary
+    local_log = {}
+    infiltration_base_val = pick_val_with_range(infiltration_base_rng, strategy, local_log, "infiltration_base")
+    year_factor_val       = pick_val_with_range(year_factor_rng,       strategy, local_log, "year_factor")
+    fan_pressure_val      = pick_val_with_range(fan_pressure_rng,      strategy, local_log, "fan_pressure")
+    f_ctrl_val            = pick_val_with_range(f_ctrl_rng,            strategy, local_log, "f_ctrl")
 
-        else:
-            # Non-res => daily liters from area-based approach
-            nrtype = dhw_key  # or building_row.get("non_residential_type", "")
-            factor_kwh = dhw_lookup["TABLE_13_1_KWH_PER_M2"].get(nrtype, 1.4)
-            annual_kwh = factor_kwh * area
-            annual_liters = annual_kwh * 13.76
-            daily_liters  = annual_liters / 365.0
-
-            if occupant_density and occupant_density > 0:
-                occupant_count = max(1, area / occupant_density)
-                new_liters_pp_day = daily_liters / occupant_count
-            else:
-                occupant_count = 1
-                occupant_density = area
-                new_liters_pp_day = daily_liters
-
-            liters_pp_day = new_liters_pp_day
-
-            if assigned_dhw_log and building_id in assigned_dhw_log:
-                assigned_dhw_log[building_id]["liters_per_person_per_day"] = liters_pp_day
-                assigned_dhw_log[building_id]["occupant_density_m2_per_person"] = occupant_density
-
-    # 6) Build the final result dict
-    result = {
-        "occupant_density_m2_per_person": occupant_density,
-        "liters_per_person_per_day": liters_pp_day,
-        "default_tank_volume_liters": tank_vol,
-        "default_heater_capacity_w": heater_cap,
-        "setpoint_c": setpoint_c,
-        "usage_split_factor": usage_split,
-        "peak_hours": peak_hrs,
-        "sched_morning": sch_morn,
-        "sched_peak": sch_peak,
-        "sched_afternoon": sch_after,
-        "sched_evening": sch_even
-    }
-    return result
-
-  --- File Contents End ---
-
-  File: building_type_map.py
-  --- File Contents Start ---
-# DHW/building_type_map.py
-
-def map_building_function_to_dhw_key(building_row):
-    """
-    Decide which DHW key from dhw_lookup to use, based on:
-
-      - building_function: 'Residential' or 'Non-Residential'
-      - For Residential, we use 'area' to assign one of:
-          "Corner House"
-          "Terrace or Semi-detached House"
-          "Detached House"
-          "Two-and-a-half-story House"
-          "Apartment"
-        (Feel free to adjust thresholds or logic as needed.)
-      
-      - For Non-Residential, we read the non_residential_type and map directly to:
-          "Meeting Function"
-          "Healthcare Function"
-          "Sport Function"
-          "Cell Function"
-          "Retail Function"
-          "Industrial Function"
-          "Accommodation Function"
-          "Office Function"
-          "Education Function"
-          "Other Use Function" (fallback)
-
-    Returns the exact string that corresponds to the keys in your dhw_lookup.
-    """
-
-    bldg_func = (building_row.get("building_function") or "Residential").lower()
-    bldg_area = building_row.get("area", 80)  # fallback if area not provided
-    
-    # ---------------------
-    # RESIDENTIAL LOGIC
-    # ---------------------
-    if bldg_func == "residential":
-        # Example area-based classification
-        if bldg_area < 60:
-            return "Corner House"
-        elif bldg_area < 100:
-            return "Terrace or Semi-detached House"
-        elif bldg_area < 150:
-            return "Detached House"
-        elif bldg_area < 250:
-            return "Two-and-a-half-story House"
-        else:
-            return "Apartment"
-
-    # ---------------------
-    # NON-RESIDENTIAL LOGIC
-    # ---------------------
+    hrv_eff_val = 0.0
+    if system_type_final == "D":
+        hrv_eff_val = pick_val_with_range(hrv_eff_rng, strategy, local_log, "hrv_eff")
     else:
-        nrtype = building_row.get("non_residential_type", "")
-        # Map directly, or fallback to "Other Use Function"
-        valid_nonres = {
-            "Meeting Function":       "Meeting Function",
-            "Healthcare Function":    "Healthcare Function",
-            "Sport Function":         "Sport Function",
-            "Cell Function":          "Cell Function",
-            "Retail Function":        "Retail Function",
-            "Industrial Function":    "Industrial Function",
-            "Accommodation Function": "Accommodation Function",
-            "Office Function":        "Office Function",
-            "Education Function":     "Education Function",
-            "Other Use Function":     "Other Use Function"
-        }
-        return valid_nonres.get(nrtype, "Other Use Function")
+        # store hrv_eff=0, but also store range if we like
+        local_log["hrv_eff_range"] = (0.0, 0.0)
+        local_log["hrv_eff"] = 0.0
+
+    # 10) infiltration/vent schedules => infiltration_sched_name, ventilation_sched_name
+    # We'll store them in local_log as well
+    local_log["infiltration_schedule_name"] = infiltration_sched_name
+    local_log["ventilation_schedule_name"]  = ventilation_sched_name
+
+    # Also store final system_type in local_log
+    local_log["system_type"] = system_type_final
+
+    # 11) Build final assigned dict with *both* the final picks and their ranges
+    #     Because pick_val_with_range stored infiltration_base_range in local_log["infiltration_base_range"], etc.
+    #     We'll combine them in a single dict.
+    assigned = {
+        # infiltration_base (val + range)
+        "infiltration_base": local_log["infiltration_base"],
+        "infiltration_base_range": local_log["infiltration_base_range"],
+
+        # year_factor (val + range)
+        "year_factor": local_log["year_factor"],
+        "year_factor_range": local_log["year_factor_range"],
+
+        # fan_pressure (val + range)
+        "fan_pressure": local_log["fan_pressure"],
+        "fan_pressure_range": local_log["fan_pressure_range"],
+
+        # f_ctrl (val + range)
+        "f_ctrl": local_log["f_ctrl"],
+        "f_ctrl_range": local_log["f_ctrl_range"],
+
+        # hrv_eff (val + range)
+        "hrv_eff": local_log["hrv_eff"],
+        "hrv_eff_range": local_log["hrv_eff_range"],
+
+        # Schedules
+        "infiltration_schedule_name": local_log["infiltration_schedule_name"],
+        "ventilation_schedule_name": local_log["ventilation_schedule_name"],
+
+        # System type
+        "system_type": local_log["system_type"],
+
+        # Flow exponent
+        "flow_exponent": default_flow_exponent
+    }
+
+    # If logging externally => store in assigned_vent_log[building_id]
+    # e.g. assigned_vent_log[bldg_id]["ventilation_params"] = assigned
+    if log_dict is not None:
+        log_dict["ventilation_params"] = assigned
+
+    return assigned
+
+
+
+
+
+    """
+    Searches a user_config list/dict for any override entries matching the
+    building_id, building_function, age_range, scenario, and calibration_stage.
+    Returns a list of matching dict rows.
+
+    Each 'row' in user_config can specify:
+      - "building_id"
+      - "building_function"
+      - "age_range"
+      - "scenario"
+      - "calibration_stage"
+      - plus override fields for infiltration_base, year_factor, system_type, fan_pressure, f_ctrl, hrv_eff, etc.
+
+    If any of those fields are present in the row and do not match the
+    current building, that row is skipped. Otherwise, the row is considered
+    a match and is returned in the list.
+    """
+
+    """
+    Return a dict with infiltration_base, year_factor, system_type, f_ctrl, fan_pressure,
+    hrv_eff, infiltration_schedule_name, ventilation_schedule_name, etc.
+
+    This function uses:
+      1) The scenario & calibration_stage to locate a sub-dict in 'ventilation_lookup'
+      2) The infiltration_key/year_key to get infiltration & year_factor ranges
+      3) user_config_vent overrides to optionally override any of the above
+      4) A picking strategy (A=midpoint, B=uniform random, C=lower bound) for final selection
+      5) The building_function & usage_key to also fetch schedule_info from 'ventilation_lookup'
+         => infiltration_schedule_name & ventilation_schedule_name
+
+    Then logs final picks into assigned_vent_log if provided (dict-based log).
+    """
+
 
   --- File Contents End ---
 
-  File: dhw_lookup.py
+  File: calc_functions.py
   --- File Contents Start ---
-# DHW/dhw_lookup.py
+# ventilation/calc_functions.py
 
-# -------------------------------------------------------------------------------
-# NTA 8800 References (Selection):
-# -------------------------------------------------------------------------------
-# - §§13.1–13.2 of NTA 8800 give an overview of hot tap water energy use,
-#   net heat requirement, and occupant-based or area-based usage (esp. 13.2.2, 13.2.3).
-# - Table 13.1 (page ~15 in the excerpt) gives typical daily liters at 60 °C per m²
-#   for various non-residential functions (like offices, education, sport).
-# - For residential, ~40 L/person/day at 60 °C is often cited (NTA 8800 note around p.15).
-# - If a circulation loop exists, setpoint often goes to 65 °C (NTA 8800 references in 
-#   13.6.2, 13.7.2.2.2).
-#
-# Below constants are approximate placeholders:
-#  - The occupant_density_m2_per_person_range is the approximate range of floor area 
-#    per occupant (lower area => higher occupant density).
-#  - The liters_per_person_per_day_range is how many liters of 60 °C hot water each occupant uses daily.
-#  - default_tank_volume_liters_range, default_heater_capacity_w_range are typical 
-#    lumpsum approximations for tank sizing and heater capacity.
-#  - setpoint_c_range typically ~60 °C, or 65 °C for certain healthcare/hospital contexts.
-#  - usage_split_factor_range, peak_hours_range, sched_*_range are code-specific ways 
-#    to shape daily usage.
-# 
-# You can adjust these numeric ranges as you see fit; they are example placeholders
-# reflecting NTA 8800’s typical usage categories, matched to your new naming system.
-# -------------------------------------------------------------------------------
+import math
 
-dhw_lookup = {
+def calc_infiltration(
+    infiltration_base,  # e.g. assigned["infiltration_base"] from assign_ventilation_values
+    year_factor,        # assigned["year_factor"] from overrides
+    flow_exponent,      # typically 0.67 (standard infiltration exponent)
+    floor_area_m2       # total building area
+):
+    """
+    Calculate infiltration in m3/s based on an 'infiltration_base' at 10 Pa.
 
-    # -------------------------------------------------------------
-    # TABLE_13_1_KWH_PER_M2 for area-based approach
-    # (Renamed to match your new Non-Residential Type naming system)
-    # -------------------------------------------------------------
-    "TABLE_13_1_KWH_PER_M2": {
-        "Meeting Function":       2.8,   # e.g. 2.8 kWh/m²/year
-        "Office Function":        1.4,   # ~1.4 kWh/m²/year
-        "Retail Function":        1.4,   # ~1.4 kWh/m²/year
-        "Healthcare Function":   15.3,   # e.g. large hospital or care facility
-        "Education Function":     1.4,   # ~1.4 kWh/m²/year
-        "Sport Function":         12.5,   # placeholder for sports
-        "Cell Function":          4.2,   # placeholder for penal/detention usage
-        "Industrial Function":    1.2,   # placeholder for industrial usage
-        "Accommodation Function": 12.5,  # typical hotel factor
-        "Other Use Function":     2.4    # fallback
+    Steps:
+      1) Multiply infiltration_base by year_factor => qv10_lea_ref (represents
+         infiltration at 10 Pa for the building, e.g. in dm3/s·m2 or similar).
+      2) Convert qv10 => qv1 by applying exponent:
+            qv1 = qv10 * (1/10)^n
+         (n = flow_exponent, e.g. 0.67 per NTA 8800).
+      3) Multiply qv1_lea_ref_per_m2_h by total floor area => infiltration_m3/h.
+      4) Convert infiltration_m3/h => infiltration_m3/s by dividing by 3600.
+
+    NTA 8800 basis:
+      - Table 11.2 prescribes n=0.67 for leak losses (infiltration).
+      - Section 11.2.5 references how infiltration is often reported at 10 Pa
+        and needs converting to 1 Pa. This code parallels that approach.
+
+    Returns infiltration in m3/s.
+    """
+
+    # 1) infiltration_base * year_factor => infiltration at 10 Pa
+    qv10_lea_ref = infiltration_base * year_factor
+
+    # 2) Convert from qv10 to qv1 by (1/10)^exponent
+    qv1_lea_ref_per_m2_h = qv10_lea_ref * (1.0 / 10.0)**flow_exponent
+
+    # 3) Multiply by floor area => infiltration in m3/h
+    infiltration_m3_h = qv1_lea_ref_per_m2_h * floor_area_m2
+
+    # 4) Convert from m3/h => m3/s
+    infiltration_m3_s = infiltration_m3_h / 3600.0
+    return infiltration_m3_s
+
+
+def calc_required_ventilation_flow(
+    building_function,
+    f_ctrl_val,
+    floor_area_m2,
+    usage_key=None
+):
+    """
+    Calculate the required ventilation flow (m3/s).
+
+    Approach:
+      - If residential: 0.9 dm3/s/m2 is used as base, then multiplied by
+        control factor (f_ctrl_val). A minimum of ~126 m3/h is enforced.
+        => 126 m3/h = 35 L/s, typical minimal design flow for dwellings.
+
+      - If non-residential: usage_key (office_area_based, childcare, retail, etc.)
+        references typical design flows (dm3/s/m2). Then multiplied by f_ctrl_val.
+
+    NTA 8800 basis:
+      - In Section 11.2.2.5 or Table 11.8, typical air supply rates are given
+        for various functions. This code uses simplified example values.
+
+    Returns flow in m3/s.
+    """
+
+    if building_function == "residential":
+        # base usage flow in dm3/s
+        qv_uspec = 0.9
+        # multiply by floor area => dm3/s
+        qv_oda_req_des_dm3_s = qv_uspec * floor_area_m2
+        # convert to m3/h
+        qv_oda_req_des_m3_h = qv_oda_req_des_dm3_s * 3.6
+
+        # apply control factor
+        qv_oda_req_m3_h = f_ctrl_val * qv_oda_req_des_m3_h
+
+        # enforce minimum ~126 m3/h
+        if qv_oda_req_m3_h < 126:
+            qv_oda_req_m3_h = 126
+
+        # return m3/s
+        return qv_oda_req_m3_h / 3600.0
+
+    else:
+        # non-res => usage_key references typical design rates
+        usage_flow_map = {
+            "office_area_based": 1.0,  # dm3/s per m2
+            "childcare": 4.8,
+            "retail": 0.6
+        }
+        qv_usage = usage_flow_map.get(usage_key, 1.0)  # fallback 1.0 dm3/s/m2
+        qv_oda_req_des_dm3_s = qv_usage * floor_area_m2
+        qv_oda_req_des_m3_h  = qv_oda_req_des_dm3_s * 3.6
+
+        # apply control factor
+        qv_oda_req_m3_h = f_ctrl_val * qv_oda_req_des_m3_h
+        return qv_oda_req_m3_h / 3600.0
+
+
+def calc_fan_power(fan_pressure, fan_efficiency, flow_m3_s):
+    """
+    Compute fan power in W:
+      P_fan = (fan_pressure * flow_m3_s) / fan_efficiency
+
+    NTA 8800 doesn't provide a direct formula for fan power in W in exactly
+    these terms, but this approach is standard fluid power:
+       Pressure (Pa) * Volumetric Flow (m3/s) = Power in J/s (Watts),
+       then / efficiency to account for fan energy losses.
+
+    fan_pressure: Pa
+    flow_m3_s: m3/s
+    fan_efficiency: fraction (0.0 < eff <= 1.0)
+    returns: fan power in Watts
+    """
+    if fan_efficiency <= 0:
+        fan_efficiency = 0.7
+    return (fan_pressure * flow_m3_s) / fan_efficiency
+
+  --- File Contents End ---
+
+  File: config_systems.py
+  --- File Contents Start ---
+# ventilation/config_systems.py
+
+"""
+Defines a dictionary SYSTEMS_CONFIG with separate entries for:
+  - building_function: "residential" vs. "non_residential"
+  - system_type:       "A", "B", "C", or "D"
+
+Each system entry has:
+  1) "description"                => short text label
+  2) "ventilation_object_type"    => e.g. 'ZONEVENTILATION:DESIGNFLOWRATE'
+  3) "ventilation_type_options"   => a list of possible Ventilation_Type strings
+  4) "range_params"               => dictionary of numeric fields that are stored as (min, max) ranges
+  5) "use_ideal_loads"            => boolean (True if system D uses IdealLoads, etc.)
+
+Later, in your `create_ventilation_systems.py`, you can pick or compute final single values:
+  - either pick a random or midpoint from "Fan_Pressure_Rise" range
+  - or pick one of the "ventilation_type_options", etc.
+"""
+
+SYSTEMS_CONFIG = {
+    "residential": {
+        # -----------------------------------------------------------
+        # System A
+        # -----------------------------------------------------------
+        "A": {
+            "description": "Natural supply + Natural exhaust",
+            "ventilation_object_type": "ZONEVENTILATION:DESIGNFLOWRATE",
+            "ventilation_type_options": [
+                "Natural"  # Could allow more, e.g. "Intake", "Exhaust" if you want
+            ],
+            "range_params": {
+                # If you want a zero fan pressure for natural, but let's keep an example range
+                "Fan_Pressure_Rise": (0.0, 0.0),
+                "Fan_Total_Efficiency": (0.6, 0.8)
+            },
+            "use_ideal_loads": False
+        },
+
+        # -----------------------------------------------------------
+        # System B
+        # -----------------------------------------------------------
+        "B": {
+            "description": "Mechanical supply + Natural infiltration",
+            "ventilation_object_type": "ZONEVENTILATION:DESIGNFLOWRATE",
+            "ventilation_type_options": [
+                "Intake"
+            ],
+            "range_params": {
+                "Fan_Pressure_Rise": (40.0, 60.0),
+                "Fan_Total_Efficiency": (0.65, 0.75)
+            },
+            "use_ideal_loads": False
+        },
+
+        # -----------------------------------------------------------
+        # System C
+        # -----------------------------------------------------------
+        "C": {
+            "description": "Natural supply + Mechanical exhaust",
+            "ventilation_object_type": "ZONEVENTILATION:DESIGNFLOWRATE",
+            "ventilation_type_options": [
+                "Exhaust"
+            ],
+            "range_params": {
+                "Fan_Pressure_Rise": (40.0, 60.0),
+                "Fan_Total_Efficiency": (0.65, 0.75)
+            },
+            "use_ideal_loads": False
+        },
+
+        # -----------------------------------------------------------
+        # System D
+        # -----------------------------------------------------------
+        "D": {
+            "description": "Balanced mechanical (supply + exhaust), with HRV",
+            "ventilation_object_type": "ZONEHVAC:IDEALLOADSAIRSYSTEM",
+            "ventilation_type_options": [
+                "Balanced"
+            ],
+            "range_params": {
+                "Fan_Pressure_Rise": (50.0, 80.0),
+                "Fan_Total_Efficiency": (0.7, 0.85),
+                # Example for HRV fields if you want them here:
+                "Sensible_Heat_Recovery_Effectiveness": (0.70, 0.80),
+                "Latent_Heat_Recovery_Effectiveness": (0.0, 0.0)
+            },
+            "use_ideal_loads": True
+        }
     },
 
-
-    # ---------------------------------------------------------------------
-    #  "pre_calibration" => broad ranges, approximate
-    # ---------------------------------------------------------------------
-    "pre_calibration": {
-
-        # ==========================
-        # Residential Types
-        # ==========================
-
-        # 1) Corner House
-        #    Approx. occupant usage ~45–55 L/p/d. 
-        #    occupant_density = None => code may do area-based occupant formula instead.
-        "Corner House": {
-            "occupant_density_m2_per_person_range": (None, None),
-            "liters_per_person_per_day_range": (45.0, 55.0),
-            "default_tank_volume_liters_range": (180.0, 220.0),
-            "default_heater_capacity_w_range": (3500.0, 4500.0),
-            "setpoint_c_range": (58.0, 60.0),
-            "usage_split_factor_range": (0.5, 0.7),
-            "peak_hours_range": (1.5, 2.5),
-            "sched_morning_range": (0.6, 0.8),
-            "sched_peak_range": (0.9, 1.1),
-            "sched_afternoon_range": (0.1, 0.3),
-            "sched_evening_range": (0.5, 0.9)
+    "non_residential": {
+        # -----------------------------------------------------------
+        # System A
+        # -----------------------------------------------------------
+        "A": {
+            "description": "Natural supply + Natural exhaust",
+            "ventilation_object_type": "ZONEVENTILATION:DESIGNFLOWRATE",
+            "ventilation_type_options": [
+                "Natural"
+            ],
+            "range_params": {
+                "Fan_Pressure_Rise": (0.0, 0.0),
+                "Fan_Total_Efficiency": (0.5, 0.6)
+            },
+            "use_ideal_loads": False
         },
 
-        # 2) Apartment
-        #    Could mirror 'multifamily' logic => occupant_density ~25–35 m²/p
-        #    daily usage ~45–55 L/p/d
-        "Apartment": {
-            "occupant_density_m2_per_person_range": (25.0, 35.0),
-            "liters_per_person_per_day_range": (45.0, 55.0),
-            "default_tank_volume_liters_range": (900.0, 1100.0),
-            "default_heater_capacity_w_range": (18000.0, 22000.0),
-            "setpoint_c_range": (58.0, 60.0),
-            "usage_split_factor_range": (0.5, 0.7),
-            "peak_hours_range": (2.0, 3.0),
-            "sched_morning_range": (0.5, 0.7),
-            "sched_peak_range": (0.9, 1.1),
-            "sched_afternoon_range": (0.2, 0.4),
-            "sched_evening_range": (0.5, 0.8)
+        # -----------------------------------------------------------
+        # System B
+        # -----------------------------------------------------------
+        "B": {
+            "description": "Mechanical supply + Natural exhaust",
+            "ventilation_object_type": "ZONEVENTILATION:DESIGNFLOWRATE",
+            "ventilation_type_options": [
+                "Intake"
+            ],
+            "range_params": {
+                "Fan_Pressure_Rise": (90.0, 110.0),
+                "Fan_Total_Efficiency": (0.65, 0.75)
+            },
+            "use_ideal_loads": False
         },
 
-        # 3) Terrace or Semi-detached House
-        #    Similar usage to smaller single-family => ~45–55 L/p/d
-        "Terrace or Semi-detached House": {
-            "occupant_density_m2_per_person_range": (None, None),
-            "liters_per_person_per_day_range": (45.0, 55.0),
-            "default_tank_volume_liters_range": (180.0, 250.0),
-            "default_heater_capacity_w_range": (3500.0, 5000.0),
-            "setpoint_c_range": (58.0, 60.0),
-            "usage_split_factor_range": (0.5, 0.7),
-            "peak_hours_range": (2.0, 3.0),
-            "sched_morning_range": (0.6, 0.8),
-            "sched_peak_range": (0.9, 1.1),
-            "sched_afternoon_range": (0.2, 0.4),
-            "sched_evening_range": (0.5, 0.9)
+        # -----------------------------------------------------------
+        # System C
+        # -----------------------------------------------------------
+        "C": {
+            "description": "Natural supply + Mechanical exhaust",
+            "ventilation_object_type": "ZONEVENTILATION:DESIGNFLOWRATE",
+            "ventilation_type_options": [
+                "Exhaust"
+            ],
+            "range_params": {
+                "Fan_Pressure_Rise": (140.0, 160.0),
+                "Fan_Total_Efficiency": (0.70, 0.80)
+            },
+            "use_ideal_loads": False
         },
 
-        # 4) Detached House
-        #    Possibly higher daily usage => ~55–65 L/p/d
-        "Detached House": {
-            "occupant_density_m2_per_person_range": (None, None),
-            "liters_per_person_per_day_range": (55.0, 65.0),
-            "default_tank_volume_liters_range": (250.0, 350.0),
-            "default_heater_capacity_w_range": (4000.0, 5000.0),
-            "setpoint_c_range": (58.0, 60.0),
-            "usage_split_factor_range": (0.5, 0.7),
-            "peak_hours_range": (2.0, 3.0),
-            "sched_morning_range": (0.6, 0.8),
-            "sched_peak_range": (0.9, 1.1),
-            "sched_afternoon_range": (0.2, 0.3),
-            "sched_evening_range": (0.6, 1.0)
-        },
-
-        # 5) Two-and-a-half-story House
-        #    Another single-family variant => placeholder usage ~50–60 L/p/d
-        "Two-and-a-half-story House": {
-            "occupant_density_m2_per_person_range": (None, None),
-            "liters_per_person_per_day_range": (50.0, 60.0),
-            "default_tank_volume_liters_range": (220.0, 320.0),
-            "default_heater_capacity_w_range": (4000.0, 5000.0),
-            "setpoint_c_range": (58.0, 60.0),
-            "usage_split_factor_range": (0.5, 0.7),
-            "peak_hours_range": (1.5, 2.5),
-            "sched_morning_range": (0.6, 0.8),
-            "sched_peak_range": (0.9, 1.1),
-            "sched_afternoon_range": (0.2, 0.4),
-            "sched_evening_range": (0.5, 0.9)
-        },
-
-        # ==========================
-        # Non-Residential Types
-        # ==========================
-
-        # 1) Meeting Function
-        #    Like "Assembly" => occupant_density ~1 m²/p, daily usage ~4–6 L/p/d
-        "Meeting Function": {
-            "occupant_density_m2_per_person_range": (0.8, 1.2),
-            "liters_per_person_per_day_range": (4.0, 6.0),
-            "default_tank_volume_liters_range": (400.0, 600.0),
-            "default_heater_capacity_w_range": (13000.0, 17000.0),
-            "setpoint_c_range": (58.0, 60.0),
-            "usage_split_factor_range": (0.6, 0.8),
-            "peak_hours_range": (2.0, 3.0),
-            "sched_morning_range": (0.1, 0.2),
-            "sched_peak_range": (0.6, 0.8),
-            "sched_afternoon_range": (0.1, 0.3),
-            "sched_evening_range": (0.2, 0.5)
-        },
-
-        # 2) Healthcare Function
-        #    Could be outpatient or hospital => occupant_density (8–30), usage (18–70) 
-        #    is a wide range. Feel free to split into "clinic" vs "hospital" if you prefer.
-        "Healthcare Function": {
-            "occupant_density_m2_per_person_range": (8.0, 30.0),
-            "liters_per_person_per_day_range": (18.0, 70.0),
-            "default_tank_volume_liters_range": (1000.0, 5000.0),
-            "default_heater_capacity_w_range": (20000.0, 50000.0),
-            "setpoint_c_range": (58.0, 65.0),  # might go higher in hospital contexts
-            "usage_split_factor_range": (0.6, 0.8),
-            "peak_hours_range": (2.0, 3.0),
-            "sched_morning_range": (0.2, 0.4),
-            "sched_peak_range": (0.6, 0.8),
-            "sched_afternoon_range": (0.2, 0.4),
-            "sched_evening_range": (0.1, 0.3)
-        },
-
-        # 3) Sport Function
-        #    Similar to "Sports_Facility" => occupant_density ~8–12, usage ~25–35 L/p/d
-        "Sport Function": {
-            "occupant_density_m2_per_person_range": (8.0, 12.0),
-            "liters_per_person_per_day_range": (25.0, 35.0),
-            "default_tank_volume_liters_range": (2800.0, 3200.0),
-            "default_heater_capacity_w_range": (38000.0, 42000.0),
-            "setpoint_c_range": (58.0, 60.0),
-            "usage_split_factor_range": (0.6, 0.8),
-            "peak_hours_range": (2.0, 3.0),
-            "sched_morning_range": (0.2, 0.4),
-            "sched_peak_range": (0.6, 0.8),
-            "sched_afternoon_range": (0.2, 0.4),
-            "sched_evening_range": (0.3, 0.6)
-        },
-
-        # 4) Cell Function
-        #    Placeholder for a detention/penal facility => occupant_density could vary widely.
-        #    For demonstration: occupant_density ~10–20, usage ~30–40 L/p/d
-        "Cell Function": {
-            "occupant_density_m2_per_person_range": (10.0, 20.0),
-            "liters_per_person_per_day_range": (30.0, 40.0),
-            "default_tank_volume_liters_range": (1000.0, 3000.0),
-            "default_heater_capacity_w_range": (20000.0, 40000.0),
-            "setpoint_c_range": (58.0, 60.0),
-            "usage_split_factor_range": (0.6, 0.8),
-            "peak_hours_range": (2.0, 3.0),
-            "sched_morning_range": (0.2, 0.4),
-            "sched_peak_range": (0.7, 0.8),
-            "sched_afternoon_range": (0.2, 0.4),
-            "sched_evening_range": (0.4, 0.7)
-        },
-
-        # 5) Retail Function
-        #    occupant_density ~4–6, usage ~4–6 L/p/d
-        "Retail Function": {
-            "occupant_density_m2_per_person_range": (4.0, 6.0),
-            "liters_per_person_per_day_range": (4.0, 6.0),
-            "default_tank_volume_liters_range": (250.0, 350.0),
-            "default_heater_capacity_w_range": (9000.0, 11000.0),
-            "setpoint_c_range": (58.0, 60.0),
-            "usage_split_factor_range": (0.6, 0.8),
-            "peak_hours_range": (2.0, 3.0),
-            "sched_morning_range": (0.1, 0.3),
-            "sched_peak_range": (0.5, 0.7),
-            "sched_afternoon_range": (0.2, 0.4),
-            "sched_evening_range": (0.1, 0.2)
-        },
-
-        # 6) Industrial Function
-        #    occupant_density can be quite low or varied => (12.0, 30.0)
-        #    usage might be moderate => (10–20 L/p/d), placeholders only
-        "Industrial Function": {
-            "occupant_density_m2_per_person_range": (12.0, 30.0),
-            "liters_per_person_per_day_range": (10.0, 20.0),
-            "default_tank_volume_liters_range": (500.0, 2000.0),
-            "default_heater_capacity_w_range": (10000.0, 30000.0),
-            "setpoint_c_range": (58.0, 60.0),
-            "usage_split_factor_range": (0.6, 0.8),
-            "peak_hours_range": (2.0, 3.0),
-            "sched_morning_range": (0.2, 0.3),
-            "sched_peak_range": (0.6, 0.7),
-            "sched_afternoon_range": (0.2, 0.4),
-            "sched_evening_range": (0.2, 0.3)
-        },
-
-        # 7) Accommodation Function
-        #    Like hotels => occupant_density ~15–25, usage ~50–70 L/p/d
-        "Accommodation Function": {
-            "occupant_density_m2_per_person_range": (15.0, 25.0),
-            "liters_per_person_per_day_range": (50.0, 70.0),
-            "default_tank_volume_liters_range": (1800.0, 2200.0),
-            "default_heater_capacity_w_range": (28000.0, 32000.0),
-            "setpoint_c_range": (58.0, 60.0),
-            "usage_split_factor_range": (0.6, 0.8),
-            "peak_hours_range": (2.0, 3.0),
-            "sched_morning_range": (0.2, 0.4),
-            "sched_peak_range": (0.8, 1.0),
-            "sched_afternoon_range": (0.2, 0.4),
-            "sched_evening_range": (0.4, 0.7)
-        },
-
-        # 8) Office Function
-        #    occupant_density ~12–18, usage ~8–12 L/p/d
-        "Office Function": {
-            "occupant_density_m2_per_person_range": (12.0, 18.0),
-            "liters_per_person_per_day_range": (8.0, 12.0),
-            "default_tank_volume_liters_range": (250.0, 350.0),
-            "default_heater_capacity_w_range": (7000.0, 9000.0),
-            "setpoint_c_range": (58.0, 62.0),
-            "usage_split_factor_range": (0.6, 0.8),
-            "peak_hours_range": (2.0, 3.0),
-            "sched_morning_range": (0.1, 0.2),
-            "sched_peak_range": (0.5, 0.7),
-            "sched_afternoon_range": (0.2, 0.4),
-            "sched_evening_range": (0.05, 0.2)
-        },
-
-        # 9) Education Function
-        #    occupant_density ~6–10, usage ~8–12 L/p/d
-        "Education Function": {
-            "occupant_density_m2_per_person_range": (6.0, 10.0),
-            "liters_per_person_per_day_range": (8.0, 12.0),
-            "default_tank_volume_liters_range": (400.0, 600.0),
-            "default_heater_capacity_w_range": (9000.0, 11000.0),
-            "setpoint_c_range": (58.0, 60.0),
-            "usage_split_factor_range": (0.6, 0.8),
-            "peak_hours_range": (2.0, 3.0),
-            "sched_morning_range": (0.1, 0.3),
-            "sched_peak_range": (0.5, 0.7),
-            "sched_afternoon_range": (0.2, 0.4),
-            "sched_evening_range": (0.1, 0.2)
-        },
-
-        # 10) Other Use Function
-        #     Fallback => occupant_density ~5–15, usage ~5–15 L/p/d
-        "Other Use Function": {
-            "occupant_density_m2_per_person_range": (5.0, 15.0),
-            "liters_per_person_per_day_range": (5.0, 15.0),
-            "default_tank_volume_liters_range": (300.0, 600.0),
-            "default_heater_capacity_w_range": (9000.0, 15000.0),
-            "setpoint_c_range": (58.0, 60.0),
-            "usage_split_factor_range": (0.5, 0.7),
-            "peak_hours_range": (2.0, 2.5),
-            "sched_morning_range": (0.1, 0.2),
-            "sched_peak_range": (0.5, 0.7),
-            "sched_afternoon_range": (0.2, 0.4),
-            "sched_evening_range": (0.2, 0.3)
-        },
-    },
-
-    # ---------------------------------------------------------------------
-    #  "post_calibration" => narrower or fixed values, reflecting final 
-    #  calibrated parameters. You can further refine or unify them.
-    # ---------------------------------------------------------------------
-    "post_calibration": {
-
-        # ==========================
-        # Residential
-        # ==========================
-        "Corner House": {
-            "occupant_density_m2_per_person_range": (None, None),
-            "liters_per_person_per_day_range": (50.0, 50.0),
-            "default_tank_volume_liters_range": (200.0, 200.0),
-            "default_heater_capacity_w_range": (4000.0, 4000.0),
-            "setpoint_c_range": (60.0, 60.0),
-            "usage_split_factor_range": (0.6, 0.6),
-            "peak_hours_range": (2.0, 2.0),
-            "sched_morning_range": (0.7, 0.7),
-            "sched_peak_range": (1.0, 1.0),
-            "sched_afternoon_range": (0.2, 0.2),
-            "sched_evening_range": (0.8, 0.8)
-        },
-
-        "Apartment": {
-            "occupant_density_m2_per_person_range": (30.0, 30.0),
-            "liters_per_person_per_day_range": (50.0, 50.0),
-            "default_tank_volume_liters_range": (1000.0, 1000.0),
-            "default_heater_capacity_w_range": (20000.0, 20000.0),
-            "setpoint_c_range": (60.0, 60.0),
-            "usage_split_factor_range": (0.6, 0.6),
-            "peak_hours_range": (2.0, 2.0),
-            "sched_morning_range": (0.7, 0.7),
-            "sched_peak_range": (1.0, 1.0),
-            "sched_afternoon_range": (0.2, 0.2),
-            "sched_evening_range": (0.8, 0.8)
-        },
-
-        "Terrace or Semi-detached House": {
-            "occupant_density_m2_per_person_range": (None, None),
-            "liters_per_person_per_day_range": (50.0, 50.0),
-            "default_tank_volume_liters_range": (200.0, 200.0),
-            "default_heater_capacity_w_range": (4000.0, 4000.0),
-            "setpoint_c_range": (60.0, 60.0),
-            "usage_split_factor_range": (0.6, 0.6),
-            "peak_hours_range": (2.0, 2.0),
-            "sched_morning_range": (0.7, 0.7),
-            "sched_peak_range": (1.0, 1.0),
-            "sched_afternoon_range": (0.2, 0.2),
-            "sched_evening_range": (0.8, 0.8)
-        },
-
-        "Detached House": {
-            "occupant_density_m2_per_person_range": (None, None),
-            "liters_per_person_per_day_range": (60.0, 60.0),
-            "default_tank_volume_liters_range": (300.0, 300.0),
-            "default_heater_capacity_w_range": (5000.0, 5000.0),
-            "setpoint_c_range": (60.0, 60.0),
-            "usage_split_factor_range": (0.6, 0.6),
-            "peak_hours_range": (2.5, 2.5),
-            "sched_morning_range": (0.7, 0.7),
-            "sched_peak_range": (1.0, 1.0),
-            "sched_afternoon_range": (0.2, 0.2),
-            "sched_evening_range": (0.8, 0.8)
-        },
-
-        "Two-and-a-half-story House": {
-            "occupant_density_m2_per_person_range": (None, None),
-            "liters_per_person_per_day_range": (55.0, 55.0),
-            "default_tank_volume_liters_range": (250.0, 250.0),
-            "default_heater_capacity_w_range": (4500.0, 4500.0),
-            "setpoint_c_range": (60.0, 60.0),
-            "usage_split_factor_range": (0.6, 0.6),
-            "peak_hours_range": (2.0, 2.0),
-            "sched_morning_range": (0.7, 0.7),
-            "sched_peak_range": (1.0, 1.0),
-            "sched_afternoon_range": (0.2, 0.2),
-            "sched_evening_range": (0.8, 0.8)
-        },
-
-        # ==========================
-        # Non-Residential
-        # ==========================
-        "Meeting Function": {
-            "occupant_density_m2_per_person_range": (1.0, 1.0),
-            "liters_per_person_per_day_range": (5.0, 5.0),
-            "default_tank_volume_liters_range": (500.0, 500.0),
-            "default_heater_capacity_w_range": (15000.0, 15000.0),
-            "setpoint_c_range": (60.0, 60.0),
-            "usage_split_factor_range": (0.6, 0.6),
-            "peak_hours_range": (2.0, 2.0),
-            "sched_morning_range": (0.2, 0.2),
-            "sched_peak_range": (0.6, 0.6),
-            "sched_afternoon_range": (0.2, 0.2),
-            "sched_evening_range": (0.5, 0.5)
-        },
-
-        "Healthcare Function": {
-            "occupant_density_m2_per_person_range": (20.0, 20.0),
-            "liters_per_person_per_day_range": (60.0, 60.0),
-            "default_tank_volume_liters_range": (3000.0, 3000.0),
-            "default_heater_capacity_w_range": (40000.0, 40000.0),
-            "setpoint_c_range": (65.0, 65.0),
-            "usage_split_factor_range": (0.7, 0.7),
-            "peak_hours_range": (3.0, 3.0),
-            "sched_morning_range": (0.3, 0.3),
-            "sched_peak_range": (0.7, 0.7),
-            "sched_afternoon_range": (0.3, 0.3),
-            "sched_evening_range": (0.5, 0.5)
-        },
-
-        "Sport Function": {
-            "occupant_density_m2_per_person_range": (10.0, 10.0),
-            "liters_per_person_per_day_range": (30.0, 30.0),
-            "default_tank_volume_liters_range": (3000.0, 3000.0),
-            "default_heater_capacity_w_range": (40000.0, 40000.0),
-            "setpoint_c_range": (60.0, 60.0),
-            "usage_split_factor_range": (0.6, 0.6),
-            "peak_hours_range": (2.0, 2.0),
-            "sched_morning_range": (0.3, 0.3),
-            "sched_peak_range": (0.7, 0.7),
-            "sched_afternoon_range": (0.3, 0.3),
-            "sched_evening_range": (0.6, 0.6)
-        },
-
-        "Cell Function": {
-            "occupant_density_m2_per_person_range": (15.0, 15.0),
-            "liters_per_person_per_day_range": (35.0, 35.0),
-            "default_tank_volume_liters_range": (2000.0, 2000.0),
-            "default_heater_capacity_w_range": (30000.0, 30000.0),
-            "setpoint_c_range": (60.0, 60.0),
-            "usage_split_factor_range": (0.6, 0.6),
-            "peak_hours_range": (2.5, 2.5),
-            "sched_morning_range": (0.3, 0.3),
-            "sched_peak_range": (0.7, 0.7),
-            "sched_afternoon_range": (0.3, 0.3),
-            "sched_evening_range": (0.5, 0.5)
-        },
-
-        "Retail Function": {
-            "occupant_density_m2_per_person_range": (5.0, 5.0),
-            "liters_per_person_per_day_range": (5.0, 5.0),
-            "default_tank_volume_liters_range": (300.0, 300.0),
-            "default_heater_capacity_w_range": (10000.0, 10000.0),
-            "setpoint_c_range": (60.0, 60.0),
-            "usage_split_factor_range": (0.6, 0.6),
-            "peak_hours_range": (2.0, 2.0),
-            "sched_morning_range": (0.1, 0.1),
-            "sched_peak_range": (0.7, 0.7),
-            "sched_afternoon_range": (0.2, 0.2),
-            "sched_evening_range": (0.1, 0.1)
-        },
-
-        "Industrial Function": {
-            "occupant_density_m2_per_person_range": (20.0, 20.0),
-            "liters_per_person_per_day_range": (15.0, 15.0),
-            "default_tank_volume_liters_range": (1000.0, 1000.0),
-            "default_heater_capacity_w_range": (20000.0, 20000.0),
-            "setpoint_c_range": (60.0, 60.0),
-            "usage_split_factor_range": (0.6, 0.6),
-            "peak_hours_range": (2.0, 2.0),
-            "sched_morning_range": (0.2, 0.2),
-            "sched_peak_range": (0.6, 0.6),
-            "sched_afternoon_range": (0.2, 0.2),
-            "sched_evening_range": (0.3, 0.3)
-        },
-
-        "Accommodation Function": {
-            "occupant_density_m2_per_person_range": (20.0, 20.0),
-            "liters_per_person_per_day_range": (60.0, 60.0),
-            "default_tank_volume_liters_range": (2000.0, 2000.0),
-            "default_heater_capacity_w_range": (30000.0, 30000.0),
-            "setpoint_c_range": (60.0, 60.0),
-            "usage_split_factor_range": (0.6, 0.6),
-            "peak_hours_range": (2.0, 2.0),
-            "sched_morning_range": (0.3, 0.3),
-            "sched_peak_range": (0.8, 0.8),
-            "sched_afternoon_range": (0.3, 0.3),
-            "sched_evening_range": (0.6, 0.6)
-        },
-
-        "Office Function": {
-            "occupant_density_m2_per_person_range": (15.0, 15.0),
-            "liters_per_person_per_day_range": (10.0, 10.0),
-            "default_tank_volume_liters_range": (300.0, 300.0),
-            "default_heater_capacity_w_range": (8000.0, 8000.0),
-            "setpoint_c_range": (60.0, 60.0),
-            "usage_split_factor_range": (0.7, 0.7),
-            "peak_hours_range": (2.5, 2.5),
-            "sched_morning_range": (0.15, 0.15),
-            "sched_peak_range": (0.6, 0.6),
-            "sched_afternoon_range": (0.3, 0.3),
-            "sched_evening_range": (0.1, 0.1)
-        },
-
-        "Education Function": {
-            "occupant_density_m2_per_person_range": (8.0, 8.0),
-            "liters_per_person_per_day_range": (10.0, 10.0),
-            "default_tank_volume_liters_range": (500.0, 500.0),
-            "default_heater_capacity_w_range": (10000.0, 10000.0),
-            "setpoint_c_range": (60.0, 60.0),
-            "usage_split_factor_range": (0.6, 0.6),
-            "peak_hours_range": (2.0, 2.0),
-            "sched_morning_range": (0.2, 0.2),
-            "sched_peak_range": (0.6, 0.6),
-            "sched_afternoon_range": (0.2, 0.2),
-            "sched_evening_range": (0.1, 0.1)
-        },
-
-        "Other Use Function": {
-            "occupant_density_m2_per_person_range": (10.0, 10.0),
-            "liters_per_person_per_day_range": (10.0, 10.0),
-            "default_tank_volume_liters_range": (400.0, 400.0),
-            "default_heater_capacity_w_range": (10000.0, 10000.0),
-            "setpoint_c_range": (60.0, 60.0),
-            "usage_split_factor_range": (0.6, 0.6),
-            "peak_hours_range": (2.0, 2.0),
-            "sched_morning_range": (0.2, 0.2),
-            "sched_peak_range": (0.6, 0.6),
-            "sched_afternoon_range": (0.2, 0.2),
-            "sched_evening_range": (0.3, 0.3)
+        # -----------------------------------------------------------
+        # System D
+        # -----------------------------------------------------------
+        "D": {
+            "description": "Balanced mechanical supply & exhaust (with optional HRV)",
+            "ventilation_object_type": "ZONEHVAC:IDEALLOADSAIRSYSTEM",
+            "ventilation_type_options": [
+                "Balanced"
+            ],
+            "range_params": {
+                "Fan_Pressure_Rise": (100.0, 120.0),
+                "Fan_Total_Efficiency": (0.65, 0.80),
+                "Sensible_Heat_Recovery_Effectiveness": (0.75, 0.85),
+                "Latent_Heat_Recovery_Effectiveness": (0.0, 0.0)
+            },
+            "use_ideal_loads": True
         }
     }
 }
 
-
-"""
-Provides a single dictionary `dhw_lookup` with detailed parameter ranges
-for your new usage types. Each is labeled exactly as you specified:
-
-- Residential: 
-   "Corner House", "Apartment", "Terrace or Semi-detached House",
-   "Detached House", "Two-and-a-half-story House"
-
-- Non-Residential:
-   "Meeting Function", "Healthcare Function", "Sport Function", 
-   "Cell Function", "Retail Function", "Industrial Function",
-   "Accommodation Function", "Office Function", "Education Function",
-   "Other Use Function"
-
-The numeric ranges are example placeholders reflecting typical NTA 8800
-values; you can edit them to match local data. For usage patterns with
-circulation loops (e.g. hospitals), you might see higher setpoints (~65 °C).
-
-We also updated the "TABLE_13_1_KWH_PER_M2" keys to match the new 
-non-res naming (e.g. "Meeting Function", "Healthcare Function", etc.).
-Adjust or extend these as needed.
-"""
-
   --- File Contents End ---
 
-  File: dhw_overrides_from_excel.py
+  File: create_ventilation_systems.py
   --- File Contents Start ---
-# dhw_overrides_from_excel.py
+# ventilation/create_ventilation_systems.py
 
-import pandas as pd
-import copy
+import random
+from ventilation.config_systems import SYSTEMS_CONFIG
 
-def override_dhw_lookup_from_excel(excel_path, default_dhw_lookup):
-    """
-    Reads an Excel file with columns like:
-      - calibration_stage, dhw_key
-      - occupant_density_m2_per_person_min, occupant_density_m2_per_person_max
-      - setpoint_c_min, setpoint_c_max
-      - (etc.)
-
-    Only updates/extends the entries for which both `_min` and `_max` are non-empty.
-    Returns a new dictionary with partial overrides applied.
-    """
-    new_dhw_lookup = copy.deepcopy(default_dhw_lookup)
-    df = pd.read_excel(excel_path)
-
-    # Map short param name => the keys used in dhw_lookup
-    param_map = {
-        "occupant_density_m2_per_person": "occupant_density_m2_per_person_range",
-        "liters_per_person_per_day": "liters_per_person_per_day_range",
-        "default_tank_volume_liters": "default_tank_volume_liters_range",
-        "default_heater_capacity_w": "default_heater_capacity_w_range",
-        "setpoint_c": "setpoint_c_range",
-        "usage_split_factor": "usage_split_factor_range",
-        "peak_hours": "peak_hours_range",
-
-        "sched_morning": "sched_morning_range",
-        "sched_peak": "sched_peak_range",
-        "sched_afternoon": "sched_afternoon_range",
-        "sched_evening": "sched_evening_range"
-    }
-
-    for _, row in df.iterrows():
-        stage = str(row["calibration_stage"]).strip()
-        dhw_key = str(row["dhw_key"]).strip()
-
-        if stage not in new_dhw_lookup:
-            new_dhw_lookup[stage] = {}
-        if dhw_key not in new_dhw_lookup[stage]:
-            new_dhw_lookup[stage][dhw_key] = {}
-
-        entry_dict = new_dhw_lookup[stage][dhw_key]
-
-        for base_param, lookup_key in param_map.items():
-            col_min = f"{base_param}_min"
-            col_max = f"{base_param}_max"
-            if col_min in df.columns and col_max in df.columns:
-                val_min = row[col_min]
-                val_max = row[col_max]
-                if pd.notna(val_min) and pd.notna(val_max):
-                    entry_dict[lookup_key] = (float(val_min), float(val_max))
-
-    return new_dhw_lookup
-
-  --- File Contents End ---
-
-  File: parameters.py
-  --- File Contents Start ---
-# DHW/parameters.py
-
-def calculate_dhw_parameters(
-    assigned: dict,
-    floor_area_m2: float = None,
-    occupant_count: int = None
+def create_ventilation_system(
+    idf,
+    building_function,      # 'residential' or 'non_residential'
+    system_type,            # 'A', 'B', 'C', or 'D'
+    zone_name,
+    infiltration_m3_s,
+    vent_flow_m3_s,
+    infiltration_sched_name="AlwaysOnSched",
+    ventilation_sched_name="VentSched_DayNight",
+    pick_strategy="midpoint"  # or "random"
 ):
     """
-    assigned = {
-       "occupant_density_m2_per_person": ...,
-       "liters_per_person_per_day": ...,
-       "default_tank_volume_liters": ...,
-       "default_heater_capacity_w": ...,
-       "setpoint_c": ...,
-       "usage_split_factor": ...,
-       "peak_hours": ...
-    }
-    Compute occupant_count, daily liters, flow, etc.
+    Creates two objects for the zone:
+      1) A ZONEINFILTRATION:DESIGNFLOWRATE object (always).
+      2) Depending on system_type:
+         - A/B/C => a ZONEVENTILATION:DESIGNFLOWRATE object
+         - D     => modifies an existing ZONEHVAC:IDEALLOADSAIRSYSTEM
+                    (already added by add_HVAC_Ideal_to_all_zones, if used)
+
+    Returns (infiltration_obj, vent_obj_or_ideal_obj).
     """
 
-    occupant_density = assigned["occupant_density_m2_per_person"]
-    liters_per_person = assigned["liters_per_person_per_day"]
-    tank_liters = assigned["default_tank_volume_liters"]
-    heater_w = assigned["default_heater_capacity_w"]
-    setpoint_c = assigned["setpoint_c"]
-    usage_split_factor = assigned["usage_split_factor"]
-    peak_hours = assigned["peak_hours"]
+    # -------------------------------------------------------
+    # 1) Grab the config for this system
+    # -------------------------------------------------------
+    if building_function not in SYSTEMS_CONFIG:
+        building_function = "residential"
+    if system_type not in SYSTEMS_CONFIG[building_function]:
+        system_type = "A"
 
-    # 1) occupant_count
-    if occupant_count is None:
-        if occupant_density and floor_area_m2:
-            occupant_count = floor_area_m2 / occupant_density
+    config = SYSTEMS_CONFIG[building_function][system_type]
+
+    # -------------------------------------------------------
+    # 2) Helper to pick a single value from a (min, max) range
+    # -------------------------------------------------------
+    def pick_val(rng):
+        """
+        rng is (min_val, max_val).
+        pick_strategy == 'midpoint' => return average
+        pick_strategy == 'random'   => return random.uniform(...)
+        """
+        if pick_strategy == "random":
+            return random.uniform(rng[0], rng[1])
         else:
-            occupant_count = 4  # fallback
-    occupant_count = int(round(occupant_count))
+            # default => midpoint
+            return (rng[0] + rng[1]) / 2.0
 
-    # 2) daily liters
-    daily_liters = occupant_count * liters_per_person
+    # -------------------------------------------------------
+    # 3) Create infiltration object (ZONEINFILTRATION:DESIGNFLOWRATE)
+    # -------------------------------------------------------
+    iobj = idf.newidfobject("ZONEINFILTRATION:DESIGNFLOWRATE")
+    iobj.Name = f"Infil_{building_function}_{system_type}_{zone_name}"
 
-    # 3) daily m³
-    daily_m3 = daily_liters / 1000.0
-
-    # 4) peak flow
-    if peak_hours > 0:
-        peak_flow_m3s = (daily_m3 * usage_split_factor) / (peak_hours * 3600.0)
+    # Some E+ versions use .Zone_or_ZoneList_or_Space_or_SpaceList_Name
+    # others use .Zone_or_ZoneList_Name
+    if hasattr(iobj, "Zone_or_ZoneList_or_Space_or_SpaceList_Name"):
+        iobj.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zone_name
     else:
-        peak_flow_m3s = daily_m3 / (24.0 * 3600.0)
+        iobj.Zone_or_ZoneList_Name = zone_name
 
-    # 5) tank volume (m3)
-    tank_volume_m3 = tank_liters / 1000.0
+    # Assign infiltration schedule and flow
+    iobj.Schedule_Name = infiltration_sched_name
+    iobj.Design_Flow_Rate_Calculation_Method = "Flow/Zone"
+    iobj.Design_Flow_Rate = infiltration_m3_s
 
-    return {
-        "occupant_count": occupant_count,
-        "daily_liters": daily_liters,
-        "peak_flow_m3s": peak_flow_m3s,
-        "tank_volume_m3": tank_volume_m3,
-        "heater_capacity_w": heater_w,
-        "setpoint_c": setpoint_c
+    # -------------------------------------------------------
+    # 4) Prepare final param values from config["range_params"]
+    #    e.g. fan pressure, heat recovery, etc.
+    # -------------------------------------------------------
+    chosen_params = {}
+    range_dict = config.get("range_params", {})
+    for param_name, rng in range_dict.items():
+        chosen_val = pick_val(rng)
+        chosen_params[param_name] = chosen_val
+
+    # Choose from the ventilation_type_options if present
+    ventilation_type_list = config.get("ventilation_type_options", [])
+    if ventilation_type_list:
+        chosen_vent_type = random.choice(ventilation_type_list)
+    else:
+        chosen_vent_type = "Natural"  # fallback if none provided
+
+    # -------------------------------------------------------
+    # 5) If system D => update an existing IdealLoads object
+    #    else => create a ZONEVENTILATION:DESIGNFLOWRATE
+    # -------------------------------------------------------
+    if config["use_ideal_loads"]:
+        # System D => Balanced mechanical => find the existing IdealLoads object
+        ideal_name = f"{zone_name} Ideal Loads"
+        ideal_obj = idf.getobject("ZONEHVAC:IDEALLOADSAIRSYSTEM", ideal_name)
+
+        if ideal_obj:
+            # Example: set fields in the IdealLoads that exist in chosen_params
+            # e.g. if param_name == "Sensible_Heat_Recovery_Effectiveness"
+            for param_field, final_val in chosen_params.items():
+                # We must confirm the IDD field name matches param_field
+                if hasattr(ideal_obj, param_field):
+                    setattr(ideal_obj, param_field, final_val)
+
+            # If desired, you could limit the air flow to 'vent_flow_m3_s' here:
+            #   ideal_obj.Heating_Limit = "LimitFlowRate"
+            #   ideal_obj.Maximum_Heating_Air_Flow_Rate = vent_flow_m3_s
+            #   ideal_obj.Cooling_Limit = "LimitFlowRate"
+            #   ideal_obj.Maximum_Cooling_Air_Flow_Rate = vent_flow_m3_s
+
+            return iobj, ideal_obj
+        else:
+            print(f"[VENT WARNING] {zone_name} Ideal Loads not found; system D creation skipped.")
+            return iobj, None
+
+    else:
+        # Systems A, B, C => create a ZONEVENTILATION:DESIGNFLOWRATE
+        vobj = idf.newidfobject(config["ventilation_object_type"])
+        vobj.Name = f"Vent_{building_function}_{system_type}_{zone_name}"
+        if hasattr(vobj, "Zone_or_ZoneList_or_Space_or_SpaceList_Name"):
+            vobj.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zone_name
+        else:
+            vobj.Zone_or_ZoneList_Name = zone_name
+
+        # Assign the chosen (or default) ventilation schedule and flow
+        vobj.Schedule_Name = ventilation_sched_name
+        vobj.Design_Flow_Rate_Calculation_Method = "Flow/Zone"
+        vobj.Design_Flow_Rate = vent_flow_m3_s
+
+        # Insert system-specific fields if they exist in the object
+        if hasattr(vobj, "Ventilation_Type"):
+            vobj.Ventilation_Type = chosen_vent_type
+
+        if hasattr(vobj, "Fan_Pressure_Rise") and "Fan_Pressure_Rise" in chosen_params:
+            vobj.Fan_Pressure_Rise = chosen_params["Fan_Pressure_Rise"]
+
+        if hasattr(vobj, "Fan_Total_Efficiency") and "Fan_Total_Efficiency" in chosen_params:
+            vobj.Fan_Total_Efficiency = chosen_params["Fan_Total_Efficiency"]
+
+        return iobj, vobj
+
+  --- File Contents End ---
+
+  File: mappings.py
+  --- File Contents Start ---
+# ventilation/mappings.py
+
+def safe_lower(val):
+    """Helper to safely lowercase a string."""
+    if isinstance(val, str):
+        return val.lower()
+    return ""
+
+def map_age_range_to_year_key(age_range_str):
+    """
+    Convert your main DataFrame's age_range
+    into the short keys used in your infiltration/vent lookup or NTA data.
+
+    Now expanded to include:
+      - "1900-2000" => "1900-2000"
+      - "2000-2024" => "2000-2024"
+      - plus older ones like "<1970", "1970-1992", etc.
+    """
+    # You can expand as needed.
+    mapping = {
+        "pre-1970": "<1970",
+        "1970 - 1992": "1970-1992",
+        "1992 - 2005": "1992-2005",
+        "2005 - 2015": "2005-2015",
+        "2015 and later": ">2015",
+        "1900-2000": "1900-2000",
+        "2000-2024": "2000-2024"
     }
+    return mapping.get(age_range_str, ">2015")  # fallback => >2015
+
+def map_infiltration_key(building_row):
+    """
+    Decide infiltration key from building function + sub-type fields.
+    Updated to handle e.g. 'two_and_a_half_story_house' for certain residential types,
+    or 'meeting_function' for certain non-res types, etc.
+
+    If not recognized, fall back to a perimeter-based logic or default.
+    """
+    bldg_func = safe_lower(building_row.get("building_function", "residential"))
+    if bldg_func == "residential":
+        # 1) check if we have a recognized 'residential_type'
+        res_type = safe_lower(building_row.get("residential_type", ""))
+        if "two-and-a-half-story" in res_type:
+            return "two_and_a_half_story_house"
+        # Could add more if/elif logic for other residential_type strings:
+        # elif "row house" in res_type:
+        #     return "row_house"
+        #
+        # else fallback to perimeter-based approach as in original
+        perimeter = building_row.get("perimeter", 40)
+        if perimeter > 60:
+            return "A_detached"
+        else:
+            return "A_corner"
+
+    else:
+        # Non-res => check 'non_residential_type'
+        nonres_type = safe_lower(building_row.get("non_residential_type", ""))
+        if "meeting function" in nonres_type:
+            return "meeting_function"
+        # else fallback
+        return "office_multi_top"
+
+def map_usage_key(building_row):
+    """
+    For non-res ventilation usage flow reference. 
+    If building is residential => usage_key => None.
+    If it's e.g. 'meeting function' => 'office_area_based' (example).
+    """
+    bldg_func = safe_lower(building_row.get("building_function", "residential"))
+    if bldg_func == "residential":
+        return None
+    else:
+        nonres_type = safe_lower(building_row.get("non_residential_type", ""))
+        if "meeting function" in nonres_type:
+            return "office_area_based"
+        else:
+            return "retail"
+
+def map_ventilation_system(building_row):
+    """
+    Decide system type (A, B, C, or D) from building row.
+    As an example: default 'C' for residential, 'D' for non-res.
+    """
+    bldg_func = safe_lower(building_row.get("building_function", "residential"))
+    if bldg_func == "residential":
+        return "C"  # default mechanical exhaust for res
+    else:
+        return "D"  # default balanced w/ HRV for non-res
 
   --- File Contents End ---
 
   File: schedules.py
   --- File Contents Start ---
-# DHW/schedules.py
+# ventilation/schedules.py
 
-def create_dhw_schedules(
-    idf, 
-    schedule_name_suffix="DHW", 
-    setpoint_c=60.0,
-    morning_val=0.7,
-    peak_val=1.0,
-    afternoon_val=0.2,
-    evening_val=0.8
-):
+from geomeppy import IDF
+
+def create_always_on_schedule(idf, sched_name="AlwaysOnSched"):
     """
-    Example: build a daily fraction schedule using the 4 'knobs':
-      - morning_val
-      - peak_val
-      - afternoon_val
-      - evening_val
-    You can shape this however you want.
+    Creates a SCHEDULE:CONSTANT with a Fraction = 1.0
+    for infiltration or ventilation that runs 24/7.
     """
+    # Check if already exists
+    existing = idf.getobject("SCHEDULE:CONSTANT", sched_name.upper())
+    if existing:
+        return existing  # No need to recreate
 
-    frac_sched_name = f"{schedule_name_suffix}_UseFraction"
-    frac_sched = idf.newidfobject("SCHEDULE:COMPACT")
-    frac_sched.Name = frac_sched_name
-    frac_sched.Schedule_Type_Limits_Name = "Fraction"
+    schedule = idf.newidfobject("SCHEDULE:CONSTANT")
+    schedule.Name = sched_name
+    schedule.Schedule_Type_Limits_Name = "Fraction"
+    schedule.Hourly_Value = 1.0
+    return schedule
 
-    frac_sched.Field_1 = "Through: 12/31"
-    frac_sched.Field_2 = "For: AllDays"
 
-    # 06:00-08:00 => morning_val
-    frac_sched.Field_3 = f"Until: 06:00, 0.0"
-    frac_sched.Field_4 = f"Until: 08:00, {morning_val:.2f}"
+def create_day_night_schedule(idf, sched_name="VentSched_DayNight"):
+    """
+    Day/Night schedule that is 0.5 at night, 1.0 during day.
+    Example: 06:00-22:00 => 1.0, else => 0.5
+    """
+    # Check if already exists
+    existing = idf.getobject("SCHEDULE:COMPACT", sched_name.upper())
+    if existing:
+        return existing
 
-    # 08:00-10:00 => peak_val
-    frac_sched.Field_5 = f"Until: 10:00, {peak_val:.2f}"
+    schedule = idf.newidfobject("SCHEDULE:COMPACT")
+    schedule.Name = sched_name
+    schedule.Schedule_Type_Limits_Name = "Fraction"
 
-    # 10:00-17:00 => afternoon_val
-    frac_sched.Field_6 = f"Until: 17:00, {afternoon_val:.2f}"
+    schedule.Field_1 = "Through: 12/31"
+    schedule.Field_2 = "For: AllDays"
+    schedule.Field_3 = "Until: 06:00,0.5"
+    schedule.Field_4 = "Until: 22:00,1.0"
+    schedule.Field_5 = "Until: 24:00,0.5"
+    return schedule
 
-    # 17:00-21:00 => evening_val
-    frac_sched.Field_7 = f"Until: 21:00, {evening_val:.2f}"
 
-    # 21:00-24:00 => back to morning_val or something else
-    frac_sched.Field_8 = f"Until: 24:00, {morning_val:.2f}"
+def create_workhours_schedule(idf, sched_name="WorkHoursSched"):
+    """
+    Workhours schedule: 
+      - 0.2 fraction from midnight to 09:00,
+      - 1.0 from 09:00 to 17:00,
+      - 0.2 from 17:00 to midnight,
+      - weekends/holidays => 0.2 all day
+    """
+    # Check if already exists
+    existing = idf.getobject("SCHEDULE:COMPACT", sched_name.upper())
+    if existing:
+        return existing
 
-    # Now setpoint schedule
-    setpoint_sched_name = f"{schedule_name_suffix}_Setpoint"
-    setpoint_sched = idf.newidfobject("SCHEDULE:COMPACT")
-    setpoint_sched.Name = setpoint_sched_name
-    setpoint_sched.Schedule_Type_Limits_Name = "Temperature"
-    setpoint_sched.Field_1 = "Through: 12/31"
-    setpoint_sched.Field_2 = "For: AllDays"
-    setpoint_sched.Field_3 = f"Until: 24:00, {setpoint_c}"
+    schedule = idf.newidfobject("SCHEDULE:COMPACT")
+    schedule.Name = sched_name
+    schedule.Schedule_Type_Limits_Name = "Fraction"
 
-    return frac_sched_name, setpoint_sched_name
+    schedule.Field_1 = "Through: 12/31"
+    schedule.Field_2 = "For: Weekdays"
+    schedule.Field_3 = "Until: 09:00,0.2"
+    schedule.Field_4 = "Until: 17:00,1.0"
+    schedule.Field_5 = "Until: 24:00,0.2"
+    schedule.Field_6 = "For: Saturday Sunday Holiday"
+    schedule.Field_7 = "Until: 24:00,0.2"
+    return schedule
+
+
+# ------------------------------------------------------------------------
+# NEW HELPER FUNCTIONS FOR DYNAMIC SCHEDULES
+# ------------------------------------------------------------------------
+
+def create_schedule_from_pattern(idf, sched_name, pattern, schedule_type_limits="Fraction"):
+    """
+    Creates a SCHEDULE:COMPACT in the IDF from a single pattern of
+    (start_hour, end_hour, fraction_value) tuples for ALL days.
+
+    :param idf: geomeppy IDF instance
+    :param sched_name: name of the schedule in E+
+    :param pattern: list of (start_hour, end_hour, value), e.g. [(0,6,0.5), (6,22,1.0), (22,24,0.5)]
+    :param schedule_type_limits: e.g. "Fraction" or "OnOff"
+    :returns: the new or existing SCHEDULE:COMPACT object
+    """
+    # Check if schedule already exists
+    existing = idf.getobject("SCHEDULE:COMPACT", sched_name.upper())
+    if existing:
+        return existing
+
+    sched_obj = idf.newidfobject("SCHEDULE:COMPACT")
+    sched_obj.Name = sched_name
+    sched_obj.Schedule_Type_Limits_Name = schedule_type_limits
+
+    # We'll define just one set of rules "Through: 12/31", "For: AllDays"
+    # If you want to differentiate weekdays vs. weekends in the same schedule,
+    # see create_schedule_from_weekday_weekend_pattern() below.
+    field_idx = 1
+    sched_obj[f"Field_{field_idx}"] = "Through: 12/31"
+    field_idx += 1
+
+    sched_obj[f"Field_{field_idx}"] = "For: AllDays"
+    field_idx += 1
+
+    # Now loop over the pattern, building lines like "Until: HH:MM, fraction"
+    for (start_hr, end_hr, val) in pattern:
+        # E+ SCHEDULE:COMPACT lines are sequential. We just say "Until: end_hr"
+        # The fraction applies from previous end_hr to new end_hr.
+        # For the first chunk, it starts at midnight implicitly.
+        # e.g. "Until: 06:00,0.5"
+        line_str = f"Until: {end_hr:02d}:00,{val}"
+        sched_obj[f"Field_{field_idx}"] = line_str
+        field_idx += 1
+
+    return sched_obj
+
+
+def create_schedule_from_weekday_weekend_pattern(idf, sched_name, weekday_pattern, weekend_pattern, 
+                                                 schedule_type_limits="Fraction"):
+    """
+    Creates a SCHEDULE:COMPACT with two sets of rules:
+    - One for Weekdays
+    - One for Saturday Sunday Holiday
+
+    :param idf: geomeppy IDF instance
+    :param sched_name: name of the schedule in E+
+    :param weekday_pattern: list of (start_hr, end_hr, fraction) for M-F
+    :param weekend_pattern: list of (start_hr, end_hr, fraction) for Sat/Sun/Holiday
+    :param schedule_type_limits: e.g. "Fraction"
+    :returns: new or existing SCHEDULE:COMPACT
+    """
+    existing = idf.getobject("SCHEDULE:COMPACT", sched_name.upper())
+    if existing:
+        return existing
+
+    sched_obj = idf.newidfobject("SCHEDULE:COMPACT")
+    sched_obj.Name = sched_name
+    sched_obj.Schedule_Type_Limits_Name = schedule_type_limits
+
+    # First chunk: Through: 12/31, For: Weekdays
+    field_idx = 1
+    sched_obj[f"Field_{field_idx}"] = "Through: 12/31"
+    field_idx += 1
+
+    sched_obj[f"Field_{field_idx}"] = "For: Weekdays"
+    field_idx += 1
+
+    for (start_hr, end_hr, val) in weekday_pattern:
+        line_str = f"Until: {end_hr:02d}:00,{val}"
+        sched_obj[f"Field_{field_idx}"] = line_str
+        field_idx += 1
+
+    # Next chunk: For Saturday Sunday Holiday
+    sched_obj[f"Field_{field_idx}"] = "For: Saturday Sunday Holiday"
+    field_idx += 1
+
+    for (start_hr, end_hr, val) in weekend_pattern:
+        line_str = f"Until: {end_hr:02d}:00,{val}"
+        sched_obj[f"Field_{field_idx}"] = line_str
+        field_idx += 1
+
+    return sched_obj
+
+
+def ensure_dynamic_schedule(idf, sched_name, weekday_pattern=None, weekend_pattern=None):
+    """
+    A convenience function that:
+     - if only weekday_pattern is provided, creates schedule from that pattern for all days;
+     - if both weekday & weekend patterns provided, creates a weekday/weekend schedule.
+
+    :param idf: geomeppy IDF
+    :param sched_name: string
+    :param weekday_pattern: list of (start_hr, end_hr, fraction)
+    :param weekend_pattern: list of (start_hr, end_hr, fraction)
+    :return: the schedule object
+    """
+    existing = idf.getobject("SCHEDULE:COMPACT", sched_name.upper())
+    if existing:
+        return existing
+
+    if weekday_pattern and not weekend_pattern:
+        # same pattern for all days
+        return create_schedule_from_pattern(idf, sched_name, weekday_pattern)
+
+    elif weekday_pattern and weekend_pattern:
+        return create_schedule_from_weekday_weekend_pattern(idf, sched_name, weekday_pattern, weekend_pattern)
+
+    else:
+        # fallback => always on
+        return create_always_on_schedule(idf, sched_name)
 
   --- File Contents End ---
 
-  File: water_heater.py
+  File: ventilation_lookup.py
   --- File Contents Start ---
-# DHW/water_heater.py
+# ventilation_lookup.py
 
-from .assign_dhw_values import assign_dhw_parameters
-from .parameters import calculate_dhw_parameters
-from .schedules import create_dhw_schedules
+"""
+This file defines a large nested dictionary called `ventilation_lookup`
+that organizes infiltration/ventilation parameters by:
+  1) scenario ("scenario1" or "scenario2")
+  2) calibration stage ("pre_calibration" or "post_calibration")
+Inside each stage, you have infiltration ranges, year factors, system controls, etc.
 
-def add_dhw_to_idf(
-    idf,
-    building_row,
-    calibration_stage="pre_calibration",
-    strategy="A",
-    random_seed=None,
-    name_suffix="MyDHW",
-    user_config_dhw=None,
-    assigned_dhw_log=None,
-    use_nta=False
-):
+Example usage:
+    from ventilation_lookup import ventilation_lookup
+
+    # Suppose we want infiltration info for scenario2, pre_calibration, a "two_and_a_half_story_house"
+    infiltration_ranges = ventilation_lookup["scenario2"]["pre_calibration"]["residential_infiltration_range"]
+    infiltration_tuple = infiltration_ranges.get("two_and_a_half_story_house", (1.0, 1.2))
+    # infiltration_tuple might be something like (1.3, 1.5) if you set it below
+"""
+
+ventilation_lookup = {
+    # -------------------------------------------------------------------------
+    # SCENARIO 1
+    # -------------------------------------------------------------------------
+    "scenario1": {
+        "pre_calibration": {
+            # -----------------------------------------------------------
+            # 1) Infiltration ranges
+            # -----------------------------------------------------------
+            "residential_infiltration_range": {
+                # Example new sub-type for a residential building
+                "two_and_a_half_story_house": (1.1, 1.3),
+                "apartment": (0.9, 1.1),
+                "row_house": (1.0, 1.2),
+            },
+            "non_res_infiltration_range": {
+                "meeting_function": (0.5, 0.7),
+                "office_multi_lower": (0.4, 0.6),
+                "office_multi_top": (0.6, 0.8)
+            },
+
+            # -----------------------------------------------------------
+            # 2) Year-of-construction factor
+            # -----------------------------------------------------------
+            "year_factor_range": {
+                "1900-2000":  (2.0, 2.4),
+                "2000-2024":  (1.2, 1.4),
+                "<1970":      (2.5, 3.5),
+                "1970-1992":  (1.8, 2.2),
+                "1992-2005":  (1.4, 1.6),
+                "2005-2015":  (1.1, 1.3),
+                ">2015":      (0.9, 1.1)
+            },
+
+            # -----------------------------------------------------------
+            # 3) System control factors
+            # -----------------------------------------------------------
+            "system_control_range_res": {
+                "A": {"f_ctrl_range": (0.9, 1.0)},
+                "B": {"f_ctrl_range": (0.50, 0.60)},
+                "C": {"f_ctrl_range": (0.80, 0.90)},
+                "D": {"f_ctrl_range": (0.95, 1.05)}
+            },
+            "system_control_range_nonres": {
+                "A": {"f_ctrl_range": (0.9, 1.0)},
+                "B": {"f_ctrl_range": (0.80, 0.90)},
+                "C": {"f_ctrl_range": (0.60, 0.70)},
+                "D": {"f_ctrl_range": (0.75, 0.85)}
+            },
+
+            # -----------------------------------------------------------
+            # 4) Fan pressure, HRV efficiency
+            # -----------------------------------------------------------
+            "fan_pressure_range": {
+                "res_mech": (40, 60),
+                "nonres_intake": (90, 110),
+                "nonres_exhaust": (140, 160)
+            },
+            "hrv_sensible_eff_range": (0.7, 0.8)
+        },
+
+        "post_calibration": {
+            "residential_infiltration_range": {
+                "two_and_a_half_story_house": (1.2, 1.2),
+                "apartment": (1.0, 1.0),
+                "row_house": (1.1, 1.1)
+            },
+            "non_res_infiltration_range": {
+                "meeting_function": (0.6, 0.6),
+                "office_multi_lower": (0.5, 0.5),
+                "office_multi_top": (0.7, 0.7)
+            },
+
+            "year_factor_range": {
+                "1900-2000":  (2.2, 2.2),
+                "2000-2024":  (1.3, 1.3),
+                "<1970":      (3.0, 3.0),
+                "1970-1992":  (2.0, 2.0),
+                "1992-2005":  (1.5, 1.5),
+                "2005-2015":  (1.2, 1.2),
+                ">2015":      (1.0, 1.0)
+            },
+
+            "system_control_range_res": {
+                "A": {"f_ctrl_range": (1.0, 1.0)},
+                "B": {"f_ctrl_range": (0.57, 0.57)},
+                "C": {"f_ctrl_range": (0.85, 0.85)},
+                "D": {"f_ctrl_range": (1.0, 1.0)}
+            },
+            "system_control_range_nonres": {
+                "A": {"f_ctrl_range": (1.0, 1.0)},
+                "B": {"f_ctrl_range": (0.85, 0.85)},
+                "C": {"f_ctrl_range": (0.65, 0.65)},
+                "D": {"f_ctrl_range": (0.8, 0.8)}
+            },
+
+            "fan_pressure_range": {
+                "res_mech": (50, 50),
+                "nonres_intake": (100, 100),
+                "nonres_exhaust": (150, 150)
+            },
+            "hrv_sensible_eff_range": (0.75, 0.75)
+        }
+    },
+
+    # -------------------------------------------------------------------------
+    # SCENARIO 2
+    # -------------------------------------------------------------------------
+    "scenario2": {
+        "pre_calibration": {
+            "residential_infiltration_range": {
+                # maybe scenario2 has slightly higher infiltration
+                "two_and_a_half_story_house": (1.3, 1.5),
+                "apartment": (1.0, 1.2),
+                "row_house": (1.1, 1.3)
+            },
+            "non_res_infiltration_range": {
+                # or scenario2 meeting_function infiltration a bit bigger
+                "meeting_function": (0.6, 0.8),
+                "office_multi_lower": (0.4, 0.7),
+                "office_multi_top": (0.7, 0.9)
+            },
+
+            "year_factor_range": {
+                "1900-2000":  (2.1, 2.5),
+                "2000-2024":  (1.3, 1.5),
+                "<1970":      (2.5, 3.5),
+                "1970-1992":  (1.8, 2.2),
+                "1992-2005":  (1.4, 1.6),
+                "2005-2015":  (1.1, 1.3),
+                ">2015":      (0.9, 1.1)
+            },
+
+            "system_control_range_res": {
+                "A": {"f_ctrl_range": (0.85, 0.95)},
+                "B": {"f_ctrl_range": (0.45, 0.55)},
+                "C": {"f_ctrl_range": (0.70, 0.80)},
+                "D": {"f_ctrl_range": (0.90, 1.00)}
+            },
+            "system_control_range_nonres": {
+                "A": {"f_ctrl_range": (0.85, 0.95)},
+                "B": {"f_ctrl_range": (0.75, 0.85)},
+                "C": {"f_ctrl_range": (0.55, 0.65)},
+                "D": {"f_ctrl_range": (0.70, 0.80)}
+            },
+
+            "fan_pressure_range": {
+                "res_mech": (45, 65),
+                "nonres_intake": (95, 115),
+                "nonres_exhaust": (145, 165)
+            },
+            "hrv_sensible_eff_range": (0.65, 0.75)
+        },
+
+        "post_calibration": {
+            "residential_infiltration_range": {
+                "two_and_a_half_story_house": (1.4, 1.4),
+                "apartment": (1.1, 1.1),
+                "row_house": (1.2, 1.2)
+            },
+            "non_res_infiltration_range": {
+                "meeting_function": (0.7, 0.7),
+                "office_multi_lower": (0.6, 0.6),
+                "office_multi_top": (0.75, 0.75)
+            },
+
+            "year_factor_range": {
+                "1900-2000":  (2.3, 2.3),
+                "2000-2024":  (1.4, 1.4),
+                "<1970":      (3.2, 3.2),
+                "1970-1992":  (2.2, 2.2),
+                "1992-2005":  (1.6, 1.6),
+                "2005-2015":  (1.3, 1.3),
+                ">2015":      (1.0, 1.0)
+            },
+
+            "system_control_range_res": {
+                "A": {"f_ctrl_range": (1.0, 1.0)},
+                "B": {"f_ctrl_range": (0.60, 0.60)},
+                "C": {"f_ctrl_range": (0.80, 0.80)},
+                "D": {"f_ctrl_range": (0.95, 0.95)}
+            },
+            "system_control_range_nonres": {
+                "A": {"f_ctrl_range": (1.0, 1.0)},
+                "B": {"f_ctrl_range": (0.80, 0.80)},
+                "C": {"f_ctrl_range": (0.60, 0.60)},
+                "D": {"f_ctrl_range": (0.75, 0.75)}
+            },
+
+            "fan_pressure_range": {
+                "res_mech": (55, 55),
+                "nonres_intake": (105, 105),
+                "nonres_exhaust": (155, 155)
+            },
+            "hrv_sensible_eff_range": (0.70, 0.70)
+        }
+    }
+}
+
+  --- File Contents End ---
+
+  File: ventilation_overrides_from_excel.py
+  --- File Contents Start ---
+# ventilation/ventilation_overrides_from_excel.py
+
+import pandas as pd
+import copy
+import math
+
+def read_ventilation_overrides_from_excel(excel_path):
     """
-    1) Retrieve 'dhw_key' directly from building_row (or use a fallback).
-    2) Pull parameter ranges from dhw_lookup (or fallback).
-    3) Merge with user_config_dhw if any.
-    4) Calculate occupant_count, daily usage, peak flow, etc.
-    5) Create schedules, then WaterHeater:Mixed object in the IDF.
+    Reads an Excel file with columns:
+        - calibration_stage
+        - main_key
+        - sub_key
+        - param_name
+        - min_val
+        - max_val
+        - fixed_value
+
+    Returns a nested dict: override_data[stage][main_key][sub_key][param_name] = ...
+    
+    Where the "..." can be:
+      - a tuple (min, max) if numeric
+      - a single string or numeric if 'fixed_value' is provided and is non-NaN
+        (we store it as (val, val) if numeric, or keep as a plain string if textual).
+    
+    This can override infiltration ranges, year_factor ranges, OR new schedule info.
+    For schedule overrides, 'main_key' might be "schedule_info",
+    sub_key might be e.g. "residential", param_name might be "default_infiltration_schedule",
+    and fixed_value could be e.g. "InfilResSched".
+
+    Example row:
+        calibration_stage = "pre_calibration"
+        main_key          = "schedule_info"
+        sub_key           = "residential"
+        param_name        = "default_infiltration_schedule"
+        min_val           = NaN
+        max_val           = NaN
+        fixed_value       = "MyInfilResSched"
+
+    The resulting override_data will have:
+        override_data["pre_calibration"]["schedule_info"]["residential"]["default_infiltration_schedule"] = "MyInfilResSched"
     """
+    df = pd.read_excel(excel_path)
 
-    # 1) Obtain the building's dhw_key from building_row, or fallback:
-    #    e.g. if building_row["dhw_key"] might be "Apartment", "Detached House",
-    #         "Office Function", etc.
-    dhw_building_key = building_row.get("dhw_key", "Detached House")
-    bldg_id = building_row.get("ogc_fid", 0)  # or your building ID field
+    required_cols = ["calibration_stage","main_key","sub_key","param_name","min_val","max_val","fixed_value"]
+    for c in required_cols:
+        if c not in df.columns:
+            raise ValueError(f"Missing column '{c}' in {excel_path}")
 
-    # 2) Assign from dhw_lookup, with user config overrides
-    assigned = assign_dhw_parameters(
-        building_id=bldg_id,
-        dhw_key=dhw_building_key,
-        calibration_stage=calibration_stage,
-        strategy=strategy,
-        random_seed=random_seed,
-        user_config_dhw=user_config_dhw,
-        assigned_dhw_log=assigned_dhw_log,
-        building_row=building_row,
-        use_nta=use_nta
-    )
+    override_data = {}
 
-    # occupant_count if present
-    occupant_count = building_row.get("occupant_count", None)
-    floor_area_m2 = building_row.get("floor_area_m2", building_row.get("area", None))
+    for _, row in df.iterrows():
+        stage = str(row["calibration_stage"]).strip()
+        mkey  = str(row["main_key"]).strip()       # e.g. "residential_infiltration_range" or "schedule_info"
+        skey  = str(row["sub_key"]).strip()        # e.g. "A_corner" or "residential" or ""
+        pname = str(row["param_name"]).strip()     # e.g. "f_ctrl_range", "default_infiltration_schedule", or ""
 
-    # 3) Calculate final numeric parameters (occupant_count, daily liters, etc.)
-    params = calculate_dhw_parameters(
-        assigned,
-        floor_area_m2=floor_area_m2,
-        occupant_count=occupant_count
-    )
+        fv = row["fixed_value"]  # could be numeric or string
+        mn = row["min_val"]      # typically numeric or NaN
+        mx = row["max_val"]      # typically numeric or NaN
 
-    # 4) Build schedules for use fraction & setpoint
-    frac_sched_name, setpoint_sched_name = create_dhw_schedules(
-        idf,
-        schedule_name_suffix=name_suffix,
-        setpoint_c=params["setpoint_c"],
-        morning_val=assigned["sched_morning"],
-        peak_val=assigned["sched_peak"],
-        afternoon_val=assigned["sched_afternoon"],
-        evening_val=assigned["sched_evening"]
-    )
+        if stage not in override_data:
+            override_data[stage] = {}
+        if mkey not in override_data[stage]:
+            override_data[stage][mkey] = {}
 
-    # 5) Create the WaterHeater:Mixed object
-    wh_name = f"{name_suffix}_WaterHeater"
+        # Decide how to store
+        # 1) If fixed_value is not NaN => store that
+        #    - If it's purely numeric, we store as (fv,fv) for consistency with min,max range
+        #    - If it's a string, we'll store it as a plain string override
+        # 2) Else if min_val and max_val are numeric => store as (min_val,max_val)
+        # 3) Otherwise skip if all are NaN
 
-    # Example logic for selecting fuel type & heater efficiency:
-    # if the chosen dhw_key name includes "Residential", assume electricity, else gas
-    # or you can do something like: "if 'Function' in dhw_key => Non-Residential"
-    if "Function" in dhw_building_key:
-        fuel_type = "NaturalGas"
-        heater_eff = 0.8
-    else:
-        fuel_type = "Electricity"
-        heater_eff = 0.9
+        # Helper to test if something is numeric
+        def is_number(x):
+            try:
+                float(x)
+                return True
+            except (ValueError, TypeError):
+                return False
 
-    wh_obj = idf.newidfobject(
-        "WATERHEATER:MIXED",
-        Name=wh_name,
-        Tank_Volume=params["tank_volume_m3"],
-        Setpoint_Temperature_Schedule_Name=setpoint_sched_name,
-        Deadband_Temperature_Difference=2.0,
-        Maximum_Temperature_Limit=80.0,
-        Heater_Control_Type="CYCLE",
-        Heater_Maximum_Capacity=params["heater_capacity_w"],
-        Heater_Fuel_Type=fuel_type,
-        Heater_Thermal_Efficiency=heater_eff,
-        Off_Cycle_Parasitic_Fuel_Consumption_Rate=0.0,
-        Off_Cycle_Parasitic_Fuel_Type="Electricity",
-        Off_Cycle_Parasitic_Heat_Fraction_to_Tank=0.0,
-        On_Cycle_Parasitic_Fuel_Consumption_Rate=0.0,
-        On_Cycle_Parasitic_Fuel_Type="Electricity",
-        On_Cycle_Parasitic_Heat_Fraction_to_Tank=0.0,
-        Ambient_Temperature_Indicator="SCHEDULE",
-        Ambient_Temperature_Schedule_Name="Always22C",
-        Off_Cycle_Loss_Coefficient_to_Ambient_Temperature=5.0,
-        On_Cycle_Loss_Coefficient_to_Ambient_Temperature=5.0,
-        Peak_Use_Flow_Rate=params["peak_flow_m3s"],
-        Use_Flow_Rate_Fraction_Schedule_Name=frac_sched_name
-    )
+        if pd.notna(fv):
+            # If the fixed_value is numeric => store as a numeric tuple (fv,fv)
+            if is_number(fv):
+                val_tuple = (float(fv), float(fv))
+                final_value = val_tuple
+            else:
+                # It's likely a string => store it directly as that string
+                final_value = str(fv).strip()
+        elif pd.notna(mn) and pd.notna(mx) and is_number(mn) and is_number(mx):
+            val_tuple = (float(mn), float(mx))
+            final_value = val_tuple
+        else:
+            # skip if no valid data
+            continue
 
-    # Optional debug prints
-    print(f"[DHW] building_id={bldg_id}, dhw_key={dhw_building_key}")
-    print(f"     occupant_count={params['occupant_count']} daily_liters={params['daily_liters']:.1f}")
-    print(f"     setpoint={params['setpoint_c']:.1f} C, tank_volume={params['tank_volume_m3']:.3f} m³")
-    print(f"     schedules => {frac_sched_name}, {setpoint_sched_name}")
+        # Insert into override_data
+        # Cases:
+        #    (a) skey == "" and pname == "" => override_data[stage][mkey] = final_value
+        #    (b) skey != "" and pname == "" => override_data[stage][mkey][skey] = final_value
+        #    (c) skey + pname => override_data[stage][mkey][skey][pname] = final_value
+        if skey == "" and pname == "":
+            override_data[stage][mkey] = final_value
+        elif skey != "" and pname == "":
+            if not isinstance(override_data[stage][mkey], dict):
+                override_data[stage][mkey] = {}
+            override_data[stage][mkey][skey] = final_value
+        else:
+            # if we have a param_name => store in stage[mkey][skey][pname]
+            if skey not in override_data[stage][mkey] or not isinstance(override_data[stage][mkey][skey], dict):
+                override_data[stage][mkey][skey] = {}
+            override_data[stage][mkey][skey][pname] = final_value
 
-    return wh_obj
+    return override_data
+
+
+def apply_ventilation_overrides_to_lookup(default_lookup, override_data):
+    """
+    Merges override_data into default_lookup (similar to ventilation_lookup).
+    
+    override_data structure:
+      override_data[stage][main_key][sub_key][param_name] = final_value
+        (final_value can be a tuple (min,max), or a string for schedules)
+
+    For each stage in override_data:
+      - If stage doesn't exist in default_lookup, we create it.
+      - For each main_key in override_data => if it's a tuple or string, override
+        directly. If it's a dict => merge deeper.
+    
+    Example usage:
+      new_lookup = apply_ventilation_overrides_to_lookup(ventilation_lookup, override_data)
+    """
+    # If you prefer not to mutate default_lookup in place, do a copy
+    new_lookup = copy.deepcopy(default_lookup)
+
+    for stage, stage_dict in override_data.items():
+        if stage not in new_lookup:
+            new_lookup[stage] = {}
+
+        for mkey, val_mkey in stage_dict.items():
+            # val_mkey might be:
+            #   - a numeric tuple or string => direct override
+            #   - a dict => deeper merges (subkeys, param_names)
+
+            if not isinstance(val_mkey, dict):
+                # So if it's a tuple or a string => direct override
+                new_lookup[stage][mkey] = val_mkey
+                continue
+
+            # if it's a dict => we merge it
+            if mkey not in new_lookup[stage]:
+                new_lookup[stage][mkey] = {}
+
+            for subk, subv in val_mkey.items():
+                # subv might be a tuple, string, or another dict
+                if not isinstance(subv, dict):
+                    # direct override
+                    new_lookup[stage][mkey][subk] = subv
+                else:
+                    # deeper dict => e.g. {param_name: (min,max) or string}
+                    if subk not in new_lookup[stage][mkey]:
+                        new_lookup[stage][mkey][subk] = {}
+                    for param_key, param_val in subv.items():
+                        # param_val could be tuple or string
+                        new_lookup[stage][mkey][subk][param_key] = param_val
+
+    return new_lookup
 
   --- File Contents End ---
 
 ================================================================================
 
-Folder: D:\Documents\E_Plus_2030_py\DHW\__pycache__
+Folder: D:\Documents\E_Plus_2030_py\ventilation\__pycache__
 
 ================================================================================
 
