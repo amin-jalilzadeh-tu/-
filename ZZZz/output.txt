@@ -1,1717 +1,940 @@
-Folder: D:\Documents\E_Plus_2030_py\ventilation
+Folder: D:\Documents\E_Plus_2030_py\output\assigned
 
-  File: add_ventilation.py
+  File: assigned_dhw_params.csv
   --- File Contents Start ---
-# ventilation/add_ventilation.py
-
-from ventilation.assign_ventilation_values import (
-    assign_ventilation_params_with_overrides
-)
-from ventilation.schedules import (
-    create_always_on_schedule,
-    create_day_night_schedule,
-    create_workhours_schedule
-)
-from ventilation.create_ventilation_systems import create_ventilation_system
-from ventilation.calc_functions import (
-    calc_infiltration,
-    calc_required_ventilation_flow
-)
-from ventilation.mappings import (
-    safe_lower,
-    map_age_range_to_year_key,
-    map_infiltration_key,
-    map_usage_key
-)
-
-def add_ventilation_to_idf(
-    idf,
-    building_row,
-    calibration_stage="pre_calibration",
-    strategy="A",            # "A" => pick midpoint, "B" => random, ...
-    random_seed=None,
-    user_config_vent=None,
-    assigned_vent_log=None
-):
-    """
-    Adds infiltration + ventilation to the IDF based on building_row data
-    (using assign_ventilation_params_with_overrides). Creates infiltration
-    and (optionally) ventilation objects in each zone. Also logs both
-    building-level and zone-level picks to assigned_vent_log.
-
-    Args:
-        idf: geomeppy IDF object
-        building_row: dict-like row containing e.g. "ogc_fid", "building_function", "age_range", "scenario", "area"
-        calibration_stage: str, e.g. "pre_calibration" or "post_calibration"
-        strategy: str, e.g. "A" => midpoint, "B" => random
-        random_seed: int or None
-        user_config_vent: list of user override dicts for ventilation
-        assigned_vent_log: dict to store final building-level & zone-level picks
-
-    Returns:
-        None. (The IDF is modified in place; the picks are stored in assigned_vent_log if provided.)
-    """
-
-    # 1) Ensure key schedules exist (the default ones)
-    if not idf.getobject("SCHEDULE:CONSTANT", "AlwaysOnSched"):
-        create_always_on_schedule(idf, "AlwaysOnSched")
-    if not idf.getobject("SCHEDULE:COMPACT", "VentSched_DayNight"):
-        create_day_night_schedule(idf, "VentSched_DayNight")
-    if not idf.getobject("SCHEDULE:COMPACT", "WorkHoursSched"):
-        create_workhours_schedule(idf, "WorkHoursSched")
-
-    # 2) Extract building info
-    bldg_id = building_row.get("ogc_fid", 0)
-    bldg_func = safe_lower(building_row.get("building_function", "residential"))
-    if bldg_func not in ("residential", "non_residential"):
-        bldg_func = "residential"
-
-    age_range_str = building_row.get("age_range", "2015 and later")
-    scenario = building_row.get("scenario", "scenario1")
-    floor_area_m2 = building_row.get("area", 100.0)
-
-    # 3) Decide infiltration key, usage key, etc.
-    infiltration_key = map_infiltration_key(building_row)
-    usage_key = map_usage_key(building_row)
-    is_res = (bldg_func == "residential")
-
-    # 4) Call the function that picks infiltration_base, year_factor, schedules, etc.
-    assigned_vent = assign_ventilation_params_with_overrides(
-        building_id=bldg_id,
-        building_function=bldg_func,
-        age_range=age_range_str,
-        scenario=scenario,
-        calibration_stage=calibration_stage,
-        strategy=strategy,
-        random_seed=random_seed,
-        user_config_vent=user_config_vent,
-        assigned_vent_log=None,        # We'll do the logging here instead
-        infiltration_key=infiltration_key,
-        year_key=map_age_range_to_year_key(age_range_str),
-        is_residential=is_res,
-        default_flow_exponent=0.67
-    )
-
-    # 5) Unpack the chosen building-level picks
-    infiltration_base   = assigned_vent["infiltration_base"]
-    infiltration_rng    = assigned_vent["infiltration_base_range"]
-    year_factor         = assigned_vent["year_factor"]
-    year_factor_rng     = assigned_vent["year_factor_range"]
-    fan_pressure        = assigned_vent["fan_pressure"]
-    fan_pressure_rng    = assigned_vent["fan_pressure_range"]
-    f_ctrl              = assigned_vent["f_ctrl"]
-    f_ctrl_rng          = assigned_vent["f_ctrl_range"]
-    hrv_eff             = assigned_vent["hrv_eff"]
-    hrv_eff_rng         = assigned_vent["hrv_eff_range"]
-
-    infiltration_sched  = assigned_vent["infiltration_schedule_name"]
-    ventilation_sched   = assigned_vent["ventilation_schedule_name"]
-    system_type         = assigned_vent["system_type"]
-    flow_exponent       = assigned_vent["flow_exponent"]
-
-    # 6) Print or debug
-    print(
-        f"[VENT OVERRIDES] bldg={bldg_id}, infiltration_base={infiltration_base}, "
-        f"year_factor={year_factor}, sys={system_type}, f_ctrl={f_ctrl}, "
-        f"fanP={fan_pressure}, hrv_eff={hrv_eff}, infiltration_sched={infiltration_sched}, "
-        f"vent_sched={ventilation_sched}"
-    )
-
-    # 7) Calculate total infiltration & ventilation flows for the building
-    infiltration_m3_s_total = calc_infiltration(
-        infiltration_base=infiltration_base,
-        year_factor=year_factor,
-        flow_exponent=flow_exponent,
-        floor_area_m2=floor_area_m2
-    )
-    vent_flow_m3_s_total = calc_required_ventilation_flow(
-        building_function=bldg_func,
-        f_ctrl_val=f_ctrl,
-        floor_area_m2=floor_area_m2,
-        usage_key=usage_key
-    )
-
-    # 7b) Retrieve zones
-    zones = idf.idfobjects["ZONE"]
-    if not zones:
-        print("[VENT] No zones found, skipping creation of infiltration/ventilation objects.")
-        return
-
-    n_zones = len(zones)
-    infiltration_per_zone = infiltration_m3_s_total / n_zones
-    vent_per_zone = vent_flow_m3_s_total / n_zones
-
-    # 8) If we want to store building-level data in assigned_vent_log
-    if assigned_vent_log is not None:
-        if bldg_id not in assigned_vent_log:
-            assigned_vent_log[bldg_id] = {}
-
-        assigned_vent_log[bldg_id]["building_params"] = {
-            # Numeric picks + ranges
-            "infiltration_base": infiltration_base,
-            "infiltration_base_range": infiltration_rng,
-            "year_factor": year_factor,
-            "year_factor_range": year_factor_rng,
-            "fan_pressure": fan_pressure,
-            "fan_pressure_range": fan_pressure_rng,
-            "f_ctrl": f_ctrl,
-            "f_ctrl_range": f_ctrl_rng,
-            "hrv_eff": hrv_eff,
-            "hrv_eff_range": hrv_eff_rng,
-            # Schedules
-            "infiltration_schedule_name": infiltration_sched,
-            "ventilation_schedule_name": ventilation_sched,
-            "system_type": system_type,
-            "flow_exponent": flow_exponent,
-            # Flows for entire building
-            "infiltration_total_m3_s": infiltration_m3_s_total,
-            "ventilation_total_m3_s": vent_flow_m3_s_total
-        }
-
-        # We'll create a sub-dict for zone-level data
-        assigned_vent_log[bldg_id]["zones"] = {}
-
-    print(
-        f"[VENTILATION] Building {bldg_id}, system={system_type}, infiltration={infiltration_m3_s_total:.3f} m3/s, "
-        f"vent={vent_flow_m3_s_total:.3f} m3/s, #zones={n_zones}"
-    )
-
-    # 9) For each zone => create infiltration + ventilation objects
-    for zone_obj in zones:
-        zone_name = zone_obj.Name
-
-        iobj, vobj = create_ventilation_system(
-            idf=idf,
-            building_function=bldg_func,
-            system_type=system_type,
-            zone_name=zone_name,
-            infiltration_m3_s=infiltration_per_zone,
-            vent_flow_m3_s=vent_per_zone,
-            infiltration_sched_name=infiltration_sched,
-            ventilation_sched_name=ventilation_sched,
-            pick_strategy="random" if strategy == "B" else "midpoint"
-        )
-
-        print(
-            f"   => Created infiltration for {zone_name}: {infiltration_per_zone:.4f} m3/s, "
-            f"ventilation: {vent_per_zone:.4f} m3/s"
-        )
-
-        # 9b) Log zone-level data
-        if assigned_vent_log is not None:
-            assigned_vent_log[bldg_id]["zones"][zone_name] = {
-                "infiltration_object_name": iobj.Name,
-                "infiltration_object_type": iobj.key,
-                "infiltration_flow_m3_s": infiltration_per_zone,
-                "infiltration_schedule_name": infiltration_sched,
-                # If system_type != "D", we have vobj => ZONEVENTILATION:DESIGNFLOWRATE
-                # If system_type == "D", vobj might be the same as iobj or None
-                #   Actually in create_ventilation_system, iobj is infiltration, vobj is either
-                #   a ZONEVENTILATION:DESIGNFLOWRATE or an IdealLoads object (for system D).
-                "ventilation_object_name": vobj.Name if vobj else None,
-                "ventilation_object_type": vobj.key if vobj else None,
-                "ventilation_flow_m3_s": vent_per_zone if vobj else 0.0,
-                "ventilation_schedule_name": ventilation_sched
-            }
-
-    # 10) If system_type == "D", optionally confirm HRV on IdealLoads
-    # (The create_ventilation_system already sets sensible HRV if the IDD field exists).
-    if system_type == "D" and hrv_eff > 0.0:
-        for zone_obj in zones:
-            zone_name = zone_obj.Name
-            ideal_name = f"{zone_name} Ideal Loads"
-            ideal_obj = idf.getobject("ZONEHVAC:IDEALLOADSAIRSYSTEM", ideal_name)
-            if not ideal_obj:
-                print(f"[VENT WARNING] {zone_name}: Ideal Loads not found for system D, can't set HRV.")
-            else:
-                if hasattr(ideal_obj, "Sensible_Heat_Recovery_Effectiveness"):
-                    # It's presumably set in create_ventilation_system, but you could confirm or adjust:
-                    print(f"      -> {zone_name} IdealLoads has HRV = {hrv_eff:.2f}")
-                else:
-                    print(f"      -> {zone_name} IdealLoads object lacks HRV fields in IDD.")
+ogc_fid,sub_key,eplus_object_type,eplus_object_name,param_name,param_value,param_min,param_max
+4136730,dhw_top,,,default_heater_capacity_w,4223.210738148823,4000.0,5000.0
+4136730,dhw_top,,,default_tank_volume_liters,277.5029318369119,250.0,350.0
+4136730,dhw_top,,,dhw_daily_liters,45.0,,
+4136730,dhw_top,,,dhw_fraction_schedule,MyDHW_0_UseFraction,,
+4136730,dhw_top,,,dhw_heater_capacity_w,4223.210738148823,,
+4136730,dhw_top,,,dhw_heater_fuel_type,Electricity,,
+4136730,dhw_top,,,dhw_heater_thermal_eff,0.9,,
+4136730,dhw_top,,,dhw_occupant_count,1.0,,
+4136730,dhw_top,,,dhw_peak_flow_m3s,2.7459390168016543e-06,,
+4136730,dhw_top,,,dhw_setpoint_schedule,MyDHW_0_Setpoint,,
+4136730,dhw_top,,,dhw_tank_volume_m3,0.2775029318369119,,
+4136730,dhw_top,,,dhw_waterheater_object_name,MyDHW_0_WaterHeater,,
+4136730,dhw_top,,,liters_per_person_per_day,45.0,55.0,65.0
+4136730,dhw_top,,,occupant_density_m2_per_person,30.0,27.0,33.0
+4136730,dhw_top,,,peak_hours,2.8921795677048454,2.0,3.0
+4136730,dhw_top,,,sched_afternoon,0.20297972194380703,0.2,0.3
+4136730,dhw_top,,,sched_evening,0.6874551899214414,0.6,1.0
+4136730,dhw_top,,,sched_morning,0.6173877665258832,0.6,0.8
+4136730,dhw_top,,,sched_peak,0.9843843639370542,0.9,1.1
+4136730,dhw_top,,,setpoint_c,59.472942428328025,58.0,60.0
+4136730,dhw_top,,,usage_split_factor,0.6353398974845822,0.5,0.7
+4136730,dhw_waterheater,WATERHEATER:MIXED,MyDHW_0_WaterHeater,Heater_Fuel_Type,Electricity,,
+4136730,dhw_waterheater,WATERHEATER:MIXED,MyDHW_0_WaterHeater,Heater_Maximum_Capacity,4223.210738148823,,
+4136730,dhw_waterheater,WATERHEATER:MIXED,MyDHW_0_WaterHeater,Heater_Thermal_Efficiency,0.9,,
+4136730,dhw_waterheater,WATERHEATER:MIXED,MyDHW_0_WaterHeater,Name,MyDHW_0_WaterHeater,,
+4136730,dhw_waterheater,WATERHEATER:MIXED,MyDHW_0_WaterHeater,Setpoint_Temperature_Schedule_Name,MyDHW_0_Setpoint,,
+4136730,dhw_waterheater,WATERHEATER:MIXED,MyDHW_0_WaterHeater,Tank_Volume,0.2775029318369119,,
+4136730,dhw_waterheater,WATERHEATER:MIXED,MyDHW_0_WaterHeater,Use_Flow_Rate_Fraction_Schedule_Name,MyDHW_0_UseFraction,,
+4136730,dhw_waterheater,WATERHEATER:MIXED,MyDHW_0_WaterHeater,obj_type,WATERHEATER:MIXED,,
+4136732,dhw_top,,,default_heater_capacity_w,4223.210738148823,4000.0,5000.0
+4136732,dhw_top,,,default_tank_volume_liters,277.5029318369119,250.0,350.0
+4136732,dhw_top,,,dhw_daily_liters,90.00000000000001,,
+4136732,dhw_top,,,dhw_fraction_schedule,MyDHW_1_UseFraction,,
+4136732,dhw_top,,,dhw_heater_capacity_w,4223.210738148823,,
+4136732,dhw_top,,,dhw_heater_fuel_type,Electricity,,
+4136732,dhw_top,,,dhw_heater_thermal_eff,0.9,,
+4136732,dhw_top,,,dhw_occupant_count,2.0,,
+4136732,dhw_top,,,dhw_peak_flow_m3s,5.4918780336033095e-06,,
+4136732,dhw_top,,,dhw_setpoint_schedule,MyDHW_1_Setpoint,,
+4136732,dhw_top,,,dhw_tank_volume_m3,0.2775029318369119,,
+4136732,dhw_top,,,dhw_waterheater_object_name,MyDHW_1_WaterHeater,,
+4136732,dhw_top,,,liters_per_person_per_day,45.00000000000001,55.0,65.0
+4136732,dhw_top,,,occupant_density_m2_per_person,70.58823529411764,63.52941176470588,77.6470588235294
+4136732,dhw_top,,,peak_hours,2.8921795677048454,2.0,3.0
+4136732,dhw_top,,,sched_afternoon,0.20297972194380703,0.2,0.3
+4136732,dhw_top,,,sched_evening,0.6874551899214414,0.6,1.0
+4136732,dhw_top,,,sched_morning,0.6173877665258832,0.6,0.8
+4136732,dhw_top,,,sched_peak,0.9843843639370542,0.9,1.1
+4136732,dhw_top,,,setpoint_c,59.472942428328025,58.0,60.0
+4136732,dhw_top,,,usage_split_factor,0.6353398974845822,0.5,0.7
+4136732,dhw_waterheater,WATERHEATER:MIXED,MyDHW_1_WaterHeater,Heater_Fuel_Type,Electricity,,
+4136732,dhw_waterheater,WATERHEATER:MIXED,MyDHW_1_WaterHeater,Heater_Maximum_Capacity,4223.210738148823,,
+4136732,dhw_waterheater,WATERHEATER:MIXED,MyDHW_1_WaterHeater,Heater_Thermal_Efficiency,0.9,,
+4136732,dhw_waterheater,WATERHEATER:MIXED,MyDHW_1_WaterHeater,Name,MyDHW_1_WaterHeater,,
+4136732,dhw_waterheater,WATERHEATER:MIXED,MyDHW_1_WaterHeater,Setpoint_Temperature_Schedule_Name,MyDHW_1_Setpoint,,
+4136732,dhw_waterheater,WATERHEATER:MIXED,MyDHW_1_WaterHeater,Tank_Volume,0.2775029318369119,,
+4136732,dhw_waterheater,WATERHEATER:MIXED,MyDHW_1_WaterHeater,Use_Flow_Rate_Fraction_Schedule_Name,MyDHW_1_UseFraction,,
+4136732,dhw_waterheater,WATERHEATER:MIXED,MyDHW_1_WaterHeater,obj_type,WATERHEATER:MIXED,,
 
   --- File Contents End ---
 
-  File: assign_ventilation_values.py
+  File: assigned_geometry.csv
   --- File Contents Start ---
-# ventilation/assign_ventilation_values.py
-
-# ventilation/assign_ventilation_params_with_overrides.py
-
-import random
-from .ventilation_lookup import ventilation_lookup
-
-def find_vent_overrides(
-    building_id,
-    building_function,
-    age_range,
-    scenario,
-    calibration_stage,
-    user_config
-):
-    """
-    Return a list of user_config rows that match all provided criteria:
-      - building_id
-      - building_function
-      - age_range
-      - scenario
-      - calibration_stage
-    """
-    matches = []
-    if user_config:
-        for row in user_config:
-            # building_id match if present
-            if "building_id" in row and row["building_id"] != building_id:
-                continue
-            # building_function match if present
-            if "building_function" in row and row["building_function"] != building_function:
-                continue
-            # age_range match if present
-            if "age_range" in row and row["age_range"] != age_range:
-                continue
-            # scenario match if present
-            if "scenario" in row and row["scenario"] != scenario:
-                continue
-            # calibration_stage match if present
-            if "calibration_stage" in row and row["calibration_stage"] != calibration_stage:
-                continue
-            matches.append(row)
-    return matches
-
-
-def pick_val_with_range(
-    rng_tuple,
-    strategy="A",
-    log_dict=None,
-    param_name=None
-):
-    """
-    rng_tuple = (min_val, max_val) or None.
-    strategy  = "A"=>midpoint, "B"=>random, "C"=>pick min, etc.
-    log_dict  => optional dictionary for storing final picks.
-    param_name=> e.g. "infiltration_base", "fan_pressure", etc.
-
-    Returns the chosen numeric value.
-    Also logs (param_name + param_name_range) if log_dict is provided.
-    """
-    if rng_tuple is None:
-        return 0.0  # fallback => 0
-
-    min_v, max_v = rng_tuple
-
-    # pick final
-    if strategy == "A":
-        chosen = (min_v + max_v) / 2.0
-    elif strategy == "B":
-        chosen = random.uniform(min_v, max_v)
-    elif strategy == "C":
-        chosen = min_v  # pick min
-    else:
-        chosen = min_v  # default => pick min
-
-    if log_dict is not None and param_name:
-        # store the numeric range
-        log_dict[f"{param_name}_range"] = (min_v, max_v)
-        # store the final
-        log_dict[param_name] = chosen
-
-    return chosen
-
-
-def assign_ventilation_params_with_overrides(
-    building_id=None,
-    building_function="residential",
-    age_range="2015 and later",
-    scenario="scenario1",
-    calibration_stage="pre_calibration",
-    strategy="A",         # "A" => midpoint, "B" => random, "C" => min, etc.
-    random_seed=None,
-    user_config_vent=None,     # possibly a list of override rows
-    assigned_vent_log=None,    # dictionary to store final picks if desired
-    infiltration_key=None,     # e.g. "two_and_a_half_story_house"
-    year_key=None,             # e.g. "1970-1992"
-    is_residential=True,
-    default_flow_exponent=0.67
-):
-    """
-    Returns a dict containing:
-        {
-          "infiltration_base": float,
-          "infiltration_base_range": (min, max),
-          "year_factor": float,
-          "year_factor_range": (min, max),
-          "system_type": str,
-          "fan_pressure": float,
-          "fan_pressure_range": (min, max),
-          "f_ctrl": float,
-          "f_ctrl_range": (min, max),
-          "hrv_eff": float,
-          "hrv_eff_range": (min, max),
-          "infiltration_schedule_name": str,
-          "ventilation_schedule_name": str,
-          "flow_exponent": default_flow_exponent
-        }
-
-    Steps:
-      1) Look up default ranges from ventilation_lookup (scenario, calibration_stage).
-      2) Merge user overrides => modifies these ranges or sets fixed values.
-      3) Use 'strategy' to pick final numeric values from each range.
-      4) Return the final assigned dictionary, which includes both final picks & range info.
-      5) Optionally log them to assigned_vent_log if provided.
-    """
-    if random_seed is not None:
-        random.seed(random_seed)
-
-    # 1) Fallback checks
-    if scenario not in ventilation_lookup:
-        scenario = "scenario1"
-    if calibration_stage not in ventilation_lookup[scenario]:
-        calibration_stage = "pre_calibration"
-
-    stage_dict = ventilation_lookup[scenario][calibration_stage]
-
-    # Prepare a local dictionary for logging (if assigned_vent_log is used).
-    # We'll store picks in log_dict and also keep them in the final 'assigned' dict.
-    log_dict = None
-    if assigned_vent_log is not None:
-        if building_id not in assigned_vent_log:
-            assigned_vent_log[building_id] = {}
-        log_dict = assigned_vent_log[building_id]
-
-    # 2) Default infiltration_base range from infiltration_key
-    if is_residential:
-        res_infil = stage_dict["residential_infiltration_range"]
-        infiltration_base_rng = res_infil.get(infiltration_key, (1.0, 1.0))
-        sys_ctrl_ranges = stage_dict["system_control_range_res"]
-    else:
-        nonres_infil = stage_dict["non_res_infiltration_range"]
-        infiltration_base_rng = nonres_infil.get(infiltration_key, (0.5, 0.5))
-        sys_ctrl_ranges = stage_dict["system_control_range_nonres"]
-
-    # 3) year_factor range
-    year_factor_rng = stage_dict["year_factor_range"].get(year_key, (1.0, 1.0))
-
-    # 4) default system_type => "A" if residential else "D"
-    default_system_type = "A" if is_residential else "D"
-    system_type_final = default_system_type
-
-    # 5) fan_pressure => can be looked up from stage_dict["fan_pressure_range"] if needed
-    #    but often it may not be subdivided by infiltration_key. We'll store a fallback
-    fan_pressure_rng = (0.0, 0.0)
-    if "fan_pressure_range" in stage_dict:
-        # Example: we might have:
-        #  stage_dict["fan_pressure_range"] = {
-        #     "res_mech":(40,60), "nonres_intake":(90,110), ...
-        #  }
-        # But we don't necessarily know which subkey to pick. 
-        # For now let's keep it as (0,0) unless user override sets it.
-        pass
-
-    # 6) f_ctrl => pick from system_control_range (depending on system_type)
-    if system_type_final in sys_ctrl_ranges:
-        f_ctrl_rng = sys_ctrl_ranges[system_type_final].get("f_ctrl_range", (1.0, 1.0))
-    else:
-        f_ctrl_rng = (1.0, 1.0)
-
-    # 7) HRV => only relevant if system_type=="D"
-    hrv_eff_rng = (0.0, 0.0)
-    if "hrv_sensible_eff_range" in stage_dict:
-        hrv_eff_rng = stage_dict["hrv_sensible_eff_range"]
-
-    # 8) apply user overrides
-    #    We'll scan for rows that match (bldg_id, building_function, etc.) 
-    #    and override infiltration_base, year_factor, system_type, fan_pressure, f_ctrl, hrv_eff, schedules, ...
-    matches = find_vent_overrides(
-        building_id or 0,
-        building_function or "residential",
-        age_range or "2015 and later",
-        scenario or "scenario1",
-        calibration_stage,
-        user_config_vent
-    )
-
-    def override_range(current_range, row):
-        """
-        If row has 'fixed_value', convert it to (val, val).
-        If row has 'min_val' and 'max_val', return that tuple.
-        Otherwise return current_range.
-        """
-        if "fixed_value" in row:
-            val = row["fixed_value"]
-            # if numeric, store as (val,val). If string, we'll handle separately below.
-            try:
-                f = float(val)
-                return (f, f)
-            except (ValueError, TypeError):
-                # it's a string => return current_range, let separate logic handle
-                return current_range
-        elif "min_val" in row and "max_val" in row:
-            return (row["min_val"], row["max_val"])
-        return current_range
-
-    # Potential placeholders for schedule overrides
-    infiltration_sched_name = "AlwaysOnSched"
-    ventilation_sched_name  = "VentSched_DayNight"
-
-    for row in matches:
-        pname = row.get("param_name", "")
-        if pname == "infiltration_base":
-            infiltration_base_rng = override_range(infiltration_base_rng, row)
-
-        elif pname == "year_factor":
-            year_factor_rng = override_range(year_factor_rng, row)
-
-        elif pname == "system_type":
-            # If user sets a fixed_value => override system_type_final
-            if "fixed_value" in row:
-                system_type_final = row["fixed_value"]
-
-        elif pname == "fan_pressure":
-            fan_pressure_rng = override_range(fan_pressure_rng, row)
-
-        elif pname == "f_ctrl":
-            f_ctrl_rng = override_range(f_ctrl_rng, row)
-
-        elif pname == "hrv_eff":
-            hrv_eff_rng = override_range(hrv_eff_rng, row)
-
-        elif pname == "infiltration_schedule_name":
-            # override infiltration_sched_name if fixed_value is present
-            if "fixed_value" in row:
-                infiltration_sched_name = row["fixed_value"]
-
-        elif pname == "ventilation_schedule_name":
-            # override ventilation_sched_name if fixed_value is present
-            if "fixed_value" in row:
-                ventilation_sched_name = row["fixed_value"]
-
-    # 8b) If system_type_final == "D", we might pick from hrv_eff_rng 
-    #     but if it's "A","B","C", set hrv_eff to 0
-    # (We do that picking below with pick_val_with_range.)
-
-    # 9) pick final infiltration_base, year_factor, fan_pressure, f_ctrl, hrv_eff
-    #    storing into a local dictionary
-    local_log = {}
-    infiltration_base_val = pick_val_with_range(infiltration_base_rng, strategy, local_log, "infiltration_base")
-    year_factor_val       = pick_val_with_range(year_factor_rng,       strategy, local_log, "year_factor")
-    fan_pressure_val      = pick_val_with_range(fan_pressure_rng,      strategy, local_log, "fan_pressure")
-    f_ctrl_val            = pick_val_with_range(f_ctrl_rng,            strategy, local_log, "f_ctrl")
-
-    hrv_eff_val = 0.0
-    if system_type_final == "D":
-        hrv_eff_val = pick_val_with_range(hrv_eff_rng, strategy, local_log, "hrv_eff")
-    else:
-        # store hrv_eff=0, but also store range if we like
-        local_log["hrv_eff_range"] = (0.0, 0.0)
-        local_log["hrv_eff"] = 0.0
-
-    # 10) infiltration/vent schedules => infiltration_sched_name, ventilation_sched_name
-    # We'll store them in local_log as well
-    local_log["infiltration_schedule_name"] = infiltration_sched_name
-    local_log["ventilation_schedule_name"]  = ventilation_sched_name
-
-    # Also store final system_type in local_log
-    local_log["system_type"] = system_type_final
-
-    # 11) Build final assigned dict with *both* the final picks and their ranges
-    #     Because pick_val_with_range stored infiltration_base_range in local_log["infiltration_base_range"], etc.
-    #     We'll combine them in a single dict.
-    assigned = {
-        # infiltration_base (val + range)
-        "infiltration_base": local_log["infiltration_base"],
-        "infiltration_base_range": local_log["infiltration_base_range"],
-
-        # year_factor (val + range)
-        "year_factor": local_log["year_factor"],
-        "year_factor_range": local_log["year_factor_range"],
-
-        # fan_pressure (val + range)
-        "fan_pressure": local_log["fan_pressure"],
-        "fan_pressure_range": local_log["fan_pressure_range"],
-
-        # f_ctrl (val + range)
-        "f_ctrl": local_log["f_ctrl"],
-        "f_ctrl_range": local_log["f_ctrl_range"],
-
-        # hrv_eff (val + range)
-        "hrv_eff": local_log["hrv_eff"],
-        "hrv_eff_range": local_log["hrv_eff_range"],
-
-        # Schedules
-        "infiltration_schedule_name": local_log["infiltration_schedule_name"],
-        "ventilation_schedule_name": local_log["ventilation_schedule_name"],
-
-        # System type
-        "system_type": local_log["system_type"],
-
-        # Flow exponent
-        "flow_exponent": default_flow_exponent
-    }
-
-    # If logging externally => store in assigned_vent_log[building_id]
-    # e.g. assigned_vent_log[bldg_id]["ventilation_params"] = assigned
-    if log_dict is not None:
-        log_dict["ventilation_params"] = assigned
-
-    return assigned
-
-
-
-
-
-    """
-    Searches a user_config list/dict for any override entries matching the
-    building_id, building_function, age_range, scenario, and calibration_stage.
-    Returns a list of matching dict rows.
-
-    Each 'row' in user_config can specify:
-      - "building_id"
-      - "building_function"
-      - "age_range"
-      - "scenario"
-      - "calibration_stage"
-      - plus override fields for infiltration_base, year_factor, system_type, fan_pressure, f_ctrl, hrv_eff, etc.
-
-    If any of those fields are present in the row and do not match the
-    current building, that row is skipped. Otherwise, the row is considered
-    a match and is returned in the list.
-    """
-
-    """
-    Return a dict with infiltration_base, year_factor, system_type, f_ctrl, fan_pressure,
-    hrv_eff, infiltration_schedule_name, ventilation_schedule_name, etc.
-
-    This function uses:
-      1) The scenario & calibration_stage to locate a sub-dict in 'ventilation_lookup'
-      2) The infiltration_key/year_key to get infiltration & year_factor ranges
-      3) user_config_vent overrides to optionally override any of the above
-      4) A picking strategy (A=midpoint, B=uniform random, C=lower bound) for final selection
-      5) The building_function & usage_key to also fetch schedule_info from 'ventilation_lookup'
-         => infiltration_schedule_name & ventilation_schedule_name
-
-    Then logs final picks into assigned_vent_log if provided (dict-based log).
-    """
-
+ogc_fid,param_name,assigned_value
+4136730,perimeter_depth_range,"(3.5, 4.0)"
+4136730,perimeter_depth,3.819713399228942
+4136730,has_core,False
+4136732,perimeter_depth_range,"(1.0, 2.0)"
+4136732,perimeter_depth,1.6394267984578836
+4136732,has_core,True
 
   --- File Contents End ---
 
-  File: calc_functions.py
+  File: assigned_hvac_building.csv
   --- File Contents Start ---
-# ventilation/calc_functions.py
-
-import math
-
-def calc_infiltration(
-    infiltration_base,  # e.g. assigned["infiltration_base"] from assign_ventilation_values
-    year_factor,        # assigned["year_factor"] from overrides
-    flow_exponent,      # typically 0.67 (standard infiltration exponent)
-    floor_area_m2       # total building area
-):
-    """
-    Calculate infiltration in m3/s based on an 'infiltration_base' at 10 Pa.
-
-    Steps:
-      1) Multiply infiltration_base by year_factor => qv10_lea_ref (represents
-         infiltration at 10 Pa for the building, e.g. in dm3/s·m2 or similar).
-      2) Convert qv10 => qv1 by applying exponent:
-            qv1 = qv10 * (1/10)^n
-         (n = flow_exponent, e.g. 0.67 per NTA 8800).
-      3) Multiply qv1_lea_ref_per_m2_h by total floor area => infiltration_m3/h.
-      4) Convert infiltration_m3/h => infiltration_m3/s by dividing by 3600.
-
-    NTA 8800 basis:
-      - Table 11.2 prescribes n=0.67 for leak losses (infiltration).
-      - Section 11.2.5 references how infiltration is often reported at 10 Pa
-        and needs converting to 1 Pa. This code parallels that approach.
-
-    Returns infiltration in m3/s.
-    """
-
-    # 1) infiltration_base * year_factor => infiltration at 10 Pa
-    qv10_lea_ref = infiltration_base * year_factor
-
-    # 2) Convert from qv10 to qv1 by (1/10)^exponent
-    qv1_lea_ref_per_m2_h = qv10_lea_ref * (1.0 / 10.0)**flow_exponent
-
-    # 3) Multiply by floor area => infiltration in m3/h
-    infiltration_m3_h = qv1_lea_ref_per_m2_h * floor_area_m2
-
-    # 4) Convert from m3/h => m3/s
-    infiltration_m3_s = infiltration_m3_h / 3600.0
-    return infiltration_m3_s
-
-
-def calc_required_ventilation_flow(
-    building_function,
-    f_ctrl_val,
-    floor_area_m2,
-    usage_key=None
-):
-    """
-    Calculate the required ventilation flow (m3/s).
-
-    Approach:
-      - If residential: 0.9 dm3/s/m2 is used as base, then multiplied by
-        control factor (f_ctrl_val). A minimum of ~126 m3/h is enforced.
-        => 126 m3/h = 35 L/s, typical minimal design flow for dwellings.
-
-      - If non-residential: usage_key (office_area_based, childcare, retail, etc.)
-        references typical design flows (dm3/s/m2). Then multiplied by f_ctrl_val.
-
-    NTA 8800 basis:
-      - In Section 11.2.2.5 or Table 11.8, typical air supply rates are given
-        for various functions. This code uses simplified example values.
-
-    Returns flow in m3/s.
-    """
-
-    if building_function == "residential":
-        # base usage flow in dm3/s
-        qv_uspec = 0.9
-        # multiply by floor area => dm3/s
-        qv_oda_req_des_dm3_s = qv_uspec * floor_area_m2
-        # convert to m3/h
-        qv_oda_req_des_m3_h = qv_oda_req_des_dm3_s * 3.6
-
-        # apply control factor
-        qv_oda_req_m3_h = f_ctrl_val * qv_oda_req_des_m3_h
-
-        # enforce minimum ~126 m3/h
-        if qv_oda_req_m3_h < 126:
-            qv_oda_req_m3_h = 126
-
-        # return m3/s
-        return qv_oda_req_m3_h / 3600.0
-
-    else:
-        # non-res => usage_key references typical design rates
-        usage_flow_map = {
-            "office_area_based": 1.0,  # dm3/s per m2
-            "childcare": 4.8,
-            "retail": 0.6
-        }
-        qv_usage = usage_flow_map.get(usage_key, 1.0)  # fallback 1.0 dm3/s/m2
-        qv_oda_req_des_dm3_s = qv_usage * floor_area_m2
-        qv_oda_req_des_m3_h  = qv_oda_req_des_dm3_s * 3.6
-
-        # apply control factor
-        qv_oda_req_m3_h = f_ctrl_val * qv_oda_req_des_m3_h
-        return qv_oda_req_m3_h / 3600.0
-
-
-def calc_fan_power(fan_pressure, fan_efficiency, flow_m3_s):
-    """
-    Compute fan power in W:
-      P_fan = (fan_pressure * flow_m3_s) / fan_efficiency
-
-    NTA 8800 doesn't provide a direct formula for fan power in W in exactly
-    these terms, but this approach is standard fluid power:
-       Pressure (Pa) * Volumetric Flow (m3/s) = Power in J/s (Watts),
-       then / efficiency to account for fan energy losses.
-
-    fan_pressure: Pa
-    flow_m3_s: m3/s
-    fan_efficiency: fraction (0.0 < eff <= 1.0)
-    returns: fan power in Watts
-    """
-    if fan_efficiency <= 0:
-        fan_efficiency = 0.7
-    return (fan_pressure * flow_m3_s) / fan_efficiency
+ogc_fid,param_name,param_value,param_min,param_max
+4136730,heating_day_setpoint,20.278853596915766,19.0,21.0
+4136730,heating_night_setpoint,15.025010755222667,15.0,16.0
+4136730,cooling_day_setpoint,24.55005863673824,24.0,26.0
+4136730,cooling_night_setpoint,26.446421476297644,26.0,28.0
+4136730,max_heating_supply_air_temp,52.364712141640126,45.0,55.0
+4136730,min_cooling_supply_air_temp,13.353398974845822,12.0,14.0
+4136730,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}",,
+4136732,heating_day_setpoint,21.278853596915766,20.0,22.0
+4136732,heating_night_setpoint,15.050021510445333,15.0,17.0
+4136732,cooling_day_setpoint,23.55005863673824,23.0,25.0
+4136732,cooling_night_setpoint,25.446421476297644,25.0,27.0
+4136732,max_heating_supply_air_temp,67.36471214164013,60.0,70.0
+4136732,min_cooling_supply_air_temp,13.353398974845822,12.0,14.0
+4136732,schedule_details,"{'weekday_day_start': '08:00', 'weekday_day_end': '22:00', 'weekend_day_start': '08:00', 'weekend_day_end': '18:00', 'occupancy_schedule': {'weekday': 'MeetingFunction_Weekday', 'weekend': 'MeetingFunction_Weekend'}}",,
 
   --- File Contents End ---
 
-  File: config_systems.py
+  File: assigned_hvac_zones.csv
   --- File Contents Start ---
-# ventilation/config_systems.py
-
-"""
-Defines a dictionary SYSTEMS_CONFIG with separate entries for:
-  - building_function: "residential" vs. "non_residential"
-  - system_type:       "A", "B", "C", or "D"
-
-Each system entry has:
-  1) "description"                => short text label
-  2) "ventilation_object_type"    => e.g. 'ZONEVENTILATION:DESIGNFLOWRATE'
-  3) "ventilation_type_options"   => a list of possible Ventilation_Type strings
-  4) "range_params"               => dictionary of numeric fields that are stored as (min, max) ranges
-  5) "use_ideal_loads"            => boolean (True if system D uses IdealLoads, etc.)
-
-Later, in your `create_ventilation_systems.py`, you can pick or compute final single values:
-  - either pick a random or midpoint from "Fan_Pressure_Rise" range
-  - or pick one of the "ventilation_type_options", etc.
-"""
-
-SYSTEMS_CONFIG = {
-    "residential": {
-        # -----------------------------------------------------------
-        # System A
-        # -----------------------------------------------------------
-        "A": {
-            "description": "Natural supply + Natural exhaust",
-            "ventilation_object_type": "ZONEVENTILATION:DESIGNFLOWRATE",
-            "ventilation_type_options": [
-                "Natural"  # Could allow more, e.g. "Intake", "Exhaust" if you want
-            ],
-            "range_params": {
-                # If you want a zero fan pressure for natural, but let's keep an example range
-                "Fan_Pressure_Rise": (0.0, 0.0),
-                "Fan_Total_Efficiency": (0.6, 0.8)
-            },
-            "use_ideal_loads": False
-        },
-
-        # -----------------------------------------------------------
-        # System B
-        # -----------------------------------------------------------
-        "B": {
-            "description": "Mechanical supply + Natural infiltration",
-            "ventilation_object_type": "ZONEVENTILATION:DESIGNFLOWRATE",
-            "ventilation_type_options": [
-                "Intake"
-            ],
-            "range_params": {
-                "Fan_Pressure_Rise": (40.0, 60.0),
-                "Fan_Total_Efficiency": (0.65, 0.75)
-            },
-            "use_ideal_loads": False
-        },
-
-        # -----------------------------------------------------------
-        # System C
-        # -----------------------------------------------------------
-        "C": {
-            "description": "Natural supply + Mechanical exhaust",
-            "ventilation_object_type": "ZONEVENTILATION:DESIGNFLOWRATE",
-            "ventilation_type_options": [
-                "Exhaust"
-            ],
-            "range_params": {
-                "Fan_Pressure_Rise": (40.0, 60.0),
-                "Fan_Total_Efficiency": (0.65, 0.75)
-            },
-            "use_ideal_loads": False
-        },
-
-        # -----------------------------------------------------------
-        # System D
-        # -----------------------------------------------------------
-        "D": {
-            "description": "Balanced mechanical (supply + exhaust), with HRV",
-            "ventilation_object_type": "ZONEHVAC:IDEALLOADSAIRSYSTEM",
-            "ventilation_type_options": [
-                "Balanced"
-            ],
-            "range_params": {
-                "Fan_Pressure_Rise": (50.0, 80.0),
-                "Fan_Total_Efficiency": (0.7, 0.85),
-                # Example for HRV fields if you want them here:
-                "Sensible_Heat_Recovery_Effectiveness": (0.70, 0.80),
-                "Latent_Heat_Recovery_Effectiveness": (0.0, 0.0)
-            },
-            "use_ideal_loads": True
-        }
-    },
-
-    "non_residential": {
-        # -----------------------------------------------------------
-        # System A
-        # -----------------------------------------------------------
-        "A": {
-            "description": "Natural supply + Natural exhaust",
-            "ventilation_object_type": "ZONEVENTILATION:DESIGNFLOWRATE",
-            "ventilation_type_options": [
-                "Natural"
-            ],
-            "range_params": {
-                "Fan_Pressure_Rise": (0.0, 0.0),
-                "Fan_Total_Efficiency": (0.5, 0.6)
-            },
-            "use_ideal_loads": False
-        },
-
-        # -----------------------------------------------------------
-        # System B
-        # -----------------------------------------------------------
-        "B": {
-            "description": "Mechanical supply + Natural exhaust",
-            "ventilation_object_type": "ZONEVENTILATION:DESIGNFLOWRATE",
-            "ventilation_type_options": [
-                "Intake"
-            ],
-            "range_params": {
-                "Fan_Pressure_Rise": (90.0, 110.0),
-                "Fan_Total_Efficiency": (0.65, 0.75)
-            },
-            "use_ideal_loads": False
-        },
-
-        # -----------------------------------------------------------
-        # System C
-        # -----------------------------------------------------------
-        "C": {
-            "description": "Natural supply + Mechanical exhaust",
-            "ventilation_object_type": "ZONEVENTILATION:DESIGNFLOWRATE",
-            "ventilation_type_options": [
-                "Exhaust"
-            ],
-            "range_params": {
-                "Fan_Pressure_Rise": (140.0, 160.0),
-                "Fan_Total_Efficiency": (0.70, 0.80)
-            },
-            "use_ideal_loads": False
-        },
-
-        # -----------------------------------------------------------
-        # System D
-        # -----------------------------------------------------------
-        "D": {
-            "description": "Balanced mechanical supply & exhaust (with optional HRV)",
-            "ventilation_object_type": "ZONEHVAC:IDEALLOADSAIRSYSTEM",
-            "ventilation_type_options": [
-                "Balanced"
-            ],
-            "range_params": {
-                "Fan_Pressure_Rise": (100.0, 120.0),
-                "Fan_Total_Efficiency": (0.65, 0.80),
-                "Sensible_Heat_Recovery_Effectiveness": (0.75, 0.85),
-                "Latent_Heat_Recovery_Effectiveness": (0.0, 0.0)
-            },
-            "use_ideal_loads": True
-        }
-    }
-}
+ogc_fid,zone_name,param_name,param_value
+4136730,Zone1,hvac_object_name,Zone1 Ideal Loads
+4136730,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136730,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136730,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136730,Zone1,thermostat_name,Zone1 CONTROLS
+4136730,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
+4136730,Zone2,hvac_object_name,Zone2 Ideal Loads
+4136730,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136730,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136730,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136730,Zone2,thermostat_name,Zone2 CONTROLS
+4136730,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS
+4136730,Zone3,hvac_object_name,Zone3 Ideal Loads
+4136730,Zone3,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136730,Zone3,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136730,Zone3,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136730,Zone3,thermostat_name,Zone3 CONTROLS
+4136730,Zone3,thermostat_dualsetpoint_name,Zone3 SETPOINTS
+4136732,Zone1_FrontPerimeter,hvac_object_name,Zone1_FrontPerimeter Ideal Loads
+4136732,Zone1_FrontPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone1_FrontPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136732,Zone1_FrontPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136732,Zone1_FrontPerimeter,thermostat_name,Zone1_FrontPerimeter CONTROLS
+4136732,Zone1_FrontPerimeter,thermostat_dualsetpoint_name,Zone1_FrontPerimeter SETPOINTS
+4136732,Zone1_RightPerimeter,hvac_object_name,Zone1_RightPerimeter Ideal Loads
+4136732,Zone1_RightPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone1_RightPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136732,Zone1_RightPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136732,Zone1_RightPerimeter,thermostat_name,Zone1_RightPerimeter CONTROLS
+4136732,Zone1_RightPerimeter,thermostat_dualsetpoint_name,Zone1_RightPerimeter SETPOINTS
+4136732,Zone1_RearPerimeter,hvac_object_name,Zone1_RearPerimeter Ideal Loads
+4136732,Zone1_RearPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone1_RearPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136732,Zone1_RearPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136732,Zone1_RearPerimeter,thermostat_name,Zone1_RearPerimeter CONTROLS
+4136732,Zone1_RearPerimeter,thermostat_dualsetpoint_name,Zone1_RearPerimeter SETPOINTS
+4136732,Zone1_LeftPerimeter,hvac_object_name,Zone1_LeftPerimeter Ideal Loads
+4136732,Zone1_LeftPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone1_LeftPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136732,Zone1_LeftPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136732,Zone1_LeftPerimeter,thermostat_name,Zone1_LeftPerimeter CONTROLS
+4136732,Zone1_LeftPerimeter,thermostat_dualsetpoint_name,Zone1_LeftPerimeter SETPOINTS
+4136732,Zone1_Core,hvac_object_name,Zone1_Core Ideal Loads
+4136732,Zone1_Core,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone1_Core,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136732,Zone1_Core,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136732,Zone1_Core,thermostat_name,Zone1_Core CONTROLS
+4136732,Zone1_Core,thermostat_dualsetpoint_name,Zone1_Core SETPOINTS
+4136732,Zone2_FrontPerimeter,hvac_object_name,Zone2_FrontPerimeter Ideal Loads
+4136732,Zone2_FrontPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone2_FrontPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136732,Zone2_FrontPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136732,Zone2_FrontPerimeter,thermostat_name,Zone2_FrontPerimeter CONTROLS
+4136732,Zone2_FrontPerimeter,thermostat_dualsetpoint_name,Zone2_FrontPerimeter SETPOINTS
+4136732,Zone2_RightPerimeter,hvac_object_name,Zone2_RightPerimeter Ideal Loads
+4136732,Zone2_RightPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone2_RightPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136732,Zone2_RightPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136732,Zone2_RightPerimeter,thermostat_name,Zone2_RightPerimeter CONTROLS
+4136732,Zone2_RightPerimeter,thermostat_dualsetpoint_name,Zone2_RightPerimeter SETPOINTS
+4136732,Zone2_RearPerimeter,hvac_object_name,Zone2_RearPerimeter Ideal Loads
+4136732,Zone2_RearPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone2_RearPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136732,Zone2_RearPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136732,Zone2_RearPerimeter,thermostat_name,Zone2_RearPerimeter CONTROLS
+4136732,Zone2_RearPerimeter,thermostat_dualsetpoint_name,Zone2_RearPerimeter SETPOINTS
+4136732,Zone2_LeftPerimeter,hvac_object_name,Zone2_LeftPerimeter Ideal Loads
+4136732,Zone2_LeftPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone2_LeftPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136732,Zone2_LeftPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136732,Zone2_LeftPerimeter,thermostat_name,Zone2_LeftPerimeter CONTROLS
+4136732,Zone2_LeftPerimeter,thermostat_dualsetpoint_name,Zone2_LeftPerimeter SETPOINTS
+4136732,Zone2_Core,hvac_object_name,Zone2_Core Ideal Loads
+4136732,Zone2_Core,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone2_Core,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136732,Zone2_Core,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136732,Zone2_Core,thermostat_name,Zone2_Core CONTROLS
+4136732,Zone2_Core,thermostat_dualsetpoint_name,Zone2_Core SETPOINTS
+4136730,Zone1,hvac_object_name,Zone1 Ideal Loads
+4136730,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136730,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136730,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136730,Zone1,thermostat_name,Zone1 CONTROLS
+4136730,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
+4136730,Zone2,hvac_object_name,Zone2 Ideal Loads
+4136730,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136730,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136730,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136730,Zone2,thermostat_name,Zone2 CONTROLS
+4136730,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS
+4136730,Zone3,hvac_object_name,Zone3 Ideal Loads
+4136730,Zone3,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136730,Zone3,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136730,Zone3,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136730,Zone3,thermostat_name,Zone3 CONTROLS
+4136730,Zone3,thermostat_dualsetpoint_name,Zone3 SETPOINTS
+4136732,Zone1_FrontPerimeter,hvac_object_name,Zone1_FrontPerimeter Ideal Loads
+4136732,Zone1_FrontPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone1_FrontPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136732,Zone1_FrontPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136732,Zone1_FrontPerimeter,thermostat_name,Zone1_FrontPerimeter CONTROLS
+4136732,Zone1_FrontPerimeter,thermostat_dualsetpoint_name,Zone1_FrontPerimeter SETPOINTS
+4136732,Zone1_RightPerimeter,hvac_object_name,Zone1_RightPerimeter Ideal Loads
+4136732,Zone1_RightPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone1_RightPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136732,Zone1_RightPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136732,Zone1_RightPerimeter,thermostat_name,Zone1_RightPerimeter CONTROLS
+4136732,Zone1_RightPerimeter,thermostat_dualsetpoint_name,Zone1_RightPerimeter SETPOINTS
+4136732,Zone1_RearPerimeter,hvac_object_name,Zone1_RearPerimeter Ideal Loads
+4136732,Zone1_RearPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone1_RearPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136732,Zone1_RearPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136732,Zone1_RearPerimeter,thermostat_name,Zone1_RearPerimeter CONTROLS
+4136732,Zone1_RearPerimeter,thermostat_dualsetpoint_name,Zone1_RearPerimeter SETPOINTS
+4136732,Zone1_LeftPerimeter,hvac_object_name,Zone1_LeftPerimeter Ideal Loads
+4136732,Zone1_LeftPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone1_LeftPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136732,Zone1_LeftPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136732,Zone1_LeftPerimeter,thermostat_name,Zone1_LeftPerimeter CONTROLS
+4136732,Zone1_LeftPerimeter,thermostat_dualsetpoint_name,Zone1_LeftPerimeter SETPOINTS
+4136732,Zone1_Core,hvac_object_name,Zone1_Core Ideal Loads
+4136732,Zone1_Core,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone1_Core,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136732,Zone1_Core,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136732,Zone1_Core,thermostat_name,Zone1_Core CONTROLS
+4136732,Zone1_Core,thermostat_dualsetpoint_name,Zone1_Core SETPOINTS
+4136732,Zone2_FrontPerimeter,hvac_object_name,Zone2_FrontPerimeter Ideal Loads
+4136732,Zone2_FrontPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone2_FrontPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136732,Zone2_FrontPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136732,Zone2_FrontPerimeter,thermostat_name,Zone2_FrontPerimeter CONTROLS
+4136732,Zone2_FrontPerimeter,thermostat_dualsetpoint_name,Zone2_FrontPerimeter SETPOINTS
+4136732,Zone2_RightPerimeter,hvac_object_name,Zone2_RightPerimeter Ideal Loads
+4136732,Zone2_RightPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone2_RightPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136732,Zone2_RightPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136732,Zone2_RightPerimeter,thermostat_name,Zone2_RightPerimeter CONTROLS
+4136732,Zone2_RightPerimeter,thermostat_dualsetpoint_name,Zone2_RightPerimeter SETPOINTS
+4136732,Zone2_RearPerimeter,hvac_object_name,Zone2_RearPerimeter Ideal Loads
+4136732,Zone2_RearPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone2_RearPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136732,Zone2_RearPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136732,Zone2_RearPerimeter,thermostat_name,Zone2_RearPerimeter CONTROLS
+4136732,Zone2_RearPerimeter,thermostat_dualsetpoint_name,Zone2_RearPerimeter SETPOINTS
+4136732,Zone2_LeftPerimeter,hvac_object_name,Zone2_LeftPerimeter Ideal Loads
+4136732,Zone2_LeftPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone2_LeftPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136732,Zone2_LeftPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136732,Zone2_LeftPerimeter,thermostat_name,Zone2_LeftPerimeter CONTROLS
+4136732,Zone2_LeftPerimeter,thermostat_dualsetpoint_name,Zone2_LeftPerimeter SETPOINTS
+4136732,Zone2_Core,hvac_object_name,Zone2_Core Ideal Loads
+4136732,Zone2_Core,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone2_Core,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4136732,Zone2_Core,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4136732,Zone2_Core,thermostat_name,Zone2_Core CONTROLS
+4136732,Zone2_Core,thermostat_dualsetpoint_name,Zone2_Core SETPOINTS
 
   --- File Contents End ---
 
-  File: create_ventilation_systems.py
+  File: assigned_lighting.csv
   --- File Contents Start ---
-# ventilation/create_ventilation_systems.py
-
-import random
-from ventilation.config_systems import SYSTEMS_CONFIG
-
-def create_ventilation_system(
-    idf,
-    building_function,      # 'residential' or 'non_residential'
-    system_type,            # 'A', 'B', 'C', or 'D'
-    zone_name,
-    infiltration_m3_s,
-    vent_flow_m3_s,
-    infiltration_sched_name="AlwaysOnSched",
-    ventilation_sched_name="VentSched_DayNight",
-    pick_strategy="midpoint"  # or "random"
-):
-    """
-    Creates two objects for the zone:
-      1) A ZONEINFILTRATION:DESIGNFLOWRATE object (always).
-      2) Depending on system_type:
-         - A/B/C => a ZONEVENTILATION:DESIGNFLOWRATE object
-         - D     => modifies an existing ZONEHVAC:IDEALLOADSAIRSYSTEM
-                    (already added by add_HVAC_Ideal_to_all_zones, if used)
-
-    Returns (infiltration_obj, vent_obj_or_ideal_obj).
-    """
-
-    # -------------------------------------------------------
-    # 1) Grab the config for this system
-    # -------------------------------------------------------
-    if building_function not in SYSTEMS_CONFIG:
-        building_function = "residential"
-    if system_type not in SYSTEMS_CONFIG[building_function]:
-        system_type = "A"
-
-    config = SYSTEMS_CONFIG[building_function][system_type]
-
-    # -------------------------------------------------------
-    # 2) Helper to pick a single value from a (min, max) range
-    # -------------------------------------------------------
-    def pick_val(rng):
-        """
-        rng is (min_val, max_val).
-        pick_strategy == 'midpoint' => return average
-        pick_strategy == 'random'   => return random.uniform(...)
-        """
-        if pick_strategy == "random":
-            return random.uniform(rng[0], rng[1])
-        else:
-            # default => midpoint
-            return (rng[0] + rng[1]) / 2.0
-
-    # -------------------------------------------------------
-    # 3) Create infiltration object (ZONEINFILTRATION:DESIGNFLOWRATE)
-    # -------------------------------------------------------
-    iobj = idf.newidfobject("ZONEINFILTRATION:DESIGNFLOWRATE")
-    iobj.Name = f"Infil_{building_function}_{system_type}_{zone_name}"
-
-    # Some E+ versions use .Zone_or_ZoneList_or_Space_or_SpaceList_Name
-    # others use .Zone_or_ZoneList_Name
-    if hasattr(iobj, "Zone_or_ZoneList_or_Space_or_SpaceList_Name"):
-        iobj.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zone_name
-    else:
-        iobj.Zone_or_ZoneList_Name = zone_name
-
-    # Assign infiltration schedule and flow
-    iobj.Schedule_Name = infiltration_sched_name
-    iobj.Design_Flow_Rate_Calculation_Method = "Flow/Zone"
-    iobj.Design_Flow_Rate = infiltration_m3_s
-
-    # -------------------------------------------------------
-    # 4) Prepare final param values from config["range_params"]
-    #    e.g. fan pressure, heat recovery, etc.
-    # -------------------------------------------------------
-    chosen_params = {}
-    range_dict = config.get("range_params", {})
-    for param_name, rng in range_dict.items():
-        chosen_val = pick_val(rng)
-        chosen_params[param_name] = chosen_val
-
-    # Choose from the ventilation_type_options if present
-    ventilation_type_list = config.get("ventilation_type_options", [])
-    if ventilation_type_list:
-        chosen_vent_type = random.choice(ventilation_type_list)
-    else:
-        chosen_vent_type = "Natural"  # fallback if none provided
-
-    # -------------------------------------------------------
-    # 5) If system D => update an existing IdealLoads object
-    #    else => create a ZONEVENTILATION:DESIGNFLOWRATE
-    # -------------------------------------------------------
-    if config["use_ideal_loads"]:
-        # System D => Balanced mechanical => find the existing IdealLoads object
-        ideal_name = f"{zone_name} Ideal Loads"
-        ideal_obj = idf.getobject("ZONEHVAC:IDEALLOADSAIRSYSTEM", ideal_name)
-
-        if ideal_obj:
-            # Example: set fields in the IdealLoads that exist in chosen_params
-            # e.g. if param_name == "Sensible_Heat_Recovery_Effectiveness"
-            for param_field, final_val in chosen_params.items():
-                # We must confirm the IDD field name matches param_field
-                if hasattr(ideal_obj, param_field):
-                    setattr(ideal_obj, param_field, final_val)
-
-            # If desired, you could limit the air flow to 'vent_flow_m3_s' here:
-            #   ideal_obj.Heating_Limit = "LimitFlowRate"
-            #   ideal_obj.Maximum_Heating_Air_Flow_Rate = vent_flow_m3_s
-            #   ideal_obj.Cooling_Limit = "LimitFlowRate"
-            #   ideal_obj.Maximum_Cooling_Air_Flow_Rate = vent_flow_m3_s
-
-            return iobj, ideal_obj
-        else:
-            print(f"[VENT WARNING] {zone_name} Ideal Loads not found; system D creation skipped.")
-            return iobj, None
-
-    else:
-        # Systems A, B, C => create a ZONEVENTILATION:DESIGNFLOWRATE
-        vobj = idf.newidfobject(config["ventilation_object_type"])
-        vobj.Name = f"Vent_{building_function}_{system_type}_{zone_name}"
-        if hasattr(vobj, "Zone_or_ZoneList_or_Space_or_SpaceList_Name"):
-            vobj.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zone_name
-        else:
-            vobj.Zone_or_ZoneList_Name = zone_name
-
-        # Assign the chosen (or default) ventilation schedule and flow
-        vobj.Schedule_Name = ventilation_sched_name
-        vobj.Design_Flow_Rate_Calculation_Method = "Flow/Zone"
-        vobj.Design_Flow_Rate = vent_flow_m3_s
-
-        # Insert system-specific fields if they exist in the object
-        if hasattr(vobj, "Ventilation_Type"):
-            vobj.Ventilation_Type = chosen_vent_type
-
-        if hasattr(vobj, "Fan_Pressure_Rise") and "Fan_Pressure_Rise" in chosen_params:
-            vobj.Fan_Pressure_Rise = chosen_params["Fan_Pressure_Rise"]
-
-        if hasattr(vobj, "Fan_Total_Efficiency") and "Fan_Total_Efficiency" in chosen_params:
-            vobj.Fan_Total_Efficiency = chosen_params["Fan_Total_Efficiency"]
-
-        return iobj, vobj
+ogc_fid,object_name,param_name,assigned_value,min_val,max_val
+4136730,LIGHTS,lights_wm2,10.0,10.0,10.0
+4136730,ELECTRICEQUIPMENT,parasitic_wm2,0.285,0.285,0.285
+4136730,LIGHTS_SCHEDULE,tD,2000.0,2000.0,2000.0
+4136730,LIGHTS_SCHEDULE,tN,300.0,300.0,300.0
+4136730,LIGHTS.Fraction_Radiant,lights_fraction_radiant,0.7,0.7,0.7
+4136730,LIGHTS.Fraction_Visible,lights_fraction_visible,0.2,0.2,0.2
+4136730,LIGHTS.Fraction_Replaceable,lights_fraction_replaceable,1.0,1.0,1.0
+4136730,ELECTRICEQUIPMENT.Fraction_Radiant,equip_fraction_radiant,0.0,0.0,0.0
+4136730,ELECTRICEQUIPMENT.Fraction_Lost,equip_fraction_lost,1.0,1.0,1.0
+4136732,LIGHTS,lights_wm2,10.0,10.0,10.0
+4136732,ELECTRICEQUIPMENT,parasitic_wm2,0.285,0.285,0.285
+4136732,LIGHTS_SCHEDULE,tD,2000.0,2000.0,2000.0
+4136732,LIGHTS_SCHEDULE,tN,300.0,300.0,300.0
+4136732,LIGHTS.Fraction_Radiant,lights_fraction_radiant,0.7,0.7,0.7
+4136732,LIGHTS.Fraction_Visible,lights_fraction_visible,0.2,0.2,0.2
+4136732,LIGHTS.Fraction_Replaceable,lights_fraction_replaceable,1.0,1.0,1.0
+4136732,ELECTRICEQUIPMENT.Fraction_Radiant,equip_fraction_radiant,0.0,0.0,0.0
+4136732,ELECTRICEQUIPMENT.Fraction_Lost,equip_fraction_lost,1.0,1.0,1.0
 
   --- File Contents End ---
 
-  File: mappings.py
+  File: assigned_setzone_params.csv
   --- File Contents Start ---
-# ventilation/mappings.py
-
-def safe_lower(val):
-    """Helper to safely lowercase a string."""
-    if isinstance(val, str):
-        return val.lower()
-    return ""
-
-def map_age_range_to_year_key(age_range_str):
-    """
-    Convert your main DataFrame's age_range
-    into the short keys used in your infiltration/vent lookup or NTA data.
-
-    Now expanded to include:
-      - "1900-2000" => "1900-2000"
-      - "2000-2024" => "2000-2024"
-      - plus older ones like "<1970", "1970-1992", etc.
-    """
-    # You can expand as needed.
-    mapping = {
-        "pre-1970": "<1970",
-        "1970 - 1992": "1970-1992",
-        "1992 - 2005": "1992-2005",
-        "2005 - 2015": "2005-2015",
-        "2015 and later": ">2015",
-        "1900-2000": "1900-2000",
-        "2000-2024": "2000-2024"
-    }
-    return mapping.get(age_range_str, ">2015")  # fallback => >2015
-
-def map_infiltration_key(building_row):
-    """
-    Decide infiltration key from building function + sub-type fields.
-    Updated to handle e.g. 'two_and_a_half_story_house' for certain residential types,
-    or 'meeting_function' for certain non-res types, etc.
-
-    If not recognized, fall back to a perimeter-based logic or default.
-    """
-    bldg_func = safe_lower(building_row.get("building_function", "residential"))
-    if bldg_func == "residential":
-        # 1) check if we have a recognized 'residential_type'
-        res_type = safe_lower(building_row.get("residential_type", ""))
-        if "two-and-a-half-story" in res_type:
-            return "two_and_a_half_story_house"
-        # Could add more if/elif logic for other residential_type strings:
-        # elif "row house" in res_type:
-        #     return "row_house"
-        #
-        # else fallback to perimeter-based approach as in original
-        perimeter = building_row.get("perimeter", 40)
-        if perimeter > 60:
-            return "A_detached"
-        else:
-            return "A_corner"
-
-    else:
-        # Non-res => check 'non_residential_type'
-        nonres_type = safe_lower(building_row.get("non_residential_type", ""))
-        if "meeting function" in nonres_type:
-            return "meeting_function"
-        # else fallback
-        return "office_multi_top"
-
-def map_usage_key(building_row):
-    """
-    For non-res ventilation usage flow reference. 
-    If building is residential => usage_key => None.
-    If it's e.g. 'meeting function' => 'office_area_based' (example).
-    """
-    bldg_func = safe_lower(building_row.get("building_function", "residential"))
-    if bldg_func == "residential":
-        return None
-    else:
-        nonres_type = safe_lower(building_row.get("non_residential_type", ""))
-        if "meeting function" in nonres_type:
-            return "office_area_based"
-        else:
-            return "retail"
-
-def map_ventilation_system(building_row):
-    """
-    Decide system type (A, B, C, or D) from building row.
-    As an example: default 'C' for residential, 'D' for non-res.
-    """
-    bldg_func = safe_lower(building_row.get("building_function", "residential"))
-    if bldg_func == "residential":
-        return "C"  # default mechanical exhaust for res
-    else:
-        return "D"  # default balanced w/ HRV for non-res
+ogc_fid,param_name,assigned_value
+4136730,cooling_supply_air_temp,14.139426798457883
+4136730,heating_supply_air_temp,48.100043020890666
+4136730,cooling_supply_air_hr,0.00877502931836912
+4136730,heating_supply_air_hr,0.0037232107381488227
+4136730,cooling_design_air_flow_method,DesignDayWithLimit
+4136730,heating_design_air_flow_method,DesignDay
+4136732,cooling_supply_air_temp,13.278853596915768
+4136732,heating_supply_air_temp,40.12505377611333
+4136732,cooling_supply_air_hr,0.009275029318369118
+4136732,heating_supply_air_hr,0.004223210738148823
+4136732,cooling_design_air_flow_method,DesignDay
+4136732,heating_design_air_flow_method,DesignDay
 
   --- File Contents End ---
 
-  File: schedules.py
+  File: assigned_vent_building.csv
   --- File Contents Start ---
-# ventilation/schedules.py
-
-from geomeppy import IDF
-
-def create_always_on_schedule(idf, sched_name="AlwaysOnSched"):
-    """
-    Creates a SCHEDULE:CONSTANT with a Fraction = 1.0
-    for infiltration or ventilation that runs 24/7.
-    """
-    # Check if already exists
-    existing = idf.getobject("SCHEDULE:CONSTANT", sched_name.upper())
-    if existing:
-        return existing  # No need to recreate
-
-    schedule = idf.newidfobject("SCHEDULE:CONSTANT")
-    schedule.Name = sched_name
-    schedule.Schedule_Type_Limits_Name = "Fraction"
-    schedule.Hourly_Value = 1.0
-    return schedule
-
-
-def create_day_night_schedule(idf, sched_name="VentSched_DayNight"):
-    """
-    Day/Night schedule that is 0.5 at night, 1.0 during day.
-    Example: 06:00-22:00 => 1.0, else => 0.5
-    """
-    # Check if already exists
-    existing = idf.getobject("SCHEDULE:COMPACT", sched_name.upper())
-    if existing:
-        return existing
-
-    schedule = idf.newidfobject("SCHEDULE:COMPACT")
-    schedule.Name = sched_name
-    schedule.Schedule_Type_Limits_Name = "Fraction"
-
-    schedule.Field_1 = "Through: 12/31"
-    schedule.Field_2 = "For: AllDays"
-    schedule.Field_3 = "Until: 06:00,0.5"
-    schedule.Field_4 = "Until: 22:00,1.0"
-    schedule.Field_5 = "Until: 24:00,0.5"
-    return schedule
-
-
-def create_workhours_schedule(idf, sched_name="WorkHoursSched"):
-    """
-    Workhours schedule: 
-      - 0.2 fraction from midnight to 09:00,
-      - 1.0 from 09:00 to 17:00,
-      - 0.2 from 17:00 to midnight,
-      - weekends/holidays => 0.2 all day
-    """
-    # Check if already exists
-    existing = idf.getobject("SCHEDULE:COMPACT", sched_name.upper())
-    if existing:
-        return existing
-
-    schedule = idf.newidfobject("SCHEDULE:COMPACT")
-    schedule.Name = sched_name
-    schedule.Schedule_Type_Limits_Name = "Fraction"
-
-    schedule.Field_1 = "Through: 12/31"
-    schedule.Field_2 = "For: Weekdays"
-    schedule.Field_3 = "Until: 09:00,0.2"
-    schedule.Field_4 = "Until: 17:00,1.0"
-    schedule.Field_5 = "Until: 24:00,0.2"
-    schedule.Field_6 = "For: Saturday Sunday Holiday"
-    schedule.Field_7 = "Until: 24:00,0.2"
-    return schedule
-
-
-# ------------------------------------------------------------------------
-# NEW HELPER FUNCTIONS FOR DYNAMIC SCHEDULES
-# ------------------------------------------------------------------------
-
-def create_schedule_from_pattern(idf, sched_name, pattern, schedule_type_limits="Fraction"):
-    """
-    Creates a SCHEDULE:COMPACT in the IDF from a single pattern of
-    (start_hour, end_hour, fraction_value) tuples for ALL days.
-
-    :param idf: geomeppy IDF instance
-    :param sched_name: name of the schedule in E+
-    :param pattern: list of (start_hour, end_hour, value), e.g. [(0,6,0.5), (6,22,1.0), (22,24,0.5)]
-    :param schedule_type_limits: e.g. "Fraction" or "OnOff"
-    :returns: the new or existing SCHEDULE:COMPACT object
-    """
-    # Check if schedule already exists
-    existing = idf.getobject("SCHEDULE:COMPACT", sched_name.upper())
-    if existing:
-        return existing
-
-    sched_obj = idf.newidfobject("SCHEDULE:COMPACT")
-    sched_obj.Name = sched_name
-    sched_obj.Schedule_Type_Limits_Name = schedule_type_limits
-
-    # We'll define just one set of rules "Through: 12/31", "For: AllDays"
-    # If you want to differentiate weekdays vs. weekends in the same schedule,
-    # see create_schedule_from_weekday_weekend_pattern() below.
-    field_idx = 1
-    sched_obj[f"Field_{field_idx}"] = "Through: 12/31"
-    field_idx += 1
-
-    sched_obj[f"Field_{field_idx}"] = "For: AllDays"
-    field_idx += 1
-
-    # Now loop over the pattern, building lines like "Until: HH:MM, fraction"
-    for (start_hr, end_hr, val) in pattern:
-        # E+ SCHEDULE:COMPACT lines are sequential. We just say "Until: end_hr"
-        # The fraction applies from previous end_hr to new end_hr.
-        # For the first chunk, it starts at midnight implicitly.
-        # e.g. "Until: 06:00,0.5"
-        line_str = f"Until: {end_hr:02d}:00,{val}"
-        sched_obj[f"Field_{field_idx}"] = line_str
-        field_idx += 1
-
-    return sched_obj
-
-
-def create_schedule_from_weekday_weekend_pattern(idf, sched_name, weekday_pattern, weekend_pattern, 
-                                                 schedule_type_limits="Fraction"):
-    """
-    Creates a SCHEDULE:COMPACT with two sets of rules:
-    - One for Weekdays
-    - One for Saturday Sunday Holiday
-
-    :param idf: geomeppy IDF instance
-    :param sched_name: name of the schedule in E+
-    :param weekday_pattern: list of (start_hr, end_hr, fraction) for M-F
-    :param weekend_pattern: list of (start_hr, end_hr, fraction) for Sat/Sun/Holiday
-    :param schedule_type_limits: e.g. "Fraction"
-    :returns: new or existing SCHEDULE:COMPACT
-    """
-    existing = idf.getobject("SCHEDULE:COMPACT", sched_name.upper())
-    if existing:
-        return existing
-
-    sched_obj = idf.newidfobject("SCHEDULE:COMPACT")
-    sched_obj.Name = sched_name
-    sched_obj.Schedule_Type_Limits_Name = schedule_type_limits
-
-    # First chunk: Through: 12/31, For: Weekdays
-    field_idx = 1
-    sched_obj[f"Field_{field_idx}"] = "Through: 12/31"
-    field_idx += 1
-
-    sched_obj[f"Field_{field_idx}"] = "For: Weekdays"
-    field_idx += 1
-
-    for (start_hr, end_hr, val) in weekday_pattern:
-        line_str = f"Until: {end_hr:02d}:00,{val}"
-        sched_obj[f"Field_{field_idx}"] = line_str
-        field_idx += 1
-
-    # Next chunk: For Saturday Sunday Holiday
-    sched_obj[f"Field_{field_idx}"] = "For: Saturday Sunday Holiday"
-    field_idx += 1
-
-    for (start_hr, end_hr, val) in weekend_pattern:
-        line_str = f"Until: {end_hr:02d}:00,{val}"
-        sched_obj[f"Field_{field_idx}"] = line_str
-        field_idx += 1
-
-    return sched_obj
-
-
-def ensure_dynamic_schedule(idf, sched_name, weekday_pattern=None, weekend_pattern=None):
-    """
-    A convenience function that:
-     - if only weekday_pattern is provided, creates schedule from that pattern for all days;
-     - if both weekday & weekend patterns provided, creates a weekday/weekend schedule.
-
-    :param idf: geomeppy IDF
-    :param sched_name: string
-    :param weekday_pattern: list of (start_hr, end_hr, fraction)
-    :param weekend_pattern: list of (start_hr, end_hr, fraction)
-    :return: the schedule object
-    """
-    existing = idf.getobject("SCHEDULE:COMPACT", sched_name.upper())
-    if existing:
-        return existing
-
-    if weekday_pattern and not weekend_pattern:
-        # same pattern for all days
-        return create_schedule_from_pattern(idf, sched_name, weekday_pattern)
-
-    elif weekday_pattern and weekend_pattern:
-        return create_schedule_from_weekday_weekend_pattern(idf, sched_name, weekday_pattern, weekend_pattern)
-
-    else:
-        # fallback => always on
-        return create_always_on_schedule(idf, sched_name)
+ogc_fid,param_name,param_value
+4136730,infiltration_base,1.2278853596915769
+4136730,infiltration_base_range,"(1.1, 1.3)"
+4136730,year_factor,0.9050021510445334
+4136730,year_factor_range,"(0.9, 1.1)"
+4136730,fan_pressure,0.0
+4136730,fan_pressure_range,"(0.0, 0.0)"
+4136730,f_ctrl,0.9223210738148823
+4136730,f_ctrl_range,"(0.9, 1.0)"
+4136730,hrv_eff,0.0
+4136730,hrv_eff_range,"(0.0, 0.0)"
+4136730,infiltration_schedule_name,AlwaysOnSched
+4136730,ventilation_schedule_name,VentSched_DayNight
+4136730,system_type,A
+4136730,flow_exponent,0.67
+4136730,infiltration_total_m3_s,0.0019798221857973927
+4136730,ventilation_total_m3_s,0.035
+4136732,infiltration_base,0.6278853596915768
+4136732,infiltration_base_range,"(0.5, 0.7)"
+4136732,year_factor,0.9050021510445334
+4136732,year_factor_range,"(0.9, 1.1)"
+4136732,fan_pressure,0.0
+4136732,fan_pressure_range,"(0.0, 0.0)"
+4136732,f_ctrl,0.7723210738148822
+4136732,f_ctrl_range,"(0.75, 0.85)"
+4136732,hrv_eff,0.7736471214164012
+4136732,hrv_eff_range,"(0.7, 0.8)"
+4136732,infiltration_schedule_name,AlwaysOnSched
+4136732,ventilation_schedule_name,VentSched_DayNight
+4136732,system_type,D
+4136732,flow_exponent,0.67
+4136732,infiltration_total_m3_s,0.0040495681634872
+4136732,ventilation_total_m3_s,0.09267852885778587
 
   --- File Contents End ---
 
-  File: ventilation_lookup.py
+  File: assigned_vent_zones.csv
   --- File Contents Start ---
-# ventilation_lookup.py
-
-"""
-This file defines a large nested dictionary called `ventilation_lookup`
-that organizes infiltration/ventilation parameters by:
-  1) scenario ("scenario1" or "scenario2")
-  2) calibration stage ("pre_calibration" or "post_calibration")
-Inside each stage, you have infiltration ranges, year factors, system controls, etc.
-
-Example usage:
-    from ventilation_lookup import ventilation_lookup
-
-    # Suppose we want infiltration info for scenario2, pre_calibration, a "two_and_a_half_story_house"
-    infiltration_ranges = ventilation_lookup["scenario2"]["pre_calibration"]["residential_infiltration_range"]
-    infiltration_tuple = infiltration_ranges.get("two_and_a_half_story_house", (1.0, 1.2))
-    # infiltration_tuple might be something like (1.3, 1.5) if you set it below
-"""
-
-ventilation_lookup = {
-    # -------------------------------------------------------------------------
-    # SCENARIO 1
-    # -------------------------------------------------------------------------
-    "scenario1": {
-        "pre_calibration": {
-            # -----------------------------------------------------------
-            # 1) Infiltration ranges
-            # -----------------------------------------------------------
-            "residential_infiltration_range": {
-                # Example new sub-type for a residential building
-                "two_and_a_half_story_house": (1.1, 1.3),
-                "apartment": (0.9, 1.1),
-                "row_house": (1.0, 1.2),
-            },
-            "non_res_infiltration_range": {
-                "meeting_function": (0.5, 0.7),
-                "office_multi_lower": (0.4, 0.6),
-                "office_multi_top": (0.6, 0.8)
-            },
-
-            # -----------------------------------------------------------
-            # 2) Year-of-construction factor
-            # -----------------------------------------------------------
-            "year_factor_range": {
-                "1900-2000":  (2.0, 2.4),
-                "2000-2024":  (1.2, 1.4),
-                "<1970":      (2.5, 3.5),
-                "1970-1992":  (1.8, 2.2),
-                "1992-2005":  (1.4, 1.6),
-                "2005-2015":  (1.1, 1.3),
-                ">2015":      (0.9, 1.1)
-            },
-
-            # -----------------------------------------------------------
-            # 3) System control factors
-            # -----------------------------------------------------------
-            "system_control_range_res": {
-                "A": {"f_ctrl_range": (0.9, 1.0)},
-                "B": {"f_ctrl_range": (0.50, 0.60)},
-                "C": {"f_ctrl_range": (0.80, 0.90)},
-                "D": {"f_ctrl_range": (0.95, 1.05)}
-            },
-            "system_control_range_nonres": {
-                "A": {"f_ctrl_range": (0.9, 1.0)},
-                "B": {"f_ctrl_range": (0.80, 0.90)},
-                "C": {"f_ctrl_range": (0.60, 0.70)},
-                "D": {"f_ctrl_range": (0.75, 0.85)}
-            },
-
-            # -----------------------------------------------------------
-            # 4) Fan pressure, HRV efficiency
-            # -----------------------------------------------------------
-            "fan_pressure_range": {
-                "res_mech": (40, 60),
-                "nonres_intake": (90, 110),
-                "nonres_exhaust": (140, 160)
-            },
-            "hrv_sensible_eff_range": (0.7, 0.8)
-        },
-
-        "post_calibration": {
-            "residential_infiltration_range": {
-                "two_and_a_half_story_house": (1.2, 1.2),
-                "apartment": (1.0, 1.0),
-                "row_house": (1.1, 1.1)
-            },
-            "non_res_infiltration_range": {
-                "meeting_function": (0.6, 0.6),
-                "office_multi_lower": (0.5, 0.5),
-                "office_multi_top": (0.7, 0.7)
-            },
-
-            "year_factor_range": {
-                "1900-2000":  (2.2, 2.2),
-                "2000-2024":  (1.3, 1.3),
-                "<1970":      (3.0, 3.0),
-                "1970-1992":  (2.0, 2.0),
-                "1992-2005":  (1.5, 1.5),
-                "2005-2015":  (1.2, 1.2),
-                ">2015":      (1.0, 1.0)
-            },
-
-            "system_control_range_res": {
-                "A": {"f_ctrl_range": (1.0, 1.0)},
-                "B": {"f_ctrl_range": (0.57, 0.57)},
-                "C": {"f_ctrl_range": (0.85, 0.85)},
-                "D": {"f_ctrl_range": (1.0, 1.0)}
-            },
-            "system_control_range_nonres": {
-                "A": {"f_ctrl_range": (1.0, 1.0)},
-                "B": {"f_ctrl_range": (0.85, 0.85)},
-                "C": {"f_ctrl_range": (0.65, 0.65)},
-                "D": {"f_ctrl_range": (0.8, 0.8)}
-            },
-
-            "fan_pressure_range": {
-                "res_mech": (50, 50),
-                "nonres_intake": (100, 100),
-                "nonres_exhaust": (150, 150)
-            },
-            "hrv_sensible_eff_range": (0.75, 0.75)
-        }
-    },
-
-    # -------------------------------------------------------------------------
-    # SCENARIO 2
-    # -------------------------------------------------------------------------
-    "scenario2": {
-        "pre_calibration": {
-            "residential_infiltration_range": {
-                # maybe scenario2 has slightly higher infiltration
-                "two_and_a_half_story_house": (1.3, 1.5),
-                "apartment": (1.0, 1.2),
-                "row_house": (1.1, 1.3)
-            },
-            "non_res_infiltration_range": {
-                # or scenario2 meeting_function infiltration a bit bigger
-                "meeting_function": (0.6, 0.8),
-                "office_multi_lower": (0.4, 0.7),
-                "office_multi_top": (0.7, 0.9)
-            },
-
-            "year_factor_range": {
-                "1900-2000":  (2.1, 2.5),
-                "2000-2024":  (1.3, 1.5),
-                "<1970":      (2.5, 3.5),
-                "1970-1992":  (1.8, 2.2),
-                "1992-2005":  (1.4, 1.6),
-                "2005-2015":  (1.1, 1.3),
-                ">2015":      (0.9, 1.1)
-            },
-
-            "system_control_range_res": {
-                "A": {"f_ctrl_range": (0.85, 0.95)},
-                "B": {"f_ctrl_range": (0.45, 0.55)},
-                "C": {"f_ctrl_range": (0.70, 0.80)},
-                "D": {"f_ctrl_range": (0.90, 1.00)}
-            },
-            "system_control_range_nonres": {
-                "A": {"f_ctrl_range": (0.85, 0.95)},
-                "B": {"f_ctrl_range": (0.75, 0.85)},
-                "C": {"f_ctrl_range": (0.55, 0.65)},
-                "D": {"f_ctrl_range": (0.70, 0.80)}
-            },
-
-            "fan_pressure_range": {
-                "res_mech": (45, 65),
-                "nonres_intake": (95, 115),
-                "nonres_exhaust": (145, 165)
-            },
-            "hrv_sensible_eff_range": (0.65, 0.75)
-        },
-
-        "post_calibration": {
-            "residential_infiltration_range": {
-                "two_and_a_half_story_house": (1.4, 1.4),
-                "apartment": (1.1, 1.1),
-                "row_house": (1.2, 1.2)
-            },
-            "non_res_infiltration_range": {
-                "meeting_function": (0.7, 0.7),
-                "office_multi_lower": (0.6, 0.6),
-                "office_multi_top": (0.75, 0.75)
-            },
-
-            "year_factor_range": {
-                "1900-2000":  (2.3, 2.3),
-                "2000-2024":  (1.4, 1.4),
-                "<1970":      (3.2, 3.2),
-                "1970-1992":  (2.2, 2.2),
-                "1992-2005":  (1.6, 1.6),
-                "2005-2015":  (1.3, 1.3),
-                ">2015":      (1.0, 1.0)
-            },
-
-            "system_control_range_res": {
-                "A": {"f_ctrl_range": (1.0, 1.0)},
-                "B": {"f_ctrl_range": (0.60, 0.60)},
-                "C": {"f_ctrl_range": (0.80, 0.80)},
-                "D": {"f_ctrl_range": (0.95, 0.95)}
-            },
-            "system_control_range_nonres": {
-                "A": {"f_ctrl_range": (1.0, 1.0)},
-                "B": {"f_ctrl_range": (0.80, 0.80)},
-                "C": {"f_ctrl_range": (0.60, 0.60)},
-                "D": {"f_ctrl_range": (0.75, 0.75)}
-            },
-
-            "fan_pressure_range": {
-                "res_mech": (55, 55),
-                "nonres_intake": (105, 105),
-                "nonres_exhaust": (155, 155)
-            },
-            "hrv_sensible_eff_range": (0.70, 0.70)
-        }
-    }
-}
+ogc_fid,zone_name,param_name,param_value
+4136730,Zone1,infiltration_object_name,Infil_residential_A_Zone1
+4136730,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+4136730,Zone1,infiltration_flow_m3_s,0.0006599407285991309
+4136730,Zone1,infiltration_schedule_name,AlwaysOnSched
+4136730,Zone1,ventilation_object_name,Vent_residential_A_Zone1
+4136730,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+4136730,Zone1,ventilation_flow_m3_s,0.011666666666666667
+4136730,Zone1,ventilation_schedule_name,VentSched_DayNight
+4136730,Zone2,infiltration_object_name,Infil_residential_A_Zone2
+4136730,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+4136730,Zone2,infiltration_flow_m3_s,0.0006599407285991309
+4136730,Zone2,infiltration_schedule_name,AlwaysOnSched
+4136730,Zone2,ventilation_object_name,Vent_residential_A_Zone2
+4136730,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+4136730,Zone2,ventilation_flow_m3_s,0.011666666666666667
+4136730,Zone2,ventilation_schedule_name,VentSched_DayNight
+4136730,Zone3,infiltration_object_name,Infil_residential_A_Zone3
+4136730,Zone3,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+4136730,Zone3,infiltration_flow_m3_s,0.0006599407285991309
+4136730,Zone3,infiltration_schedule_name,AlwaysOnSched
+4136730,Zone3,ventilation_object_name,Vent_residential_A_Zone3
+4136730,Zone3,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+4136730,Zone3,ventilation_flow_m3_s,0.011666666666666667
+4136730,Zone3,ventilation_schedule_name,VentSched_DayNight
+4136732,Zone1_FrontPerimeter,infiltration_object_name,Infil_non_residential_D_Zone1_FrontPerimeter
+4136732,Zone1_FrontPerimeter,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+4136732,Zone1_FrontPerimeter,infiltration_flow_m3_s,0.00040495681634872
+4136732,Zone1_FrontPerimeter,infiltration_schedule_name,AlwaysOnSched
+4136732,Zone1_FrontPerimeter,ventilation_object_name,Zone1_FrontPerimeter Ideal Loads
+4136732,Zone1_FrontPerimeter,ventilation_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone1_FrontPerimeter,ventilation_flow_m3_s,0.009267852885778586
+4136732,Zone1_FrontPerimeter,ventilation_schedule_name,VentSched_DayNight
+4136732,Zone1_RightPerimeter,infiltration_object_name,Infil_non_residential_D_Zone1_RightPerimeter
+4136732,Zone1_RightPerimeter,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+4136732,Zone1_RightPerimeter,infiltration_flow_m3_s,0.00040495681634872
+4136732,Zone1_RightPerimeter,infiltration_schedule_name,AlwaysOnSched
+4136732,Zone1_RightPerimeter,ventilation_object_name,Zone1_RightPerimeter Ideal Loads
+4136732,Zone1_RightPerimeter,ventilation_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone1_RightPerimeter,ventilation_flow_m3_s,0.009267852885778586
+4136732,Zone1_RightPerimeter,ventilation_schedule_name,VentSched_DayNight
+4136732,Zone1_RearPerimeter,infiltration_object_name,Infil_non_residential_D_Zone1_RearPerimeter
+4136732,Zone1_RearPerimeter,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+4136732,Zone1_RearPerimeter,infiltration_flow_m3_s,0.00040495681634872
+4136732,Zone1_RearPerimeter,infiltration_schedule_name,AlwaysOnSched
+4136732,Zone1_RearPerimeter,ventilation_object_name,Zone1_RearPerimeter Ideal Loads
+4136732,Zone1_RearPerimeter,ventilation_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone1_RearPerimeter,ventilation_flow_m3_s,0.009267852885778586
+4136732,Zone1_RearPerimeter,ventilation_schedule_name,VentSched_DayNight
+4136732,Zone1_LeftPerimeter,infiltration_object_name,Infil_non_residential_D_Zone1_LeftPerimeter
+4136732,Zone1_LeftPerimeter,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+4136732,Zone1_LeftPerimeter,infiltration_flow_m3_s,0.00040495681634872
+4136732,Zone1_LeftPerimeter,infiltration_schedule_name,AlwaysOnSched
+4136732,Zone1_LeftPerimeter,ventilation_object_name,Zone1_LeftPerimeter Ideal Loads
+4136732,Zone1_LeftPerimeter,ventilation_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone1_LeftPerimeter,ventilation_flow_m3_s,0.009267852885778586
+4136732,Zone1_LeftPerimeter,ventilation_schedule_name,VentSched_DayNight
+4136732,Zone1_Core,infiltration_object_name,Infil_non_residential_D_Zone1_Core
+4136732,Zone1_Core,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+4136732,Zone1_Core,infiltration_flow_m3_s,0.00040495681634872
+4136732,Zone1_Core,infiltration_schedule_name,AlwaysOnSched
+4136732,Zone1_Core,ventilation_object_name,Zone1_Core Ideal Loads
+4136732,Zone1_Core,ventilation_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone1_Core,ventilation_flow_m3_s,0.009267852885778586
+4136732,Zone1_Core,ventilation_schedule_name,VentSched_DayNight
+4136732,Zone2_FrontPerimeter,infiltration_object_name,Infil_non_residential_D_Zone2_FrontPerimeter
+4136732,Zone2_FrontPerimeter,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+4136732,Zone2_FrontPerimeter,infiltration_flow_m3_s,0.00040495681634872
+4136732,Zone2_FrontPerimeter,infiltration_schedule_name,AlwaysOnSched
+4136732,Zone2_FrontPerimeter,ventilation_object_name,Zone2_FrontPerimeter Ideal Loads
+4136732,Zone2_FrontPerimeter,ventilation_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone2_FrontPerimeter,ventilation_flow_m3_s,0.009267852885778586
+4136732,Zone2_FrontPerimeter,ventilation_schedule_name,VentSched_DayNight
+4136732,Zone2_RightPerimeter,infiltration_object_name,Infil_non_residential_D_Zone2_RightPerimeter
+4136732,Zone2_RightPerimeter,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+4136732,Zone2_RightPerimeter,infiltration_flow_m3_s,0.00040495681634872
+4136732,Zone2_RightPerimeter,infiltration_schedule_name,AlwaysOnSched
+4136732,Zone2_RightPerimeter,ventilation_object_name,Zone2_RightPerimeter Ideal Loads
+4136732,Zone2_RightPerimeter,ventilation_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone2_RightPerimeter,ventilation_flow_m3_s,0.009267852885778586
+4136732,Zone2_RightPerimeter,ventilation_schedule_name,VentSched_DayNight
+4136732,Zone2_RearPerimeter,infiltration_object_name,Infil_non_residential_D_Zone2_RearPerimeter
+4136732,Zone2_RearPerimeter,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+4136732,Zone2_RearPerimeter,infiltration_flow_m3_s,0.00040495681634872
+4136732,Zone2_RearPerimeter,infiltration_schedule_name,AlwaysOnSched
+4136732,Zone2_RearPerimeter,ventilation_object_name,Zone2_RearPerimeter Ideal Loads
+4136732,Zone2_RearPerimeter,ventilation_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone2_RearPerimeter,ventilation_flow_m3_s,0.009267852885778586
+4136732,Zone2_RearPerimeter,ventilation_schedule_name,VentSched_DayNight
+4136732,Zone2_LeftPerimeter,infiltration_object_name,Infil_non_residential_D_Zone2_LeftPerimeter
+4136732,Zone2_LeftPerimeter,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+4136732,Zone2_LeftPerimeter,infiltration_flow_m3_s,0.00040495681634872
+4136732,Zone2_LeftPerimeter,infiltration_schedule_name,AlwaysOnSched
+4136732,Zone2_LeftPerimeter,ventilation_object_name,Zone2_LeftPerimeter Ideal Loads
+4136732,Zone2_LeftPerimeter,ventilation_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone2_LeftPerimeter,ventilation_flow_m3_s,0.009267852885778586
+4136732,Zone2_LeftPerimeter,ventilation_schedule_name,VentSched_DayNight
+4136732,Zone2_Core,infiltration_object_name,Infil_non_residential_D_Zone2_Core
+4136732,Zone2_Core,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+4136732,Zone2_Core,infiltration_flow_m3_s,0.00040495681634872
+4136732,Zone2_Core,infiltration_schedule_name,AlwaysOnSched
+4136732,Zone2_Core,ventilation_object_name,Zone2_Core Ideal Loads
+4136732,Zone2_Core,ventilation_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4136732,Zone2_Core,ventilation_flow_m3_s,0.009267852885778586
+4136732,Zone2_Core,ventilation_schedule_name,VentSched_DayNight
 
   --- File Contents End ---
 
-  File: ventilation_overrides_from_excel.py
+  File: structured_fenez_params.csv
   --- File Contents Start ---
-# ventilation/ventilation_overrides_from_excel.py
-
-import pandas as pd
-import copy
-import math
-
-def read_ventilation_overrides_from_excel(excel_path):
-    """
-    Reads an Excel file with columns:
-        - calibration_stage
-        - main_key
-        - sub_key
-        - param_name
-        - min_val
-        - max_val
-        - fixed_value
-
-    Returns a nested dict: override_data[stage][main_key][sub_key][param_name] = ...
-    
-    Where the "..." can be:
-      - a tuple (min, max) if numeric
-      - a single string or numeric if 'fixed_value' is provided and is non-NaN
-        (we store it as (val, val) if numeric, or keep as a plain string if textual).
-    
-    This can override infiltration ranges, year_factor ranges, OR new schedule info.
-    For schedule overrides, 'main_key' might be "schedule_info",
-    sub_key might be e.g. "residential", param_name might be "default_infiltration_schedule",
-    and fixed_value could be e.g. "InfilResSched".
-
-    Example row:
-        calibration_stage = "pre_calibration"
-        main_key          = "schedule_info"
-        sub_key           = "residential"
-        param_name        = "default_infiltration_schedule"
-        min_val           = NaN
-        max_val           = NaN
-        fixed_value       = "MyInfilResSched"
-
-    The resulting override_data will have:
-        override_data["pre_calibration"]["schedule_info"]["residential"]["default_infiltration_schedule"] = "MyInfilResSched"
-    """
-    df = pd.read_excel(excel_path)
-
-    required_cols = ["calibration_stage","main_key","sub_key","param_name","min_val","max_val","fixed_value"]
-    for c in required_cols:
-        if c not in df.columns:
-            raise ValueError(f"Missing column '{c}' in {excel_path}")
-
-    override_data = {}
-
-    for _, row in df.iterrows():
-        stage = str(row["calibration_stage"]).strip()
-        mkey  = str(row["main_key"]).strip()       # e.g. "residential_infiltration_range" or "schedule_info"
-        skey  = str(row["sub_key"]).strip()        # e.g. "A_corner" or "residential" or ""
-        pname = str(row["param_name"]).strip()     # e.g. "f_ctrl_range", "default_infiltration_schedule", or ""
-
-        fv = row["fixed_value"]  # could be numeric or string
-        mn = row["min_val"]      # typically numeric or NaN
-        mx = row["max_val"]      # typically numeric or NaN
-
-        if stage not in override_data:
-            override_data[stage] = {}
-        if mkey not in override_data[stage]:
-            override_data[stage][mkey] = {}
-
-        # Decide how to store
-        # 1) If fixed_value is not NaN => store that
-        #    - If it's purely numeric, we store as (fv,fv) for consistency with min,max range
-        #    - If it's a string, we'll store it as a plain string override
-        # 2) Else if min_val and max_val are numeric => store as (min_val,max_val)
-        # 3) Otherwise skip if all are NaN
-
-        # Helper to test if something is numeric
-        def is_number(x):
-            try:
-                float(x)
-                return True
-            except (ValueError, TypeError):
-                return False
-
-        if pd.notna(fv):
-            # If the fixed_value is numeric => store as a numeric tuple (fv,fv)
-            if is_number(fv):
-                val_tuple = (float(fv), float(fv))
-                final_value = val_tuple
-            else:
-                # It's likely a string => store it directly as that string
-                final_value = str(fv).strip()
-        elif pd.notna(mn) and pd.notna(mx) and is_number(mn) and is_number(mx):
-            val_tuple = (float(mn), float(mx))
-            final_value = val_tuple
-        else:
-            # skip if no valid data
-            continue
-
-        # Insert into override_data
-        # Cases:
-        #    (a) skey == "" and pname == "" => override_data[stage][mkey] = final_value
-        #    (b) skey != "" and pname == "" => override_data[stage][mkey][skey] = final_value
-        #    (c) skey + pname => override_data[stage][mkey][skey][pname] = final_value
-        if skey == "" and pname == "":
-            override_data[stage][mkey] = final_value
-        elif skey != "" and pname == "":
-            if not isinstance(override_data[stage][mkey], dict):
-                override_data[stage][mkey] = {}
-            override_data[stage][mkey][skey] = final_value
-        else:
-            # if we have a param_name => store in stage[mkey][skey][pname]
-            if skey not in override_data[stage][mkey] or not isinstance(override_data[stage][mkey][skey], dict):
-                override_data[stage][mkey][skey] = {}
-            override_data[stage][mkey][skey][pname] = final_value
-
-    return override_data
-
-
-def apply_ventilation_overrides_to_lookup(default_lookup, override_data):
-    """
-    Merges override_data into default_lookup (similar to ventilation_lookup).
-    
-    override_data structure:
-      override_data[stage][main_key][sub_key][param_name] = final_value
-        (final_value can be a tuple (min,max), or a string for schedules)
-
-    For each stage in override_data:
-      - If stage doesn't exist in default_lookup, we create it.
-      - For each main_key in override_data => if it's a tuple or string, override
-        directly. If it's a dict => merge deeper.
-    
-    Example usage:
-      new_lookup = apply_ventilation_overrides_to_lookup(ventilation_lookup, override_data)
-    """
-    # If you prefer not to mutate default_lookup in place, do a copy
-    new_lookup = copy.deepcopy(default_lookup)
-
-    for stage, stage_dict in override_data.items():
-        if stage not in new_lookup:
-            new_lookup[stage] = {}
-
-        for mkey, val_mkey in stage_dict.items():
-            # val_mkey might be:
-            #   - a numeric tuple or string => direct override
-            #   - a dict => deeper merges (subkeys, param_names)
-
-            if not isinstance(val_mkey, dict):
-                # So if it's a tuple or a string => direct override
-                new_lookup[stage][mkey] = val_mkey
-                continue
-
-            # if it's a dict => we merge it
-            if mkey not in new_lookup[stage]:
-                new_lookup[stage][mkey] = {}
-
-            for subk, subv in val_mkey.items():
-                # subv might be a tuple, string, or another dict
-                if not isinstance(subv, dict):
-                    # direct override
-                    new_lookup[stage][mkey][subk] = subv
-                else:
-                    # deeper dict => e.g. {param_name: (min,max) or string}
-                    if subk not in new_lookup[stage][mkey]:
-                        new_lookup[stage][mkey][subk] = {}
-                    for param_key, param_val in subv.items():
-                        # param_val could be tuple or string
-                        new_lookup[stage][mkey][subk][param_key] = param_val
-
-    return new_lookup
+ogc_fid,sub_key,eplus_object_type,eplus_object_name,param_name,param_value,param_min,param_max
+4136730,roughness,,,roughness,MediumRough,,
+4136730,wwr_range_used,,,wwr_range_used,"(0.22, 0.22)",,
+4136730,wwr,,,wwr,0.22,,
+4136730,top_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Roughness,MediumRough,,
+4136730,top_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Thermal_Resistance,4.639426798457884,4.0,5.0
+4136730,top_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Thermal_Absorptance,0.9,0.9,0.9
+4136730,top_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Solar_Absorptance,0.7,0.7,0.7
+4136730,top_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Visible_Absorptance,0.7,0.7,0.7
+4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
+4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
+4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7605002151044533,0.76,0.78
+4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.0727502931836912,0.07,0.08
+4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07223210738148823,0.07,0.08
+4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8747294242832803,0.86,0.88
+4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06676699487422912,0.06,0.07
+4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06892179567704845,0.06,0.07
+4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
+4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
+4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
+4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.9586938832629416,0.95,1.05
+4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
+4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
+4136730,ground_floor_R_value,,,ground_floor_R_value,2.5,,
+4136730,ground_floor_R_value_range_used,,,ground_floor_R_value_range_used,"(2.5, 2.5)",,
+4136730,ground_floor_U_value,,,ground_floor_U_value,0.36,,
+4136730,ground_floor_U_value_range_used,,,ground_floor_U_value_range_used,"(0.36, 0.36)",,
+4136730,ground_floor_area_m2,,,ground_floor_area_m2,68.95,,
+4136730,ground_floor_opq,MATERIAL,DoorPanel_Range,Roughness,MediumRough,,
+4136730,ground_floor_opq,MATERIAL,DoorPanel_Range,Thickness,0.18641140016537977,0.14,0.25
+4136730,ground_floor_opq,MATERIAL,DoorPanel_Range,Conductivity,0.0745645600661519,1.4,1.7
+4136730,ground_floor_opq,MATERIAL,DoorPanel_Range,Density,621.8637974803603,600.0,700.0
+4136730,ground_floor_opq,MATERIAL,DoorPanel_Range,Specific_Heat,2301.0710576206725,2200.0,2400.0
+4136730,ground_floor_opq,MATERIAL,DoorPanel_Range,Thermal_Absorptance,0.9,0.9,0.9
+4136730,ground_floor_opq,MATERIAL,DoorPanel_Range,Solar_Absorptance,0.7,0.7,0.7
+4136730,ground_floor_opq,MATERIAL,DoorPanel_Range,Visible_Absorptance,0.7,0.7,0.7
+4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
+4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
+4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7605307193936773,0.76,0.78
+4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07198837650686649,0.07,0.08
+4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07649884437779524,0.07,0.08
+4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8708988296120643,0.86,0.88
+4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06220440622040697,0.06,0.07
+4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06589265683875908,0.06,0.07
+4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
+4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
+4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
+4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.00108,0.95,1.05
+4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
+4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
+4136730,exterior_wall_R_value,,,exterior_wall_R_value,2.5,,
+4136730,exterior_wall_R_value_range_used,,,exterior_wall_R_value_range_used,"(2.5, 2.5)",,
+4136730,exterior_wall_U_value,,,exterior_wall_U_value,0.37,,
+4136730,exterior_wall_U_value_range_used,,,exterior_wall_U_value_range_used,"(0.37, 0.37)",,
+4136730,exterior_wall_area_m2,,,exterior_wall_area_m2,103.3,,
+4136730,exterior_wall_opq,MATERIAL,InternalFloor_Generic,Roughness,MediumSmooth,,
+4136730,exterior_wall_opq,MATERIAL,InternalFloor_Generic,Thickness,0.12019496279034182,0.12,0.15
+4136730,exterior_wall_opq,MATERIAL,InternalFloor_Generic,Conductivity,0.04807798511613673,0.7,1.2
+4136730,exterior_wall_opq,MATERIAL,InternalFloor_Generic,Density,1939.6278789976454,1800.0,2000.0
+4136730,exterior_wall_opq,MATERIAL,InternalFloor_Generic,Specific_Heat,834.0250516517992,800.0,900.0
+4136730,exterior_wall_opq,MATERIAL,InternalFloor_Generic,Thermal_Absorptance,0.9,0.9,0.9
+4136730,exterior_wall_opq,MATERIAL,InternalFloor_Generic,Solar_Absorptance,0.7,0.7,0.7
+4136730,exterior_wall_opq,MATERIAL,InternalFloor_Generic,Visible_Absorptance,0.7,0.7,0.7
+4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
+4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
+4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7631095899962357,0.76,0.78
+4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07957213072206781,0.07,0.08
+4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07336594545112628,0.07,0.08
+4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.861854916867603,0.86,0.88
+4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06096716376833464,0.06,0.07
+4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.0684749436634746,0.06,0.07
+4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
+4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
+4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
+4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.00111,0.95,1.05
+4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
+4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
+4136730,flat_roof_R_value,,,flat_roof_R_value,2.5,,
+4136730,flat_roof_R_value_range_used,,,flat_roof_R_value_range_used,"(2.5, 2.5)",,
+4136730,flat_roof_U_value,,,flat_roof_U_value,0.37,,
+4136730,flat_roof_U_value_range_used,,,flat_roof_U_value_range_used,"(0.37, 0.37)",,
+4136730,flat_roof_area_m2,,,flat_roof_area_m2,84.14,,
+4136730,flat_roof_opq,MATERIAL,InteriorWall_Generic,Roughness,MediumSmooth,,
+4136730,flat_roof_opq,MATERIAL,InteriorWall_Generic,Thickness,0.140356413663719,0.1,0.15
+4136730,flat_roof_opq,MATERIAL,InteriorWall_Generic,Conductivity,0.056142565465487605,0.4,0.6
+4136730,flat_roof_opq,MATERIAL,InteriorWall_Generic,Density,807.2456182909401,700.0,900.0
+4136730,flat_roof_opq,MATERIAL,InteriorWall_Generic,Specific_Heat,994.6231527958741,800.0,1000.0
+4136730,flat_roof_opq,MATERIAL,InteriorWall_Generic,Thermal_Absorptance,0.9,0.9,0.9
+4136730,flat_roof_opq,MATERIAL,InteriorWall_Generic,Solar_Absorptance,0.7,0.7,0.7
+4136730,flat_roof_opq,MATERIAL,InteriorWall_Generic,Visible_Absorptance,0.7,0.7,0.7
+4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
+4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
+4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7675706875441671,0.76,0.78
+4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07552040631273227,0.07,0.08
+4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07829404664252995,0.07,0.08
+4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.872370395047285,0.86,0.88
+4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06861706900310778,0.06,0.07
+4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06577352145256762,0.06,0.07
+4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
+4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
+4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
+4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.00111,0.95,1.05
+4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
+4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
+4136730,inter_floor_R_value,,,inter_floor_R_value,2.0,,
+4136730,inter_floor_R_value_range_used,,,inter_floor_R_value_range_used,"(2.0, 2.0)",,
+4136730,inter_floor_U_value,,,inter_floor_U_value,0.5,,
+4136730,inter_floor_U_value_range_used,,,inter_floor_U_value_range_used,"(0.5, 0.5)",,
+4136730,inter_floor_area_m2,,,inter_floor_area_m2,60.0,,
+4136730,inter_floor_opq,MATERIAL,DoorPanel_Range,Roughness,MediumRough,,
+4136730,inter_floor_opq,MATERIAL,DoorPanel_Range,Thickness,0.14504068220212285,0.14,0.25
+4136730,inter_floor_opq,MATERIAL,DoorPanel_Range,Conductivity,0.07252034110106143,1.4,1.7
+4136730,inter_floor_opq,MATERIAL,DoorPanel_Range,Density,628.9387963602107,600.0,700.0
+4136730,inter_floor_opq,MATERIAL,DoorPanel_Range,Specific_Heat,2215.9583953847255,2200.0,2400.0
+4136730,inter_floor_opq,MATERIAL,DoorPanel_Range,Thermal_Absorptance,0.9,0.9,0.9
+4136730,inter_floor_opq,MATERIAL,DoorPanel_Range,Solar_Absorptance,0.7,0.7,0.7
+4136730,inter_floor_opq,MATERIAL,DoorPanel_Range,Visible_Absorptance,0.7,0.7,0.7
+4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
+4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
+4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7646558177272206,0.76,0.78
+4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.0710100142940973,0.07,0.08
+4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07277973603110093,0.07,0.08
+4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.872713688885288,0.86,0.88
+4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06364832178970084,0.06,0.07
+4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06370180967116883,0.06,0.07
+4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
+4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
+4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
+4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.0015,0.95,1.05
+4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
+4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
+4136730,interior_wall_R_value,,,interior_wall_R_value,1.5,,
+4136730,interior_wall_R_value_range_used,,,interior_wall_R_value_range_used,"(1.5, 1.5)",,
+4136730,interior_wall_U_value,,,interior_wall_U_value,0.67,,
+4136730,interior_wall_U_value_range_used,,,interior_wall_U_value_range_used,"(0.67, 0.67)",,
+4136730,interior_wall_area_m2,,,interior_wall_area_m2,50.0,,
+4136730,interior_wall_opq,MATERIAL,Concrete_200mm,Roughness,MediumRough,,
+4136730,interior_wall_opq,MATERIAL,Concrete_200mm,Thickness,0.19766977822049114,0.195,0.205
+4136730,interior_wall_opq,MATERIAL,Concrete_200mm,Conductivity,0.1317798521469941,1.5,1.7
+4136730,interior_wall_opq,MATERIAL,Concrete_200mm,Density,2314.8035385246594,2250.0,2350.0
+4136730,interior_wall_opq,MATERIAL,Concrete_200mm,Specific_Heat,910.9131005666989,850.0,950.0
+4136730,interior_wall_opq,MATERIAL,Concrete_200mm,Thermal_Absorptance,0.9,0.9,0.9
+4136730,interior_wall_opq,MATERIAL,Concrete_200mm,Solar_Absorptance,0.7,0.7,0.7
+4136730,interior_wall_opq,MATERIAL,Concrete_200mm,Visible_Absorptance,0.7,0.7,0.7
+4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
+4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
+4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.763422772963962,0.76,0.78
+4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07729126797950349,0.07,0.08
+4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07163402493761929,0.07,0.08
+4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.867589108835153,0.86,0.88
+4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06989523350636596,0.06,0.07
+4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06639999759854093,0.06,0.07
+4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
+4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
+4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
+4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.00201,0.95,1.05
+4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
+4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
+4136730,windows_R_value,,,windows_R_value,,,
+4136730,windows_R_value_range_used,,,windows_R_value_range_used,"(None, None)",,
+4136730,windows_U_value,,,windows_U_value,2.9,,
+4136730,windows_U_value_range_used,,,windows_U_value_range_used,"(2.9, 2.9)",,
+4136730,windows_area_m2,,,windows_area_m2,27.22,,
+4136730,windows_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Roughness,MediumRough,,
+4136730,windows_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Thermal_Resistance,0.3448275862068966,4.0,5.0
+4136730,windows_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Thermal_Absorptance,0.9,0.9,0.9
+4136730,windows_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Solar_Absorptance,0.7,0.7,0.7
+4136730,windows_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Visible_Absorptance,0.7,0.7,0.7
+4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
+4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
+4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7768570384037962,0.76,0.78
+4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07775999911546246,0.07,0.08
+4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07229048071964105,0.07,0.08
+4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8606420048780807,0.86,0.88
+4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06315453048059082,0.06,0.07
+4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06267740875975703,0.06,0.07
+4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
+4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
+4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
+4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.0087,0.95,1.05
+4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
+4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
+4136730,doors_R_value,,,doors_R_value,,,
+4136730,doors_R_value_range_used,,,doors_R_value_range_used,"(None, None)",,
+4136730,doors_U_value,,,doors_U_value,3.4,,
+4136730,doors_U_value_range_used,,,doors_U_value_range_used,"(3.4, 3.4)",,
+4136730,doors_area_m2,,,doors_area_m2,6.93,,
+4136730,doors_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Roughness,MediumRough,,
+4136730,doors_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Thermal_Resistance,0.29411764705882354,4.0,5.0
+4136730,doors_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Thermal_Absorptance,0.9,0.9,0.9
+4136730,doors_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Solar_Absorptance,0.7,0.7,0.7
+4136730,doors_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Visible_Absorptance,0.7,0.7,0.7
+4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
+4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
+4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7775273525294534,0.76,0.78
+4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07314677880798479,0.07,0.08
+4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07655438665294881,0.07,0.08
+4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8679126380212133,0.86,0.88
+4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06914547589740544,0.06,0.07
+4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.064588518525874,0.06,0.07
+4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
+4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
+4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
+4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.0102,0.95,1.05
+4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
+4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
+4136730,top_opaque_material_name,,,top_opaque_material_name,Insulated_Roof_R5,,
+4136730,top_window_material_name,,,top_window_material_name,Glazing_Clear_3mm,,
+4136730,window1C_construction,,,window1C_construction,WINDOW1C,,
+4136730,ground_floor_opq_material_name,,,ground_floor_opq_material_name,ground_floor_OpaqueMat,,
+4136730,ground_floor_win_material_name,,,ground_floor_win_material_name,ground_floor_WindowMat,,
+4136730,ground_floor_construction_name,,,ground_floor_construction_name,ground_floor_Construction,,
+4136730,ground_floor_window_construction_name,,,ground_floor_window_construction_name,ground_floor_WindowConst,,
+4136730,exterior_wall_opq_material_name,,,exterior_wall_opq_material_name,exterior_wall_OpaqueMat,,
+4136730,exterior_wall_win_material_name,,,exterior_wall_win_material_name,exterior_wall_WindowMat,,
+4136730,exterior_wall_construction_name,,,exterior_wall_construction_name,exterior_wall_Construction,,
+4136730,exterior_wall_window_construction_name,,,exterior_wall_window_construction_name,exterior_wall_WindowConst,,
+4136730,flat_roof_opq_material_name,,,flat_roof_opq_material_name,flat_roof_OpaqueMat,,
+4136730,flat_roof_win_material_name,,,flat_roof_win_material_name,flat_roof_WindowMat,,
+4136730,flat_roof_construction_name,,,flat_roof_construction_name,flat_roof_Construction,,
+4136730,flat_roof_window_construction_name,,,flat_roof_window_construction_name,flat_roof_WindowConst,,
+4136730,inter_floor_opq_material_name,,,inter_floor_opq_material_name,inter_floor_OpaqueMat,,
+4136730,inter_floor_win_material_name,,,inter_floor_win_material_name,inter_floor_WindowMat,,
+4136730,inter_floor_construction_name,,,inter_floor_construction_name,inter_floor_Construction,,
+4136730,inter_floor_window_construction_name,,,inter_floor_window_construction_name,inter_floor_WindowConst,,
+4136730,interior_wall_opq_material_name,,,interior_wall_opq_material_name,interior_wall_OpaqueMat,,
+4136730,interior_wall_win_material_name,,,interior_wall_win_material_name,interior_wall_WindowMat,,
+4136730,interior_wall_construction_name,,,interior_wall_construction_name,interior_wall_Construction,,
+4136730,interior_wall_window_construction_name,,,interior_wall_window_construction_name,interior_wall_WindowConst,,
+4136730,windows_opq_material_name,,,windows_opq_material_name,windows_OpaqueMat,,
+4136730,windows_win_material_name,,,windows_win_material_name,windows_WindowMat,,
+4136730,windows_construction_name,,,windows_construction_name,windows_Construction,,
+4136730,windows_window_construction_name,,,windows_window_construction_name,windows_WindowConst,,
+4136730,doors_opq_material_name,,,doors_opq_material_name,doors_OpaqueMat,,
+4136730,doors_win_material_name,,,doors_win_material_name,doors_WindowMat,,
+4136730,doors_construction_name,,,doors_construction_name,doors_Construction,,
+4136730,doors_window_construction_name,,,doors_window_construction_name,doors_WindowConst,,
+4136730,final_wwr,,,final_wwr,0.22,,
+4136730,fenestration_objects,,,fenestration_objects,"['Zone1_Wall_0 window', 'Zone1_Wall_2 window', 'Zone1_Wall_3 window', 'Zone2_Wall_0 window', 'Zone2_Wall_2 window', 'Zone2_Wall_3 window', 'Zone3_Wall_0 window', 'Zone3_Wall_2 window', 'Zone3_Wall_3 window']",,
+4136732,roughness,,,roughness,MediumRough,,
+4136732,wwr_range_used,,,wwr_range_used,"(0.2, 0.25)",,
+4136732,wwr,,,wwr,0.2319713399228942,,
+4136732,top_opq,MATERIAL,DoorPanel_Range,Roughness,MediumRough,,
+4136732,top_opq,MATERIAL,DoorPanel_Range,Thickness,0.1427511830744934,0.14,0.25
+4136732,top_opq,MATERIAL,DoorPanel_Range,Conductivity,1.4825087955107357,1.4,1.7
+4136732,top_opq,MATERIAL,DoorPanel_Range,Density,622.3210738148823,600.0,700.0
+4136732,top_opq,MATERIAL,DoorPanel_Range,Specific_Heat,2347.2942428328024,2200.0,2400.0
+4136732,top_opq,MATERIAL,DoorPanel_Range,Thermal_Absorptance,0.9,0.9,0.9
+4136732,top_opq,MATERIAL,DoorPanel_Range,Solar_Absorptance,0.7,0.7,0.7
+4136732,top_opq,MATERIAL,DoorPanel_Range,Visible_Absorptance,0.7,0.7,0.7
+4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
+4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
+4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7735339897484582,0.76,0.78
+4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07892179567704846,0.07,0.08
+4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07086938832629416,0.07,0.08
+4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8684384363937054,0.86,0.88
+4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.060297972194380704,0.06,0.07
+4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.062186379748036036,0.06,0.07
+4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
+4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
+4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
+4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,1.0005355288103361,0.95,1.05
+4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
+4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
+4136732,ground_floor_R_value,,,ground_floor_R_value,3.5,,
+4136732,ground_floor_R_value_range_used,,,ground_floor_R_value_range_used,"(3.5, 3.5)",,
+4136732,ground_floor_U_value,,,ground_floor_U_value,0.28,,
+4136732,ground_floor_U_value_range_used,,,ground_floor_U_value_range_used,"(0.28, 0.28)",,
+4136732,ground_floor_area_m2,,,ground_floor_area_m2,80.0,,
+4136732,ground_floor_opq,MATERIAL,GroundContactFloor_Generic,Roughness,MediumRough,,
+4136732,ground_floor_opq,MATERIAL,GroundContactFloor_Generic,Thickness,0.10053071939367728,0.1,0.12
+4136732,ground_floor_opq,MATERIAL,GroundContactFloor_Generic,Conductivity,0.028723062683907792,1.0,1.2
+4136732,ground_floor_opq,MATERIAL,GroundContactFloor_Generic,Density,2229.976887555905,2100.0,2300.0
+4136732,ground_floor_opq,MATERIAL,GroundContactFloor_Generic,Specific_Heat,877.2470740301609,850.0,900.0
+4136732,ground_floor_opq,MATERIAL,GroundContactFloor_Generic,Thermal_Absorptance,0.9,0.9,0.9
+4136732,ground_floor_opq,MATERIAL,GroundContactFloor_Generic,Solar_Absorptance,0.7,0.7,0.7
+4136732,ground_floor_opq,MATERIAL,GroundContactFloor_Generic,Visible_Absorptance,0.7,0.7,0.7
+4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
+4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
+4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7644088124408139,0.76,0.78
+4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07589265683875909,0.07,0.08
+4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07809430456677827,0.07,0.08
+4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8601299751935612,0.86,0.88
+4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06805819251832808,0.06,0.07
+4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06698139394988227,0.06,0.07
+4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
+4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
+4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
+4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.0008400000000000001,0.95,1.05
+4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
+4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
+4136732,exterior_wall_R_value,,,exterior_wall_R_value,3.5,,
+4136732,exterior_wall_R_value_range_used,,,exterior_wall_R_value_range_used,"(3.5, 3.5)",,
+4136732,exterior_wall_U_value,,,exterior_wall_U_value,0.32,,
+4136732,exterior_wall_U_value_range_used,,,exterior_wall_U_value_range_used,"(0.32, 0.32)",,
+4136732,exterior_wall_area_m2,,,exterior_wall_area_m2,120.0,,
+4136732,exterior_wall_opq,MATERIAL,Concrete_200mm,Roughness,MediumRough,,
+4136732,exterior_wall_opq,MATERIAL,Concrete_200mm,Thickness,0.19655479499811782,0.195,0.205
+4136732,exterior_wall_opq,MATERIAL,Concrete_200mm,Conductivity,0.05615851285660509,1.5,1.7
+4136732,exterior_wall_opq,MATERIAL,Concrete_200mm,Density,2283.6594545112625,2250.0,2350.0
+4136732,exterior_wall_opq,MATERIAL,Concrete_200mm,Specific_Heat,859.2745843380148,850.0,950.0
+4136732,exterior_wall_opq,MATERIAL,Concrete_200mm,Thermal_Absorptance,0.9,0.9,0.9
+4136732,exterior_wall_opq,MATERIAL,Concrete_200mm,Solar_Absorptance,0.7,0.7,0.7
+4136732,exterior_wall_opq,MATERIAL,Concrete_200mm,Visible_Absorptance,0.7,0.7,0.7
+4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
+4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
+4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7619343275366693,0.76,0.78
+4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.0784749436634746,0.07,0.08
+4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07603726031366892,0.07,0.08
+4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8761425654654876,0.86,0.88
+4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06729731786693818,0.06,0.07
+4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06536228091454702,0.06,0.07
+4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
+4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
+4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
+4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.00096,0.95,1.05
+4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
+4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
+4136732,flat_roof_R_value,,,flat_roof_R_value,3.5,,
+4136732,flat_roof_R_value_range_used,,,flat_roof_R_value_range_used,"(3.5, 3.5)",,
+4136732,flat_roof_U_value,,,flat_roof_U_value,0.32,,
+4136732,flat_roof_U_value_range_used,,,flat_roof_U_value_range_used,"(0.32, 0.32)",,
+4136732,flat_roof_area_m2,,,flat_roof_area_m2,95.0,,
+4136732,flat_roof_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Roughness,MediumRough,,
+4136732,flat_roof_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Thermal_Resistance,3.5,4.0,5.0
+4136732,flat_roof_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Thermal_Absorptance,0.9,0.9,0.9
+4136732,flat_roof_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Solar_Absorptance,0.7,0.7,0.7
+4136732,flat_roof_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Visible_Absorptance,0.7,0.7,0.7
+4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
+4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
+4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7710408126254645,0.76,0.78
+4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07829404664252995,0.07,0.08
+4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07618519752364246,0.07,0.08
+4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8772341380062155,0.86,0.88
+4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06577352145256762,0.06,0.07
+4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06704571836214923,0.06,0.07
+4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
+4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
+4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
+4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.00096,0.95,1.05
+4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
+4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
+4136732,inter_floor_R_value,,,inter_floor_R_value,2.0,,
+4136732,inter_floor_R_value_range_used,,,inter_floor_R_value_range_used,"(2.0, 2.0)",,
+4136732,inter_floor_U_value,,,inter_floor_U_value,0.5,,
+4136732,inter_floor_U_value_range_used,,,inter_floor_U_value_range_used,"(0.5, 0.5)",,
+4136732,inter_floor_area_m2,,,inter_floor_area_m2,60.0,,
+4136732,inter_floor_opq,MATERIAL,InternalFloor_Generic,Roughness,MediumSmooth,,
+4136732,inter_floor_opq,MATERIAL,InternalFloor_Generic,Thickness,0.1268369482695464,0.12,0.15
+4136732,inter_floor_opq,MATERIAL,InternalFloor_Generic,Conductivity,0.0634184741347732,0.7,1.2
+4136732,inter_floor_opq,MATERIAL,InternalFloor_Generic,Density,1815.9583953847255,1800.0,2000.0
+4136732,inter_floor_opq,MATERIAL,InternalFloor_Generic,Specific_Heat,823.279088636103,800.0,900.0
+4136732,inter_floor_opq,MATERIAL,InternalFloor_Generic,Thermal_Absorptance,0.9,0.9,0.9
+4136732,inter_floor_opq,MATERIAL,InternalFloor_Generic,Solar_Absorptance,0.7,0.7,0.7
+4136732,inter_floor_opq,MATERIAL,InternalFloor_Generic,Visible_Absorptance,0.7,0.7,0.7
+4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
+4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
+4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7620200285881946,0.76,0.78
+4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07277973603110093,0.07,0.08
+4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07635684444264401,0.07,0.08
+4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8672966435794017,0.86,0.88
+4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06370180967116883,0.06,0.07
+4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06209507030771488,0.06,0.07
+4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
+4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
+4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
+4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.0015,0.95,1.05
+4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
+4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
+4136732,interior_wall_R_value,,,interior_wall_R_value,1.5,,
+4136732,interior_wall_R_value_range_used,,,interior_wall_R_value_range_used,"(1.5, 1.5)",,
+4136732,interior_wall_U_value,,,interior_wall_U_value,0.67,,
+4136732,interior_wall_U_value_range_used,,,interior_wall_U_value_range_used,"(0.67, 0.67)",,
+4136732,interior_wall_area_m2,,,interior_wall_area_m2,50.0,,
+4136732,interior_wall_opq,MATERIAL,InteriorWall_Generic,Roughness,MediumSmooth,,
+4136732,interior_wall_opq,MATERIAL,InteriorWall_Generic,Thickness,0.1468327293856247,0.1,0.15
+4136732,interior_wall_opq,MATERIAL,InteriorWall_Generic,Conductivity,0.09788848625708313,0.4,0.6
+4136732,interior_wall_opq,MATERIAL,InteriorWall_Generic,Density,821.8262011333976,700.0,900.0
+4136732,interior_wall_opq,MATERIAL,InteriorWall_Generic,Specific_Heat,834.2277296396194,800.0,1000.0
+4136732,interior_wall_opq,MATERIAL,InteriorWall_Generic,Thermal_Absorptance,0.9,0.9,0.9
+4136732,interior_wall_opq,MATERIAL,InteriorWall_Generic,Solar_Absorptance,0.7,0.7,0.7
+4136732,interior_wall_opq,MATERIAL,InteriorWall_Generic,Visible_Absorptance,0.7,0.7,0.7
+4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
+4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
+4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7745825359590071,0.76,0.78
+4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07163402493761929,0.07,0.08
+4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07379455441757649,0.07,0.08
+4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8797904670127319,0.86,0.88
+4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06639999759854093,0.06,0.07
+4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06556949743774647,0.06,0.07
+4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
+4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
+4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
+4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.00201,0.95,1.05
+4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
+4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
+4136732,windows_R_value,,,windows_R_value,,,
+4136732,windows_R_value_range_used,,,windows_R_value_range_used,"(None, None)",,
+4136732,windows_U_value,,,windows_U_value,3.5,,
+4136732,windows_U_value_range_used,,,windows_U_value_range_used,"(3.5, 3.5)",,
+4136732,windows_area_m2,,,windows_area_m2,35.0,,
+4136732,windows_opq,MATERIAL,DoorPanel_Range,Roughness,MediumRough,,
+4136732,windows_opq,MATERIAL,DoorPanel_Range,Thickness,0.23271371122087905,0.14,0.25
+4136732,windows_opq,MATERIAL,DoorPanel_Range,Conductivity,0.8144979892730767,1.4,1.7
+4136732,windows_opq,MATERIAL,DoorPanel_Range,Density,622.9048071964104,600.0,700.0
+4136732,windows_opq,MATERIAL,DoorPanel_Range,Specific_Heat,2206.4200487808075,2200.0,2400.0
+4136732,windows_opq,MATERIAL,DoorPanel_Range,Thermal_Absorptance,0.9,0.9,0.9
+4136732,windows_opq,MATERIAL,DoorPanel_Range,Solar_Absorptance,0.7,0.7,0.7
+4136732,windows_opq,MATERIAL,DoorPanel_Range,Visible_Absorptance,0.7,0.7,0.7
+4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
+4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
+4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7663090609611817,0.76,0.78
+4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07267740875975703,0.07,0.08
+4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07210982843586328,0.07,0.08
+4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8788581942867011,0.86,0.88
+4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.0687636762647267,0.06,0.07
+4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06314677880798478,0.06,0.07
+4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
+4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
+4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
+4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.0105,0.95,1.05
+4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
+4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
+4136732,doors_R_value,,,doors_R_value,,,
+4136732,doors_R_value_range_used,,,doors_R_value_range_used,"(None, None)",,
+4136732,doors_U_value,,,doors_U_value,3.5,,
+4136732,doors_U_value_range_used,,,doors_U_value_range_used,"(3.5, 3.5)",,
+4136732,doors_area_m2,,,doors_area_m2,10.0,,
+4136732,doors_opq,MATERIAL,DoorPanel_Range,Roughness,MediumRough,,
+4136732,doors_opq,MATERIAL,DoorPanel_Range,Thickness,0.18351950911667309,0.14,0.25
+4136732,doors_opq,MATERIAL,DoorPanel_Range,Conductivity,0.6423182819083558,1.4,1.7
+4136732,doors_opq,MATERIAL,DoorPanel_Range,Density,645.8851852587399,600.0,700.0
+4136732,doors_opq,MATERIAL,DoorPanel_Range,Specific_Heat,2252.9760332996107,2200.0,2400.0
+4136732,doors_opq,MATERIAL,DoorPanel_Range,Thermal_Absorptance,0.9,0.9,0.9
+4136732,doors_opq,MATERIAL,DoorPanel_Range,Solar_Absorptance,0.7,0.7,0.7
+4136732,doors_opq,MATERIAL,DoorPanel_Range,Visible_Absorptance,0.7,0.7,0.7
+4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
+4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
+4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7649325501538797,0.76,0.78
+4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07561368134163152,0.07,0.08
+4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07262741608522935,0.07,0.08
+4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8716917198044708,0.86,0.88
+4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06897822883602478,0.06,0.07
+4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06399400505140397,0.06,0.07
+4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
+4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
+4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
+4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.0105,0.95,1.05
+4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
+4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
+4136732,top_opaque_material_name,,,top_opaque_material_name,DoorPanel_Range,,
+4136732,top_window_material_name,,,top_window_material_name,Glazing_Clear_3mm,,
+4136732,window1C_construction,,,window1C_construction,WINDOW1C,,
+4136732,ground_floor_opq_material_name,,,ground_floor_opq_material_name,ground_floor_OpaqueMat,,
+4136732,ground_floor_win_material_name,,,ground_floor_win_material_name,ground_floor_WindowMat,,
+4136732,ground_floor_construction_name,,,ground_floor_construction_name,ground_floor_Construction,,
+4136732,ground_floor_window_construction_name,,,ground_floor_window_construction_name,ground_floor_WindowConst,,
+4136732,exterior_wall_opq_material_name,,,exterior_wall_opq_material_name,exterior_wall_OpaqueMat,,
+4136732,exterior_wall_win_material_name,,,exterior_wall_win_material_name,exterior_wall_WindowMat,,
+4136732,exterior_wall_construction_name,,,exterior_wall_construction_name,exterior_wall_Construction,,
+4136732,exterior_wall_window_construction_name,,,exterior_wall_window_construction_name,exterior_wall_WindowConst,,
+4136732,flat_roof_opq_material_name,,,flat_roof_opq_material_name,flat_roof_OpaqueMat,,
+4136732,flat_roof_win_material_name,,,flat_roof_win_material_name,flat_roof_WindowMat,,
+4136732,flat_roof_construction_name,,,flat_roof_construction_name,flat_roof_Construction,,
+4136732,flat_roof_window_construction_name,,,flat_roof_window_construction_name,flat_roof_WindowConst,,
+4136732,inter_floor_opq_material_name,,,inter_floor_opq_material_name,inter_floor_OpaqueMat,,
+4136732,inter_floor_win_material_name,,,inter_floor_win_material_name,inter_floor_WindowMat,,
+4136732,inter_floor_construction_name,,,inter_floor_construction_name,inter_floor_Construction,,
+4136732,inter_floor_window_construction_name,,,inter_floor_window_construction_name,inter_floor_WindowConst,,
+4136732,interior_wall_opq_material_name,,,interior_wall_opq_material_name,interior_wall_OpaqueMat,,
+4136732,interior_wall_win_material_name,,,interior_wall_win_material_name,interior_wall_WindowMat,,
+4136732,interior_wall_construction_name,,,interior_wall_construction_name,interior_wall_Construction,,
+4136732,interior_wall_window_construction_name,,,interior_wall_window_construction_name,interior_wall_WindowConst,,
+4136732,windows_opq_material_name,,,windows_opq_material_name,windows_OpaqueMat,,
+4136732,windows_win_material_name,,,windows_win_material_name,windows_WindowMat,,
+4136732,windows_construction_name,,,windows_construction_name,windows_Construction,,
+4136732,windows_window_construction_name,,,windows_window_construction_name,windows_WindowConst,,
+4136732,doors_opq_material_name,,,doors_opq_material_name,doors_OpaqueMat,,
+4136732,doors_win_material_name,,,doors_win_material_name,doors_WindowMat,,
+4136732,doors_construction_name,,,doors_construction_name,doors_Construction,,
+4136732,doors_window_construction_name,,,doors_window_construction_name,doors_WindowConst,,
+4136732,final_wwr,,,final_wwr,0.2319713399228942,,
+4136732,fenestration_objects,,,fenestration_objects,"['Zone1_RearPerimeter_Wall_0 window', 'Zone1_LeftPerimeter_Wall_0 window', 'Zone2_RearPerimeter_Wall_0 window', 'Zone2_LeftPerimeter_Wall_0 window']",,
 
   --- File Contents End ---
-
-================================================================================
-
-Folder: D:\Documents\E_Plus_2030_py\ventilation\__pycache__
 
 ================================================================================
 
