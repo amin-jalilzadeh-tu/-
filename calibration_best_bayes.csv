@@ -1,0 +1,4 @@
+Method,ParamName,ParamValue,BestError
+bayes,infiltration,2.0,48.66182874687555
+bayes,occupancy,10,48.66182874687555
+bayes,wall_U,1.2,48.66182874687555
