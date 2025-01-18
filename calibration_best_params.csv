@@ -1,0 +1,4 @@
+param_name,param_value,best_score,method
+infiltration,0.5,0.7268030456901289,Bayesian
+occupancy,10.0,0.7268030456901289,Bayesian
+wall_u,0.3,0.7268030456901289,Bayesian

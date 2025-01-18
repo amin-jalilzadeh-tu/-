@@ -1,0 +1,4 @@
+param_name,min_value,max_value,is_active,is_integer
+infiltration,0.5,2.0,True,False
+occupancy,10.0,40.0,True,True
+wall_u,0.3,1.2,True,False

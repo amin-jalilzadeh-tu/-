@@ -12,11 +12,11 @@ It offers:
 """
 
 import pandas as pd
-from fenez.materials import (
+from idf_objects.fenez.materials import (
     update_construction_materials,
     assign_constructions_to_surfaces
 )
-from fenez.fenestration import add_fenestration
+from idf_objects.fenez.fenestration import add_fenestration
 
 ##############################################################################
 # 1) BUILDING-LEVEL FENESTRATION

@@ -1,938 +1,1997 @@
-Folder: D:\Documents\E_Plus_2030_py\output\assigned
+Folder: D:\Documents\E_Plus_2030_py\modification
 
-  File: assigned_dhw_params.csv
+  File: common_utils.py
   --- File Contents Start ---
-ogc_fid,sub_key,eplus_object_type,eplus_object_name,param_name,param_value,param_min,param_max
-4136730,dhw_top,,,default_heater_capacity_w,4223.210738148823,4000.0,5000.0
-4136730,dhw_top,,,default_tank_volume_liters,277.5029318369119,250.0,350.0
-4136730,dhw_top,,,dhw_daily_liters,45.0,,
-4136730,dhw_top,,,dhw_fraction_schedule,MyDHW_0_UseFraction,,
-4136730,dhw_top,,,dhw_heater_capacity_w,4223.210738148823,,
-4136730,dhw_top,,,dhw_heater_fuel_type,Electricity,,
-4136730,dhw_top,,,dhw_heater_thermal_eff,0.9,,
-4136730,dhw_top,,,dhw_occupant_count,1.0,,
-4136730,dhw_top,,,dhw_peak_flow_m3s,2.7459390168016543e-06,,
-4136730,dhw_top,,,dhw_setpoint_schedule,MyDHW_0_Setpoint,,
-4136730,dhw_top,,,dhw_tank_volume_m3,0.2775029318369119,,
-4136730,dhw_top,,,dhw_waterheater_object_name,MyDHW_0_WaterHeater,,
-4136730,dhw_top,,,liters_per_person_per_day,45.0,55.0,65.0
-4136730,dhw_top,,,occupant_density_m2_per_person,30.0,27.0,33.0
-4136730,dhw_top,,,peak_hours,2.8921795677048454,2.0,3.0
-4136730,dhw_top,,,sched_afternoon,0.20297972194380703,0.2,0.3
-4136730,dhw_top,,,sched_evening,0.6874551899214414,0.6,1.0
-4136730,dhw_top,,,sched_morning,0.6173877665258832,0.6,0.8
-4136730,dhw_top,,,sched_peak,0.9843843639370542,0.9,1.1
-4136730,dhw_top,,,setpoint_c,59.472942428328025,58.0,60.0
-4136730,dhw_top,,,usage_split_factor,0.6353398974845822,0.5,0.7
-4136730,dhw_waterheater,WATERHEATER:MIXED,MyDHW_0_WaterHeater,Heater_Fuel_Type,Electricity,,
-4136730,dhw_waterheater,WATERHEATER:MIXED,MyDHW_0_WaterHeater,Heater_Maximum_Capacity,4223.210738148823,,
-4136730,dhw_waterheater,WATERHEATER:MIXED,MyDHW_0_WaterHeater,Heater_Thermal_Efficiency,0.9,,
-4136730,dhw_waterheater,WATERHEATER:MIXED,MyDHW_0_WaterHeater,Name,MyDHW_0_WaterHeater,,
-4136730,dhw_waterheater,WATERHEATER:MIXED,MyDHW_0_WaterHeater,Setpoint_Temperature_Schedule_Name,MyDHW_0_Setpoint,,
-4136730,dhw_waterheater,WATERHEATER:MIXED,MyDHW_0_WaterHeater,Tank_Volume,0.2775029318369119,,
-4136730,dhw_waterheater,WATERHEATER:MIXED,MyDHW_0_WaterHeater,Use_Flow_Rate_Fraction_Schedule_Name,MyDHW_0_UseFraction,,
-4136730,dhw_waterheater,WATERHEATER:MIXED,MyDHW_0_WaterHeater,obj_type,WATERHEATER:MIXED,,
-4136732,dhw_top,,,default_heater_capacity_w,4223.210738148823,4000.0,5000.0
-4136732,dhw_top,,,default_tank_volume_liters,277.5029318369119,250.0,350.0
-4136732,dhw_top,,,dhw_daily_liters,90.00000000000001,,
-4136732,dhw_top,,,dhw_fraction_schedule,MyDHW_1_UseFraction,,
-4136732,dhw_top,,,dhw_heater_capacity_w,4223.210738148823,,
-4136732,dhw_top,,,dhw_heater_fuel_type,Electricity,,
-4136732,dhw_top,,,dhw_heater_thermal_eff,0.9,,
-4136732,dhw_top,,,dhw_occupant_count,2.0,,
-4136732,dhw_top,,,dhw_peak_flow_m3s,5.4918780336033095e-06,,
-4136732,dhw_top,,,dhw_setpoint_schedule,MyDHW_1_Setpoint,,
-4136732,dhw_top,,,dhw_tank_volume_m3,0.2775029318369119,,
-4136732,dhw_top,,,dhw_waterheater_object_name,MyDHW_1_WaterHeater,,
-4136732,dhw_top,,,liters_per_person_per_day,45.00000000000001,55.0,65.0
-4136732,dhw_top,,,occupant_density_m2_per_person,70.58823529411764,63.52941176470588,77.6470588235294
-4136732,dhw_top,,,peak_hours,2.8921795677048454,2.0,3.0
-4136732,dhw_top,,,sched_afternoon,0.20297972194380703,0.2,0.3
-4136732,dhw_top,,,sched_evening,0.6874551899214414,0.6,1.0
-4136732,dhw_top,,,sched_morning,0.6173877665258832,0.6,0.8
-4136732,dhw_top,,,sched_peak,0.9843843639370542,0.9,1.1
-4136732,dhw_top,,,setpoint_c,59.472942428328025,58.0,60.0
-4136732,dhw_top,,,usage_split_factor,0.6353398974845822,0.5,0.7
-4136732,dhw_waterheater,WATERHEATER:MIXED,MyDHW_1_WaterHeater,Heater_Fuel_Type,Electricity,,
-4136732,dhw_waterheater,WATERHEATER:MIXED,MyDHW_1_WaterHeater,Heater_Maximum_Capacity,4223.210738148823,,
-4136732,dhw_waterheater,WATERHEATER:MIXED,MyDHW_1_WaterHeater,Heater_Thermal_Efficiency,0.9,,
-4136732,dhw_waterheater,WATERHEATER:MIXED,MyDHW_1_WaterHeater,Name,MyDHW_1_WaterHeater,,
-4136732,dhw_waterheater,WATERHEATER:MIXED,MyDHW_1_WaterHeater,Setpoint_Temperature_Schedule_Name,MyDHW_1_Setpoint,,
-4136732,dhw_waterheater,WATERHEATER:MIXED,MyDHW_1_WaterHeater,Tank_Volume,0.2775029318369119,,
-4136732,dhw_waterheater,WATERHEATER:MIXED,MyDHW_1_WaterHeater,Use_Flow_Rate_Fraction_Schedule_Name,MyDHW_1_UseFraction,,
-4136732,dhw_waterheater,WATERHEATER:MIXED,MyDHW_1_WaterHeater,obj_type,WATERHEATER:MIXED,,
+# common_utils.py
+
+import os
+import random
+import pandas as pd
+
+# If using Eppy:
+from eppy.modeleditor import IDF
+# If using Geomeppy, comment out the above and uncomment below:
+# from geomeppy import IDF as GeomIDF
+# GeomIDF.setiddname("path/to/Energy+.idd")
+
+
+###############################################################################
+# 1) Reading "assigned" CSVs
+###############################################################################
+
+def load_assigned_csv(csv_path):
+    """
+    Loads a generic CSV file containing assigned parameters for a building or zone.
+    For example:
+      D:/Documents/E_Plus_2030_py/output/assigned/assigned_dhw_params.csv
+      D:/Documents/E_Plus_2030_py/output/assigned/assigned_hvac_building.csv
+      etc.
+
+    Returns:
+      A Pandas DataFrame with the file contents.
+    """
+    if not os.path.isfile(csv_path):
+        raise FileNotFoundError(f"Cannot find CSV at: {csv_path}")
+    df = pd.read_csv(csv_path)
+    return df
+
+
+def filter_for_building(df_main, df_zone=None, building_id=None):
+    """
+    If 'df_zone' is provided, filters both dataframes by ogc_fid == building_id.
+    If building_id is None, returns df_main (and df_zone) unfiltered.
+
+    This is useful if you have a building-level CSV and a zone-level CSV
+    and want to isolate data for a particular ogc_fid.
+    """
+    if building_id is not None:
+        df_main_sub = df_main[df_main["ogc_fid"] == building_id].copy()
+        if df_zone is not None:
+            df_zone_sub = df_zone[df_zone["ogc_fid"] == building_id].copy()
+        else:
+            df_zone_sub = None
+    else:
+        df_main_sub = df_main.copy()
+        df_zone_sub = df_zone.copy() if df_zone is not None else None
+
+    return df_main_sub, df_zone_sub
+
+
+###############################################################################
+# 2) Helpers for Generating Scenario Parameter Sets
+###############################################################################
+
+def to_float_or_none(x):
+    """
+    Attempts to convert x to float. If it fails (or is NaN), returns None.
+    """
+    try:
+        return float(x)
+    except (ValueError, TypeError):
+        return None
+
+
+def pick_value_in_range(base_val, param_min, param_max,
+                        method="random_uniform", scale_factor=0.5):
+    """
+    Picks a new value given:
+      - base_val: original numeric value (fallback if range is invalid)
+      - param_min, param_max: numeric range
+      - method: 
+         "random_uniform" => uniform in [param_min, param_max]
+         "scale_around_base" => base_val * random(1 - scale_factor, 1 + scale_factor)
+         "offset_half" => base_val +/- up to 50% of half the total range
+      - scale_factor: used if method="scale_around_base"
+    Returns a float. If range invalid, returns base_val.
+    """
+    base_val_f = to_float_or_none(base_val)
+    if base_val_f is None:
+        base_val_f = 0.0
+
+    min_f = to_float_or_none(param_min)
+    max_f = to_float_or_none(param_max)
+
+    if method == "random_uniform":
+        if min_f is not None and max_f is not None and min_f < max_f:
+            return random.uniform(min_f, max_f)
+        else:
+            return base_val_f
+
+    elif method == "scale_around_base":
+        low_factor = 1.0 - scale_factor
+        high_factor = 1.0 + scale_factor
+        factor = random.uniform(low_factor, high_factor)
+        return base_val_f * factor
+
+    elif method == "offset_half":
+        if min_f is not None and max_f is not None:
+            half_span = (max_f - min_f) / 2.0 * 0.5
+            offset = random.uniform(-half_span, half_span)
+            return base_val_f + offset
+        else:
+            return base_val_f
+
+    # Default => return base_val
+    return base_val_f
+
+
+def define_building_param_strategy(df_main_sub, picking_method="random_uniform",
+                                   scale_factor=0.5):
+    """
+    Loops over rows in df_main_sub to build {param_name -> new_value}.
+    For each row, we call pick_value_in_range(...) to generate a new numeric value.
+
+    - Skips rows with param_name="schedule_details" or other obviously non-numeric fields.
+    - You can adapt if you want to skip more.
+
+    Returns: { param_name -> numeric_value }
+    """
+    final_param_dict = {}
+
+    for idx, row in df_main_sub.iterrows():
+        param_name = row.get("param_name", None)
+        if not param_name:
+            continue
+
+        # Skip known non-numeric param names if needed
+        if param_name.lower() == "schedule_details":
+            continue
+
+        base_val = row.get("param_value", None)
+        p_min = row.get("param_min", None)
+        p_max = row.get("param_max", None)
+
+        new_val = pick_value_in_range(
+            base_val=base_val,
+            param_min=p_min,
+            param_max=p_max,
+            method=picking_method,
+            scale_factor=scale_factor
+        )
+        final_param_dict[param_name] = new_val
+
+    return final_param_dict
+
+
+def generate_multiple_param_sets(df_main_sub, num_sets=5,
+                                 picking_method="random_uniform",
+                                 scale_factor=0.5):
+    """
+    Calls define_building_param_strategy(...) multiple times to create 
+    'num_sets' scenario dicts, e.g. for random draws in [param_min, param_max].
+
+    Returns: list of dicts => each dict is {param_name -> new_value}
+    """
+    all_scenarios = []
+    for _ in range(num_sets):
+        scenario = define_building_param_strategy(
+            df_main_sub=df_main_sub,
+            picking_method=picking_method,
+            scale_factor=scale_factor
+        )
+        all_scenarios.append(scenario)
+    return all_scenarios
+
+
+def save_param_scenarios_to_csv(all_scenarios, building_id,
+                                out_csv="scenario_params.csv"):
+    """
+    Writes each scenario's picks to CSV with columns:
+      [scenario_index, ogc_fid, param_name, assigned_value]
+
+    This is how we form the "scenario_index" concept so we can groupby in the future.
+    """
+    rows = []
+    for i, scenario_dict in enumerate(all_scenarios):
+        for p_name, val in scenario_dict.items():
+            rows.append({
+                "scenario_index": i,
+                "ogc_fid": building_id,
+                "param_name": p_name,
+                "assigned_value": val
+            })
+
+    df_out = pd.DataFrame(rows)
+    os.makedirs(os.path.dirname(out_csv), exist_ok=True)
+    df_out.to_csv(out_csv, index=False)
+    print(f"[INFO] Saved scenario picks => {out_csv}")
+
+
+###############################################################################
+# 3) IDF Load/Save
+###############################################################################
+
+def load_idf(base_idf_path, idd_path):
+    """
+    Loads an existing IDF file from disk. Adjust if using Geomeppy instead of Eppy.
+    """
+    if not os.path.isfile(idd_path):
+        raise FileNotFoundError(f"IDD file not found at: {idd_path}")
+    if not os.path.isfile(base_idf_path):
+        raise FileNotFoundError(f"IDF file not found at: {base_idf_path}")
+
+    # Eppy usage
+    IDF.iddname = idd_path
+    idf = IDF(base_idf_path)
+    return idf
+
+
+def save_idf(idf, out_path):
+    """
+    Saves the modified IDF to out_path, creating directories as needed.
+    """
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    idf.saveas(out_path)
+    print(f"[INFO] Saved modified IDF => {out_path}")
+
+
+###############################################################################
+# 4) Optional: Loading a "Scenario" CSV (already defined picks)
+###############################################################################
+
+def load_scenario_csv(scenario_csv):
+    """
+    Reads a CSV that presumably has columns:
+      - scenario_index
+      - ogc_fid
+      - param_name
+      - assigned_value
+    or something similar.
+
+    The caller can do: df.groupby("scenario_index") to iterate over scenarios.
+    """
+    if not os.path.isfile(scenario_csv):
+        raise FileNotFoundError(f"Cannot find scenario CSV at: {scenario_csv}")
+    df = pd.read_csv(scenario_csv)
+    return df
 
   --- File Contents End ---
 
-  File: assigned_geometry.csv
+  File: dhw_functions.py
   --- File Contents Start ---
-ogc_fid,param_name,assigned_value
-4136730,perimeter_depth_range,"(3.5, 4.0)"
-4136730,perimeter_depth,3.819713399228942
-4136730,has_core,False
-4136732,perimeter_depth_range,"(1.0, 2.0)"
-4136732,perimeter_depth,1.6394267984578836
-4136732,has_core,True
+# dhw_functions.py
+
+"""
+Contains functions for applying DHW (Domestic Hot Water) parameter changes
+to an IDF, such as creating/updating WATERHEATER:MIXED objects and 
+associated schedules.
+"""
+
+from eppy.modeleditor import IDF  # or adapt for geomeppy
+
+##############################################################################
+# 1) APPLY BUILDING-LEVEL DHW PARAMS
+##############################################################################
+
+def apply_dhw_params_to_idf(idf, param_dict, suffix="MyDHW"):
+    """
+    Takes a dictionary of DHW parameter picks, e.g.:
+      {
+        "setpoint_c": 60.0,
+        "default_tank_volume_liters": 300.0,
+        "default_heater_capacity_w": 4000.0,
+        "sched_morning": 0.7,
+        "sched_peak": 1.0,
+        "sched_afternoon": 0.2,
+        "sched_evening": 0.8,
+        "heater_fuel_type": "Electricity",
+        "heater_eff": 0.9,
+        ...
+      }
+    Then:
+      1) Creates or updates a usage fraction schedule <suffix>_UseFraction
+      2) Creates or updates a setpoint schedule <suffix>_Setpoint
+      3) Creates or updates a WATERHEATER:MIXED named <suffix>_WaterHeater
+         with the new volume, capacity, etc.
+    """
+
+    # 1) Create/Update Schedules
+    frac_sched_name, setpoint_sched_name = _create_or_update_dhw_schedules(
+        idf,
+        suffix,
+        setpoint_c=param_dict.get("setpoint_c", 60.0),
+        morning_val=param_dict.get("sched_morning", 0.7),
+        peak_val=param_dict.get("sched_peak", 1.0),
+        afternoon_val=param_dict.get("sched_afternoon", 0.2),
+        evening_val=param_dict.get("sched_evening", 0.8)
+    )
+
+    # 2) WaterHeater:Mixed
+    wh_name = f"{suffix}_WaterHeater"
+    wh_obj = None
+    # Check if it already exists
+    existing_wh = [obj for obj in idf.idfobjects["WATERHEATER:MIXED"] if obj.Name == wh_name]
+    if existing_wh:
+        wh_obj = existing_wh[0]
+    else:
+        wh_obj = idf.newidfobject("WATERHEATER:MIXED", Name=wh_name)
+
+    # Fill in fields
+    tank_volume_m3 = (param_dict.get("default_tank_volume_liters", 200.0)) / 1000.0
+    heater_capacity_w = param_dict.get("default_heater_capacity_w", 4000.0)
+    fuel_type = param_dict.get("heater_fuel_type", "Electricity")
+    eff = param_dict.get("heater_eff", 0.9)
+
+    wh_obj.Tank_Volume = tank_volume_m3
+    wh_obj.Setpoint_Temperature_Schedule_Name = setpoint_sched_name
+    wh_obj.Heater_Maximum_Capacity = heater_capacity_w
+    wh_obj.Use_Flow_Rate_Fraction_Schedule_Name = frac_sched_name
+    wh_obj.Heater_Fuel_Type = fuel_type
+    wh_obj.Heater_Thermal_Efficiency = eff
+
+    # Example final log
+    print(f"[DHW] Updated WaterHeater '{wh_obj.Name}' => "
+          f"Volume={tank_volume_m3:.3f} m3, "
+          f"Capacity={heater_capacity_w} W, "
+          f"SetpointSched={setpoint_sched_name}, FlowFracSched={frac_sched_name}, "
+          f"Fuel={fuel_type}, Eff={eff}")
+
+
+##############################################################################
+# Helper: Create or Update DHW Schedules
+##############################################################################
+
+def _create_or_update_dhw_schedules(
+    idf,
+    suffix,
+    setpoint_c=60.0,
+    morning_val=0.7,
+    peak_val=1.0,
+    afternoon_val=0.2,
+    evening_val=0.8
+):
+    """
+    Creates or overwrites two schedules:
+      1) <suffix>_UseFraction => usage fraction schedule
+      2) <suffix>_Setpoint   => constant setpoint schedule
+
+    Each is a SCHEDULE:COMPACT object in the IDF. If it doesn't exist, we create it.
+    If it does, we overwrite it.
+    """
+    # Fraction schedule
+    frac_sched_name = f"{suffix}_UseFraction"
+    frac_sch = idf.getobject("SCHEDULE:COMPACT", frac_sched_name.upper())
+    if not frac_sch:
+        frac_sch = idf.newidfobject("SCHEDULE:COMPACT", Name=frac_sched_name)
+
+    frac_sch.Schedule_Type_Limits_Name = "Fraction"
+    frac_sch.Field_1 = "Through: 12/31"
+    frac_sch.Field_2 = "For: AllDays"
+    # 0.0 until 06:00
+    frac_sch.Field_3 = "Until: 06:00, 0.0"
+    # 06:00-08:00 => morning
+    frac_sch.Field_4 = f"Until: 08:00,{morning_val:.2f}"
+    # 08:00-10:00 => peak
+    frac_sch.Field_5 = f"Until: 10:00,{peak_val:.2f}"
+    # 10:00-17:00 => afternoon
+    frac_sch.Field_6 = f"Until: 17:00,{afternoon_val:.2f}"
+    # 17:00-21:00 => evening
+    frac_sch.Field_7 = f"Until: 21:00,{evening_val:.2f}"
+    # 21:00-24:00 => back to morning_val for demonstration
+    frac_sch.Field_8 = f"Until: 24:00,{morning_val:.2f}"
+
+    # Setpoint schedule
+    setpoint_sched_name = f"{suffix}_Setpoint"
+    setpoint_sch = idf.getobject("SCHEDULE:COMPACT", setpoint_sched_name.upper())
+    if not setpoint_sch:
+        setpoint_sch = idf.newidfobject("SCHEDULE:COMPACT", Name=setpoint_sched_name)
+
+    setpoint_sch.Schedule_Type_Limits_Name = "Temperature"
+    setpoint_sch.Field_1 = "Through: 12/31"
+    setpoint_sch.Field_2 = "For: AllDays"
+    setpoint_sch.Field_3 = f"Until: 24:00,{setpoint_c:.2f}"
+
+    return frac_sched_name, setpoint_sched_name
 
   --- File Contents End ---
 
-  File: assigned_hvac_building.csv
+  File: elec_functions.py
   --- File Contents Start ---
-ogc_fid,param_name,param_value,param_min,param_max
-4136730,heating_day_setpoint,20.278853596915766,19.0,21.0
-4136730,heating_night_setpoint,15.025010755222667,15.0,16.0
-4136730,cooling_day_setpoint,24.55005863673824,24.0,26.0
-4136730,cooling_night_setpoint,26.446421476297644,26.0,28.0
-4136730,max_heating_supply_air_temp,52.364712141640126,45.0,55.0
-4136730,min_cooling_supply_air_temp,13.353398974845822,12.0,14.0
-4136730,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}",,
-4136732,heating_day_setpoint,21.278853596915766,20.0,22.0
-4136732,heating_night_setpoint,15.050021510445333,15.0,17.0
-4136732,cooling_day_setpoint,23.55005863673824,23.0,25.0
-4136732,cooling_night_setpoint,25.446421476297644,25.0,27.0
-4136732,max_heating_supply_air_temp,67.36471214164013,60.0,70.0
-4136732,min_cooling_supply_air_temp,13.353398974845822,12.0,14.0
-4136732,schedule_details,"{'weekday_day_start': '08:00', 'weekday_day_end': '22:00', 'weekend_day_start': '08:00', 'weekend_day_end': '18:00', 'occupancy_schedule': {'weekday': 'MeetingFunction_Weekday', 'weekend': 'MeetingFunction_Weekend'}}",,
+# elec_functions.py
+
+"""
+This module provides functions for applying lighting + parasitic equipment
+parameters to an EnergyPlus IDF, similar to how 'hvac_functions.py' and
+'vent_functions.py' work.
+
+Typically, you'll do something like:
+  - build a param_dict from your assigned_lighting.csv
+  - call apply_building_level_elec(idf, param_dict)
+OR
+  - if you want each row to define a specific object name / param, 
+    call apply_object_level_elec(idf, df_lighting)
+
+You can adapt these approaches to your exact CSV structure and naming.
+"""
+
+import math
+
+##############################################################################
+# 1) APPLY BUILDING-LEVEL ELECTRICAL PARAMETERS
+##############################################################################
+
+def apply_building_level_elec(idf, param_dict, zonelist_name="ALL_ZONES"):
+    """
+    Interprets a dictionary of lighting/electrical parameters, for example:
+
+      param_dict = {
+        "lights_wm2": 10.0,
+        "parasitic_wm2": 0.285,
+        "tD": 2000,
+        "tN": 300,
+        "lights_fraction_radiant": 0.7,
+        "lights_fraction_visible": 0.2,
+        "lights_fraction_replaceable": 1.0,
+        "equip_fraction_radiant": 0.0,
+        "equip_fraction_lost": 1.0,
+        # possibly "object_name" or "schedule_name" if needed
+      }
+
+    Then we create or update:
+      - A single 'LIGHTS' object for the zone list
+      - A single 'ELECTRICEQUIPMENT' object for the zone list
+      - Possibly schedules for lighting or equipment usage
+
+    This is analogous to how 'apply_building_level_hvac' works, but for lighting/equipment.
+    """
+
+    # 1) Extract the relevant numeric picks
+    lights_wm2 = param_dict.get("lights_wm2", 10.0)
+    parasitic_wm2 = param_dict.get("parasitic_wm2", 0.285)
+
+    # Fractions for LIGHTS
+    lights_frac_radiant = param_dict.get("lights_fraction_radiant", 0.7)
+    lights_frac_visible = param_dict.get("lights_fraction_visible", 0.2)
+    lights_frac_replace = param_dict.get("lights_fraction_replaceable", 1.0)
+
+    # Fractions for ELECTRICEQUIPMENT
+    equip_frac_radiant = param_dict.get("equip_fraction_radiant", 0.0)
+    equip_frac_lost = param_dict.get("equip_fraction_lost", 1.0)
+
+    # Optional usage times if you want them for schedules
+    tD = param_dict.get("tD", 2000)  # e.g. day burning hours
+    tN = param_dict.get("tN", 300)   # e.g. night burning hours
+    # If you want to create advanced schedules from tD/tN, you can. Or skip.
+
+    print("[ELEC] Creating building-level lighting & equipment objects with:")
+    print(f"  lights_wm2={lights_wm2}, parasitic_wm2={parasitic_wm2},")
+    print(f"  lights_fraction_radiant={lights_frac_radiant}, visible={lights_frac_visible}, replaceable={lights_frac_replace}")
+    print(f"  equip_fraction_radiant={equip_frac_radiant}, equip_fraction_lost={equip_frac_lost}")
+
+    # 2) Create or update a LIGHTS object for the entire building (via a ZoneList)
+    lights_obj_name = f"Lights_{zonelist_name}"
+    lights_obj = _create_or_update_lights_object(
+        idf,
+        obj_name=lights_obj_name,
+        zone_or_zonelist=zonelist_name,
+        lights_wm2=lights_wm2,
+        frac_radiant=lights_frac_radiant,
+        frac_visible=lights_frac_visible,
+        frac_replace=lights_frac_replace
+    )
+
+    # 3) Create or update an ELECTRICEQUIPMENT object for parasitic loads
+    equip_obj_name = f"Parasitic_{zonelist_name}"
+    equip_obj = _create_or_update_equip_object(
+        idf,
+        obj_name=equip_obj_name,
+        zone_or_zonelist=zonelist_name,
+        equip_wm2=parasitic_wm2,
+        frac_radiant=equip_frac_radiant,
+        frac_lost=equip_frac_lost
+    )
+
+    # 4) If you want to build schedules from tD/tN or param_dict, you can create them here
+    #    or call your existing schedule creation code from lighting.py (like create_lighting_schedule).
+    #    Then you can assign those schedules to the lights_obj.Schedule_Name, equip_obj.Schedule_Name, etc.
+
+    # Example:
+    # lights_sched_name = create_lighting_schedule(idf, "Non-Residential", "Office Function", "LightsSchedule")
+    # lights_obj.Schedule_Name = lights_sched_name
+
+    return lights_obj, equip_obj
+
+
+def _create_or_update_lights_object(
+    idf,
+    obj_name,
+    zone_or_zonelist="ALL_ZONES",
+    lights_wm2=10.0,
+    frac_radiant=0.7,
+    frac_visible=0.2,
+    frac_replace=1.0
+):
+    """
+    Creates or updates a LIGHTS object with 'Watts/Area' method,
+    applying the fractions given.
+    """
+    existing = [
+        lt for lt in idf.idfobjects["LIGHTS"]
+        if lt.Name.upper() == obj_name.upper()
+    ]
+    if existing:
+        lights_obj = existing[0]
+    else:
+        lights_obj = idf.newidfobject("LIGHTS", Name=obj_name)
+
+    # zone or zone list
+    if hasattr(lights_obj, "Zone_or_ZoneList_or_Space_or_SpaceList_Name"):
+        lights_obj.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zone_or_zonelist
+    else:
+        lights_obj.Zone_or_ZoneList_Name = zone_or_zonelist
+
+    # design method
+    lights_obj.Design_Level_Calculation_Method = "Watts/Area"
+    lights_obj.Watts_per_Zone_Floor_Area = lights_wm2
+
+    # fractions
+    lights_obj.Fraction_Radiant = frac_radiant
+    lights_obj.Fraction_Visible = frac_visible
+
+    # if older IDD doesn't have Fraction_Replaceable, skip
+    if hasattr(lights_obj, "Fraction_Replaceable"):
+        lights_obj.Fraction_Replaceable = frac_replace
+
+    return lights_obj
+
+
+def _create_or_update_equip_object(
+    idf,
+    obj_name,
+    zone_or_zonelist="ALL_ZONES",
+    equip_wm2=0.285,
+    frac_radiant=0.0,
+    frac_lost=1.0
+):
+    """
+    Creates or updates an ELECTRICEQUIPMENT object with 'Watts/Area' method,
+    applying fraction fields as well.
+    """
+    existing = [
+        eq for eq in idf.idfobjects["ELECTRICEQUIPMENT"]
+        if eq.Name.upper() == obj_name.upper()
+    ]
+    if existing:
+        equip_obj = existing[0]
+    else:
+        equip_obj = idf.newidfobject("ELECTRICEQUIPMENT", Name=obj_name)
+
+    if hasattr(equip_obj, "Zone_or_ZoneList_or_Space_or_SpaceList_Name"):
+        equip_obj.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zone_or_zonelist
+    else:
+        equip_obj.Zone_or_ZoneList_Name = zone_or_zonelist
+
+    equip_obj.Design_Level_Calculation_Method = "Watts/Area"
+    equip_obj.Watts_per_Zone_Floor_Area = equip_wm2
+
+    if hasattr(equip_obj, "Fraction_Radiant"):
+        equip_obj.Fraction_Radiant = frac_radiant
+    if hasattr(equip_obj, "Fraction_Lost"):
+        equip_obj.Fraction_Lost = frac_lost
+    # if older IDD uses e.g. Fraction_Visible for equip, you can set it here as well
+
+    return equip_obj
+
+
+##############################################################################
+# 2) APPLY OBJECT-LEVEL ELECTRIC PARAMETERS (Optional)
+##############################################################################
+
+def apply_object_level_elec(idf, df_lighting):
+    """
+    This approach reads from a DataFrame like `assigned_lighting.csv` row by row,
+    where each row has:
+       ogc_fid, object_name, param_name, assigned_value, min_val, max_val
+    For instance:
+       4136730, LIGHTS, lights_wm2, 10, 10, 10
+       4136730, ELECTRICEQUIPMENT, parasitic_wm2, 0.285, 0.285, 0.285
+       4136730, LIGHTS_SCHEDULE, tD, 2000, 2000, 2000
+       ...
+       4136730, LIGHTS.Fraction_Radiant, lights_fraction_radiant, 0.7, 0.7, 0.7
+       ...
+
+    We interpret object_name (e.g. "LIGHTS") as the type of object,
+    param_name (e.g. "lights_wm2") as which field to set,
+    assigned_value as the final numeric or string value.
+
+    Then we create/update that object in the IDF. 
+    This is a more direct "object-based" approach, 
+    rather than a single building-level dictionary.
+
+    Steps:
+      1) group df_lighting by object_name
+      2) for each object_name, parse the rows to see which param_name => assigned_value
+      3) create or update IDF object with those fields
+    """
+    object_groups = df_lighting.groupby("object_name")
+
+    for obj_name, group_df in object_groups:
+        print(f"[ELEC] Handling object_name='{obj_name}' with {len(group_df)} rows.")
+        # We'll accumulate a local dictionary of {param_name => assigned_value}
+        local_params = {}
+        for row in group_df.itertuples():
+            p_name = row.param_name
+            val    = row.assigned_value
+            # Attempt float cast if numeric
+            try:
+                val_float = float(val)
+                local_params[p_name] = val_float
+            except:
+                # might be a string
+                local_params[p_name] = val
+
+        # Decide how to create or update the IDF object
+        if obj_name.upper() == "LIGHTS":
+            # Typically a single object? 
+            # Maybe we create or update an object named "LIGHTS"
+            # This is somewhat unorthodox because usually you name objects more specifically.
+            _update_generic_lights_obj(idf, obj_name="LIGHTS", param_dict=local_params)
+
+        elif obj_name.upper() == "ELECTRICEQUIPMENT":
+            _update_generic_equip_obj(idf, obj_name="ELECTRICEQUIPMENT", param_dict=local_params)
+
+        elif "SCHEDULE" in obj_name.upper():
+            # e.g. "LIGHTS_SCHEDULE"
+            # parse param_name => "tD", "tN" => do something for schedule
+            # or skip if not needed
+            pass
+
+        elif obj_name.upper().startswith("LIGHTS.FRACTION_"):
+            # This might indicate you're referencing fraction fields on the LIGHTS object
+            # If so, handle it in your logic or combined approach. 
+            # The CSV approach suggests you're storing "lights_fraction_radiant" in param_name,
+            # assigned_value=0.7. 
+            pass
+
+        else:
+            print(f"[ELEC WARNING] Unknown object_name='{obj_name}', skipping.")
+
+
+def _update_generic_lights_obj(idf, obj_name, param_dict):
+    """
+    Example of updating a single 'LIGHTS' object named `obj_name` in the IDF,
+    using the fields in `param_dict` (e.g. "lights_wm2", "lights_fraction_radiant", etc.).
+    """
+    # Find or create the LIGHTS object
+    existing = [
+        lt for lt in idf.idfobjects["LIGHTS"]
+        if lt.Name.upper() == obj_name.upper()
+    ]
+    if existing:
+        lights_obj = existing[0]
+    else:
+        lights_obj = idf.newidfobject("LIGHTS", Name=obj_name)
+
+    # param_dict might contain keys like "lights_wm2", "lights_fraction_radiant"...
+    if "lights_wm2" in param_dict:
+        val = float(param_dict["lights_wm2"])
+        lights_obj.Design_Level_Calculation_Method = "Watts/Area"
+        lights_obj.Watts_per_Zone_Floor_Area = val
+
+    if "lights_fraction_radiant" in param_dict:
+        lights_obj.Fraction_Radiant = float(param_dict["lights_fraction_radiant"])
+
+    if "lights_fraction_visible" in param_dict:
+        lights_obj.Fraction_Visible = float(param_dict["lights_fraction_visible"])
+
+    if "lights_fraction_replaceable" in param_dict and hasattr(lights_obj, "Fraction_Replaceable"):
+        lights_obj.Fraction_Replaceable = float(param_dict["lights_fraction_replaceable"])
+
+    # If there's a schedule param, e.g. "schedule_name" or "lights_sched"
+    # you can parse it similarly
+    # For example:
+    # if "lights_schedule_name" in param_dict:
+    #     lights_obj.Schedule_Name = param_dict["lights_schedule_name"]
+
+
+def _update_generic_equip_obj(idf, obj_name, param_dict):
+    """
+    Example of updating a single 'ELECTRICEQUIPMENT' object.
+    param_dict might have "parasitic_wm2", "equip_fraction_radiant", etc.
+    """
+    existing = [
+        eq for eq in idf.idfobjects["ELECTRICEQUIPMENT"]
+        if eq.Name.upper() == obj_name.upper()
+    ]
+    if existing:
+        equip_obj = existing[0]
+    else:
+        equip_obj = idf.newidfobject("ELECTRICEQUIPMENT", Name=obj_name)
+
+    if "parasitic_wm2" in param_dict:
+        val = float(param_dict["parasitic_wm2"])
+        equip_obj.Design_Level_Calculation_Method = "Watts/Area"
+        equip_obj.Watts_per_Zone_Floor_Area = val
+
+    if "equip_fraction_radiant" in param_dict and hasattr(equip_obj, "Fraction_Radiant"):
+        equip_obj.Fraction_Radiant = float(param_dict["equip_fraction_radiant"])
+
+    if "equip_fraction_lost" in param_dict and hasattr(equip_obj, "Fraction_Lost"):
+        equip_obj.Fraction_Lost = float(param_dict["equip_fraction_lost"])
 
   --- File Contents End ---
 
-  File: assigned_hvac_zones.csv
+  File: fenez_functions.py
   --- File Contents Start ---
-ogc_fid,zone_name,param_name,param_value
-4136730,Zone1,hvac_object_name,Zone1 Ideal Loads
-4136730,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136730,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136730,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136730,Zone1,thermostat_name,Zone1 CONTROLS
-4136730,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
-4136730,Zone2,hvac_object_name,Zone2 Ideal Loads
-4136730,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136730,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136730,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136730,Zone2,thermostat_name,Zone2 CONTROLS
-4136730,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS
-4136730,Zone3,hvac_object_name,Zone3 Ideal Loads
-4136730,Zone3,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136730,Zone3,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136730,Zone3,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136730,Zone3,thermostat_name,Zone3 CONTROLS
-4136730,Zone3,thermostat_dualsetpoint_name,Zone3 SETPOINTS
-4136732,Zone1_FrontPerimeter,hvac_object_name,Zone1_FrontPerimeter Ideal Loads
-4136732,Zone1_FrontPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone1_FrontPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136732,Zone1_FrontPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136732,Zone1_FrontPerimeter,thermostat_name,Zone1_FrontPerimeter CONTROLS
-4136732,Zone1_FrontPerimeter,thermostat_dualsetpoint_name,Zone1_FrontPerimeter SETPOINTS
-4136732,Zone1_RightPerimeter,hvac_object_name,Zone1_RightPerimeter Ideal Loads
-4136732,Zone1_RightPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone1_RightPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136732,Zone1_RightPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136732,Zone1_RightPerimeter,thermostat_name,Zone1_RightPerimeter CONTROLS
-4136732,Zone1_RightPerimeter,thermostat_dualsetpoint_name,Zone1_RightPerimeter SETPOINTS
-4136732,Zone1_RearPerimeter,hvac_object_name,Zone1_RearPerimeter Ideal Loads
-4136732,Zone1_RearPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone1_RearPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136732,Zone1_RearPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136732,Zone1_RearPerimeter,thermostat_name,Zone1_RearPerimeter CONTROLS
-4136732,Zone1_RearPerimeter,thermostat_dualsetpoint_name,Zone1_RearPerimeter SETPOINTS
-4136732,Zone1_LeftPerimeter,hvac_object_name,Zone1_LeftPerimeter Ideal Loads
-4136732,Zone1_LeftPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone1_LeftPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136732,Zone1_LeftPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136732,Zone1_LeftPerimeter,thermostat_name,Zone1_LeftPerimeter CONTROLS
-4136732,Zone1_LeftPerimeter,thermostat_dualsetpoint_name,Zone1_LeftPerimeter SETPOINTS
-4136732,Zone1_Core,hvac_object_name,Zone1_Core Ideal Loads
-4136732,Zone1_Core,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone1_Core,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136732,Zone1_Core,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136732,Zone1_Core,thermostat_name,Zone1_Core CONTROLS
-4136732,Zone1_Core,thermostat_dualsetpoint_name,Zone1_Core SETPOINTS
-4136732,Zone2_FrontPerimeter,hvac_object_name,Zone2_FrontPerimeter Ideal Loads
-4136732,Zone2_FrontPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone2_FrontPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136732,Zone2_FrontPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136732,Zone2_FrontPerimeter,thermostat_name,Zone2_FrontPerimeter CONTROLS
-4136732,Zone2_FrontPerimeter,thermostat_dualsetpoint_name,Zone2_FrontPerimeter SETPOINTS
-4136732,Zone2_RightPerimeter,hvac_object_name,Zone2_RightPerimeter Ideal Loads
-4136732,Zone2_RightPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone2_RightPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136732,Zone2_RightPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136732,Zone2_RightPerimeter,thermostat_name,Zone2_RightPerimeter CONTROLS
-4136732,Zone2_RightPerimeter,thermostat_dualsetpoint_name,Zone2_RightPerimeter SETPOINTS
-4136732,Zone2_RearPerimeter,hvac_object_name,Zone2_RearPerimeter Ideal Loads
-4136732,Zone2_RearPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone2_RearPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136732,Zone2_RearPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136732,Zone2_RearPerimeter,thermostat_name,Zone2_RearPerimeter CONTROLS
-4136732,Zone2_RearPerimeter,thermostat_dualsetpoint_name,Zone2_RearPerimeter SETPOINTS
-4136732,Zone2_LeftPerimeter,hvac_object_name,Zone2_LeftPerimeter Ideal Loads
-4136732,Zone2_LeftPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone2_LeftPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136732,Zone2_LeftPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136732,Zone2_LeftPerimeter,thermostat_name,Zone2_LeftPerimeter CONTROLS
-4136732,Zone2_LeftPerimeter,thermostat_dualsetpoint_name,Zone2_LeftPerimeter SETPOINTS
-4136732,Zone2_Core,hvac_object_name,Zone2_Core Ideal Loads
-4136732,Zone2_Core,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone2_Core,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136732,Zone2_Core,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136732,Zone2_Core,thermostat_name,Zone2_Core CONTROLS
-4136732,Zone2_Core,thermostat_dualsetpoint_name,Zone2_Core SETPOINTS
-4136730,Zone1,hvac_object_name,Zone1 Ideal Loads
-4136730,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136730,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136730,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136730,Zone1,thermostat_name,Zone1 CONTROLS
-4136730,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
-4136730,Zone2,hvac_object_name,Zone2 Ideal Loads
-4136730,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136730,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136730,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136730,Zone2,thermostat_name,Zone2 CONTROLS
-4136730,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS
-4136730,Zone3,hvac_object_name,Zone3 Ideal Loads
-4136730,Zone3,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136730,Zone3,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136730,Zone3,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136730,Zone3,thermostat_name,Zone3 CONTROLS
-4136730,Zone3,thermostat_dualsetpoint_name,Zone3 SETPOINTS
-4136732,Zone1_FrontPerimeter,hvac_object_name,Zone1_FrontPerimeter Ideal Loads
-4136732,Zone1_FrontPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone1_FrontPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136732,Zone1_FrontPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136732,Zone1_FrontPerimeter,thermostat_name,Zone1_FrontPerimeter CONTROLS
-4136732,Zone1_FrontPerimeter,thermostat_dualsetpoint_name,Zone1_FrontPerimeter SETPOINTS
-4136732,Zone1_RightPerimeter,hvac_object_name,Zone1_RightPerimeter Ideal Loads
-4136732,Zone1_RightPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone1_RightPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136732,Zone1_RightPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136732,Zone1_RightPerimeter,thermostat_name,Zone1_RightPerimeter CONTROLS
-4136732,Zone1_RightPerimeter,thermostat_dualsetpoint_name,Zone1_RightPerimeter SETPOINTS
-4136732,Zone1_RearPerimeter,hvac_object_name,Zone1_RearPerimeter Ideal Loads
-4136732,Zone1_RearPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone1_RearPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136732,Zone1_RearPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136732,Zone1_RearPerimeter,thermostat_name,Zone1_RearPerimeter CONTROLS
-4136732,Zone1_RearPerimeter,thermostat_dualsetpoint_name,Zone1_RearPerimeter SETPOINTS
-4136732,Zone1_LeftPerimeter,hvac_object_name,Zone1_LeftPerimeter Ideal Loads
-4136732,Zone1_LeftPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone1_LeftPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136732,Zone1_LeftPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136732,Zone1_LeftPerimeter,thermostat_name,Zone1_LeftPerimeter CONTROLS
-4136732,Zone1_LeftPerimeter,thermostat_dualsetpoint_name,Zone1_LeftPerimeter SETPOINTS
-4136732,Zone1_Core,hvac_object_name,Zone1_Core Ideal Loads
-4136732,Zone1_Core,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone1_Core,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136732,Zone1_Core,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136732,Zone1_Core,thermostat_name,Zone1_Core CONTROLS
-4136732,Zone1_Core,thermostat_dualsetpoint_name,Zone1_Core SETPOINTS
-4136732,Zone2_FrontPerimeter,hvac_object_name,Zone2_FrontPerimeter Ideal Loads
-4136732,Zone2_FrontPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone2_FrontPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136732,Zone2_FrontPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136732,Zone2_FrontPerimeter,thermostat_name,Zone2_FrontPerimeter CONTROLS
-4136732,Zone2_FrontPerimeter,thermostat_dualsetpoint_name,Zone2_FrontPerimeter SETPOINTS
-4136732,Zone2_RightPerimeter,hvac_object_name,Zone2_RightPerimeter Ideal Loads
-4136732,Zone2_RightPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone2_RightPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136732,Zone2_RightPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136732,Zone2_RightPerimeter,thermostat_name,Zone2_RightPerimeter CONTROLS
-4136732,Zone2_RightPerimeter,thermostat_dualsetpoint_name,Zone2_RightPerimeter SETPOINTS
-4136732,Zone2_RearPerimeter,hvac_object_name,Zone2_RearPerimeter Ideal Loads
-4136732,Zone2_RearPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone2_RearPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136732,Zone2_RearPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136732,Zone2_RearPerimeter,thermostat_name,Zone2_RearPerimeter CONTROLS
-4136732,Zone2_RearPerimeter,thermostat_dualsetpoint_name,Zone2_RearPerimeter SETPOINTS
-4136732,Zone2_LeftPerimeter,hvac_object_name,Zone2_LeftPerimeter Ideal Loads
-4136732,Zone2_LeftPerimeter,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone2_LeftPerimeter,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136732,Zone2_LeftPerimeter,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136732,Zone2_LeftPerimeter,thermostat_name,Zone2_LeftPerimeter CONTROLS
-4136732,Zone2_LeftPerimeter,thermostat_dualsetpoint_name,Zone2_LeftPerimeter SETPOINTS
-4136732,Zone2_Core,hvac_object_name,Zone2_Core Ideal Loads
-4136732,Zone2_Core,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone2_Core,heating_setpoint_schedule,ZONE HEATING SETPOINTS
-4136732,Zone2_Core,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
-4136732,Zone2_Core,thermostat_name,Zone2_Core CONTROLS
-4136732,Zone2_Core,thermostat_dualsetpoint_name,Zone2_Core SETPOINTS
+# fenez_functions.py
+
+import pandas as pd
+import math
+import random
+
+def apply_object_level_fenez(idf, csv_path):
+    """
+    Reads 'structured_fenez_params.csv' from csv_path, which has columns:
+       - ogc_fid
+       - sub_key
+       - eplus_object_type
+       - eplus_object_name
+       - param_name
+       - param_value
+       - param_min
+       - param_max
+    Groups the data by (eplus_object_type, eplus_object_name) and updates or creates
+    the corresponding IDF objects. Then sets param_name => param_value.
+
+    Special logic:
+      - If param_name is 'R_value' or 'U_value', we recalc thickness/conductivity
+        or thermal_resistance for (MATERIAL or MATERIAL:NOMASS).
+      - For window material fields (WINDOWMATERIAL:GLAZING, etc.), we map short
+        param_name => the actual IDF field.
+
+    Usage example:
+      apply_object_level_fenez(my_idf, "output/assigned/structured_fenez_params.csv")
+    """
+    df = pd.read_csv(csv_path)
+
+    # 1) Group by object type & name
+    group_cols = ["eplus_object_type", "eplus_object_name"]
+    grouped = df.groupby(group_cols, dropna=False)
+
+    for (obj_type, obj_name), group_df in grouped:
+        if not isinstance(obj_type, str) or not isinstance(obj_name, str):
+            # If either is blank or NaN, skip
+            continue
+
+        obj_type_upper = obj_type.upper().strip()
+        obj_name_str   = obj_name.strip()
+
+        if not obj_type_upper or not obj_name_str:
+            continue
+
+        # 2) Attempt to find or create the IDF object
+        if obj_type_upper not in idf.idfobjects:
+            # Possibly handle unknown IDF object types here
+            print(f"[FENEZ WARNING] IDF does not have object type='{obj_type_upper}'. Skipping...")
+            continue
+
+        target_obj = _get_or_create_idf_object(idf, obj_type_upper, obj_name_str)
+        # We'll track data needed for R_value or U_value recalculation
+        mat_meta = {
+            "obj_type": obj_type_upper,
+            "thickness": None,
+            "conductivity": None,
+            "thermal_resistance": None
+        }
+        pending_rvalue = None
+        pending_uvalue = None
+
+        # 3) Iterate through each param row in the group
+        for row in group_df.itertuples():
+            p_name = str(row.param_name).strip()
+            p_val  = row.param_value
+
+            # Attempt numeric
+            try:
+                val_num = float(p_val)
+                is_number = True
+            except (ValueError, TypeError):
+                val_num = p_val
+                is_number = False
+
+            # If p_name is "R_value" or "U_value", store temporarily
+            if p_name.lower() == "r_value":
+                pending_rvalue = val_num
+                continue
+            elif p_name.lower() == "u_value":
+                pending_uvalue = val_num
+                continue
+
+            # If p_name is "Thickness", "Conductivity", or "Thermal_Resistance",
+            # store in mat_meta so we can use it after we see an R_value or U_value
+            if p_name.lower() in ["thickness", "conductivity", "thermal_resistance"]:
+                if p_name.lower() == "thickness":
+                    mat_meta["thickness"] = val_num
+                elif p_name.lower() == "conductivity":
+                    mat_meta["conductivity"] = val_num
+                elif p_name.lower() == "thermal_resistance":
+                    mat_meta["thermal_resistance"] = val_num
+
+            # 4) Match the CSV param_name to the actual IDF field
+            field_name = _map_param_to_idf_field(target_obj, p_name)
+            if not field_name:
+                # If no direct field, skip or warn
+                print(f"[FENEZ WARNING] No matched field for '{p_name}' in {obj_type_upper} '{obj_name_str}'")
+                continue
+
+            # 5) Set the field
+            setattr(target_obj, field_name, val_num)
+
+        # 6) Handle R_value / U_value if present
+        if (pending_rvalue is not None) or (pending_uvalue is not None):
+            _handle_rvalue_or_uvalue(target_obj, mat_meta, pending_rvalue, pending_uvalue)
+
+        print(f"[FENEZ] Updated {obj_type_upper} => '{obj_name_str}' with {len(group_df)} param rows.")
+
+
+def _get_or_create_idf_object(idf, obj_type, name_str):
+    """
+    Finds or creates a new object in 'idf' of type obj_type
+    (e.g. "MATERIAL", "WINDOWMATERIAL:GLAZING"), with Name == name_str.
+    """
+    existing_objs = [
+        o for o in idf.idfobjects[obj_type]
+        if hasattr(o, "Name") and str(o.Name).lower() == name_str.lower()
+    ]
+    if existing_objs:
+        return existing_objs[0]
+    else:
+        new_obj = idf.newidfobject(obj_type)
+        if hasattr(new_obj, "Name"):
+            new_obj.Name = name_str
+        return new_obj
+
+
+def _map_param_to_idf_field(eplus_obj, param_name):
+    """
+    Maps CSV param_name => actual IDF field name on eplus_obj.
+    If param_name is recognized from a known dictionary, return that mapped name.
+    If param_name matches an attribute exactly, return that.
+    Otherwise None.
+    """
+    # Example mapping dictionary for window fields:
+    field_map = {
+        "solar_transmittance": "Solar_Transmittance_at_Normal_Incidence",
+        "front_solar_reflectance": "Front_Side_Solar_Reflectance_at_Normal_Incidence",
+        "back_solar_reflectance":  "Back_Side_Solar_Reflectance_at_Normal_Incidence",
+        "visible_transmittance":   "Visible_Transmittance_at_Normal_Incidence",
+        "front_visible_reflectance": "Front_Side_Visible_Reflectance_at_Normal_Incidence",
+        "back_visible_reflectance":  "Back_Side_Visible_Reflectance_at_Normal_Incidence",
+        "ir_transmittance": "Infrared_Transmittance_at_Normal_Incidence",
+        "front_ir_emissivity": "Front_Side_Infrared_Hemispherical_Emissivity",
+        "back_ir_emissivity":  "Back_Side_Infrared_Hemispherical_Emissivity",
+        "conductivity": "Conductivity",  # example
+        "dirt_correction_factor": "Dirt_Correction_Factor_for_Solar_and_Visible_Transmittance",
+    }
+
+    pn_lower = param_name.lower()
+
+    if pn_lower in field_map:
+        # If the mapped field is actually present on eplus_obj, use it
+        mapped = field_map[pn_lower]
+        if hasattr(eplus_obj, mapped):
+            return mapped
+        else:
+            return None
+
+    # If param_name matches an IDF field exactly (case-sensitive)
+    if hasattr(eplus_obj, param_name):
+        return param_name
+
+    # If param_name differs by case:
+    #   We can loop eplus_obj.fieldnames or eplus_obj.fieldkeys
+    #   But let's keep it simple for this example
+    # e.g. if param_name="Roughness" but the IDF object has "Roughness" => we can do direct match
+    #   or if param_name="roughness" we might do an upper-lower approach.
+    # In a real scenario, you'd do something like:
+    # field_candidates = [f for f in eplus_obj.fieldnames if f.lower()==param_name.lower()]
+    # if field_candidates:
+    #     return field_candidates[0]
+    # else:
+    #     return None
+
+    # We'll attempt a naive approach for this example:
+    # check each field in eplus_obj.fieldnames ignoring case
+    if hasattr(eplus_obj, "fieldnames"):
+        for fn in eplus_obj.fieldnames:
+            if fn.lower() == pn_lower:
+                return fn
+
+    return None
+
+
+def _handle_rvalue_or_uvalue(eplus_obj, mat_meta, r_val, u_val):
+    """
+    If we have an R_value or U_value for a MATERIAL or MATERIAL:NOMASS,
+    recalc the conductivity or Thermal_Resistance in eplus_obj accordingly.
+
+    mat_meta = {
+        "obj_type": "MATERIAL" or "MATERIAL:NOMASS",
+        "thickness": float or None,
+        "conductivity": float or None,
+        "thermal_resistance": float or None
+    }
+    """
+    if mat_meta["obj_type"].upper() in ["MATERIAL", "MATERIAL:NOMASS"]:
+        # for MATERIAL => conduction = thickness / R_value or thickness * U_value
+        if mat_meta["obj_type"].upper() == "MATERIAL":
+            thick = mat_meta["thickness"]
+            # if R_value is provided
+            if r_val is not None and r_val != 0 and thick is not None:
+                new_cond = float(thick) / float(r_val)
+                if hasattr(eplus_obj, "Conductivity"):
+                    eplus_obj.Conductivity = new_cond
+                    print(f"    -> Recalc Conductivity from R_value={r_val}, thickness={thick:.4f} => {new_cond:.4f}")
+            # if U_value is provided
+            elif u_val is not None and u_val != 0 and thick is not None:
+                new_cond = float(thick) * float(u_val)
+                if hasattr(eplus_obj, "Conductivity"):
+                    eplus_obj.Conductivity = new_cond
+                    print(f"    -> Recalc Conductivity from U_value={u_val}, thickness={thick:.4f} => {new_cond:.4f}")
+
+        # for MATERIAL:NOMASS => Thermal_Resistance = R_value or 1 / U_value
+        elif mat_meta["obj_type"].upper() == "MATERIAL:NOMASS":
+            if r_val is not None and r_val != 0:
+                if hasattr(eplus_obj, "Thermal_Resistance"):
+                    eplus_obj.Thermal_Resistance = float(r_val)
+                    print(f"    -> Set Thermal_Resistance={r_val} (from R_value)")
+            elif u_val is not None and u_val != 0:
+                if hasattr(eplus_obj, "Thermal_Resistance"):
+                    new_r = 1.0 / float(u_val)
+                    eplus_obj.Thermal_Resistance = new_r
+                    print(f"    -> Set Thermal_Resistance={new_r:.4f} (from U_value={u_val})")
+    else:
+        # for window materials or other object types => skip
+        pass
+
 
   --- File Contents End ---
 
-  File: assigned_lighting.csv
+  File: fenez_functions2.py
   --- File Contents Start ---
-ogc_fid,object_name,param_name,assigned_value,min_val,max_val
-4136730,LIGHTS,lights_wm2,10.0,10.0,10.0
-4136730,ELECTRICEQUIPMENT,parasitic_wm2,0.285,0.285,0.285
-4136730,LIGHTS_SCHEDULE,tD,2000.0,2000.0,2000.0
-4136730,LIGHTS_SCHEDULE,tN,300.0,300.0,300.0
-4136730,LIGHTS.Fraction_Radiant,lights_fraction_radiant,0.7,0.7,0.7
-4136730,LIGHTS.Fraction_Visible,lights_fraction_visible,0.2,0.2,0.2
-4136730,LIGHTS.Fraction_Replaceable,lights_fraction_replaceable,1.0,1.0,1.0
-4136730,ELECTRICEQUIPMENT.Fraction_Radiant,equip_fraction_radiant,0.0,0.0,0.0
-4136730,ELECTRICEQUIPMENT.Fraction_Lost,equip_fraction_lost,1.0,1.0,1.0
-4136732,LIGHTS,lights_wm2,10.0,10.0,10.0
-4136732,ELECTRICEQUIPMENT,parasitic_wm2,0.285,0.285,0.285
-4136732,LIGHTS_SCHEDULE,tD,2000.0,2000.0,2000.0
-4136732,LIGHTS_SCHEDULE,tN,300.0,300.0,300.0
-4136732,LIGHTS.Fraction_Radiant,lights_fraction_radiant,0.7,0.7,0.7
-4136732,LIGHTS.Fraction_Visible,lights_fraction_visible,0.2,0.2,0.2
-4136732,LIGHTS.Fraction_Replaceable,lights_fraction_replaceable,1.0,1.0,1.0
-4136732,ELECTRICEQUIPMENT.Fraction_Radiant,equip_fraction_radiant,0.0,0.0,0.0
-4136732,ELECTRICEQUIPMENT.Fraction_Lost,equip_fraction_lost,1.0,1.0,1.0
+# fenez_functions.py
+
+"""
+This module provides functions for applying fenestration & envelope parameters 
+to an EnergyPlus IDF, analogous to HVAC or Vent modules.
+
+It offers:
+  1) apply_building_level_fenez(...) => calls update_construction_materials, 
+     assign_constructions_to_surfaces, add_fenestration, etc.
+  2) apply_object_level_fenez(...)  => advanced approach that processes 
+     'structured_fenez_params.csv' row by row, updating IDF objects directly.
+"""
+
+import pandas as pd
+from idf_objects.fenez.materials import (
+    update_construction_materials,
+    assign_constructions_to_surfaces
+)
+from idf_objects.fenez.fenestration import add_fenestration
+
+##############################################################################
+# 1) BUILDING-LEVEL FENESTRATION
+##############################################################################
+
+def apply_building_level_fenez(
+    idf,
+    building_row,
+    param_dict=None,
+    scenario="scenario1",
+    calibration_stage="pre_calibration",
+    strategy="A",
+    random_seed=None,
+    user_config_fenez=None,
+    assigned_fenez_log=None,
+    # controlling whether we create windows from WWR, etc.
+    add_windows=True,
+    use_computed_wwr=False,
+    include_doors_in_wwr=False
+):
+    """
+    A high-level function to:
+      1) Generate new Materials & Constructions from fenestration data 
+         (using update_construction_materials).
+      2) Assign those Constructions to surfaces (assign_constructions_to_surfaces).
+      3) Optionally call add_fenestration(...) to set WWR or create new windows.
+
+    param_dict: 
+      - If you already have a dictionary of final picks for R-values, U-values, 
+        wwr, or material lookups, you can pass it via user_config_fenez. 
+        (We typically do so, or rely on the building_row’s default data 
+         plus any scenario-based logic.)
+
+    building_row:
+      - A dictionary with fields like "ogc_fid", "building_function", etc. 
+      - This is used by `update_construction_materials` to find age_range, etc.
+
+    assigned_fenez_log:
+      - If provided, the final picks (R-values, thickness, conduction, WWR, etc.) 
+        are logged under assigned_fenez_log[building_id].
+
+    add_windows:
+      - If True, we call add_fenestration(...) to create new FENESTRATIONSURFACE:DETAILED 
+        in the IDF (using `geomeppy.IDF.set_wwr`).
+      - If False, we skip that part.
+
+    use_computed_wwr, include_doors_in_wwr:
+      - Passed to add_fenestration(...) for computing WWR from sub-element areas 
+        or including door area in the fenestration ratio.
+
+    Returns:
+      construction_map: dict mapping sub-element name => construction name 
+                       (for reference if needed).
+    """
+
+    # 1) Update constructions & materials
+    construction_map = update_construction_materials(
+        idf=idf,
+        building_row=building_row,
+        building_index=None,
+        scenario=scenario,
+        calibration_stage=calibration_stage,
+        strategy=strategy,
+        random_seed=random_seed,
+        user_config_fenez=user_config_fenez,  # param_dict could be merged here
+        assigned_fenez_log=assigned_fenez_log
+    )
+
+    # 2) Assign them to surfaces
+    assign_constructions_to_surfaces(idf, construction_map)
+
+    # 3) Optionally add fenestration (WWR)
+    if add_windows:
+        add_fenestration(
+            idf=idf,
+            building_row=building_row,
+            scenario=scenario,
+            calibration_stage=calibration_stage,
+            strategy=strategy,
+            random_seed=random_seed,
+            user_config_fenez=user_config_fenez,
+            assigned_fenez_log=assigned_fenez_log,
+            use_computed_wwr=use_computed_wwr,
+            include_doors_in_wwr=include_doors_in_wwr
+        )
+
+    return construction_map
+
+
+##############################################################################
+# 2) OBJECT-LEVEL FENESTRATION (Optional)
+##############################################################################
+
+def apply_object_level_fenez(idf, df_fenez):
+    """
+    Reads 'structured_fenez_params.csv' row by row (like 
+    apply_zone_level_vent or apply_object_level_elec). Each row might specify:
+
+      - ogc_fid
+      - sub_key (like "top_opq", "exterior_wall_opq", "exterior_wall_win", etc.)
+      - eplus_object_type (MATERIAL, MATERIAL:NOMASS, WINDOWMATERIAL:GLAZING, CONSTRUCTION, ...)
+      - eplus_object_name  (the intended name to create or update)
+      - param_name         (Thickness, Conductivity, R_value, U_value, roughness, etc.)
+      - param_value
+      - param_min, param_max
+
+    Then we can do a grouping approach:
+      1) group by (eplus_object_type, eplus_object_name)
+      2) create or update that object in the IDF
+      3) set param_name => param_value accordingly
+
+    This is a more direct “row-based” approach. 
+    *Use with caution*, as some fields like "R_value" are computed 
+    rather than direct IDF fields. But you can adapt the logic 
+    to recalc thickness or conductivity as needed.
+
+    Steps:
+      - group df_fenez by eplus_object_type + eplus_object_name
+      - for each group, create or find the object in IDF
+      - for each param_name => param_value, set the corresponding field 
+        (or do a special logic if it’s “R_value” => recalc conductivity)
+    """
+
+    group_cols = ["eplus_object_type", "eplus_object_name"]
+    grouped = df_fenez.groupby(group_cols)
+
+    for (obj_type, obj_name), group_df in grouped:
+        print(f"[FENEZ] Handling {obj_type} => '{obj_name}' with {len(group_df)} rows.")
+
+        # 1) Attempt to find or create the object in IDF
+        obj_type_upper = obj_type.upper()
+        if obj_type_upper not in idf.idfobjects:
+            # If your IDF doesn't have that object type, skip or handle
+            print(f"[FENEZ WARNING] IDF has no object type '{obj_type_upper}', skipping.")
+            continue
+
+        # search by Name
+        existing_obj = [
+            o for o in idf.idfobjects[obj_type_upper]
+            if hasattr(o, "Name") and o.Name.upper() == obj_name.upper()
+        ]
+        if existing_obj:
+            eplus_obj = existing_obj[0]
+        else:
+            # create new
+            eplus_obj = idf.newidfobject(obj_type_upper)
+            if hasattr(eplus_obj, "Name"):
+                eplus_obj.Name = obj_name
+            else:
+                print(f"[FENEZ WARNING] {obj_type_upper} has no 'Name' field? object creation is partial.")
+                # continue or skip
+
+        # 2) row by row => param_name => param_value
+        for row in group_df.itertuples():
+            p_name = row.param_name
+            val    = row.param_value
+
+            # example: if param_name == "Thickness", we set eplus_obj.Thickness = val
+            # But if param_name is "R_value", we might recalc conductivity or Thermal_Resistance
+            try:
+                val_float = float(val)
+            except (ValueError, TypeError):
+                val_float = None  # might be a string
+
+            # A simple approach:
+            if p_name.lower() in ["roughness", "optical_data_type", "solar_diffusing"]:
+                # likely a string
+                if hasattr(eplus_obj, p_name):
+                    setattr(eplus_obj, p_name, str(val))
+            elif p_name.lower() in ["thickness", "conductivity", "density", "specific_heat",
+                                    "thermal_resistance", "solar_transmittance", 
+                                    "front_solar_reflectance", "back_solar_reflectance",
+                                    "visible_transmittance", "front_visible_reflectance",
+                                    "back_visible_reflectance", "front_ir_emissivity",
+                                    "back_ir_emissivity", "dirt_correction_factor"]:
+                # numeric
+                field_name = _match_field_name(eplus_obj, p_name)  # optional helper
+                if field_name:
+                    setattr(eplus_obj, field_name, val_float)
+            elif p_name.lower() in ["r_value", "u_value"]:
+                # these are computed fields, not direct. 
+                # you'd need to recalc thickness or conduction. 
+                # For brevity, we skip or do partial logic:
+                pass
+            else:
+                # fallback
+                field_name = _match_field_name(eplus_obj, p_name)
+                if field_name:
+                    # try float or string
+                    setattr(eplus_obj, field_name, val_float if val_float is not None else val)
+                else:
+                    print(f"[FENEZ WARNING] No direct field match for param_name='{p_name}'. Skipping.")
+
+        print(f"[FENEZ] Updated {obj_type}=>'{obj_name}' with new fields.")
+
+
+def _match_field_name(eplus_obj, param_name):
+    """
+    A small helper to guess the correct IDF field name from param_name 
+    if there's a mismatch. If your param_name exactly matches the IDF field, 
+    you can skip this step. If you want more advanced mappings 
+    (like 'Front_Solar_Reflectance' => 'Front_Side_Solar_Reflectance_at_Normal_Incidence'), 
+    code it here.
+    """
+
+    # e.g. if param_name=='Front_Solar_Reflectance', we match it to 
+    # "Front_Side_Solar_Reflectance_at_Normal_Incidence"
+    # This can be a dictionary approach:
+    map_dict = {
+        "front_solar_reflectance": "Front_Side_Solar_Reflectance_at_Normal_Incidence",
+        "back_solar_reflectance":  "Back_Side_Solar_Reflectance_at_Normal_Incidence",
+        "front_visible_reflectance": "Front_Side_Visible_Reflectance_at_Normal_Incidence",
+        "back_visible_reflectance":  "Back_Side_Visible_Reflectance_at_Normal_Incidence",
+        "front_ir_emissivity": "Front_Side_Infrared_Hemispherical_Emissivity",
+        "back_ir_emissivity":  "Back_Side_Infrared_Hemispherical_Emissivity",
+        "solar_transmittance": "Solar_Transmittance_at_Normal_Incidence",
+        "visible_transmittance": "Visible_Transmittance_at_Normal_Incidence",
+        "dirt_correction_factor": "Dirt_Correction_Factor_for_Solar_and_Visible_Transmittance"
+        # etc.
+    }
+
+    p_lower = param_name.lower()
+    if p_lower in map_dict:
+        candidate_field = map_dict[p_lower]
+        if hasattr(eplus_obj, candidate_field):
+            return candidate_field
+        else:
+            return None
+
+    # If param_name matches a direct field:
+    if hasattr(eplus_obj, param_name):
+        return param_name
+
+    # fallback => None
+    return None
 
   --- File Contents End ---
 
-  File: assigned_setzone_params.csv
+  File: hvac_functions.py
   --- File Contents Start ---
-ogc_fid,param_name,assigned_value
-4136730,cooling_supply_air_temp,14.139426798457883
-4136730,heating_supply_air_temp,48.100043020890666
-4136730,cooling_supply_air_hr,0.00877502931836912
-4136730,heating_supply_air_hr,0.0037232107381488227
-4136730,cooling_design_air_flow_method,DesignDayWithLimit
-4136730,heating_design_air_flow_method,DesignDay
-4136732,cooling_supply_air_temp,13.278853596915768
-4136732,heating_supply_air_temp,40.12505377611333
-4136732,cooling_supply_air_hr,0.009275029318369118
-4136732,heating_supply_air_hr,0.004223210738148823
-4136732,cooling_design_air_flow_method,DesignDay
-4136732,heating_design_air_flow_method,DesignDay
+# hvac_functions.py
+
+"""
+Contains functions for applying HVAC parameter changes to an IDF,
+such as:
+  1) Updating schedules (heating/cooling setpoints).
+  2) Updating or creating Ideal Loads systems.
+  3) Optionally applying zone-level logic.
+"""
+
+from eppy.modeleditor import IDF  # or adapt for geomeppy
+
+##############################################################################
+# 1) APPLY BUILDING-LEVEL HVAC
+##############################################################################
+
+def apply_building_level_hvac(idf, param_dict):
+    """
+    param_dict is a dictionary of HVAC parameters, for example:
+      {
+        "heating_day_setpoint": 20.3,
+        "heating_night_setpoint": 15.0,
+        "cooling_day_setpoint": 25.0,
+        "cooling_night_setpoint": 27.0,
+        "max_heating_supply_air_temp": 50.0,
+        "min_cooling_supply_air_temp": 13.0,
+        ...
+      }
+
+    This function:
+      1) Updates "ZONE HEATING SETPOINTS" schedule (if day/night keys exist).
+      2) Updates "ZONE COOLING SETPOINTS" schedule (if day/night keys exist).
+      3) For each ZONEHVAC:IDEALLOADSAIRSYSTEM object, sets the
+         Maximum_Heating_Supply_Air_Temperature and Minimum_Cooling_Supply_Air_Temperature
+         if those keys are in param_dict.
+    """
+
+    # (1) Heating Setpoint Schedules
+    if "heating_day_setpoint" in param_dict or "heating_night_setpoint" in param_dict:
+        h_day = param_dict.get("heating_day_setpoint", 20.0)
+        h_night = param_dict.get("heating_night_setpoint", 15.0)
+        _modify_schedule_compact(
+            idf,
+            schedule_name="ZONE HEATING SETPOINTS",
+            day_value=h_day,
+            night_value=h_night,
+            day_start="07:00",
+            day_end="19:00"
+        )
+
+    # (2) Cooling Setpoint Schedules
+    if "cooling_day_setpoint" in param_dict or "cooling_night_setpoint" in param_dict:
+        c_day = param_dict.get("cooling_day_setpoint", 24.0)
+        c_night = param_dict.get("cooling_night_setpoint", 27.0)
+        _modify_schedule_compact(
+            idf,
+            schedule_name="ZONE COOLING SETPOINTS",
+            day_value=c_day,
+            night_value=c_night,
+            day_start="07:00",
+            day_end="19:00"
+        )
+
+    # (3) Ideal Loads Supply Temps
+    max_heat = param_dict.get("max_heating_supply_air_temp", None)
+    min_cool = param_dict.get("min_cooling_supply_air_temp", None)
+    if max_heat is not None or min_cool is not None:
+        _set_ideal_loads_supply_temps_all_zones(
+            idf,
+            max_heating_temp=max_heat,
+            min_cooling_temp=min_cool
+        )
+
+
+##############################################################################
+# Helper: Modify a SCHEDULE:COMPACT
+##############################################################################
+
+def _modify_schedule_compact(
+    idf,
+    schedule_name,
+    day_value,
+    night_value,
+    day_start="07:00",
+    day_end="19:00"
+):
+    """
+    Overwrites a SCHEDULE:COMPACT object named `schedule_name` with three blocks:
+      - Until day_start => night_value
+      - Until day_end   => day_value
+      - Until 24:00     => night_value
+
+    The base IDF must already have a schedule object with that name
+    (unless you're comfortable creating a new one from scratch).
+    If it doesn't exist, we warn and skip.
+    """
+    sched_obj = idf.getobject("SCHEDULE:COMPACT", schedule_name.upper())
+    if not sched_obj:
+        print(f"[WARN] schedule '{schedule_name}' not found; skipping.")
+        return
+
+    # Typically:
+    #  Field_1: "Through: 12/31"
+    #  Field_2: "For: AllDays"
+    #  Field_3: "Until: 07:00,15.0"
+    #  Field_4: "Until: 19:00,20.0"
+    #  Field_5: "Until: 24:00,15.0"
+
+    sched_obj.Field_3 = f"Until: {day_start},{night_value:.2f}"
+    sched_obj.Field_4 = f"Until: {day_end},{day_value:.2f}"
+    sched_obj.Field_5 = f"Until: 24:00,{night_value:.2f}"
+
+    print(f"[INFO] Updated schedule '{schedule_name}' => Day={day_value}, Night={night_value}")
+
+
+##############################################################################
+# Helper: Update IdealLoads for ALL ZONES
+##############################################################################
+
+def _set_ideal_loads_supply_temps_all_zones(idf, max_heating_temp=None, min_cooling_temp=None):
+    """
+    Loops over all 'ZONEHVAC:IDEALLOADSAIRSYSTEM' objects, sets:
+      - Maximum_Heating_Supply_Air_Temperature = max_heating_temp
+      - Minimum_Cooling_Supply_Air_Temperature = min_cooling_temp
+    if provided.
+    """
+    ideal_objs = idf.idfobjects["ZONEHVAC:IDEALLOADSAIRSYSTEM"]
+    for ideal in ideal_objs:
+        if max_heating_temp is not None:
+            ideal.Maximum_Heating_Supply_Air_Temperature = max_heating_temp
+        if min_cooling_temp is not None:
+            ideal.Minimum_Cooling_Supply_Air_Temperature = min_cooling_temp
+
+        print(f"[INFO] Updated '{ideal.Name}' => "
+              f"MaxHeat={max_heating_temp}, MinCool={min_cooling_temp}")
+
+
+##############################################################################
+# 2) OPTIONAL: ZONE-LEVEL
+##############################################################################
+
+def apply_zone_level_hvac(idf, df_zone_sub):
+    """
+    If you want to assign different setpoints or infiltration, etc. on a per-zone basis,
+    parse df_zone_sub rows. Each row might say:
+       zone_name, param_name, assigned_value
+    Then update the IDF's zone-level objects accordingly.
+
+    Currently just a placeholder function. 
+    """
+    pass
 
   --- File Contents End ---
 
-  File: assigned_vent_building.csv
+  File: main_modifi.py
   --- File Contents Start ---
-ogc_fid,param_name,param_value
-4136730,infiltration_base,1.2278853596915769
-4136730,infiltration_base_range,"(1.1, 1.3)"
-4136730,year_factor,0.9050021510445334
-4136730,year_factor_range,"(0.9, 1.1)"
-4136730,fan_pressure,0.0
-4136730,fan_pressure_range,"(0.0, 0.0)"
-4136730,f_ctrl,0.9223210738148823
-4136730,f_ctrl_range,"(0.9, 1.0)"
-4136730,hrv_eff,0.0
-4136730,hrv_eff_range,"(0.0, 0.0)"
-4136730,infiltration_schedule_name,AlwaysOnSched
-4136730,ventilation_schedule_name,VentSched_DayNight
-4136730,system_type,A
-4136730,flow_exponent,0.67
-4136730,infiltration_total_m3_s,0.0019798221857973927
-4136730,ventilation_total_m3_s,0.035
-4136732,infiltration_base,0.6278853596915768
-4136732,infiltration_base_range,"(0.5, 0.7)"
-4136732,year_factor,0.9050021510445334
-4136732,year_factor_range,"(0.9, 1.1)"
-4136732,fan_pressure,0.0
-4136732,fan_pressure_range,"(0.0, 0.0)"
-4136732,f_ctrl,0.7723210738148822
-4136732,f_ctrl_range,"(0.75, 0.85)"
-4136732,hrv_eff,0.7736471214164012
-4136732,hrv_eff_range,"(0.7, 0.8)"
-4136732,infiltration_schedule_name,AlwaysOnSched
-4136732,ventilation_schedule_name,VentSched_DayNight
-4136732,system_type,D
-4136732,flow_exponent,0.67
-4136732,infiltration_total_m3_s,0.0040495681634872
-4136732,ventilation_total_m3_s,0.09267852885778587
+# main_modifi.py
+
+"""
+Below is a conceptual example of how you might define a parameter space (with user overrides for building type, area, age, etc.) and generate initial parameter combinations using different Design of Experiments (DOE) strategies (e.g., full factorial, random, or Latin Hypercube). This is just a template; you will likely adapt it to your actual parameters, data structures, and workflow.
+
+Initial Parameter Space & Design of Experiments (DOE)
+
+Define the key parameters of interest (e.g., infiltration, occupant density, material thermal properties) along with reasonable ranges.
+(Optional) Perform a design of experiments (e.g., Latin Hypercube, full factorial for small parameter sets, or random sampling) to systematically pick some initial parameter combinations.
+as you see we make user configs to override lookups. we want that for example for a builing type with area, age building type and function, to generate many configurations and run simmulations. lets first work on it. 
+
+
+
+
+
+
+Example orchestrator script for integrating HVAC, DHW, Ventilation, 
+Electrical (lighting/parasitics), and Fenestration scenario picks.
+"""
+
+import os
+import pandas as pd
+import random
+
+# 1) Import your common utilities
+from common_utils import (
+    load_assigned_csv,
+    load_scenario_csv,
+    load_idf,
+    save_idf,
+    generate_multiple_param_sets,
+    save_param_scenarios_to_csv
+)
+
+# 2) Import your subsystem modules
+from hvac_functions import apply_building_level_hvac, apply_zone_level_hvac
+from dhw_functions import apply_dhw_params_to_idf
+from vent_functions import apply_building_level_vent, apply_zone_level_vent
+
+# (Assuming you have these two new modules)
+#from elec_functions import apply_elec_params_to_idf  # or your actual function name
+from fenez_functions import apply_object_level_fenez  # or your actual function name
+
+###############################################################################
+# USER CONFIG
+###############################################################################
+
+# Paths to your base IDF and IDD
+BASE_IDF_PATH = r"D:\Documents\E_Plus_2030_py\output\output_IDFs\building_0.idf"
+IDD_PATH      = r"D:\EnergyPlus\Energy+.idd"
+
+# Example assigned CSVs
+HVAC_CSV       = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_hvac_building.csv"
+DHW_CSV        = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_dhw_params.csv"
+VENT_CSV       = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_vent_building.csv"
+ELEC_CSV       = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_lighting.csv"
+FENEZ_CSV      = r"D:\Documents\E_Plus_2030_py\output\assigned\structured_fenez_params.csv"
+
+VENT_ZONE_CSV  = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_vent_zones.csv"
+# HVAC_ZONE_CSV  = ...
+# etc.
+
+# Output CSVs for scenario picks
+HVAC_SCENARIO_CSV  = r"D:\Documents\E_Plus_2030_py\output\scenarios\scenario_params_hvac.csv"
+DHW_SCENARIO_CSV   = r"D:\Documents\E_Plus_2030_py\output\scenarios\scenario_params_dhw.csv"
+VENT_SCENARIO_CSV  = r"D:\Documents\E_Plus_2030_py\output\scenarios\scenario_params_vent.csv"
+ELEC_SCENARIO_CSV  = r"D:\Documents\E_Plus_2030_py\output\scenarios\scenario_params_elec.csv"
+# For fenestration, we typically rely on the structured_fenez_params.csv itself. 
+# But you *could* also do a param-based approach if you like.
+FENEZ_SCENARIO_CSV  = r"D:\Documents\E_Plus_2030_py\output\scenarios\scenario_params_fenez.csv"
+
+# Output folder for newly generated scenario IDFs
+OUTPUT_IDF_DIR = r"D:\Documents\E_Plus_2030_py\output\scenario_idfs"
+
+
+def main():
+    os.makedirs(OUTPUT_IDF_DIR, exist_ok=True)
+
+    ###########################################################################
+    # STEP A) LOAD "ASSIGNED" CSVs (HVAC, DHW, Vent, Elec, Fenez)
+    #         Possibly filter for a building of interest
+    ###########################################################################
+    building_id = 4136730  # example
+
+    # HVAC
+    df_hvac = load_assigned_csv(HVAC_CSV)
+    df_hvac_sub = df_hvac[df_hvac["ogc_fid"] == building_id].copy()
+
+    # DHW
+    df_dhw = load_assigned_csv(DHW_CSV)
+    df_dhw_sub = df_dhw[df_dhw["ogc_fid"] == building_id].copy()
+
+    # Vent
+    df_vent = load_assigned_csv(VENT_CSV)
+    df_vent_sub = df_vent[df_vent["ogc_fid"] == building_id].copy()
+
+    # Elec (lighting, parasitics)
+    df_elec = load_assigned_csv(ELEC_CSV)
+    df_elec_sub = df_elec[df_elec["ogc_fid"] == building_id].copy()
+
+    # For fenestration, do the same "assigned" approach:
+    df_fenez = load_assigned_csv(FENEZ_CSV)
+    df_fenez_sub = df_fenez[df_fenez["ogc_fid"] == building_id].copy()
+
+
+    # Fenestration => structured CSV approach
+    # (We typically don't need to filter by building_id if the CSV already 
+    #  has the building-level or zone-level references. Or do so if needed.)
+    # df_fenez = load_assigned_csv(FENEZ_CSV)
+    # df_fenez_sub = df_fenez[df_fenez["ogc_fid"] == building_id].copy()
+    # We'll let apply_object_level_fenez(...) handle it directly if it can parse building_id, etc.
+
+    ###########################################################################
+    # STEP B) GENERATE MULTIPLE SCENARIO PICKS (if desired)
+    ###########################################################################
+    num_scenarios = 5  # smaller for demonstration
+
+    # B1) HVAC scenarios
+    hvac_scenarios = generate_multiple_param_sets(
+        df_main_sub=df_hvac_sub,
+        num_sets=num_scenarios,
+        picking_method="random_uniform",
+        scale_factor=0.5
+    )
+    save_param_scenarios_to_csv(
+        all_scenarios=hvac_scenarios,
+        building_id=building_id,
+        out_csv=HVAC_SCENARIO_CSV
+    )
+
+    # B2) DHW scenarios
+    dhw_scenarios = generate_multiple_param_sets(
+        df_main_sub=df_dhw_sub,
+        num_sets=num_scenarios,
+        picking_method="random_uniform",
+        scale_factor=0.5
+    )
+    save_param_scenarios_to_csv(
+        all_scenarios=dhw_scenarios,
+        building_id=building_id,
+        out_csv=DHW_SCENARIO_CSV
+    )
+
+    # B3) Vent scenarios
+    vent_scenarios = generate_multiple_param_sets(
+        df_main_sub=df_vent_sub,
+        num_sets=num_scenarios,
+        picking_method="random_uniform",
+        scale_factor=0.5
+    )
+    save_param_scenarios_to_csv(
+        all_scenarios=vent_scenarios,
+        building_id=building_id,
+        out_csv=VENT_SCENARIO_CSV
+    )
+
+    # B4) Elec scenarios
+    elec_scenarios = generate_multiple_param_sets(
+        df_main_sub=df_elec_sub,
+        num_sets=num_scenarios,
+        picking_method="random_uniform",
+        scale_factor=0.5
+    )
+    save_param_scenarios_to_csv(
+            all_scenarios=elec_scenarios,
+            building_id=building_id,
+            out_csv=ELEC_SCENARIO_CSV
+        )
+    # B5) Fenez
+    # We'll use the same approach to produce a scenario_params_fenez.csv
+    fenez_scenarios = generate_multiple_param_sets(
+        df_main_sub=df_fenez_sub,
+        num_sets=num_scenarios,
+        picking_method="random_uniform",
+        scale_factor=0.5
+    )
+    save_param_scenarios_to_csv(
+        all_scenarios=fenez_scenarios,
+        building_id=building_id,
+        out_csv=FENEZ_SCENARIO_CSV
+    )
+    
+
+    ###########################################################################
+    # STEP C) FOR EACH SCENARIO, LOAD BASE IDF, APPLY SUBSYSTEM PARAMS, SAVE
+    ###########################################################################
+    df_hvac_scen = load_scenario_csv(HVAC_SCENARIO_CSV)
+    df_dhw_scen  = load_scenario_csv(DHW_SCENARIO_CSV)
+    df_vent_scen = load_scenario_csv(VENT_SCENARIO_CSV)
+    df_elec_scen = load_scenario_csv(ELEC_SCENARIO_CSV)
+    df_fenez_scen = load_scenario_csv(FENEZ_SCENARIO_CSV)
+
+    # We won't do a "scenario" approach for fenestration in this example 
+    # but you can replicate if you want.
+
+    hvac_groups = df_hvac_scen.groupby("scenario_index")
+    dhw_groups  = df_dhw_scen.groupby("scenario_index")
+    vent_groups = df_vent_scen.groupby("scenario_index")
+    elec_groups = df_elec_scen.groupby("scenario_index")
+    fenez_groups = df_fenez_scen.groupby("scenario_index")
+
+    for i in range(num_scenarios):
+        print(f"\n--- Processing scenario #{i} for building {building_id} ---")
+
+        hvac_group_df = hvac_groups.get_group(i)
+        dhw_group_df  = dhw_groups.get_group(i)
+        vent_group_df = vent_groups.get_group(i)
+        elec_group_df = elec_groups.get_group(i)
+        fenez_group_df = fenez_groups.get_group(i)
+
+        # Build param dict for HVAC
+        hvac_param_dict = {}
+        for row in hvac_group_df.itertuples():
+            p_name = row.param_name
+            val = row.assigned_value
+            try:
+                hvac_param_dict[p_name] = float(val)
+            except:
+                hvac_param_dict[p_name] = val
+
+        # Build param dict for DHW
+        dhw_param_dict = {}
+        for row in dhw_group_df.itertuples():
+            p_name = row.param_name
+            val = row.assigned_value
+            try:
+                dhw_param_dict[p_name] = float(val)
+            except:
+                dhw_param_dict[p_name] = val
+
+        # Build param dict for Vent
+        vent_param_dict = {}
+        for row in vent_group_df.itertuples():
+            p_name = row.param_name
+            val = row.assigned_value
+            if p_name in ["system_type", "infiltration_schedule_name", "ventilation_schedule_name"]:
+                vent_param_dict[p_name] = str(val)
+            else:
+                try:
+                    vent_param_dict[p_name] = float(val)
+                except:
+                    vent_param_dict[p_name] = val
+
+        # Build param dict for Elec
+        elec_param_dict = {}
+        for row in elec_group_df.itertuples():
+            p_name = row.param_name
+            val = row.assigned_value
+            try:
+                elec_param_dict[p_name] = float(val)
+            except:
+                elec_param_dict[p_name] = val
+
+
+        # Fenestration
+        fenez_param_dict = {}
+        for row in fenez_group_df.itertuples():
+            p_name = row.param_name
+            val    = row.assigned_value
+            try:
+                fenez_param_dict[p_name] = float(val)
+            except:
+                fenez_param_dict[p_name] = val
+
+        # 1) Load base IDF
+        idf = load_idf(BASE_IDF_PATH, IDD_PATH)
+
+        # 2) Apply HVAC
+        apply_building_level_hvac(idf, hvac_param_dict)
+
+        # 3) Apply DHW
+        apply_dhw_params_to_idf(idf, dhw_param_dict, suffix=f"MyDHW_{i}")
+
+        # 4) Apply Vent
+        apply_building_level_vent(idf, vent_param_dict)
+
+        # 5) Apply Elec
+        #    e.g. sets lighting W/m2, schedule, fraction radiant, etc.
+        #apply_elec_params_to_idf(idf, elec_param_dict)
+
+        # 6) Apply Fenestration (object-level approach)
+        #    If you want to handle fenestration param changes in each scenario,
+        #    you could pass scenario data to your function. 
+        #    But in this example, we rely on a single CSV for fenestration, so:
+        apply_object_level_fenez(idf, FENEZ_CSV)
+
+        # 7) Save new scenario IDF
+        out_idf_name = f"building_{building_id}_scenario_{i}.idf"
+        out_idf_path = os.path.join(OUTPUT_IDF_DIR, out_idf_name)
+        save_idf(idf, out_idf_path)
+
+    print("[INFO] All scenario IDFs processed successfully.")
+
+
+if __name__ == "__main__":
+    main()
 
   --- File Contents End ---
 
-  File: assigned_vent_zones.csv
+  File: vent_functions.py
   --- File Contents Start ---
-ogc_fid,zone_name,param_name,param_value
-4136730,Zone1,infiltration_object_name,Infil_residential_A_Zone1
-4136730,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
-4136730,Zone1,infiltration_flow_m3_s,0.0006599407285991309
-4136730,Zone1,infiltration_schedule_name,AlwaysOnSched
-4136730,Zone1,ventilation_object_name,Vent_residential_A_Zone1
-4136730,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
-4136730,Zone1,ventilation_flow_m3_s,0.011666666666666667
-4136730,Zone1,ventilation_schedule_name,VentSched_DayNight
-4136730,Zone2,infiltration_object_name,Infil_residential_A_Zone2
-4136730,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
-4136730,Zone2,infiltration_flow_m3_s,0.0006599407285991309
-4136730,Zone2,infiltration_schedule_name,AlwaysOnSched
-4136730,Zone2,ventilation_object_name,Vent_residential_A_Zone2
-4136730,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
-4136730,Zone2,ventilation_flow_m3_s,0.011666666666666667
-4136730,Zone2,ventilation_schedule_name,VentSched_DayNight
-4136730,Zone3,infiltration_object_name,Infil_residential_A_Zone3
-4136730,Zone3,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
-4136730,Zone3,infiltration_flow_m3_s,0.0006599407285991309
-4136730,Zone3,infiltration_schedule_name,AlwaysOnSched
-4136730,Zone3,ventilation_object_name,Vent_residential_A_Zone3
-4136730,Zone3,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
-4136730,Zone3,ventilation_flow_m3_s,0.011666666666666667
-4136730,Zone3,ventilation_schedule_name,VentSched_DayNight
-4136732,Zone1_FrontPerimeter,infiltration_object_name,Infil_non_residential_D_Zone1_FrontPerimeter
-4136732,Zone1_FrontPerimeter,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
-4136732,Zone1_FrontPerimeter,infiltration_flow_m3_s,0.00040495681634872
-4136732,Zone1_FrontPerimeter,infiltration_schedule_name,AlwaysOnSched
-4136732,Zone1_FrontPerimeter,ventilation_object_name,Zone1_FrontPerimeter Ideal Loads
-4136732,Zone1_FrontPerimeter,ventilation_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone1_FrontPerimeter,ventilation_flow_m3_s,0.009267852885778586
-4136732,Zone1_FrontPerimeter,ventilation_schedule_name,VentSched_DayNight
-4136732,Zone1_RightPerimeter,infiltration_object_name,Infil_non_residential_D_Zone1_RightPerimeter
-4136732,Zone1_RightPerimeter,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
-4136732,Zone1_RightPerimeter,infiltration_flow_m3_s,0.00040495681634872
-4136732,Zone1_RightPerimeter,infiltration_schedule_name,AlwaysOnSched
-4136732,Zone1_RightPerimeter,ventilation_object_name,Zone1_RightPerimeter Ideal Loads
-4136732,Zone1_RightPerimeter,ventilation_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone1_RightPerimeter,ventilation_flow_m3_s,0.009267852885778586
-4136732,Zone1_RightPerimeter,ventilation_schedule_name,VentSched_DayNight
-4136732,Zone1_RearPerimeter,infiltration_object_name,Infil_non_residential_D_Zone1_RearPerimeter
-4136732,Zone1_RearPerimeter,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
-4136732,Zone1_RearPerimeter,infiltration_flow_m3_s,0.00040495681634872
-4136732,Zone1_RearPerimeter,infiltration_schedule_name,AlwaysOnSched
-4136732,Zone1_RearPerimeter,ventilation_object_name,Zone1_RearPerimeter Ideal Loads
-4136732,Zone1_RearPerimeter,ventilation_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone1_RearPerimeter,ventilation_flow_m3_s,0.009267852885778586
-4136732,Zone1_RearPerimeter,ventilation_schedule_name,VentSched_DayNight
-4136732,Zone1_LeftPerimeter,infiltration_object_name,Infil_non_residential_D_Zone1_LeftPerimeter
-4136732,Zone1_LeftPerimeter,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
-4136732,Zone1_LeftPerimeter,infiltration_flow_m3_s,0.00040495681634872
-4136732,Zone1_LeftPerimeter,infiltration_schedule_name,AlwaysOnSched
-4136732,Zone1_LeftPerimeter,ventilation_object_name,Zone1_LeftPerimeter Ideal Loads
-4136732,Zone1_LeftPerimeter,ventilation_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone1_LeftPerimeter,ventilation_flow_m3_s,0.009267852885778586
-4136732,Zone1_LeftPerimeter,ventilation_schedule_name,VentSched_DayNight
-4136732,Zone1_Core,infiltration_object_name,Infil_non_residential_D_Zone1_Core
-4136732,Zone1_Core,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
-4136732,Zone1_Core,infiltration_flow_m3_s,0.00040495681634872
-4136732,Zone1_Core,infiltration_schedule_name,AlwaysOnSched
-4136732,Zone1_Core,ventilation_object_name,Zone1_Core Ideal Loads
-4136732,Zone1_Core,ventilation_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone1_Core,ventilation_flow_m3_s,0.009267852885778586
-4136732,Zone1_Core,ventilation_schedule_name,VentSched_DayNight
-4136732,Zone2_FrontPerimeter,infiltration_object_name,Infil_non_residential_D_Zone2_FrontPerimeter
-4136732,Zone2_FrontPerimeter,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
-4136732,Zone2_FrontPerimeter,infiltration_flow_m3_s,0.00040495681634872
-4136732,Zone2_FrontPerimeter,infiltration_schedule_name,AlwaysOnSched
-4136732,Zone2_FrontPerimeter,ventilation_object_name,Zone2_FrontPerimeter Ideal Loads
-4136732,Zone2_FrontPerimeter,ventilation_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone2_FrontPerimeter,ventilation_flow_m3_s,0.009267852885778586
-4136732,Zone2_FrontPerimeter,ventilation_schedule_name,VentSched_DayNight
-4136732,Zone2_RightPerimeter,infiltration_object_name,Infil_non_residential_D_Zone2_RightPerimeter
-4136732,Zone2_RightPerimeter,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
-4136732,Zone2_RightPerimeter,infiltration_flow_m3_s,0.00040495681634872
-4136732,Zone2_RightPerimeter,infiltration_schedule_name,AlwaysOnSched
-4136732,Zone2_RightPerimeter,ventilation_object_name,Zone2_RightPerimeter Ideal Loads
-4136732,Zone2_RightPerimeter,ventilation_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone2_RightPerimeter,ventilation_flow_m3_s,0.009267852885778586
-4136732,Zone2_RightPerimeter,ventilation_schedule_name,VentSched_DayNight
-4136732,Zone2_RearPerimeter,infiltration_object_name,Infil_non_residential_D_Zone2_RearPerimeter
-4136732,Zone2_RearPerimeter,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
-4136732,Zone2_RearPerimeter,infiltration_flow_m3_s,0.00040495681634872
-4136732,Zone2_RearPerimeter,infiltration_schedule_name,AlwaysOnSched
-4136732,Zone2_RearPerimeter,ventilation_object_name,Zone2_RearPerimeter Ideal Loads
-4136732,Zone2_RearPerimeter,ventilation_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone2_RearPerimeter,ventilation_flow_m3_s,0.009267852885778586
-4136732,Zone2_RearPerimeter,ventilation_schedule_name,VentSched_DayNight
-4136732,Zone2_LeftPerimeter,infiltration_object_name,Infil_non_residential_D_Zone2_LeftPerimeter
-4136732,Zone2_LeftPerimeter,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
-4136732,Zone2_LeftPerimeter,infiltration_flow_m3_s,0.00040495681634872
-4136732,Zone2_LeftPerimeter,infiltration_schedule_name,AlwaysOnSched
-4136732,Zone2_LeftPerimeter,ventilation_object_name,Zone2_LeftPerimeter Ideal Loads
-4136732,Zone2_LeftPerimeter,ventilation_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone2_LeftPerimeter,ventilation_flow_m3_s,0.009267852885778586
-4136732,Zone2_LeftPerimeter,ventilation_schedule_name,VentSched_DayNight
-4136732,Zone2_Core,infiltration_object_name,Infil_non_residential_D_Zone2_Core
-4136732,Zone2_Core,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
-4136732,Zone2_Core,infiltration_flow_m3_s,0.00040495681634872
-4136732,Zone2_Core,infiltration_schedule_name,AlwaysOnSched
-4136732,Zone2_Core,ventilation_object_name,Zone2_Core Ideal Loads
-4136732,Zone2_Core,ventilation_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
-4136732,Zone2_Core,ventilation_flow_m3_s,0.009267852885778586
-4136732,Zone2_Core,ventilation_schedule_name,VentSched_DayNight
+# vent_functions.py
 
-  --- File Contents End ---
+"""
+Contains functions for applying Ventilation & Infiltration parameters
+to an IDF in a manner similar to hvac_functions.py and dhw_functions.py.
+"""
 
-  File: structured_fenez_params.csv
-  --- File Contents Start ---
-ogc_fid,sub_key,eplus_object_type,eplus_object_name,param_name,param_value,param_min,param_max
-4136730,roughness,,,roughness,MediumRough,,
-4136730,wwr_range_used,,,wwr_range_used,"(0.22, 0.22)",,
-4136730,wwr,,,wwr,0.22,,
-4136730,top_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Roughness,MediumRough,,
-4136730,top_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Thermal_Resistance,4.639426798457884,4.0,5.0
-4136730,top_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Thermal_Absorptance,0.9,0.9,0.9
-4136730,top_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Solar_Absorptance,0.7,0.7,0.7
-4136730,top_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Visible_Absorptance,0.7,0.7,0.7
-4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
-4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
-4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7605002151044533,0.76,0.78
-4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.0727502931836912,0.07,0.08
-4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07223210738148823,0.07,0.08
-4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8747294242832803,0.86,0.88
-4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06676699487422912,0.06,0.07
-4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06892179567704845,0.06,0.07
-4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
-4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
-4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
-4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.9586938832629416,0.95,1.05
-4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
-4136730,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
-4136730,ground_floor_R_value,,,ground_floor_R_value,2.5,,
-4136730,ground_floor_R_value_range_used,,,ground_floor_R_value_range_used,"(2.5, 2.5)",,
-4136730,ground_floor_U_value,,,ground_floor_U_value,0.36,,
-4136730,ground_floor_U_value_range_used,,,ground_floor_U_value_range_used,"(0.36, 0.36)",,
-4136730,ground_floor_area_m2,,,ground_floor_area_m2,68.95,,
-4136730,ground_floor_opq,MATERIAL,DoorPanel_Range,Roughness,MediumRough,,
-4136730,ground_floor_opq,MATERIAL,DoorPanel_Range,Thickness,0.18641140016537977,0.14,0.25
-4136730,ground_floor_opq,MATERIAL,DoorPanel_Range,Conductivity,0.0745645600661519,1.4,1.7
-4136730,ground_floor_opq,MATERIAL,DoorPanel_Range,Density,621.8637974803603,600.0,700.0
-4136730,ground_floor_opq,MATERIAL,DoorPanel_Range,Specific_Heat,2301.0710576206725,2200.0,2400.0
-4136730,ground_floor_opq,MATERIAL,DoorPanel_Range,Thermal_Absorptance,0.9,0.9,0.9
-4136730,ground_floor_opq,MATERIAL,DoorPanel_Range,Solar_Absorptance,0.7,0.7,0.7
-4136730,ground_floor_opq,MATERIAL,DoorPanel_Range,Visible_Absorptance,0.7,0.7,0.7
-4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
-4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
-4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7605307193936773,0.76,0.78
-4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07198837650686649,0.07,0.08
-4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07649884437779524,0.07,0.08
-4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8708988296120643,0.86,0.88
-4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06220440622040697,0.06,0.07
-4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06589265683875908,0.06,0.07
-4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
-4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
-4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
-4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.00108,0.95,1.05
-4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
-4136730,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
-4136730,exterior_wall_R_value,,,exterior_wall_R_value,2.5,,
-4136730,exterior_wall_R_value_range_used,,,exterior_wall_R_value_range_used,"(2.5, 2.5)",,
-4136730,exterior_wall_U_value,,,exterior_wall_U_value,0.37,,
-4136730,exterior_wall_U_value_range_used,,,exterior_wall_U_value_range_used,"(0.37, 0.37)",,
-4136730,exterior_wall_area_m2,,,exterior_wall_area_m2,103.3,,
-4136730,exterior_wall_opq,MATERIAL,InternalFloor_Generic,Roughness,MediumSmooth,,
-4136730,exterior_wall_opq,MATERIAL,InternalFloor_Generic,Thickness,0.12019496279034182,0.12,0.15
-4136730,exterior_wall_opq,MATERIAL,InternalFloor_Generic,Conductivity,0.04807798511613673,0.7,1.2
-4136730,exterior_wall_opq,MATERIAL,InternalFloor_Generic,Density,1939.6278789976454,1800.0,2000.0
-4136730,exterior_wall_opq,MATERIAL,InternalFloor_Generic,Specific_Heat,834.0250516517992,800.0,900.0
-4136730,exterior_wall_opq,MATERIAL,InternalFloor_Generic,Thermal_Absorptance,0.9,0.9,0.9
-4136730,exterior_wall_opq,MATERIAL,InternalFloor_Generic,Solar_Absorptance,0.7,0.7,0.7
-4136730,exterior_wall_opq,MATERIAL,InternalFloor_Generic,Visible_Absorptance,0.7,0.7,0.7
-4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
-4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
-4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7631095899962357,0.76,0.78
-4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07957213072206781,0.07,0.08
-4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07336594545112628,0.07,0.08
-4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.861854916867603,0.86,0.88
-4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06096716376833464,0.06,0.07
-4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.0684749436634746,0.06,0.07
-4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
-4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
-4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
-4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.00111,0.95,1.05
-4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
-4136730,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
-4136730,flat_roof_R_value,,,flat_roof_R_value,2.5,,
-4136730,flat_roof_R_value_range_used,,,flat_roof_R_value_range_used,"(2.5, 2.5)",,
-4136730,flat_roof_U_value,,,flat_roof_U_value,0.37,,
-4136730,flat_roof_U_value_range_used,,,flat_roof_U_value_range_used,"(0.37, 0.37)",,
-4136730,flat_roof_area_m2,,,flat_roof_area_m2,84.14,,
-4136730,flat_roof_opq,MATERIAL,InteriorWall_Generic,Roughness,MediumSmooth,,
-4136730,flat_roof_opq,MATERIAL,InteriorWall_Generic,Thickness,0.140356413663719,0.1,0.15
-4136730,flat_roof_opq,MATERIAL,InteriorWall_Generic,Conductivity,0.056142565465487605,0.4,0.6
-4136730,flat_roof_opq,MATERIAL,InteriorWall_Generic,Density,807.2456182909401,700.0,900.0
-4136730,flat_roof_opq,MATERIAL,InteriorWall_Generic,Specific_Heat,994.6231527958741,800.0,1000.0
-4136730,flat_roof_opq,MATERIAL,InteriorWall_Generic,Thermal_Absorptance,0.9,0.9,0.9
-4136730,flat_roof_opq,MATERIAL,InteriorWall_Generic,Solar_Absorptance,0.7,0.7,0.7
-4136730,flat_roof_opq,MATERIAL,InteriorWall_Generic,Visible_Absorptance,0.7,0.7,0.7
-4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
-4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
-4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7675706875441671,0.76,0.78
-4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07552040631273227,0.07,0.08
-4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07829404664252995,0.07,0.08
-4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.872370395047285,0.86,0.88
-4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06861706900310778,0.06,0.07
-4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06577352145256762,0.06,0.07
-4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
-4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
-4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
-4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.00111,0.95,1.05
-4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
-4136730,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
-4136730,inter_floor_R_value,,,inter_floor_R_value,2.0,,
-4136730,inter_floor_R_value_range_used,,,inter_floor_R_value_range_used,"(2.0, 2.0)",,
-4136730,inter_floor_U_value,,,inter_floor_U_value,0.5,,
-4136730,inter_floor_U_value_range_used,,,inter_floor_U_value_range_used,"(0.5, 0.5)",,
-4136730,inter_floor_area_m2,,,inter_floor_area_m2,60.0,,
-4136730,inter_floor_opq,MATERIAL,DoorPanel_Range,Roughness,MediumRough,,
-4136730,inter_floor_opq,MATERIAL,DoorPanel_Range,Thickness,0.14504068220212285,0.14,0.25
-4136730,inter_floor_opq,MATERIAL,DoorPanel_Range,Conductivity,0.07252034110106143,1.4,1.7
-4136730,inter_floor_opq,MATERIAL,DoorPanel_Range,Density,628.9387963602107,600.0,700.0
-4136730,inter_floor_opq,MATERIAL,DoorPanel_Range,Specific_Heat,2215.9583953847255,2200.0,2400.0
-4136730,inter_floor_opq,MATERIAL,DoorPanel_Range,Thermal_Absorptance,0.9,0.9,0.9
-4136730,inter_floor_opq,MATERIAL,DoorPanel_Range,Solar_Absorptance,0.7,0.7,0.7
-4136730,inter_floor_opq,MATERIAL,DoorPanel_Range,Visible_Absorptance,0.7,0.7,0.7
-4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
-4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
-4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7646558177272206,0.76,0.78
-4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.0710100142940973,0.07,0.08
-4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07277973603110093,0.07,0.08
-4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.872713688885288,0.86,0.88
-4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06364832178970084,0.06,0.07
-4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06370180967116883,0.06,0.07
-4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
-4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
-4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
-4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.0015,0.95,1.05
-4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
-4136730,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
-4136730,interior_wall_R_value,,,interior_wall_R_value,1.5,,
-4136730,interior_wall_R_value_range_used,,,interior_wall_R_value_range_used,"(1.5, 1.5)",,
-4136730,interior_wall_U_value,,,interior_wall_U_value,0.67,,
-4136730,interior_wall_U_value_range_used,,,interior_wall_U_value_range_used,"(0.67, 0.67)",,
-4136730,interior_wall_area_m2,,,interior_wall_area_m2,50.0,,
-4136730,interior_wall_opq,MATERIAL,Concrete_200mm,Roughness,MediumRough,,
-4136730,interior_wall_opq,MATERIAL,Concrete_200mm,Thickness,0.19766977822049114,0.195,0.205
-4136730,interior_wall_opq,MATERIAL,Concrete_200mm,Conductivity,0.1317798521469941,1.5,1.7
-4136730,interior_wall_opq,MATERIAL,Concrete_200mm,Density,2314.8035385246594,2250.0,2350.0
-4136730,interior_wall_opq,MATERIAL,Concrete_200mm,Specific_Heat,910.9131005666989,850.0,950.0
-4136730,interior_wall_opq,MATERIAL,Concrete_200mm,Thermal_Absorptance,0.9,0.9,0.9
-4136730,interior_wall_opq,MATERIAL,Concrete_200mm,Solar_Absorptance,0.7,0.7,0.7
-4136730,interior_wall_opq,MATERIAL,Concrete_200mm,Visible_Absorptance,0.7,0.7,0.7
-4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
-4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
-4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.763422772963962,0.76,0.78
-4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07729126797950349,0.07,0.08
-4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07163402493761929,0.07,0.08
-4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.867589108835153,0.86,0.88
-4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06989523350636596,0.06,0.07
-4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06639999759854093,0.06,0.07
-4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
-4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
-4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
-4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.00201,0.95,1.05
-4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
-4136730,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
-4136730,windows_R_value,,,windows_R_value,,,
-4136730,windows_R_value_range_used,,,windows_R_value_range_used,"(None, None)",,
-4136730,windows_U_value,,,windows_U_value,2.9,,
-4136730,windows_U_value_range_used,,,windows_U_value_range_used,"(2.9, 2.9)",,
-4136730,windows_area_m2,,,windows_area_m2,27.22,,
-4136730,windows_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Roughness,MediumRough,,
-4136730,windows_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Thermal_Resistance,0.3448275862068966,4.0,5.0
-4136730,windows_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Thermal_Absorptance,0.9,0.9,0.9
-4136730,windows_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Solar_Absorptance,0.7,0.7,0.7
-4136730,windows_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Visible_Absorptance,0.7,0.7,0.7
-4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
-4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
-4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7768570384037962,0.76,0.78
-4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07775999911546246,0.07,0.08
-4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07229048071964105,0.07,0.08
-4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8606420048780807,0.86,0.88
-4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06315453048059082,0.06,0.07
-4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06267740875975703,0.06,0.07
-4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
-4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
-4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
-4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.0087,0.95,1.05
-4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
-4136730,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
-4136730,doors_R_value,,,doors_R_value,,,
-4136730,doors_R_value_range_used,,,doors_R_value_range_used,"(None, None)",,
-4136730,doors_U_value,,,doors_U_value,3.4,,
-4136730,doors_U_value_range_used,,,doors_U_value_range_used,"(3.4, 3.4)",,
-4136730,doors_area_m2,,,doors_area_m2,6.93,,
-4136730,doors_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Roughness,MediumRough,,
-4136730,doors_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Thermal_Resistance,0.29411764705882354,4.0,5.0
-4136730,doors_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Thermal_Absorptance,0.9,0.9,0.9
-4136730,doors_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Solar_Absorptance,0.7,0.7,0.7
-4136730,doors_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Visible_Absorptance,0.7,0.7,0.7
-4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
-4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
-4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7775273525294534,0.76,0.78
-4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07314677880798479,0.07,0.08
-4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07655438665294881,0.07,0.08
-4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8679126380212133,0.86,0.88
-4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06914547589740544,0.06,0.07
-4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.064588518525874,0.06,0.07
-4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
-4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
-4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
-4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.0102,0.95,1.05
-4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
-4136730,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
-4136730,top_opaque_material_name,,,top_opaque_material_name,Insulated_Roof_R5,,
-4136730,top_window_material_name,,,top_window_material_name,Glazing_Clear_3mm,,
-4136730,window1C_construction,,,window1C_construction,WINDOW1C,,
-4136730,ground_floor_opq_material_name,,,ground_floor_opq_material_name,ground_floor_OpaqueMat,,
-4136730,ground_floor_win_material_name,,,ground_floor_win_material_name,ground_floor_WindowMat,,
-4136730,ground_floor_construction_name,,,ground_floor_construction_name,ground_floor_Construction,,
-4136730,ground_floor_window_construction_name,,,ground_floor_window_construction_name,ground_floor_WindowConst,,
-4136730,exterior_wall_opq_material_name,,,exterior_wall_opq_material_name,exterior_wall_OpaqueMat,,
-4136730,exterior_wall_win_material_name,,,exterior_wall_win_material_name,exterior_wall_WindowMat,,
-4136730,exterior_wall_construction_name,,,exterior_wall_construction_name,exterior_wall_Construction,,
-4136730,exterior_wall_window_construction_name,,,exterior_wall_window_construction_name,exterior_wall_WindowConst,,
-4136730,flat_roof_opq_material_name,,,flat_roof_opq_material_name,flat_roof_OpaqueMat,,
-4136730,flat_roof_win_material_name,,,flat_roof_win_material_name,flat_roof_WindowMat,,
-4136730,flat_roof_construction_name,,,flat_roof_construction_name,flat_roof_Construction,,
-4136730,flat_roof_window_construction_name,,,flat_roof_window_construction_name,flat_roof_WindowConst,,
-4136730,inter_floor_opq_material_name,,,inter_floor_opq_material_name,inter_floor_OpaqueMat,,
-4136730,inter_floor_win_material_name,,,inter_floor_win_material_name,inter_floor_WindowMat,,
-4136730,inter_floor_construction_name,,,inter_floor_construction_name,inter_floor_Construction,,
-4136730,inter_floor_window_construction_name,,,inter_floor_window_construction_name,inter_floor_WindowConst,,
-4136730,interior_wall_opq_material_name,,,interior_wall_opq_material_name,interior_wall_OpaqueMat,,
-4136730,interior_wall_win_material_name,,,interior_wall_win_material_name,interior_wall_WindowMat,,
-4136730,interior_wall_construction_name,,,interior_wall_construction_name,interior_wall_Construction,,
-4136730,interior_wall_window_construction_name,,,interior_wall_window_construction_name,interior_wall_WindowConst,,
-4136730,windows_opq_material_name,,,windows_opq_material_name,windows_OpaqueMat,,
-4136730,windows_win_material_name,,,windows_win_material_name,windows_WindowMat,,
-4136730,windows_construction_name,,,windows_construction_name,windows_Construction,,
-4136730,windows_window_construction_name,,,windows_window_construction_name,windows_WindowConst,,
-4136730,doors_opq_material_name,,,doors_opq_material_name,doors_OpaqueMat,,
-4136730,doors_win_material_name,,,doors_win_material_name,doors_WindowMat,,
-4136730,doors_construction_name,,,doors_construction_name,doors_Construction,,
-4136730,doors_window_construction_name,,,doors_window_construction_name,doors_WindowConst,,
-4136730,final_wwr,,,final_wwr,0.22,,
-4136730,fenestration_objects,,,fenestration_objects,"['Zone1_Wall_0 window', 'Zone1_Wall_2 window', 'Zone1_Wall_3 window', 'Zone2_Wall_0 window', 'Zone2_Wall_2 window', 'Zone2_Wall_3 window', 'Zone3_Wall_0 window', 'Zone3_Wall_2 window', 'Zone3_Wall_3 window']",,
-4136732,roughness,,,roughness,MediumRough,,
-4136732,wwr_range_used,,,wwr_range_used,"(0.2, 0.25)",,
-4136732,wwr,,,wwr,0.2319713399228942,,
-4136732,top_opq,MATERIAL,DoorPanel_Range,Roughness,MediumRough,,
-4136732,top_opq,MATERIAL,DoorPanel_Range,Thickness,0.1427511830744934,0.14,0.25
-4136732,top_opq,MATERIAL,DoorPanel_Range,Conductivity,1.4825087955107357,1.4,1.7
-4136732,top_opq,MATERIAL,DoorPanel_Range,Density,622.3210738148823,600.0,700.0
-4136732,top_opq,MATERIAL,DoorPanel_Range,Specific_Heat,2347.2942428328024,2200.0,2400.0
-4136732,top_opq,MATERIAL,DoorPanel_Range,Thermal_Absorptance,0.9,0.9,0.9
-4136732,top_opq,MATERIAL,DoorPanel_Range,Solar_Absorptance,0.7,0.7,0.7
-4136732,top_opq,MATERIAL,DoorPanel_Range,Visible_Absorptance,0.7,0.7,0.7
-4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
-4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
-4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7735339897484582,0.76,0.78
-4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07892179567704846,0.07,0.08
-4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07086938832629416,0.07,0.08
-4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8684384363937054,0.86,0.88
-4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.060297972194380704,0.06,0.07
-4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.062186379748036036,0.06,0.07
-4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
-4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
-4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
-4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,1.0005355288103361,0.95,1.05
-4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
-4136732,top_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
-4136732,ground_floor_R_value,,,ground_floor_R_value,3.5,,
-4136732,ground_floor_R_value_range_used,,,ground_floor_R_value_range_used,"(3.5, 3.5)",,
-4136732,ground_floor_U_value,,,ground_floor_U_value,0.28,,
-4136732,ground_floor_U_value_range_used,,,ground_floor_U_value_range_used,"(0.28, 0.28)",,
-4136732,ground_floor_area_m2,,,ground_floor_area_m2,80.0,,
-4136732,ground_floor_opq,MATERIAL,GroundContactFloor_Generic,Roughness,MediumRough,,
-4136732,ground_floor_opq,MATERIAL,GroundContactFloor_Generic,Thickness,0.10053071939367728,0.1,0.12
-4136732,ground_floor_opq,MATERIAL,GroundContactFloor_Generic,Conductivity,0.028723062683907792,1.0,1.2
-4136732,ground_floor_opq,MATERIAL,GroundContactFloor_Generic,Density,2229.976887555905,2100.0,2300.0
-4136732,ground_floor_opq,MATERIAL,GroundContactFloor_Generic,Specific_Heat,877.2470740301609,850.0,900.0
-4136732,ground_floor_opq,MATERIAL,GroundContactFloor_Generic,Thermal_Absorptance,0.9,0.9,0.9
-4136732,ground_floor_opq,MATERIAL,GroundContactFloor_Generic,Solar_Absorptance,0.7,0.7,0.7
-4136732,ground_floor_opq,MATERIAL,GroundContactFloor_Generic,Visible_Absorptance,0.7,0.7,0.7
-4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
-4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
-4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7644088124408139,0.76,0.78
-4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07589265683875909,0.07,0.08
-4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07809430456677827,0.07,0.08
-4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8601299751935612,0.86,0.88
-4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06805819251832808,0.06,0.07
-4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06698139394988227,0.06,0.07
-4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
-4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
-4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
-4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.0008400000000000001,0.95,1.05
-4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
-4136732,ground_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
-4136732,exterior_wall_R_value,,,exterior_wall_R_value,3.5,,
-4136732,exterior_wall_R_value_range_used,,,exterior_wall_R_value_range_used,"(3.5, 3.5)",,
-4136732,exterior_wall_U_value,,,exterior_wall_U_value,0.32,,
-4136732,exterior_wall_U_value_range_used,,,exterior_wall_U_value_range_used,"(0.32, 0.32)",,
-4136732,exterior_wall_area_m2,,,exterior_wall_area_m2,120.0,,
-4136732,exterior_wall_opq,MATERIAL,Concrete_200mm,Roughness,MediumRough,,
-4136732,exterior_wall_opq,MATERIAL,Concrete_200mm,Thickness,0.19655479499811782,0.195,0.205
-4136732,exterior_wall_opq,MATERIAL,Concrete_200mm,Conductivity,0.05615851285660509,1.5,1.7
-4136732,exterior_wall_opq,MATERIAL,Concrete_200mm,Density,2283.6594545112625,2250.0,2350.0
-4136732,exterior_wall_opq,MATERIAL,Concrete_200mm,Specific_Heat,859.2745843380148,850.0,950.0
-4136732,exterior_wall_opq,MATERIAL,Concrete_200mm,Thermal_Absorptance,0.9,0.9,0.9
-4136732,exterior_wall_opq,MATERIAL,Concrete_200mm,Solar_Absorptance,0.7,0.7,0.7
-4136732,exterior_wall_opq,MATERIAL,Concrete_200mm,Visible_Absorptance,0.7,0.7,0.7
-4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
-4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
-4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7619343275366693,0.76,0.78
-4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.0784749436634746,0.07,0.08
-4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07603726031366892,0.07,0.08
-4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8761425654654876,0.86,0.88
-4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06729731786693818,0.06,0.07
-4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06536228091454702,0.06,0.07
-4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
-4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
-4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
-4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.00096,0.95,1.05
-4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
-4136732,exterior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
-4136732,flat_roof_R_value,,,flat_roof_R_value,3.5,,
-4136732,flat_roof_R_value_range_used,,,flat_roof_R_value_range_used,"(3.5, 3.5)",,
-4136732,flat_roof_U_value,,,flat_roof_U_value,0.32,,
-4136732,flat_roof_U_value_range_used,,,flat_roof_U_value_range_used,"(0.32, 0.32)",,
-4136732,flat_roof_area_m2,,,flat_roof_area_m2,95.0,,
-4136732,flat_roof_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Roughness,MediumRough,,
-4136732,flat_roof_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Thermal_Resistance,3.5,4.0,5.0
-4136732,flat_roof_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Thermal_Absorptance,0.9,0.9,0.9
-4136732,flat_roof_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Solar_Absorptance,0.7,0.7,0.7
-4136732,flat_roof_opq,MATERIAL:NOMASS,Insulated_Roof_R5,Visible_Absorptance,0.7,0.7,0.7
-4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
-4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
-4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7710408126254645,0.76,0.78
-4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07829404664252995,0.07,0.08
-4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07618519752364246,0.07,0.08
-4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8772341380062155,0.86,0.88
-4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06577352145256762,0.06,0.07
-4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06704571836214923,0.06,0.07
-4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
-4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
-4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
-4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.00096,0.95,1.05
-4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
-4136732,flat_roof_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
-4136732,inter_floor_R_value,,,inter_floor_R_value,2.0,,
-4136732,inter_floor_R_value_range_used,,,inter_floor_R_value_range_used,"(2.0, 2.0)",,
-4136732,inter_floor_U_value,,,inter_floor_U_value,0.5,,
-4136732,inter_floor_U_value_range_used,,,inter_floor_U_value_range_used,"(0.5, 0.5)",,
-4136732,inter_floor_area_m2,,,inter_floor_area_m2,60.0,,
-4136732,inter_floor_opq,MATERIAL,InternalFloor_Generic,Roughness,MediumSmooth,,
-4136732,inter_floor_opq,MATERIAL,InternalFloor_Generic,Thickness,0.1268369482695464,0.12,0.15
-4136732,inter_floor_opq,MATERIAL,InternalFloor_Generic,Conductivity,0.0634184741347732,0.7,1.2
-4136732,inter_floor_opq,MATERIAL,InternalFloor_Generic,Density,1815.9583953847255,1800.0,2000.0
-4136732,inter_floor_opq,MATERIAL,InternalFloor_Generic,Specific_Heat,823.279088636103,800.0,900.0
-4136732,inter_floor_opq,MATERIAL,InternalFloor_Generic,Thermal_Absorptance,0.9,0.9,0.9
-4136732,inter_floor_opq,MATERIAL,InternalFloor_Generic,Solar_Absorptance,0.7,0.7,0.7
-4136732,inter_floor_opq,MATERIAL,InternalFloor_Generic,Visible_Absorptance,0.7,0.7,0.7
-4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
-4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
-4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7620200285881946,0.76,0.78
-4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07277973603110093,0.07,0.08
-4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07635684444264401,0.07,0.08
-4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8672966435794017,0.86,0.88
-4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06370180967116883,0.06,0.07
-4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06209507030771488,0.06,0.07
-4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
-4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
-4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
-4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.0015,0.95,1.05
-4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
-4136732,inter_floor_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
-4136732,interior_wall_R_value,,,interior_wall_R_value,1.5,,
-4136732,interior_wall_R_value_range_used,,,interior_wall_R_value_range_used,"(1.5, 1.5)",,
-4136732,interior_wall_U_value,,,interior_wall_U_value,0.67,,
-4136732,interior_wall_U_value_range_used,,,interior_wall_U_value_range_used,"(0.67, 0.67)",,
-4136732,interior_wall_area_m2,,,interior_wall_area_m2,50.0,,
-4136732,interior_wall_opq,MATERIAL,InteriorWall_Generic,Roughness,MediumSmooth,,
-4136732,interior_wall_opq,MATERIAL,InteriorWall_Generic,Thickness,0.1468327293856247,0.1,0.15
-4136732,interior_wall_opq,MATERIAL,InteriorWall_Generic,Conductivity,0.09788848625708313,0.4,0.6
-4136732,interior_wall_opq,MATERIAL,InteriorWall_Generic,Density,821.8262011333976,700.0,900.0
-4136732,interior_wall_opq,MATERIAL,InteriorWall_Generic,Specific_Heat,834.2277296396194,800.0,1000.0
-4136732,interior_wall_opq,MATERIAL,InteriorWall_Generic,Thermal_Absorptance,0.9,0.9,0.9
-4136732,interior_wall_opq,MATERIAL,InteriorWall_Generic,Solar_Absorptance,0.7,0.7,0.7
-4136732,interior_wall_opq,MATERIAL,InteriorWall_Generic,Visible_Absorptance,0.7,0.7,0.7
-4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
-4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
-4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7745825359590071,0.76,0.78
-4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07163402493761929,0.07,0.08
-4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07379455441757649,0.07,0.08
-4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8797904670127319,0.86,0.88
-4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06639999759854093,0.06,0.07
-4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06556949743774647,0.06,0.07
-4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
-4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
-4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
-4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.00201,0.95,1.05
-4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
-4136732,interior_wall_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
-4136732,windows_R_value,,,windows_R_value,,,
-4136732,windows_R_value_range_used,,,windows_R_value_range_used,"(None, None)",,
-4136732,windows_U_value,,,windows_U_value,3.5,,
-4136732,windows_U_value_range_used,,,windows_U_value_range_used,"(3.5, 3.5)",,
-4136732,windows_area_m2,,,windows_area_m2,35.0,,
-4136732,windows_opq,MATERIAL,DoorPanel_Range,Roughness,MediumRough,,
-4136732,windows_opq,MATERIAL,DoorPanel_Range,Thickness,0.23271371122087905,0.14,0.25
-4136732,windows_opq,MATERIAL,DoorPanel_Range,Conductivity,0.8144979892730767,1.4,1.7
-4136732,windows_opq,MATERIAL,DoorPanel_Range,Density,622.9048071964104,600.0,700.0
-4136732,windows_opq,MATERIAL,DoorPanel_Range,Specific_Heat,2206.4200487808075,2200.0,2400.0
-4136732,windows_opq,MATERIAL,DoorPanel_Range,Thermal_Absorptance,0.9,0.9,0.9
-4136732,windows_opq,MATERIAL,DoorPanel_Range,Solar_Absorptance,0.7,0.7,0.7
-4136732,windows_opq,MATERIAL,DoorPanel_Range,Visible_Absorptance,0.7,0.7,0.7
-4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
-4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
-4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7663090609611817,0.76,0.78
-4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07267740875975703,0.07,0.08
-4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07210982843586328,0.07,0.08
-4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8788581942867011,0.86,0.88
-4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.0687636762647267,0.06,0.07
-4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06314677880798478,0.06,0.07
-4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
-4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
-4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
-4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.0105,0.95,1.05
-4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
-4136732,windows_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
-4136732,doors_R_value,,,doors_R_value,,,
-4136732,doors_R_value_range_used,,,doors_R_value_range_used,"(None, None)",,
-4136732,doors_U_value,,,doors_U_value,3.5,,
-4136732,doors_U_value_range_used,,,doors_U_value_range_used,"(3.5, 3.5)",,
-4136732,doors_area_m2,,,doors_area_m2,10.0,,
-4136732,doors_opq,MATERIAL,DoorPanel_Range,Roughness,MediumRough,,
-4136732,doors_opq,MATERIAL,DoorPanel_Range,Thickness,0.18351950911667309,0.14,0.25
-4136732,doors_opq,MATERIAL,DoorPanel_Range,Conductivity,0.6423182819083558,1.4,1.7
-4136732,doors_opq,MATERIAL,DoorPanel_Range,Density,645.8851852587399,600.0,700.0
-4136732,doors_opq,MATERIAL,DoorPanel_Range,Specific_Heat,2252.9760332996107,2200.0,2400.0
-4136732,doors_opq,MATERIAL,DoorPanel_Range,Thermal_Absorptance,0.9,0.9,0.9
-4136732,doors_opq,MATERIAL,DoorPanel_Range,Solar_Absorptance,0.7,0.7,0.7
-4136732,doors_opq,MATERIAL,DoorPanel_Range,Visible_Absorptance,0.7,0.7,0.7
-4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Optical_Data_Type,SpectralAverage,,
-4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Thickness,0.003,0.003,0.003
-4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Transmittance,0.7649325501538797,0.76,0.78
-4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Solar_Reflectance,0.07561368134163152,0.07,0.08
-4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Solar_Reflectance,0.07262741608522935,0.07,0.08
-4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Visible_Transmittance,0.8716917198044708,0.86,0.88
-4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_Visible_Reflectance,0.06897822883602478,0.06,0.07
-4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_Visible_Reflectance,0.06399400505140397,0.06,0.07
-4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,IR_Transmittance,0.0,,
-4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Front_IR_Emissivity,0.84,0.84,0.84
-4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Back_IR_Emissivity,0.84,0.84,0.84
-4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Conductivity,0.0105,0.95,1.05
-4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Dirt_Correction_Factor,1.0,1.0,1.0
-4136732,doors_win,WINDOWMATERIAL:GLAZING,Glazing_Clear_3mm,Solar_Diffusing,No,,
-4136732,top_opaque_material_name,,,top_opaque_material_name,DoorPanel_Range,,
-4136732,top_window_material_name,,,top_window_material_name,Glazing_Clear_3mm,,
-4136732,window1C_construction,,,window1C_construction,WINDOW1C,,
-4136732,ground_floor_opq_material_name,,,ground_floor_opq_material_name,ground_floor_OpaqueMat,,
-4136732,ground_floor_win_material_name,,,ground_floor_win_material_name,ground_floor_WindowMat,,
-4136732,ground_floor_construction_name,,,ground_floor_construction_name,ground_floor_Construction,,
-4136732,ground_floor_window_construction_name,,,ground_floor_window_construction_name,ground_floor_WindowConst,,
-4136732,exterior_wall_opq_material_name,,,exterior_wall_opq_material_name,exterior_wall_OpaqueMat,,
-4136732,exterior_wall_win_material_name,,,exterior_wall_win_material_name,exterior_wall_WindowMat,,
-4136732,exterior_wall_construction_name,,,exterior_wall_construction_name,exterior_wall_Construction,,
-4136732,exterior_wall_window_construction_name,,,exterior_wall_window_construction_name,exterior_wall_WindowConst,,
-4136732,flat_roof_opq_material_name,,,flat_roof_opq_material_name,flat_roof_OpaqueMat,,
-4136732,flat_roof_win_material_name,,,flat_roof_win_material_name,flat_roof_WindowMat,,
-4136732,flat_roof_construction_name,,,flat_roof_construction_name,flat_roof_Construction,,
-4136732,flat_roof_window_construction_name,,,flat_roof_window_construction_name,flat_roof_WindowConst,,
-4136732,inter_floor_opq_material_name,,,inter_floor_opq_material_name,inter_floor_OpaqueMat,,
-4136732,inter_floor_win_material_name,,,inter_floor_win_material_name,inter_floor_WindowMat,,
-4136732,inter_floor_construction_name,,,inter_floor_construction_name,inter_floor_Construction,,
-4136732,inter_floor_window_construction_name,,,inter_floor_window_construction_name,inter_floor_WindowConst,,
-4136732,interior_wall_opq_material_name,,,interior_wall_opq_material_name,interior_wall_OpaqueMat,,
-4136732,interior_wall_win_material_name,,,interior_wall_win_material_name,interior_wall_WindowMat,,
-4136732,interior_wall_construction_name,,,interior_wall_construction_name,interior_wall_Construction,,
-4136732,interior_wall_window_construction_name,,,interior_wall_window_construction_name,interior_wall_WindowConst,,
-4136732,windows_opq_material_name,,,windows_opq_material_name,windows_OpaqueMat,,
-4136732,windows_win_material_name,,,windows_win_material_name,windows_WindowMat,,
-4136732,windows_construction_name,,,windows_construction_name,windows_Construction,,
-4136732,windows_window_construction_name,,,windows_window_construction_name,windows_WindowConst,,
-4136732,doors_opq_material_name,,,doors_opq_material_name,doors_OpaqueMat,,
-4136732,doors_win_material_name,,,doors_win_material_name,doors_WindowMat,,
-4136732,doors_construction_name,,,doors_construction_name,doors_Construction,,
-4136732,doors_window_construction_name,,,doors_window_construction_name,doors_WindowConst,,
-4136732,final_wwr,,,final_wwr,0.2319713399228942,,
-4136732,fenestration_objects,,,fenestration_objects,"['Zone1_RearPerimeter_Wall_0 window', 'Zone1_LeftPerimeter_Wall_0 window', 'Zone2_RearPerimeter_Wall_0 window', 'Zone2_LeftPerimeter_Wall_0 window']",,
+import random
+
+##############################################################################
+# 1) APPLY BUILDING-LEVEL VENTILATION
+##############################################################################
+
+def apply_building_level_vent(idf, param_dict):
+    """
+    Takes a dict of building-level ventilation parameters, e.g. from
+    assigned_vent_building.csv (after scenario picks). Example keys:
+      {
+        "infiltration_base": 1.2278853596915769,
+        "infiltration_base_range": (1.1,1.3),
+        "year_factor": 0.9050021510445334,
+        "year_factor_range": (0.9,1.1),
+        "fan_pressure": 0.0,
+        "fan_pressure_range": (0.0,0.0),
+        "f_ctrl": 0.9223210738148823,
+        "f_ctrl_range": (0.9,1.0),
+        "hrv_eff": 0.0,
+        "hrv_eff_range": (0.0,0.0),
+        "infiltration_schedule_name": "AlwaysOnSched",
+        "ventilation_schedule_name": "VentSched_DayNight",
+        "system_type": "A",
+        "flow_exponent": 0.67,
+        "infiltration_total_m3_s": 0.001979822,
+        "ventilation_total_m3_s": 0.035
+      }
+
+    This function:
+     - Loops over all ZONE objects in the IDF
+     - Creates infiltration objects and ventilation objects for each zone
+       (or uses IdealLoads if system_type=="D").
+     - Splits infiltration_total_m3_s among the zones,
+       splits ventilation_total_m3_s among the zones.
+     - Applies infiltration_schedule_name / ventilation_schedule_name.
+
+    If you already have infiltration/vent objects, it can update them
+    (or you can handle that in a separate function).
+    """
+
+    zones = idf.idfobjects["ZONE"]
+    if not zones:
+        print("[VENT] No zones found; skipping infiltration/ventilation creation.")
+        return
+
+    infiltration_m3_s_total = param_dict.get("infiltration_total_m3_s", 0.0)
+    ventilation_m3_s_total  = param_dict.get("ventilation_total_m3_s", 0.0)
+    n_zones = len(zones)
+    if n_zones < 1:
+        return
+
+    # We distribute total infiltration & ventilation evenly among the zones
+    infil_per_zone = infiltration_m3_s_total / n_zones
+    vent_per_zone  = ventilation_m3_s_total / n_zones
+
+    infiltration_sched = param_dict.get("infiltration_schedule_name", "AlwaysOnSched")
+    ventilation_sched  = param_dict.get("ventilation_schedule_name", "VentSched_DayNight")
+    system_type        = param_dict.get("system_type", "A")
+
+    print(f"[VENT] Applying building-level infiltration={infiltration_m3_s_total:.5f} m3/s, "
+          f"ventilation={ventilation_m3_s_total:.5f} m3/s, system={system_type}, n_zones={n_zones}")
+
+    for zone_obj in zones:
+        zone_name = zone_obj.Name
+        # 1) Create infiltration object
+        iobj_name = f"Infil_{system_type}_{zone_name}"
+        iobj = _create_or_update_infiltration(
+            idf, iobj_name, zone_name, infil_per_zone, infiltration_sched
+        )
+
+        # 2) If system_type != "D" => create a ZONEVENTILATION:DESIGNFLOWRATE object
+        #    If system_type == "D" => update zone's IdealLoads or skip
+        if system_type.upper() == "D":
+            # Balanced mechanical with HRV => we might rely on IdealLoads (like an infiltration stand-in)
+            vobj = _attach_vent_to_ideal_loads(idf, zone_name, vent_per_zone)
+        else:
+            # create zone ventilation design flow
+            vobj_name = f"Vent_{system_type}_{zone_name}"
+            vobj = _create_or_update_ventilation(
+                idf, vobj_name, zone_name, vent_per_zone, ventilation_sched
+            )
+
+        # Optionally log or print
+        print(f"  => Zone {zone_name}: infiltration={infil_per_zone:.5f}, vent={vent_per_zone:.5f}")
+
+
+def _create_or_update_infiltration(idf, obj_name, zone_name, infil_flow_m3_s, sched_name):
+    """
+    Creates or updates a ZONEINFILTRATION:DESIGNFLOWRATE object.
+    """
+    existing = [
+        inf for inf in idf.idfobjects["ZONEINFILTRATION:DESIGNFLOWRATE"]
+        if inf.Name == obj_name
+    ]
+    if existing:
+        iobj = existing[0]
+    else:
+        iobj = idf.newidfobject("ZONEINFILTRATION:DESIGNFLOWRATE", Name=obj_name)
+
+    if hasattr(iobj, "Zone_or_ZoneList_or_Space_or_SpaceList_Name"):
+        iobj.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zone_name
+    else:
+        iobj.Zone_or_ZoneList_Name = zone_name
+
+    iobj.Schedule_Name = sched_name
+    iobj.Design_Flow_Rate_Calculation_Method = "Flow/Zone"
+    iobj.Design_Flow_Rate = infil_flow_m3_s
+    return iobj
+
+
+def _create_or_update_ventilation(idf, obj_name, zone_name, vent_flow_m3_s, sched_name):
+    """
+    Creates or updates a ZONEVENTILATION:DESIGNFLOWRATE object.
+    """
+    existing = [
+        vent for vent in idf.idfobjects["ZONEVENTILATION:DESIGNFLOWRATE"]
+        if vent.Name == obj_name
+    ]
+    if existing:
+        vobj = existing[0]
+    else:
+        vobj = idf.newidfobject("ZONEVENTILATION:DESIGNFLOWRATE", Name=obj_name)
+
+    if hasattr(vobj, "Zone_or_ZoneList_or_Space_or_SpaceList_Name"):
+        vobj.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zone_name
+    else:
+        vobj.Zone_or_ZoneList_Name = zone_name
+
+    vobj.Schedule_Name = sched_name
+    vobj.Design_Flow_Rate_Calculation_Method = "Flow/Zone"
+    vobj.Design_Flow_Rate = vent_flow_m3_s
+    return vobj
+
+
+def _attach_vent_to_ideal_loads(idf, zone_name, vent_flow_m3_s):
+    """
+    If system_type=="D", we rely on ZONEHVAC:IDEALLOADSAIRSYSTEM for ventilation.
+    Typically you'd set the supply air flow rates. We'll do a simple approach:
+      - find <zone_name> Ideal Loads
+      - set Maximum_Cooling_Air_Flow_Rate & Maximum_Heating_Air_Flow_Rate to vent_flow_m3_s
+    Or store additional fields (like infiltration fraction).
+    """
+    ideal_name = f"{zone_name} Ideal Loads"
+    ideal_obj = [
+        ild for ild in idf.idfobjects["ZONEHVAC:IDEALLOADSAIRSYSTEM"]
+        if ild.Name == ideal_name
+    ]
+    if not ideal_obj:
+        print(f"[VENT WARNING] {zone_name} Ideal Loads not found; can't set vent flow. Skipping.")
+        return None
+
+    iobj = ideal_obj[0]
+    # Example approach => "NoLimit" or "LimitFlowRate"
+    iobj.Heating_Limit = "LimitFlowRate"
+    iobj.Maximum_Heating_Air_Flow_Rate = vent_flow_m3_s
+    iobj.Cooling_Limit = "LimitFlowRate"
+    iobj.Maximum_Cooling_Air_Flow_Rate = vent_flow_m3_s
+
+    # E+ allows infiltration to be done as well in the same object if desired,
+    # but usually infiltration is a separate "ZONEINFILTRATION:DESIGNFLOWRATE".
+    return iobj
+
+
+##############################################################################
+# 2) APPLY ZONE-LEVEL VENTILATION
+##############################################################################
+
+def apply_zone_level_vent(idf, df_zone_sub):
+    """
+    Given a DataFrame with columns like:
+       ogc_fid, zone_name, param_name, param_value
+
+    Specifically for infiltration & ventilation, you might have:
+       zone_name, infiltration_object_name, infiltration_object_type, infiltration_flow_m3_s,
+       infiltration_schedule_name, ventilation_object_name, ventilation_object_type,
+       ventilation_flow_m3_s, ventilation_schedule_name
+
+    For each row in df_zone_sub, create or update the infiltration + ventilation objects
+    named as in param_value.
+
+    Example row:
+       ogc_fid=4136730, zone_name="Zone1", param_name="infiltration_object_name", param_value="Infil_A_Zone1"
+       ...
+    We can parse df_zone_sub row by row or group by zone_name.
+
+    Steps:
+      1) group by zone_name
+      2) parse infiltration object name + type + flow + schedule
+      3) parse ventilation object name + type + flow + schedule
+      4) create or update these objects in the IDF.
+    """
+    # We'll group by "zone_name" so we can gather infiltration/vent info in a single pass.
+    zone_groups = df_zone_sub.groupby("zone_name")
+
+    for zone_name, zone_df in zone_groups:
+        # We'll keep a local dictionary for infiltration & ventilation info
+        infil_name = None
+        infil_type = "ZONEINFILTRATION:DESIGNFLOWRATE"
+        infil_flow = 0.0
+        infil_sched = "AlwaysOnSched"
+
+        vent_name = None
+        vent_type = "ZONEVENTILATION:DESIGNFLOWRATE"
+        vent_flow = 0.0
+        vent_sched = "AlwaysOnSched"
+
+        for row in zone_df.itertuples():
+            pname = row.param_name
+            val   = row.param_value
+
+            # Try to interpret numeric fields
+            try:
+                val_float = float(val)
+            except:
+                val_float = None
+
+            if pname == "infiltration_object_name":
+                infil_name = val
+            elif pname == "infiltration_object_type":
+                infil_type = val
+            elif pname == "infiltration_flow_m3_s" and val_float is not None:
+                infil_flow = val_float
+            elif pname == "infiltration_schedule_name":
+                infil_sched = val
+
+            elif pname == "ventilation_object_name":
+                vent_name = val
+            elif pname == "ventilation_object_type":
+                vent_type = val
+            elif pname == "ventilation_flow_m3_s" and val_float is not None:
+                vent_flow = val_float
+            elif pname == "ventilation_schedule_name":
+                vent_sched = val
+
+        # Now we have infiltration + vent parameters for zone_name
+        # Create or update infiltration object
+        iobj = _create_zone_level_object(
+            idf, obj_name=infil_name, obj_type=infil_type,
+            zone_name=zone_name,
+            design_flow=infil_flow,
+            sched_name=infil_sched
+        )
+
+        # Create or update ventilation (or attach to IdealLoads if type=ZONEHVAC:IDEALLOADSAIRSYSTEM)
+        vobj = None
+        if vent_type.upper() == "ZONEHVAC:IDEALLOADSAIRSYSTEM":
+            # We interpret vent_name as the "Name" of an existing IdealLoads
+            # Then set max flow to vent_flow, or we skip if not found
+            ideal = idf.getobject(vent_type, vent_name.upper())
+            if ideal:
+                # set max flow
+                ideal.Heating_Limit = "LimitFlowRate"
+                ideal.Maximum_Heating_Air_Flow_Rate = vent_flow
+                ideal.Cooling_Limit = "LimitFlowRate"
+                ideal.Maximum_Cooling_Air_Flow_Rate = vent_flow
+                vobj = ideal
+                print(f"[VENT] Updated IdealLoads '{vent_name}' => flow={vent_flow:.5f}")
+            else:
+                print(f"[VENT WARNING] IdealLoads '{vent_name}' not found for zone '{zone_name}'.")
+        else:
+            # Assume "ZONEVENTILATION:DESIGNFLOWRATE"
+            vobj = _create_zone_level_object(
+                idf, obj_name=vent_name, obj_type=vent_type,
+                zone_name=zone_name,
+                design_flow=vent_flow,
+                sched_name=vent_sched
+            )
+
+        print(f"Zone={zone_name} => infiltration={infil_name}@{infil_flow:.5f}, vent={vent_name}@{vent_flow:.5f}")
+
+
+def _create_zone_level_object(idf, obj_name, obj_type, zone_name, design_flow, sched_name):
+    """
+    A helper that creates or updates a zone-level infiltration or ventilation object,
+    depending on obj_type (e.g. "ZONEINFILTRATION:DESIGNFLOWRATE",
+    "ZONEVENTILATION:DESIGNFLOWRATE", etc.).
+    """
+    if not obj_type:
+        print(f"[VENT WARNING] No obj_type provided for zone {zone_name}, skipping.")
+        return None
+    if not obj_name:
+        print(f"[VENT WARNING] No obj_name provided for zone {zone_name}, skipping.")
+        return None
+
+    # If the IDF doesn't have that object type, we skip
+    # (E.g. if user typed 'ZONEINFILTRATION:DESIGNFLOWRATE' incorrectly)
+    obj_type_upper = obj_type.upper()
+    if obj_type_upper not in idf.idfobjects:
+        print(f"[VENT WARNING] IDF has no object type '{obj_type_upper}'. Skipping zone {zone_name}.")
+        return None
+
+    existing = [
+        obj for obj in idf.idfobjects[obj_type_upper]
+        if obj.Name.upper() == obj_name.upper()
+    ]
+    if existing:
+        obj = existing[0]
+    else:
+        obj = idf.newidfobject(obj_type_upper, Name=obj_name)
+
+    # Assign the zone name
+    if hasattr(obj, "Zone_or_ZoneList_or_Space_or_SpaceList_Name"):
+        obj.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zone_name
+    else:
+        # older or different IDD field name
+        obj.Zone_or_ZoneList_Name = zone_name
+
+    if hasattr(obj, "Schedule_Name"):
+        obj.Schedule_Name = sched_name
+
+    # For infiltration/vent design flow
+    if hasattr(obj, "Design_Flow_Rate_Calculation_Method"):
+        obj.Design_Flow_Rate_Calculation_Method = "Flow/Zone"
+        obj.Design_Flow_Rate = design_flow
+    else:
+        # If it's IdealLoads or something else, we do a custom approach
+        pass
+
+    return obj
 
   --- File Contents End ---
 
