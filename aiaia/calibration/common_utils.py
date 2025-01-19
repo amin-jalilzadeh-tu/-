@@ -111,30 +111,16 @@ def pick_value_in_range(base_val, param_min, param_max,
     return base_val_f
 
 
-###############################################################################
-# 2B) Distinguish between numeric vs. string parameters
-###############################################################################
-# Suppose we know some parameters must remain string (e.g., "system_type").
-STRING_PARAMS = [
-    "system_type",
-    "fan_control_mode",
-    "schedule_name",
-    "ventilation_schedule_name",
-    "infiltration_schedule_name",
-    # Add more as needed...
-]
-
-
-def define_building_param_strategy(df_main_sub,
-                                   picking_method="random_uniform",
+def define_building_param_strategy(df_main_sub, picking_method="random_uniform",
                                    scale_factor=0.5):
     """
     Loops over rows in df_main_sub to build {param_name -> new_value}.
-    For each row, we call pick_value_in_range(...) only if param_name is numeric.
+    For each row, we call pick_value_in_range(...) to generate a new numeric value.
 
-    If param_name is in STRING_PARAMS, we do NOT randomly pick numeric ranges.
-    Instead, we keep the original value as str or pick from possible strings
-    (depending on your preference).
+    - Skips rows with param_name="schedule_details" or other obviously non-numeric fields.
+    - You can adapt if you want to skip more.
+
+    Returns: { param_name -> numeric_value }
     """
     final_param_dict = {}
 
@@ -143,17 +129,14 @@ def define_building_param_strategy(df_main_sub,
         if not param_name:
             continue
 
-        base_val = row.get("param_value", None)  # or row.get("assigned_value", None)
+        # Skip known non-numeric param names if needed
+        if param_name.lower() == "schedule_details":
+            continue
+
+        base_val = row.get("param_value", None)
         p_min = row.get("param_min", None)
         p_max = row.get("param_max", None)
 
-        # 1) If param_name is in STRING_PARAMS => keep as string
-        if param_name.lower() in STRING_PARAMS:
-            # If you want to keep the exact value, just do:
-            final_param_dict[param_name] = str(base_val)
-            continue
-
-        # 2) If param_name is known to be numeric => pick numeric
         new_val = pick_value_in_range(
             base_val=base_val,
             param_min=p_min,

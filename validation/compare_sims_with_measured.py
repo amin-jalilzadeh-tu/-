@@ -17,6 +17,7 @@ def load_csv_as_df(real_data_path, sim_data_path):
     print("[DEBUG] df_sim columns: ", df_sim.columns.to_list())
     return df_real, df_sim
 
+
 def align_data_for_variable(df_real, df_sim, real_building_id, sim_building_id, variable_name):
     """
     Returns aligned arrays of sim vs. obs for a given (real_building_id, sim_building_id, variable).
@@ -60,4 +61,3 @@ def align_data_for_variable(df_real, df_sim, real_building_id, sim_building_id, 
     )
 
     return merged['Value_sim'].values, merged['Value_obs'].values, merged
-

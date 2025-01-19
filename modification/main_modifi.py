@@ -1,29 +1,22 @@
-# main_modifi.py
-
 """
-Below is a conceptual example of how you might define a parameter space (with user overrides for building type, area, age, etc.) and generate initial parameter combinations using different Design of Experiments (DOE) strategies (e.g., full factorial, random, or Latin Hypercube). This is just a template; you will likely adapt it to your actual parameters, data structures, and workflow.
+main_modifi.py
 
-Initial Parameter Space & Design of Experiments (DOE)
-
-Define the key parameters of interest (e.g., infiltration, occupant density, material thermal properties) along with reasonable ranges.
-(Optional) Perform a design of experiments (e.g., Latin Hypercube, full factorial for small parameter sets, or random sampling) to systematically pick some initial parameter combinations.
-as you see we make user configs to override lookups. we want that for example for a builing type with area, age building type and function, to generate many configurations and run simmulations. lets first work on it. 
-
-
-
-
-
-
-Example orchestrator script for integrating HVAC, DHW, Ventilation, 
-Electrical (lighting/parasitics), and Fenestration scenario picks.
+Handles the generation of scenario-based IDFs for sensitivity, surrogate, 
+calibration, or any parametric runs. It:
+  1) Loads previously "assigned" CSVs or base parameter data for HVAC, DHW, Vent, Elec
+  2) (Optionally) generates multiple scenario parameter sets for these subsystems
+     (HVAC, DHW, Vent, Elec)
+  3) Leaves fenestration (fenez) as a CSV-based approach (Option A) so we
+     directly pass the CSV path to `apply_object_level_fenez(...)`.
+  4) Applies these parameters to a base IDF to produce new scenario IDFs
+  5) Optionally runs simulations, post-processes, and performs validation
 """
 
 import os
 import pandas as pd
-import random
 
-# 1) Import your common utilities
-from common_utils import (
+# 1) Common utility imports
+from modification.common_utils import (
     load_assigned_csv,
     load_scenario_csv,
     load_idf,
@@ -32,265 +25,275 @@ from common_utils import (
     save_param_scenarios_to_csv
 )
 
-# 2) Import your subsystem modules
-from hvac_functions import apply_building_level_hvac, apply_zone_level_hvac
-from dhw_functions import apply_dhw_params_to_idf
-from vent_functions import apply_building_level_vent, apply_zone_level_vent
+# 2) Subsystem functions (placeholders; replace with your actual names)
+from modification.hvac_functions import apply_building_level_hvac, apply_zone_level_hvac
+from modification.dhw_functions import apply_dhw_params_to_idf
+from modification.vent_functions import apply_building_level_vent, apply_zone_level_vent
+# from elec_functions import apply_elec_params_to_idf   # if you have such a module
+from modification.fenez_functions import apply_object_level_fenez
 
-# (Assuming you have these two new modules)
-#from elec_functions import apply_elec_params_to_idf  # or your actual function name
-from fenez_functions import apply_object_level_fenez  # or your actual function name
-
-###############################################################################
-# USER CONFIG
-###############################################################################
-
-# Paths to your base IDF and IDD
-BASE_IDF_PATH = r"D:\Documents\E_Plus_2030_py\output\output_IDFs\building_0.idf"
-IDD_PATH      = r"D:\EnergyPlus\Energy+.idd"
-
-# Example assigned CSVs
-HVAC_CSV       = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_hvac_building.csv"
-DHW_CSV        = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_dhw_params.csv"
-VENT_CSV       = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_vent_building.csv"
-ELEC_CSV       = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_lighting.csv"
-FENEZ_CSV      = r"D:\Documents\E_Plus_2030_py\output\assigned\structured_fenez_params.csv"
-
-VENT_ZONE_CSV  = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_vent_zones.csv"
-# HVAC_ZONE_CSV  = ...
-# etc.
-
-# Output CSVs for scenario picks
-HVAC_SCENARIO_CSV  = r"D:\Documents\E_Plus_2030_py\output\scenarios\scenario_params_hvac.csv"
-DHW_SCENARIO_CSV   = r"D:\Documents\E_Plus_2030_py\output\scenarios\scenario_params_dhw.csv"
-VENT_SCENARIO_CSV  = r"D:\Documents\E_Plus_2030_py\output\scenarios\scenario_params_vent.csv"
-ELEC_SCENARIO_CSV  = r"D:\Documents\E_Plus_2030_py\output\scenarios\scenario_params_elec.csv"
-# For fenestration, we typically rely on the structured_fenez_params.csv itself. 
-# But you *could* also do a param-based approach if you like.
-FENEZ_SCENARIO_CSV  = r"D:\Documents\E_Plus_2030_py\output\scenarios\scenario_params_fenez.csv"
-
-# Output folder for newly generated scenario IDFs
-OUTPUT_IDF_DIR = r"D:\Documents\E_Plus_2030_py\output\scenario_idfs"
+# 3) Simulation, post-processing, and validation imports (placeholders)
+# from epw.run_epw_sims import simulate_all
+# from postproc.merge_results import merge_all_results
+# from validation.main_validation import run_validation_process
 
 
-def main():
-    os.makedirs(OUTPUT_IDF_DIR, exist_ok=True)
+def run_modification_workflow(config):
+    """
+    Main function that orchestrates scenario generation, IDF creation,
+    optional simulation, post-processing, and validation.
 
-    ###########################################################################
-    # STEP A) LOAD "ASSIGNED" CSVs (HVAC, DHW, Vent, Elec, Fenez)
-    #         Possibly filter for a building of interest
-    ###########################################################################
-    building_id = 4136730  # example
+    We do scenario-based picks for HVAC, DHW, Vent, Elec, but for fenestration
+    we keep the original CSV approach. That means `apply_object_level_fenez`
+    expects a CSV path. We'll pass the 'fenez' assigned path directly,
+    skipping scenario generation for fenestration.
 
-    # HVAC
-    df_hvac = load_assigned_csv(HVAC_CSV)
+    Expected config structure (example):
+    {
+      "base_idf_path": "D:/Documents/E_Plus_2030_py/output/output_IDFs/building_0.idf",
+      "idd_path":      "D:/EnergyPlus/Energy+.idd",
+
+      "assigned_csv": {
+        "hvac":  "D:/Documents/E_Plus_2030_py/output/assigned/assigned_hvac_building.csv",
+        "dhw":   "D:/Documents/E_Plus_2030_py/output/assigned/assigned_dhw_params.csv",
+        "vent":  "D:/Documents/E_Plus_2030_py/output/assigned/assigned_vent_building.csv",
+        "elec":  "D:/Documents/E_Plus_2030_py/output/assigned/assigned_lighting.csv",
+        "fenez": "D:/Documents/E_Plus_2030_py/output/assigned/structured_fenez_params.csv"
+      },
+
+      "scenario_csv": {
+        "hvac":  "D:/Documents/E_Plus_2030_py/output/scenarios/scenario_params_hvac.csv",
+        "dhw":   "D:/Documents/E_Plus_2030_py/output/scenarios/scenario_params_dhw.csv",
+        "vent":  "D:/Documents/E_Plus_2030_py/output/scenarios/scenario_params_vent.csv",
+        "elec":  "D:/Documents/E_Plus_2030_py/output/scenarios/scenario_params_elec.csv"
+        // "fenez": not needed now
+      },
+
+      "output_idf_dir": "D:/Documents/E_Plus_2030_py/output/scenario_idfs",
+      "building_id": 4136730,
+      "num_scenarios": 5,
+      "picking_method": "random_uniform",
+      "picking_scale_factor": 0.5,
+
+      "run_simulations": True,
+      "simulation_config": {
+         "num_workers": 4,
+         "output_dir": "D:/Documents/E_Plus_2030_py/output/Sim_Results/Scenarios"
+      },
+
+      "perform_post_process": True,
+      "post_process_config": {
+         "output_csv_as_is": "D:/Documents/E_Plus_2030_py/output/results/merged_as_is_scenarios.csv",
+         "output_csv_daily_mean": "D:/Documents/E_Plus_2030_py/output/results/merged_daily_mean_scenarios.csv"
+      },
+
+      "perform_validation": True,
+      "validation_config": {
+         "real_data_csv": "D:/Documents/E_Plus_2030_py/output/results/mock_merged_daily_mean.csv",
+         "sim_data_csv":  "D:/Documents/E_Plus_2030_py/output/results/merged_daily_mean_mocked.csv",
+         "bldg_ranges": {0: range(0,5)},
+         "threshold_cv_rmse": 30.0,
+         "skip_plots": False,
+         "output_csv": "scenario_validation_report.csv"
+      }
+    }
+    """
+    # 1) Extract top-level config
+    base_idf_path   = config["base_idf_path"]
+    idd_path        = config["idd_path"]
+    assigned_csvs   = config["assigned_csv"]      # dictionary of assigned CSV paths
+    scenario_csvs   = config["scenario_csv"]      # dictionary of scenario CSV output paths
+    building_id     = config["building_id"]
+    num_scenarios   = config["num_scenarios"]
+    picking_method  = config["picking_method"]
+    scale_factor    = config.get("picking_scale_factor", 1.0)
+    output_idf_dir  = config["output_idf_dir"]
+
+    os.makedirs(output_idf_dir, exist_ok=True)
+
+    # 2) Load "assigned" CSVs for HVAC, DHW, Vent, Elec
+    #    (We skip scenario-based fenestration, so we won't load df_fenez_sub for scenarios)
+    df_hvac  = load_assigned_csv(assigned_csvs["hvac"])
+    df_dhw   = load_assigned_csv(assigned_csvs["dhw"])
+    df_vent  = load_assigned_csv(assigned_csvs["vent"])
+    df_elec  = load_assigned_csv(assigned_csvs["elec"])
+
+    # Filter for the building of interest
     df_hvac_sub = df_hvac[df_hvac["ogc_fid"] == building_id].copy()
-
-    # DHW
-    df_dhw = load_assigned_csv(DHW_CSV)
-    df_dhw_sub = df_dhw[df_dhw["ogc_fid"] == building_id].copy()
-
-    # Vent
-    df_vent = load_assigned_csv(VENT_CSV)
+    df_dhw_sub  = df_dhw[df_dhw["ogc_fid"] == building_id].copy()
     df_vent_sub = df_vent[df_vent["ogc_fid"] == building_id].copy()
-
-    # Elec (lighting, parasitics)
-    df_elec = load_assigned_csv(ELEC_CSV)
     df_elec_sub = df_elec[df_elec["ogc_fid"] == building_id].copy()
 
-    # For fenestration, do the same "assigned" approach:
-    df_fenez = load_assigned_csv(FENEZ_CSV)
-    df_fenez_sub = df_fenez[df_fenez["ogc_fid"] == building_id].copy()
-
-
-    # Fenestration => structured CSV approach
-    # (We typically don't need to filter by building_id if the CSV already 
-    #  has the building-level or zone-level references. Or do so if needed.)
-    # df_fenez = load_assigned_csv(FENEZ_CSV)
-    # df_fenez_sub = df_fenez[df_fenez["ogc_fid"] == building_id].copy()
-    # We'll let apply_object_level_fenez(...) handle it directly if it can parse building_id, etc.
-
-    ###########################################################################
-    # STEP B) GENERATE MULTIPLE SCENARIO PICKS (if desired)
-    ###########################################################################
-    num_scenarios = 5  # smaller for demonstration
-
-    # B1) HVAC scenarios
+    # 3) Generate multiple scenario picks (HVAC, DHW, Vent, Elec)
     hvac_scenarios = generate_multiple_param_sets(
         df_main_sub=df_hvac_sub,
         num_sets=num_scenarios,
-        picking_method="random_uniform",
-        scale_factor=0.5
+        picking_method=picking_method,
+        scale_factor=scale_factor
     )
     save_param_scenarios_to_csv(
         all_scenarios=hvac_scenarios,
         building_id=building_id,
-        out_csv=HVAC_SCENARIO_CSV
+        out_csv=scenario_csvs["hvac"]
     )
 
-    # B2) DHW scenarios
     dhw_scenarios = generate_multiple_param_sets(
         df_main_sub=df_dhw_sub,
         num_sets=num_scenarios,
-        picking_method="random_uniform",
-        scale_factor=0.5
+        picking_method=picking_method,
+        scale_factor=scale_factor
     )
     save_param_scenarios_to_csv(
         all_scenarios=dhw_scenarios,
         building_id=building_id,
-        out_csv=DHW_SCENARIO_CSV
+        out_csv=scenario_csvs["dhw"]
     )
 
-    # B3) Vent scenarios
     vent_scenarios = generate_multiple_param_sets(
         df_main_sub=df_vent_sub,
         num_sets=num_scenarios,
-        picking_method="random_uniform",
-        scale_factor=0.5
+        picking_method=picking_method,
+        scale_factor=scale_factor
     )
     save_param_scenarios_to_csv(
         all_scenarios=vent_scenarios,
         building_id=building_id,
-        out_csv=VENT_SCENARIO_CSV
+        out_csv=scenario_csvs["vent"]
     )
 
-    # B4) Elec scenarios
     elec_scenarios = generate_multiple_param_sets(
         df_main_sub=df_elec_sub,
         num_sets=num_scenarios,
-        picking_method="random_uniform",
-        scale_factor=0.5
+        picking_method=picking_method,
+        scale_factor=scale_factor
     )
     save_param_scenarios_to_csv(
-            all_scenarios=elec_scenarios,
-            building_id=building_id,
-            out_csv=ELEC_SCENARIO_CSV
-        )
-    # B5) Fenez
-    # We'll use the same approach to produce a scenario_params_fenez.csv
-    fenez_scenarios = generate_multiple_param_sets(
-        df_main_sub=df_fenez_sub,
-        num_sets=num_scenarios,
-        picking_method="random_uniform",
-        scale_factor=0.5
-    )
-    save_param_scenarios_to_csv(
-        all_scenarios=fenez_scenarios,
+        all_scenarios=elec_scenarios,
         building_id=building_id,
-        out_csv=FENEZ_SCENARIO_CSV
+        out_csv=scenario_csvs["elec"]
     )
-    
 
-    ###########################################################################
-    # STEP C) FOR EACH SCENARIO, LOAD BASE IDF, APPLY SUBSYSTEM PARAMS, SAVE
-    ###########################################################################
-    df_hvac_scen = load_scenario_csv(HVAC_SCENARIO_CSV)
-    df_dhw_scen  = load_scenario_csv(DHW_SCENARIO_CSV)
-    df_vent_scen = load_scenario_csv(VENT_SCENARIO_CSV)
-    df_elec_scen = load_scenario_csv(ELEC_SCENARIO_CSV)
-    df_fenez_scen = load_scenario_csv(FENEZ_SCENARIO_CSV)
+    # For fenestration, we do NOT do scenario generation; we pass the assigned CSV path directly.
 
-    # We won't do a "scenario" approach for fenestration in this example 
-    # but you can replicate if you want.
+    # 4) Load scenario CSVs for HVAC, DHW, Vent, Elec
+    df_hvac_scen = load_scenario_csv(scenario_csvs["hvac"])
+    df_dhw_scen  = load_scenario_csv(scenario_csvs["dhw"])
+    df_vent_scen = load_scenario_csv(scenario_csvs["vent"])
+    df_elec_scen = load_scenario_csv(scenario_csvs["elec"])
 
     hvac_groups = df_hvac_scen.groupby("scenario_index")
     dhw_groups  = df_dhw_scen.groupby("scenario_index")
     vent_groups = df_vent_scen.groupby("scenario_index")
     elec_groups = df_elec_scen.groupby("scenario_index")
-    fenez_groups = df_fenez_scen.groupby("scenario_index")
 
+    # Because fenestration isn't scenario-based, we just store the CSV path:
+    fenez_csv_path = assigned_csvs["fenez"]  # e.g. "D:/Documents/E_Plus_2030_py/output/assigned/structured_fenez_params.csv"
+
+    # 5) For each scenario, load base IDF, apply params, apply fenestration from CSV, then save
     for i in range(num_scenarios):
-        print(f"\n--- Processing scenario #{i} for building {building_id} ---")
+        print(f"\n--- Creating scenario #{i} IDF for building {building_id} ---")
 
-        hvac_group_df = hvac_groups.get_group(i)
-        dhw_group_df  = dhw_groups.get_group(i)
-        vent_group_df = vent_groups.get_group(i)
-        elec_group_df = elec_groups.get_group(i)
-        fenez_group_df = fenez_groups.get_group(i)
+        hvac_df   = hvac_groups.get_group(i)
+        dhw_df    = dhw_groups.get_group(i)
+        vent_df   = vent_groups.get_group(i)
+        elec_df   = elec_groups.get_group(i)
 
-        # Build param dict for HVAC
-        hvac_param_dict = {}
-        for row in hvac_group_df.itertuples():
-            p_name = row.param_name
-            val = row.assigned_value
-            try:
-                hvac_param_dict[p_name] = float(val)
-            except:
-                hvac_param_dict[p_name] = val
+        # Build param dicts
+        hvac_params = _make_param_dict(hvac_df)
+        dhw_params  = _make_param_dict(dhw_df)
+        vent_params = _make_param_dict(vent_df)
+        elec_params = _make_param_dict(elec_df)
+        # fenestration => no param dict, we have a CSV approach
 
-        # Build param dict for DHW
-        dhw_param_dict = {}
-        for row in dhw_group_df.itertuples():
-            p_name = row.param_name
-            val = row.assigned_value
-            try:
-                dhw_param_dict[p_name] = float(val)
-            except:
-                dhw_param_dict[p_name] = val
+        # 5a) Load base IDF
+        idf = load_idf(base_idf_path, idd_path)
 
-        # Build param dict for Vent
-        vent_param_dict = {}
-        for row in vent_group_df.itertuples():
-            p_name = row.param_name
-            val = row.assigned_value
-            if p_name in ["system_type", "infiltration_schedule_name", "ventilation_schedule_name"]:
-                vent_param_dict[p_name] = str(val)
-            else:
-                try:
-                    vent_param_dict[p_name] = float(val)
-                except:
-                    vent_param_dict[p_name] = val
+        # 5b) Apply HVAC
+        apply_building_level_hvac(idf, hvac_params)
 
-        # Build param dict for Elec
-        elec_param_dict = {}
-        for row in elec_group_df.itertuples():
-            p_name = row.param_name
-            val = row.assigned_value
-            try:
-                elec_param_dict[p_name] = float(val)
-            except:
-                elec_param_dict[p_name] = val
+        # 5c) Apply DHW
+        apply_dhw_params_to_idf(idf, dhw_params, suffix=f"Scenario_{i}")
+
+        # 5d) Apply Vent
+        apply_building_level_vent(idf, vent_params)
+
+        # 5e) Apply Elec
+        # apply_elec_params_to_idf(idf, elec_params)   # if you have an elec function
+
+        # 5f) Apply Fenestration from the assigned CSV path (Option A)
+        apply_object_level_fenez(idf, "D:/Documents/E_Plus_2030_py/output/scenarios/scenario_params_fenez.csv")
+        # ^ `apply_object_level_fenez(...)` reads from CSV. 
+        #   It does not expect a dict; pass the actual file path.
+
+        # 6) Save scenario IDF
+        scenario_idf_name = f"building_{building_id}_scenario_{i}.idf"
+        scenario_idf_path = os.path.join(output_idf_dir, scenario_idf_name)
+        save_idf(idf, scenario_idf_path)
+        print(f"[INFO] Saved scenario IDF: {scenario_idf_path}")
+
+    print("[INFO] All scenario IDFs generated successfully.")
+
+    # -------------------------------------------------------------------------
+    # 6) (Optional) Run Simulations
+    # -------------------------------------------------------------------------
+    if config.get("run_simulations", False):
+        print("\n[INFO] Running simulations for scenario IDFs...")
+        sim_cfg = config.get("simulation_config", {})
+        # from epw.run_epw_sims import simulate_all
+        # simulate_all(
+        #    idf_folder=output_idf_dir,
+        #    output_folder=sim_cfg.get("output_dir", "Sim_Results/Scenarios"),
+        #    num_workers=sim_cfg.get("num_workers", 4)
+        # )
+        print("[INFO] Simulations complete (placeholder).")
+
+    # -------------------------------------------------------------------------
+    # 7) (Optional) Post-processing
+    # -------------------------------------------------------------------------
+    if config.get("perform_post_process", False):
+        print("[INFO] Performing post-processing merges (placeholder).")
+        # from postproc.merge_results import merge_all_results
+        ppcfg = config.get("post_process_config", {})
+        # merged_as_is   = ppcfg.get("output_csv_as_is", "merged_as_is_scenarios.csv")
+        # merged_daily   = ppcfg.get("output_csv_daily_mean", "merged_daily_mean_scenarios.csv")
+
+        # e.g.:
+        # merge_all_results(
+        #    base_output_dir=sim_cfg.get("output_dir", "Sim_Results/Scenarios"),
+        #    output_csv=merged_as_is,
+        #    convert_to_daily=False
+        # )
+        # merge_all_results(
+        #    base_output_dir=sim_cfg.get("output_dir", "Sim_Results/Scenarios"),
+        #    output_csv=merged_daily,
+        #    convert_to_daily=True,
+        #    daily_aggregator="mean"
+        # )
+        print("[INFO] Post-processing step complete (placeholder).")
+
+    # -------------------------------------------------------------------------
+    # 8) (Optional) Validation
+    # -------------------------------------------------------------------------
+    if config.get("perform_validation", False):
+        print("[INFO] Performing validation on scenario results (placeholder).")
+        # from validation.main_validation import run_validation_process
+        val_cfg = config["validation_config"]
+        # run_validation_process(val_cfg)
+        print("[INFO] Validation step complete (placeholder).")
 
 
-        # Fenestration
-        fenez_param_dict = {}
-        for row in fenez_group_df.itertuples():
-            p_name = row.param_name
-            val    = row.assigned_value
-            try:
-                fenez_param_dict[p_name] = float(val)
-            except:
-                fenez_param_dict[p_name] = val
-
-        # 1) Load base IDF
-        idf = load_idf(BASE_IDF_PATH, IDD_PATH)
-
-        # 2) Apply HVAC
-        apply_building_level_hvac(idf, hvac_param_dict)
-
-        # 3) Apply DHW
-        apply_dhw_params_to_idf(idf, dhw_param_dict, suffix=f"MyDHW_{i}")
-
-        # 4) Apply Vent
-        apply_building_level_vent(idf, vent_param_dict)
-
-        # 5) Apply Elec
-        #    e.g. sets lighting W/m2, schedule, fraction radiant, etc.
-        #apply_elec_params_to_idf(idf, elec_param_dict)
-
-        # 6) Apply Fenestration (object-level approach)
-        #    If you want to handle fenestration param changes in each scenario,
-        #    you could pass scenario data to your function. 
-        #    But in this example, we rely on a single CSV for fenestration, so:
-        apply_object_level_fenez(idf, FENEZ_CSV)
-
-        # 7) Save new scenario IDF
-        out_idf_name = f"building_{building_id}_scenario_{i}.idf"
-        out_idf_path = os.path.join(OUTPUT_IDF_DIR, out_idf_name)
-        save_idf(idf, out_idf_path)
-
-    print("[INFO] All scenario IDFs processed successfully.")
-
-
-if __name__ == "__main__":
-    main()
+def _make_param_dict(df_scenario):
+    """
+    Helper function to build a param dict from scenario DataFrame.
+    e.g., each row has (param_name, assigned_value).
+    """
+    param_dict = {}
+    for row in df_scenario.itertuples():
+        p_name = row.param_name
+        val = row.assigned_value
+        # Attempt float conversion if possible
+        try:
+            param_dict[p_name] = float(val)
+        except:
+            param_dict[p_name] = val
+    return param_dict
