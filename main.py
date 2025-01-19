@@ -52,7 +52,7 @@ from idf_objects.tempground.add_ground_temperatures import add_ground_temperatur
 from idf_objects.outputdef.assign_output_settings import assign_output_settings
 from idf_objects.outputdef.add_output_definitions import add_output_definitions
 
-from idf_objects.postproc.merge_results import merge_all_results
+from postproc.merge_results import merge_all_results
 from idf_objects.other.zonelist import create_zonelist
 
 # (1) Import your default epw_lookup
