@@ -1,0 +1,10 @@
+[
+    {
+        "building_id": 4136730,
+        "fixed_epw_path": "C:/MyCustom.epw"
+    },
+    {
+        "desired_year": 2050,
+        "override_year_to": 2018
+    }
+]

@@ -1,0 +1,23 @@
+{
+   "lighting": [
+       {
+           "building_id": 4136730,
+           "param_name": "lights_wm2",
+           "min_val": 18.0,
+           "max_val": 20.0
+       },
+       {
+           "building_type": "Residential",
+           "param_name": "tN",
+           "min_val": 10999,
+           "max_val": 11999
+       },
+       {
+           "building_id": 4136731,
+           "building_type": "non_residential",
+           "param_name": "parasitic_wm2",
+           "min_val": 0.28,
+           "max_val": 0.30
+       }
+   ]
+}

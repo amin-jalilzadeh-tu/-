@@ -21,18 +21,15 @@ from idf_objects.fenez.fenestration import add_fenestration
 ##############################################################################
 # 1) BUILDING-LEVEL FENESTRATION
 ##############################################################################
-
 def apply_building_level_fenez(
     idf,
     building_row,
-    param_dict=None,
     scenario="scenario1",
     calibration_stage="pre_calibration",
     strategy="A",
     random_seed=None,
     user_config_fenez=None,
     assigned_fenez_log=None,
-    # controlling whether we create windows from WWR, etc.
     add_windows=True,
     use_computed_wwr=False,
     include_doors_in_wwr=False
@@ -44,35 +41,31 @@ def apply_building_level_fenez(
       2) Assign those Constructions to surfaces (assign_constructions_to_surfaces).
       3) Optionally call add_fenestration(...) to set WWR or create new windows.
 
-    param_dict: 
-      - If you already have a dictionary of final picks for R-values, U-values, 
-        wwr, or material lookups, you can pass it via user_config_fenez. 
-        (We typically do so, or rely on the building_row’s default data 
-         plus any scenario-based logic.)
-
     building_row:
-      - A dictionary with fields like "ogc_fid", "building_function", etc. 
-      - This is used by `update_construction_materials` to find age_range, etc.
+      - A dict with "ogc_fid", "building_function" (residential / non_residential), 
+        "age_range", etc.
+
+    user_config_fenez:
+      - A merged fenestration dictionary for this building (like res_data *or* nonres_data).
+      - If you have separate logic for res & nonres, you can pass only the relevant one here 
+        or you can do a building_function check and pass it accordingly.
 
     assigned_fenez_log:
-      - If provided, the final picks (R-values, thickness, conduction, WWR, etc.) 
-        are logged under assigned_fenez_log[building_id].
+      - If provided, logs final picks (R-values, thickness, WWR, etc.).
 
     add_windows:
-      - If True, we call add_fenestration(...) to create new FENESTRATIONSURFACE:DETAILED 
-        in the IDF (using `geomeppy.IDF.set_wwr`).
-      - If False, we skip that part.
+      - If True, calls add_fenestration(...) to create new windows.
 
     use_computed_wwr, include_doors_in_wwr:
-      - Passed to add_fenestration(...) for computing WWR from sub-element areas 
-        or including door area in the fenestration ratio.
+      - Passed to add_fenestration(...) for computing WWR from sub-element areas, etc.
 
     Returns:
-      construction_map: dict mapping sub-element name => construction name 
-                       (for reference if needed).
+      construction_map : dict, mapping sub-element => construction name
     """
 
+    ############################################################################
     # 1) Update constructions & materials
+    ############################################################################
     construction_map = update_construction_materials(
         idf=idf,
         building_row=building_row,
@@ -81,15 +74,31 @@ def apply_building_level_fenez(
         calibration_stage=calibration_stage,
         strategy=strategy,
         random_seed=random_seed,
-        user_config_fenez=user_config_fenez,  # param_dict could be merged here
+        user_config_fenez=user_config_fenez,  # <= the dictionary with final picks
         assigned_fenez_log=assigned_fenez_log
     )
 
     # 2) Assign them to surfaces
     assign_constructions_to_surfaces(idf, construction_map)
 
+    ############################################################################
     # 3) Optionally add fenestration (WWR)
+    ############################################################################
     if add_windows:
+        # Decide if building is residential or non_res
+        bldg_func = str(building_row.get("building_function", "residential")).lower()
+
+        # We'll pass user_config_fenez as res_data if it's a res building,
+        # or as nonres_data if it's nonres.  If you truly have separate dictionaries 
+        # for res vs. nonres, you might do this differently.
+        res_dict = None
+        nonres_dict = None
+
+        if bldg_func == "residential":
+            res_dict = user_config_fenez
+        else:
+            nonres_dict = user_config_fenez
+
         add_fenestration(
             idf=idf,
             building_row=building_row,
@@ -97,13 +106,17 @@ def apply_building_level_fenez(
             calibration_stage=calibration_stage,
             strategy=strategy,
             random_seed=random_seed,
-            user_config_fenez=user_config_fenez,
+            # Pass the dict you want. If building is res, res_dict gets the picks,
+            # otherwise nonres_dict does.
+            res_data=res_dict,
+            nonres_data=nonres_dict,
             assigned_fenez_log=assigned_fenez_log,
             use_computed_wwr=use_computed_wwr,
             include_doors_in_wwr=include_doors_in_wwr
         )
 
     return construction_map
+
 
 
 ##############################################################################

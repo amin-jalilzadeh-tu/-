@@ -1,0 +1,28 @@
+{
+    "vent": [
+        {
+            "building_id": 4136730,
+            "param_name": "infiltration_base",
+            "min_val": 100.3,
+            "max_val": 100.4
+        },
+        {
+            "building_function": "residential",
+            "age_range": "1992-2005",
+            "param_name": "year_factor",
+            "min_val": 21.4,
+            "max_val": 21.5
+        },
+        {
+            "building_id": 4136731,
+            "param_name": "system_type",
+            "fixed_value": "D"
+        },
+        {
+            "building_id": 4136731,
+            "param_name": "fan_pressure",
+            "min_val": 100,
+            "max_val": 120
+        }
+    ]
+}

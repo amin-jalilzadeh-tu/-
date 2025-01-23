@@ -18,7 +18,7 @@ def add_dhw_to_idf(
     """
     1) Retrieve 'dhw_key' from building_row (or fallback).
     2) Pull parameter ranges from dhw_lookup => assign final picks in assign_dhw_parameters().
-    3) Merge with user_config_dhw if any.
+    3) Merge with user_config_dhw if any (including building_function, age_range, etc.).
     4) Calculate occupant_count, daily usage, peak flow, etc.
     5) Create schedules, then WaterHeater:Mixed object in the IDF.
     6) Log object names and all relevant fields in assigned_dhw_log for debugging or future Eppy edits.
@@ -31,8 +31,13 @@ def add_dhw_to_idf(
     if assigned_dhw_log is not None and bldg_id not in assigned_dhw_log:
         assigned_dhw_log[bldg_id] = {}
 
-    # Decide which DHW key to use, e.g., "Apartment" or "Office Function"
+    # Decide which DHW key to use, e.g. "Apartment" or "Office Function"
     dhw_building_key = building_row.get("dhw_key", "Detached House")
+
+    # === NEW: Extract building_function and age_range to pass along ===
+    bldg_func = building_row.get("building_function", "")  # e.g. "residential"
+    bldg_age  = building_row.get("age_range", None)        # e.g. "1992 - 2005"
+    # === END NEW ===
 
     # 1) Assign final picks from dhw_lookup (with user overrides, if any)
     assigned = assign_dhw_parameters(
@@ -44,7 +49,9 @@ def add_dhw_to_idf(
         user_config_dhw=user_config_dhw,
         assigned_dhw_log=assigned_dhw_log,  # logging final picks + range
         building_row=building_row,
-        use_nta=use_nta
+        use_nta=use_nta,
+        building_function=bldg_func,  # <--- pass building function
+        age_range=bldg_age           # <--- pass building age_range
     )
 
     # 2) Calculate occupant_count, daily liters, etc.

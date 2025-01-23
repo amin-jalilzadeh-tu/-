@@ -1,0 +1,13 @@
+[
+  {
+      "building_id": 4136730,
+      "param_name": "occupant_density_m2_per_person",
+      "fixed_value": null
+  },
+  {
+      "dhw_key": "Office",
+      "param_name": "setpoint_c",
+      "min_val": 58.0,
+      "max_val": 60.0
+  }
+]

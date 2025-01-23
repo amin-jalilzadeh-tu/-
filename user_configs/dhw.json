@@ -1,0 +1,32 @@
+{
+    "dhw": [
+      {
+
+        "building_id": 4136730,
+        "param_name": "occupant_density_m2_per_person",
+        "min_val": 127.0,
+        "max_val": 233.0
+      },
+      {
+
+        "building_id": 4136730,
+        "param_name": "liters_per_person_per_day",
+        "fixed_value": 145.0
+      },
+      {
+
+        "building_function": "residential",
+        "age_range": "1992-2005",
+        "param_name": "setpoint_c",
+        "min_val": 558.0,
+        "max_val": 600.0
+      },
+      {
+        "building_function": "non_residential",
+        "param_name": "occupant_density_m2_per_person",
+        "min_val": 12.0,
+        "max_val": 18.0
+      }
+    ]
+  }
+  

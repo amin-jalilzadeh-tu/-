@@ -100,11 +100,11 @@ def extract_parameter_ranges(
     If they do not exist or are NaN / invalid, we fallback to ±20% around
     the 'assigned_value', or [0,1] as a last resort, ensuring min < max.
 
-    If param_min >= param_max, we also fallback.
+    If a parameter's assigned_value is non-numeric (e.g. "AlwaysOnSched"),
+    we skip it for SALib-based analysis.
 
     The final DataFrame is used by SALib for Morris/Sobol.
     """
-    # Check presence
     has_min = (param_min_col in merged_df.columns)
     has_max = (param_max_col in merged_df.columns)
 
@@ -114,9 +114,10 @@ def extract_parameter_ranges(
     for p in param_names:
         sub = merged_df[merged_df[param_name_col] == p]
 
-        # Grab first row's param_min, param_max if available
         if sub.empty:
             continue
+
+        # Attempt to read param_min / param_max
         if has_min and not pd.isna(sub[param_min_col].iloc[0]):
             mn = sub[param_min_col].iloc[0]
         else:
@@ -126,20 +127,24 @@ def extract_parameter_ranges(
         else:
             mx = np.nan
 
-        # If param_min/param_max are missing or invalid
+        # If param_min/param_max are missing or invalid, fallback using assigned_value
         if pd.isna(mn) or pd.isna(mx) or (mn >= mx):
-            # fallback: use assigned_value
             val = sub[assigned_val_col].iloc[0]
-            if pd.isna(val):
-                val = 1.0  # fallback
-            base = float(val)
+            # Attempt to convert assigned_value to float
+            try:
+                base = float(val)
+            except (ValueError, TypeError):
+                print(f"[WARNING] Skipping non-numeric parameter '{p}' with assigned_value='{val}'.")
+                continue  # Skip this parameter entirely for SALib
+
             mn = base * 0.8
             mx = base * 1.2
-            # ensure strictly <
+
+            # Ensure strictly mn < mx
             if mn >= mx:
                 mx = mn + 1e-4
 
-        # If still invalid, fallback [0,1]
+        # Final fallback if still invalid
         if mn >= mx:
             mn, mx = 0.0, 1.0
 
@@ -208,10 +213,10 @@ def correlation_sensitivity(
     daily_sum = melted.groupby(["BuildingID", "VariableName"])["Value"].sum().reset_index()
     daily_sum.rename(columns={"Value": "TotalEnergy_J"}, inplace=True)
 
-    # Filter for target_variable
+    # Filter for the target_variable
     daily_sum = daily_sum[daily_sum["VariableName"] == target_variable]
 
-    # Merge
+    # Merge scenario pivot with daily sum
     merged = pd.merge(
         pivot_df,
         daily_sum,
@@ -262,13 +267,16 @@ def run_morris(
     """
     if not HAVE_SALIB:
         raise ImportError("SALib is not installed. Cannot run Morris.")
+
     problem = build_salib_problem(params_meta)
+
     # sample
     X = morris.sample(
         problem,
         N=n_trajectories,
         num_levels=num_levels
     )
+
     # evaluate
     Y = []
     for row in X:
@@ -278,6 +286,7 @@ def run_morris(
         val = simulate_func(param_dict)
         Y.append(val)
     Y = np.array(Y)
+
     # analyze
     morris_res = morris_analyze.analyze(
         problem,
@@ -311,12 +320,15 @@ def run_sobol(
     """
     if not HAVE_SALIB:
         raise ImportError("SALib is not installed. Cannot run Sobol.")
+
     problem = build_salib_problem(params_meta)
+
     X = saltelli.sample(
         problem,
         n_samples,
         calc_second_order=True
     )
+
     Y = []
     for row in X:
         param_dict = {}
@@ -325,6 +337,7 @@ def run_sobol(
         val = simulate_func(param_dict)
         Y.append(val)
     Y = np.array(Y)
+
     # analyze
     sobol_res = sobol.analyze(
         problem,
@@ -423,6 +436,11 @@ def run_sensitivity_analysis(
         param_max_col=param_max_col
     )
 
+    # If all parameters were skipped (e.g., all were non-numeric), SALib will fail.
+    if params_meta.empty:
+        print("[WARNING] No valid numeric parameters found. Skipping SALib-based analysis.")
+        return
+
     # define a local function for simulation
     def local_sim_func(param_dict: Dict[str, float]) -> float:
         # user can replace this with their real approach
@@ -471,3 +489,35 @@ def run_sensitivity_analysis(
 
     else:
         raise ValueError(f"Unknown method: {method}. Choose 'correlation', 'morris', or 'sobol'.")
+
+
+##############################################################################
+# 9) SCRIPT ENTRY POINT (if needed)
+##############################################################################
+
+if __name__ == "__main__":
+    # Example usage -- adjust your config as needed
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--scenario_folder", type=str, required=True, help="Path to folder with scenario_params_*.csv")
+    parser.add_argument("--method", type=str, default="morris", choices=["correlation","morris","sobol"], help="Analysis method")
+    parser.add_argument("--results_csv", type=str, default="", help="Results CSV (for correlation only)")
+    parser.add_argument("--target_variable", type=str, default="", help="Target variable (for correlation only)")
+    parser.add_argument("--output_csv", type=str, default="sensitivity_output.csv", help="Output CSV")
+    parser.add_argument("--n_morris_trajectories", type=int, default=10)
+    parser.add_argument("--num_levels", type=int, default=4)
+    parser.add_argument("--n_sobol_samples", type=int, default=256)
+
+    args = parser.parse_args()
+
+    run_sensitivity_analysis(
+        scenario_folder=args.scenario_folder,
+        method=args.method,
+        results_csv=args.results_csv,
+        target_variable=args.target_variable,
+        output_csv=args.output_csv,
+        n_morris_trajectories=args.n_morris_trajectories,
+        num_levels=args.num_levels,
+        n_sobol_samples=args.n_sobol_samples
+    )

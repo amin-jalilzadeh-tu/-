@@ -1,0 +1,21 @@
+{
+    "fenestration": [
+        {
+            "building_id": 4136730,
+            "building_function": "residential",
+            "building_type": "Two-and-a-half-story House",
+            "age_range": "1992-2005",
+            "scenario": "scenario1",
+            "param_name": "wwr",
+            "min_val": 0.025,
+            "max_val": 0.030
+        },
+        {
+            "building_function": "non_residential",
+            "age_range": "2015 and later",
+            "scenario": "scenario1",
+            "param_name": "roof_R_value",
+            "fixed_value": 3.0
+        }
+    ]
+}

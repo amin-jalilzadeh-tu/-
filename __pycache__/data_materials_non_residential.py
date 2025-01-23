@@ -69,3 +69,4 @@ non_residential_materials_data = {
         },
         "exterior_wall": {
             "area_m2": 155.0,
+            ....

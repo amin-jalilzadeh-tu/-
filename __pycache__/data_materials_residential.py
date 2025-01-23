@@ -59,3 +59,4 @@ residential_materials_data = {
         "roughness": "MediumRough",
         "wwr_range": (0.22, 0.22),
         "material_opaque_lookup": "DoorPanel_Range",
+        ....

@@ -48,6 +48,7 @@ def load_scenario_params(scenario_folder: str) -> pd.DataFrame:
 # 2) Extract Param Ranges (Enforce param_min < param_max)
 ##############################################################################
 
+
 def extract_parameter_ranges(merged_df: pd.DataFrame,
                              param_min_col: str = "param_min",
                              param_max_col: str = "param_max") -> pd.DataFrame:
@@ -57,14 +58,23 @@ def extract_parameter_ranges(merged_df: pd.DataFrame,
     fallback logic uses assigned_value with +/- 20% or a small epsilon
     to ensure min < max.
 
-    This is where we fix the "Bounds are not legal" error by forcing:
-       min_value < max_value
+    Handles the case where assigned_value is non-numeric (e.g. "AlwaysOnSched"):
+      - Either skip that param_name entirely
+      - Or assign a dummy numeric range [0, 1]
     """
-    # Check if the user-defined columns exist in the DataFrame
+
+    # Helper function to attempt float conversion
+    def safe_float(x):
+        try:
+            return float(x)
+        except (TypeError, ValueError):
+            return None
+
+    # Check if user-defined columns exist in the DataFrame
     has_param_min = (param_min_col in merged_df.columns)
     has_param_max = (param_max_col in merged_df.columns)
 
-    # If param_min / param_max columns do NOT exist, fallback to assigned_value
+    # If param_min/param_max do NOT exist, fallback to assigned_value
     if not has_param_min or not has_param_max:
         print("[INFO] param_min/param_max columns not found. Using fallback approach...")
 
@@ -75,18 +85,21 @@ def extract_parameter_ranges(merged_df: pd.DataFrame,
             if subset.empty:
                 continue
 
-            # Just pick the first assigned_value we find
-            val = subset.iloc[0].get("assigned_value", 0)
-            if pd.isna(val):
-                # If it's NaN, fallback to 1.0
-                val = 1.0
+            val_raw = subset.iloc[0].get("assigned_value", 0)
+            val_num = safe_float(val_raw)
+            if val_num is None:
+                # ============== Approach A: skip non-numeric ==============
+                print(f"[INFO] Skipping non-numeric param '{p}' with assigned_value='{val_raw}'")
+                continue
 
-            base_val = float(val)
-            # 20% buffer
+                # ============== Approach B: dummy range for non-numeric ==============
+                # print(f"[INFO] Non-numeric param '{p}' => using dummy range [0,1].")
+                # rows.append({"name": p, "min_value": 0.0, "max_value": 1.0})
+                # continue
+
+            base_val = val_num
             minv = base_val * 0.8
             maxv = base_val * 1.2
-
-            # If they end up equal (e.g. base_val=0 => both 0), ensure minv < maxv
             if minv >= maxv:
                 maxv = minv + 1e-4  # enforce strictly less
 
@@ -94,7 +107,7 @@ def extract_parameter_ranges(merged_df: pd.DataFrame,
 
         return pd.DataFrame(rows)
 
-    # If param_min/param_max DO exist, we group them by param_name
+    # If param_min/param_max DO exist, group them by param_name
     grouped = merged_df.groupby("param_name")[[param_min_col, param_max_col]].first().reset_index()
     grouped.rename(columns={
         "param_name": "name",
@@ -113,14 +126,21 @@ def extract_parameter_ranges(merged_df: pd.DataFrame,
             # fallback
             sample = merged_df.loc[merged_df["param_name"] == name, "assigned_value"]
             if not sample.empty and not pd.isna(sample.iloc[0]):
-                val = float(sample.iloc[0])
-                minv = val * 0.8
-                maxv = val * 1.2
-                if minv >= maxv:
-                    maxv = minv + 1e-4
+                val_raw = sample.iloc[0]
+                val_num = safe_float(val_raw)
+                if val_num is not None:
+                    # numeric => fallback ±20%
+                    minv = val_num * 0.8
+                    maxv = val_num * 1.2
+                    if minv >= maxv:
+                        maxv = minv + 1e-4
+                else:
+                    # Non-numeric => skip or dummy
+                    print(f"[INFO] Non-numeric param '{name}' => using dummy [0,1].")
+                    minv, maxv = 0.0, 1.0
             else:
                 # If we can't fix it, default to [0,1]
-                minv, maxv = 0, 1
+                minv, maxv = 0.0, 1.0
 
         out_rows.append({"name": name, "min_value": minv, "max_value": maxv})
 

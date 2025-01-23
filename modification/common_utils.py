@@ -4,17 +4,18 @@ import os
 import random
 import pandas as pd
 
-# If using Eppy:
-from eppy.modeleditor import IDF
-# If using Geomeppy, comment out the above and uncomment below:
-# from geomeppy import IDF as GeomIDF
-# GeomIDF.setiddname("path/to/Energy+.idd")
+# =============================================================================
+# 1) CHOOSE EITHER EPPY OR GEOMEPPY:
+# -----------------------------------------------------------------------------
+# If using Eppy, uncomment these and comment out the Geomeppy lines:
+# from eppy.modeleditor import IDF
 
+# If using Geomeppy (to allow set_wwr, getsurfaces, etc.), uncomment these:
+from geomeppy import IDF as GeomIDF
 
-###############################################################################
-# 1) Reading "assigned" CSVs
-###############################################################################
-
+# =============================================================================
+# 2) "Assigned" CSV Loading
+# -----------------------------------------------------------------------------
 def load_assigned_csv(csv_path):
     """
     Loads a generic CSV file containing assigned parameters for a building or zone.
@@ -53,10 +54,9 @@ def filter_for_building(df_main, df_zone=None, building_id=None):
     return df_main_sub, df_zone_sub
 
 
-###############################################################################
-# 2) Helpers for Generating Scenario Parameter Sets
-###############################################################################
-
+# =============================================================================
+# 3) Helpers for Generating Scenario Parameter Sets
+# -----------------------------------------------------------------------------
 def to_float_or_none(x):
     """
     Attempts to convert x to float. If it fails (or is NaN), returns None.
@@ -78,6 +78,7 @@ def pick_value_in_range(base_val, param_min, param_max,
          "scale_around_base" => base_val * random(1 - scale_factor, 1 + scale_factor)
          "offset_half" => base_val +/- up to 50% of half the total range
       - scale_factor: used if method="scale_around_base"
+
     Returns a float. If range invalid, returns base_val.
     """
     base_val_f = to_float_or_none(base_val)
@@ -111,10 +112,7 @@ def pick_value_in_range(base_val, param_min, param_max,
     return base_val_f
 
 
-###############################################################################
-# 2B) Distinguish between numeric vs. string parameters
-###############################################################################
-# Suppose we know some parameters must remain string (e.g., "system_type").
+# If some params are always strings (like schedule names), define them here:
 STRING_PARAMS = [
     "system_type",
     "fan_control_mode",
@@ -133,8 +131,7 @@ def define_building_param_strategy(df_main_sub,
     For each row, we call pick_value_in_range(...) only if param_name is numeric.
 
     If param_name is in STRING_PARAMS, we do NOT randomly pick numeric ranges.
-    Instead, we keep the original value as str or pick from possible strings
-    (depending on your preference).
+    Instead, we keep the original value as str.
     """
     final_param_dict = {}
 
@@ -149,11 +146,10 @@ def define_building_param_strategy(df_main_sub,
 
         # 1) If param_name is in STRING_PARAMS => keep as string
         if param_name.lower() in STRING_PARAMS:
-            # If you want to keep the exact value, just do:
             final_param_dict[param_name] = str(base_val)
             continue
 
-        # 2) If param_name is known to be numeric => pick numeric
+        # 2) If param_name is numeric => pick from range
         new_val = pick_value_in_range(
             base_val=base_val,
             param_min=p_min,
@@ -192,7 +188,7 @@ def save_param_scenarios_to_csv(all_scenarios, building_id,
     Writes each scenario's picks to CSV with columns:
       [scenario_index, ogc_fid, param_name, assigned_value]
 
-    This is how we form the "scenario_index" concept so we can groupby in the future.
+    This is how we form the "scenario_index" concept for grouping later.
     """
     rows = []
     for i, scenario_dict in enumerate(all_scenarios):
@@ -210,22 +206,22 @@ def save_param_scenarios_to_csv(all_scenarios, building_id,
     print(f"[INFO] Saved scenario picks => {out_csv}")
 
 
-###############################################################################
-# 3) IDF Load/Save
-###############################################################################
-
+# =============================================================================
+# 4) IDF Load/Save with Geomeppy
+# -----------------------------------------------------------------------------
 def load_idf(base_idf_path, idd_path):
     """
-    Loads an existing IDF file from disk. Adjust if using Geomeppy instead of Eppy.
+    Loads an existing IDF file from disk using Geomeppy (or Eppy, if desired).
+    Adjust path as needed.
     """
     if not os.path.isfile(idd_path):
         raise FileNotFoundError(f"IDD file not found at: {idd_path}")
     if not os.path.isfile(base_idf_path):
         raise FileNotFoundError(f"IDF file not found at: {base_idf_path}")
 
-    # Eppy usage
-    IDF.iddname = idd_path
-    idf = IDF(base_idf_path)
+    # With Geomeppy:
+    GeomIDF.setiddname(idd_path)
+    idf = GeomIDF(base_idf_path)
     return idf
 
 
@@ -238,10 +234,9 @@ def save_idf(idf, out_path):
     print(f"[INFO] Saved modified IDF => {out_path}")
 
 
-###############################################################################
-# 4) Optional: Loading a "Scenario" CSV (already defined picks)
-###############################################################################
-
+# =============================================================================
+# 5) Loading a "Scenario" CSV (already-defined picks)
+# -----------------------------------------------------------------------------
 def load_scenario_csv(scenario_csv):
     """
     Reads a CSV that presumably has columns:
@@ -251,7 +246,7 @@ def load_scenario_csv(scenario_csv):
       - assigned_value
     or something similar.
 
-    The caller can do: df.groupby("scenario_index") to iterate over scenarios.
+    The caller can then do: df.groupby("scenario_index") to iterate over scenarios.
     """
     if not os.path.isfile(scenario_csv):
         raise FileNotFoundError(f"Cannot find scenario CSV at: {scenario_csv}")

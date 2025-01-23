@@ -1,0 +1,18 @@
+[
+    {
+        "building_id": 4136730,
+        "building_function": "residential",
+        "age_range": "1992 - 2005",
+        "scenario": "scenario1",
+        "param_name": "wwr",
+        "min_val": 10.25,
+        "max_val": 20.30
+    },
+    {
+        "building_function": "non_residential",
+        "age_range": "2015 and later",
+        "scenario": "scenario1",
+        "param_name": "roof_R_value",
+        "fixed_value": 30.0
+    }
+]

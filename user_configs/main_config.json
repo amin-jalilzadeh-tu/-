@@ -1,0 +1,147 @@
+{
+  "paths": {
+    "building_data": "data/df_buildings.csv",
+    "fenez_excel": "excel_data/envelop.xlsx",
+    "dhw_excel": "excel_data/dhw_overrides.xlsx",
+    "epw_excel": "excel_data/epw_overrides.xlsx",
+    "lighting_excel": "excel_data/lighting_overrides.xlsx",
+    "hvac_excel": "excel_data/hvac_overrides.xlsx",
+    "vent_excel": "excel_data/vent_overrides.xlsx"
+  },
+  "excel_overrides": {
+    "override_fenez_excel": false,
+    "override_dhw_excel": false,
+    "override_epw_excel": false,
+    "override_lighting_excel": false,
+    "override_hvac_excel": false,
+    "override_vent_excel": false
+  },
+  "user_config_overrides": {
+    "override_fenez_json": true,
+    "override_dhw_json": true,
+    "override_epw_json": true,
+    "override_lighting_json": true,
+    "override_hvac_json": true,
+    "override_vent_json": true,
+    "override_geometry_json": true,
+    "override_shading_json": false
+  },
+  "default_dicts": {
+    "res_data": {
+      "R1": "some_res_data"
+    },
+    "nonres_data": {
+      "NR1": "some_nonres_data"
+    },
+    "dhw": {
+      "Office": { "setpoint_c": 55.0 }
+    },
+    "epw": [
+      { "city": "DefaultCity", "file": "Default.epw" }
+    ],
+    "lighting": {
+      "lights_wm2": 100.0
+    },
+    "hvac": {
+      "heating_day_setpoint": 20.0
+    },
+    "vent": {
+      "infiltration_base": 1.0
+    }
+  },
+  "idf_creation": {
+    "perform_idf_creation": true,
+    "scenario": "scenario1",
+    "calibration_stage": "pre_calibration",
+    "strategy": "B",
+    "random_seed": 42,
+    "run_simulations": true,
+    "num_workers": 4,
+    "post_process": true
+  },
+  "modification": {
+    "perform_modification": true,
+    "modify_config": {
+      "base_idf_path": "output/output_IDFs/building_0.idf",
+      "idd_path": "D:/EnergyPlus/Energy+.idd",
+      "assigned_csv": {
+        "hvac": "output/assigned/assigned_hvac_building.csv",
+        "dhw": "output/assigned/assigned_dhw_params.csv",
+        "vent": "output/assigned/assigned_vent_building.csv",
+        "elec": "output/assigned/assigned_lighting.csv",
+        "fenez": "output/assigned/structured_fenez_params.csv"
+      },
+      "scenario_csv": {
+        "hvac": "output/scenarios/scenario_params_hvac.csv",
+        "dhw": "output/scenarios/scenario_params_dhw.csv",
+        "vent": "output/scenarios/scenario_params_vent.csv",
+        "elec": "output/scenarios/scenario_params_elec.csv",
+        "fenez": "output/scenarios/scenario_params_fenez.csv"
+      },
+      "output_idf_dir": "output/scenario_idfs",
+      "building_id": 4136730,
+      "num_scenarios": 5,
+      "picking_method": "random_uniform",
+      "picking_scale_factor": 0.5,
+      "run_simulations": false,
+      "simulation_config": {
+        "num_workers": 4,
+        "output_dir": "output/Sim_Results/Scenarios"
+      },
+      "perform_post_process": false,
+      "post_process_config": {
+        "output_csv_as_is": "output/results/merged_as_is_scenarios.csv",
+        "output_csv_daily_mean": "output/results/merged_daily_mean_scenarios.csv"
+      },
+      "perform_validation": false,
+      "validation_config": {
+        "real_data_csv": "output/results/mock_merged_daily_mean.csv",
+        "sim_data_csv": "output/results/merged_daily_mean_mocked.csv",
+        "bldg_ranges": { "0": [0, 1, 2, 3, 4] },
+        "threshold_cv_rmse": 30.0,
+        "skip_plots": false,
+        "output_csv": "scenario_validation_report.csv"
+      }
+    }
+  },
+  "validation": {
+    "perform_validation": false,
+    "config": {
+      "real_data_csv": "output/results/mock_merged_daily_mean.csv",
+      "sim_data_csv": "output/results/merged_daily_mean_mocked.csv",
+      "bldg_ranges": { "0": [0, 1, 2, 3, 4] },
+      "threshold_cv_rmse": 30.0,
+      "skip_plots": false,
+      "output_csv": "validation_report.csv"
+    }
+  },
+  "sensitivity": {
+    "perform_sensitivity": true,
+    "scenario_folder": "output/scenarios",
+    "method": "morris",
+    "results_csv": "output/results/merged_daily_mean_mocked.csv",
+    "target_variable": "Heating:EnergyTransfer [J](Hourly)",
+    "output_csv": "morris_sensitivity.csv",
+    "n_morris_trajectories": 10,
+    "num_levels": 4
+  },
+  "surrogate": {
+    "perform_surrogate": false,
+    "scenario_folder": "output/scenarios",
+    "results_csv": "output/results/merged_daily_mean_mocked.csv",
+    "target_variable": "Heating:EnergyTransfer [J](Hourly)",
+    "model_out": "heating_surrogate_model.joblib",
+    "cols_out": "heating_surrogate_columns.joblib",
+    "test_size": 0.3
+  },
+  "calibration": {
+    "perform_calibration": false,
+    "scenario_folder": "output/scenarios",
+    "ga_pop_size": 10,
+    "ga_generations": 5,
+    "ga_crossover_prob": 0.7,
+    "ga_mutation_prob": 0.2,
+    "bayes_n_calls": 15,
+    "random_n_iter": 20
+  }
+}
