@@ -1,60 +1,140 @@
 """
 unified_sensitivity.py
 
-A single, merged Python script that unifies correlation-based
-and SALib-based sensitivity analysis (Morris or Sobol) for
-scenario-based parameters.
+Updated to handle multiple target variables for correlation-based sensitivity.
+You can specify in your config:
+    "target_variable": [
+      "Heating:EnergyTransfer [J](Hourly)",
+      "Cooling:EnergyTransfer [J](Hourly)",
+      ...
+    ]
+or a single string (like "Heating:EnergyTransfer [J](Hourly)").
 
-It expects:
-  1) A folder with scenario CSV files like:
-       scenario_params_dhw.csv
-       scenario_params_elec.csv
-       scenario_params_fenez.csv
-       scenario_params_hvac.csv
-       scenario_params_vent.csv
-     each having columns: [scenario_index, ogc_fid, param_name,
-                           assigned_value, param_min, param_max, ...]
-
-  2) Possibly a results CSV (like merged_daily_mean_mocked.csv)
-     if you want to do correlation-based analysis vs. "TotalEnergy_J" or similar.
-
-  3) If param_min / param_max do not exist, it falls back to
-     e.g. ±20% around assigned_value or a small default.
-
-This script can do:
-  - correlation-based sensitivity (merging scenario params with results)
-  - SALib Morris
-  - SALib Sobol
-
-Author: Example
+Author: Your Team
 """
 
 import os
-import re
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union, List
 
-# SALib for Morris / Sobol
+# Attempt SALib imports
 try:
-    from SALib.sample import saltelli, morris
-    from SALib.analyze import sobol, morris as morris_analyze
+    from SALib.sample import morris as morris_sample
+    from SALib.sample import saltelli
+    from SALib.analyze import morris as morris_analyze
+    from SALib.analyze import sobol
     HAVE_SALIB = True
 except ImportError:
     HAVE_SALIB = False
+    morris_sample = None
+    morris_analyze = None
+    saltelli = None
+    sobol = None
 
 
-##############################################################################
-# 1) LOAD SCENARIO PARAM CSVs
-##############################################################################
+###############################################################################
+# 1) HELPERS FOR CATEGORICAL ENCODING & NAME BUILD
+###############################################################################
+
+def encode_categorical_if_known(param_name: str, param_value) -> Optional[float]:
+    """
+    Tries to interpret 'param_value' as numeric:
+      1) Direct float conversion
+      2) If that fails, attempt known label encodings
+      3) Return None if unknown => skip param
+
+    Modify or expand the logic as you see fit to cover more discrete strings.
+    """
+    if param_value is None or pd.isna(param_value):
+        return None
+
+    # (A) Try direct float conversion
+    try:
+        return float(param_value)
+    except (ValueError, TypeError):
+        pass  # not a direct float
+
+    # (B) Attempt known label encodings
+
+    # Example 1: "Electricity" -> 0.0, "Gas" -> 1.0
+    if param_name.lower().endswith("fuel_type"):
+        if param_value == "Electricity":
+            return 0.0
+        elif param_value == "Gas":
+            return 1.0
+        return None
+
+    # Example 2: Roughness => "MediumRough" -> 2.0, etc.
+    if "roughness" in param_name.lower():
+        rough_map = {
+            "Smooth": 0.0,
+            "MediumSmooth": 1.0,
+            "MediumRough": 2.0,
+            "Rough": 3.0
+        }
+        if param_value in rough_map:
+            return rough_map[param_value]
+        return None
+
+    # Example 3: "Yes"/"No" => 1.0 / 0.0
+    if param_value in ["Yes", "No"]:
+        return 1.0 if param_value == "Yes" else 0.0
+
+    # Example 4: "SpectralAverage" => encode as 0.0, or skip
+    if param_value == "SpectralAverage":
+        return 0.0
+
+    # Example 5: Generic "Electricity"/"Gas" if not caught above:
+    if param_value == "Electricity":
+        return 0.0
+    elif param_value == "Gas":
+        return 1.0
+
+    # If we get here => no recognized encoding => skip
+    return None
+
+
+def build_unified_param_name(row: pd.Series) -> str:
+    """
+    Combine columns (zone_name, object_name, sub_key, param_name)
+    to produce a single unique param_name in the final DataFrame.
+    Modify to your preference.
+    """
+    base_name = str(row.get("param_name", "UnknownParam"))
+    name_parts = []
+
+    zname = row.get("zone_name", None)
+    if pd.notna(zname) and isinstance(zname, str) and zname.strip():
+        name_parts.append(zname.strip())
+
+    oname = row.get("object_name", None)
+    if pd.notna(oname) and isinstance(oname, str) and oname.strip():
+        name_parts.append(oname.strip())
+
+    skey = row.get("sub_key", None)
+    if pd.notna(skey) and isinstance(skey, str) and skey.strip():
+        name_parts.append(skey.strip())
+
+    # Finally the base param_name
+    name_parts.append(base_name)
+
+    # Join with double underscore
+    return "__".join(name_parts)
+
+
+###############################################################################
+# 2) LOADING SCENARIO PARAMS
+###############################################################################
 
 def load_scenario_params(scenario_folder: str) -> pd.DataFrame:
     """
-    Reads scenario CSV files (dhw, elec, fenez, hvac, vent, etc.)
-    from `scenario_folder`. Merges them into one DataFrame with columns:
-      [scenario_index, ogc_fid, param_name, assigned_value, param_min, param_max, ...]
+    Reads scenario_params_*.csv from scenario_folder, merges them into
+    a single DataFrame with columns:
+      ["scenario_index", "param_name", "assigned_value", "param_min", "param_max", "ogc_fid", "source_file"]
+    and attempts to convert assigned_value to float or a known label-encoded numeric.
 
-    Returns the merged DataFrame.
+    If it cannot be encoded => we skip that row.
     """
     scenario_files = [
         "scenario_params_dhw.csv",
@@ -64,27 +144,201 @@ def load_scenario_params(scenario_folder: str) -> pd.DataFrame:
         "scenario_params_vent.csv"
     ]
 
-    dfs = []
+    all_rows = []
+
     for fname in scenario_files:
         fpath = os.path.join(scenario_folder, fname)
-        if os.path.isfile(fpath):
-            df = pd.read_csv(fpath)
-            # Track the source file (optional)
-            df["source_file"] = fname
-            dfs.append(df)
+        if not os.path.isfile(fpath):
+            continue
+
+        df_raw = pd.read_csv(fpath)
+        if df_raw.empty:
+            continue
+
+        for _, row in df_raw.iterrows():
+            scenario_index = row.get("scenario_index", None)
+            unified_name = build_unified_param_name(row)
+
+            # assigned_value might be 'assigned_value' or 'param_value'
+            val = row.get("assigned_value", None)
+            if val is None or pd.isna(val):
+                val = row.get("param_value", None)
+
+            # Attempt to convert/encode
+            numeric_val = encode_categorical_if_known(unified_name, val)
+            if numeric_val is None:
+                print(f"[WARNING] Skipping param '{unified_name}' => "
+                      f"no numeric encoding for value: {val}")
+                continue
+
+            # param_min / param_max
+            pmin = row.get("param_min", np.nan)
+            pmax = row.get("param_max", np.nan)
+
+            # ogc_fid
+            ogc_fid = row.get("ogc_fid", None)
+
+            all_rows.append({
+                "scenario_index": scenario_index,
+                "param_name": unified_name,
+                "assigned_value": numeric_val,
+                "param_min": pmin,
+                "param_max": pmax,
+                "ogc_fid": ogc_fid,
+                "source_file": fname
+            })
+
+    if not all_rows:
+        print(f"[WARNING] No valid numeric parameters found in '{scenario_folder}' (all skipped?)")
+        return pd.DataFrame()
+
+    return pd.DataFrame(all_rows)
+
+
+###############################################################################
+# 3) CORRELATION-BASED SENSITIVITY (SINGLE or MULTIPLE Variables)
+###############################################################################
+
+def correlation_sensitivity(
+    df_scenarios: pd.DataFrame,
+    df_results: pd.DataFrame,
+    target_variables: Union[str, List[str]],
+    scenario_index_col: str = "scenario_index",
+    assigned_val_col: str = "assigned_value"
+) -> pd.DataFrame:
+    """
+    Performs correlation-based sensitivity between each parameter and
+    one or more target variables from the results.
+
+    If target_variables is a single string, we produce a DF with:
+       [Parameter, Correlation, AbsCorrelation]
+
+    If target_variables is a list of strings, we produce one row per param,
+    with correlation columns for each variable, e.g.:
+       [Parameter,
+        Corr_<var1>, AbsCorr_<var1>,
+        Corr_<var2>, AbsCorr_<var2>, ...
+       ]
+
+    Steps:
+      1) Pivot df_scenarios => wide (index=scenario_index, columns=param_name)
+      2) Melt df_results => sum across days => pivot wide so each variable has
+         its own column.
+      3) Merge scenario pivot with results pivot
+      4) Correlate each param col with each variable col
+
+    Returns a DataFrame of correlation results.
+    """
+    # Normalize target_variables to a list
+    if isinstance(target_variables, str):
+        target_vars_list = [target_variables]
+    elif isinstance(target_variables, list):
+        target_vars_list = target_variables
+    else:
+        raise ValueError("target_variables must be a string or a list of strings.")
+
+    # 1) Pivot scenario => wide
+    pivot_df = df_scenarios.pivot_table(
+        index=scenario_index_col,
+        columns="param_name",
+        values=assigned_val_col,
+        aggfunc="first"
+    ).reset_index()
+
+    # 2) Melt results & sum across days
+    if "BuildingID" in df_results.columns and scenario_index_col != "BuildingID":
+        df_results = df_results.rename(columns={"BuildingID": scenario_index_col})
+
+    melted = df_results.melt(
+        id_vars=[scenario_index_col, "VariableName"],
+        var_name="Day",
+        value_name="Value"
+    )
+    daily_sum = melted.groupby([scenario_index_col, "VariableName"])["Value"].sum().reset_index()
+    daily_sum.rename(columns={"Value": "SumValue"}, inplace=True)
+
+    # 3) Pivot variables => each var a column
+    #    If multiple target variables, we want them all to appear as columns
+    #    in the pivot. If you have more variables than in target_vars_list,
+    #    that's OK; we can keep them, or filter them.
+    pivot_results = daily_sum.pivot(
+        index=scenario_index_col,
+        columns="VariableName",
+        values="SumValue"
+    ).reset_index()
+
+    # If you want to filter pivot_results to only keep the target vars:
+    all_cols = list(pivot_results.columns)
+    # the first is scenario_index_col, so skip it
+    keep_cols = [scenario_index_col]
+    # keep only columns in target_vars_list if they exist
+    for varname in target_vars_list:
+        if varname in all_cols:
+            keep_cols.append(varname)
+    pivot_results = pivot_results[keep_cols]
+
+    # 4) Merge scenario pivot with results pivot
+    merged = pd.merge(
+        pivot_df,
+        pivot_results,
+        on=scenario_index_col,
+        how="inner"
+    )
+
+    # Now columns = [scenario_index, paramA, paramB, ..., var1, var2, ...]
+    # We do correlation paramX vs. varY for each pair
+    # param_cols are the scenario param columns, var_cols are the target variable columns
+    var_cols = [c for c in pivot_results.columns if c != scenario_index_col]
+    param_cols = [c for c in pivot_df.columns if c != scenario_index_col]
+
+    # If there's only 1 target var, produce the old layout.
+    if len(var_cols) == 1:
+        var_col = var_cols[0]
+        corr_list = []
+        for col in param_cols:
+            if pd.api.types.is_numeric_dtype(merged[col]):
+                cval = merged[[col, var_col]].corr().iloc[0, 1]
+                corr_list.append((col, cval))
+            else:
+                corr_list.append((col, np.nan))
+        corr_df = pd.DataFrame(corr_list, columns=["Parameter", "Correlation"])
+        corr_df["AbsCorrelation"] = corr_df["Correlation"].abs()
+        corr_df.sort_values("AbsCorrelation", ascending=False, inplace=True)
+        return corr_df
+
+    # Else multiple variables => produce one row per param, with correlation columns for each var
+    # e.g. param, Corr_var1, AbsCorr_var1, Corr_var2, AbsCorr_var2, ...
+    corr_rows = []
+    for col in param_cols:
+        row_dict = {"Parameter": col}
+        if not pd.api.types.is_numeric_dtype(merged[col]):
+            # skip or store NaNs
+            for v in var_cols:
+                row_dict[f"Corr_{v}"] = np.nan
+                row_dict[f"AbsCorr_{v}"] = np.nan
         else:
-            print(f"[INFO] Not found: {fpath} (skip if not needed).")
+            # param is numeric
+            for v in var_cols:
+                if not pd.api.types.is_numeric_dtype(merged[v]):
+                    row_dict[f"Corr_{v}"] = np.nan
+                    row_dict[f"AbsCorr_{v}"] = np.nan
+                else:
+                    cval = merged[[col, v]].corr().iloc[0, 1]
+                    row_dict[f"Corr_{v}"] = cval
+                    row_dict[f"AbsCorr_{v}"] = abs(cval)
+        corr_rows.append(row_dict)
 
-    if not dfs:
-        raise FileNotFoundError("No scenario parameter CSVs found in the folder.")
+    corr_df = pd.DataFrame(corr_rows)
+    # Optionally you can sort by one variable's AbsCorr_ if you want:
+    # e.g. if the first var is var_cols[0], sort by that
+    # but let's just leave it unsorted or sort by "Parameter"
+    corr_df.sort_values("Parameter", inplace=True)
+    return corr_df
 
-    merged_df = pd.concat(dfs, ignore_index=True)
-    return merged_df
 
-
-##############################################################################
-# 2) EXTRACT PARAMETER RANGES
-##############################################################################
+###############################################################################
+# 4) SALib UTILS: EXTRACT RANGES, BUILD PROBLEM
+###############################################################################
 
 def extract_parameter_ranges(
     merged_df: pd.DataFrame,
@@ -94,430 +348,206 @@ def extract_parameter_ranges(
     param_max_col: str = "param_max"
 ) -> pd.DataFrame:
     """
-    Creates a DataFrame with columns: ['name', 'min_value', 'max_value'].
-
-    If 'param_min' / 'param_max' columns exist and are valid, we use them.
-    If they do not exist or are NaN / invalid, we fallback to ±20% around
-    the 'assigned_value', or [0,1] as a last resort, ensuring min < max.
-
-    If a parameter's assigned_value is non-numeric (e.g. "AlwaysOnSched"),
-    we skip it for SALib-based analysis.
-
-    The final DataFrame is used by SALib for Morris/Sobol.
+    Builds DF [name, min_value, max_value].
+    If param_min / param_max are missing/invalid, fallback to ±20% around assigned_value.
     """
-    has_min = (param_min_col in merged_df.columns)
-    has_max = (param_max_col in merged_df.columns)
-
-    param_names = merged_df[param_name_col].unique()
     out_rows = []
-
-    for p in param_names:
+    unique_params = merged_df[param_name_col].unique()
+    for p in unique_params:
         sub = merged_df[merged_df[param_name_col] == p]
+        row = sub.iloc[0]  # any row for param p
 
-        if sub.empty:
+        assigned_val = row.get(assigned_val_col, np.nan)
+        if pd.isna(assigned_val):
             continue
 
-        # Attempt to read param_min / param_max
-        if has_min and not pd.isna(sub[param_min_col].iloc[0]):
-            mn = sub[param_min_col].iloc[0]
-        else:
-            mn = np.nan
-        if has_max and not pd.isna(sub[param_max_col].iloc[0]):
-            mx = sub[param_max_col].iloc[0]
-        else:
-            mx = np.nan
+        pmin = row.get(param_min_col, np.nan)
+        pmax = row.get(param_max_col, np.nan)
+        try:
+            pmin = float(pmin)
+        except:
+            pmin = np.nan
+        try:
+            pmax = float(pmax)
+        except:
+            pmax = np.nan
 
-        # If param_min/param_max are missing or invalid, fallback using assigned_value
-        if pd.isna(mn) or pd.isna(mx) or (mn >= mx):
-            val = sub[assigned_val_col].iloc[0]
-            # Attempt to convert assigned_value to float
-            try:
-                base = float(val)
-            except (ValueError, TypeError):
-                print(f"[WARNING] Skipping non-numeric parameter '{p}' with assigned_value='{val}'.")
-                continue  # Skip this parameter entirely for SALib
+        if np.isnan(pmin) or np.isnan(pmax) or (pmin >= pmax):
+            base = float(assigned_val)
+            delta = abs(base) * 0.2
+            pmin = base - delta
+            pmax = base + delta
+            if pmin >= pmax:
+                pmax += 1e-4
 
-            mn = base * 0.8
-            mx = base * 1.2
-
-            # Ensure strictly mn < mx
-            if mn >= mx:
-                mx = mn + 1e-4
-
-        # Final fallback if still invalid
-        if mn >= mx:
-            mn, mx = 0.0, 1.0
-
-        out_rows.append({"name": p, "min_value": mn, "max_value": mx})
+        out_rows.append({
+            "name": p,
+            "min_value": pmin,
+            "max_value": pmax
+        })
 
     return pd.DataFrame(out_rows)
 
 
-##############################################################################
-# 3) BUILD SALib problem
-##############################################################################
-
-def build_salib_problem(params_meta: pd.DataFrame) -> Dict[str, Any]:
+def build_salib_problem(params_df: pd.DataFrame) -> Dict[str, Any]:
     """
-    Convert a DataFrame with columns [name, min_value, max_value]
-    into a SALib 'problem' dict.
+    Convert DF [name, min_value, max_value] => SALib problem dict
     """
-    problem = {
-        'num_vars': len(params_meta),
-        'names': params_meta['name'].tolist(),
-        'bounds': []
+    return {
+        "num_vars": len(params_df),
+        "names": params_df["name"].tolist(),
+        "bounds": [
+            [row["min_value"], row["max_value"]]
+            for _, row in params_df.iterrows()
+        ]
     }
-    for _, row in params_meta.iterrows():
-        problem['bounds'].append([row['min_value'], row['max_value']])
-    return problem
 
 
-##############################################################################
-# 4) CORRELATION-BASED SENSITIVITY
-##############################################################################
+###############################################################################
+# 5) SALib: MORRIS & SOBOL
+###############################################################################
 
-def correlation_sensitivity(
-    df_scenarios: pd.DataFrame,
-    df_results: pd.DataFrame,
-    target_variable: str = "Heating:EnergyTransfer [J](Hourly)",
-    scenario_index_col: str = "scenario_index",
-    assigned_val_col: str = "assigned_value"
-) -> pd.DataFrame:
+def default_simulation_function(param_dict: Dict[str, float]) -> float:
     """
-    Example correlation-based approach:
-      1) pivot scenario data => wide form
-      2) merge with results, which have columns [BuildingID, VariableName, ... daily or total columns ...]
-      3) sum daily columns => 'TotalEnergy_J' or pick a single column
-      4) correlation vs. each parameter
-
-    Returns a DataFrame with ["Parameter", "Correlation", "AbsCorrelation"] sorted desc.
-    """
-    # Pivot scenario => each row is scenario_index, each column is param_name
-    pivot_df = df_scenarios.pivot_table(
-        index=[scenario_index_col, "ogc_fid"],
-        columns="param_name",
-        values=assigned_val_col,
-        aggfunc="first"
-    ).reset_index()
-
-    # Merge with results. We assume scenario_index ~ BuildingID
-    pivot_df.rename(columns={scenario_index_col: "BuildingID"}, inplace=True)
-
-    # If results has daily columns, sum them to get a single measure
-    # or filter for target_variable
-    melted = df_results.melt(
-        id_vars=["BuildingID", "VariableName"],
-        var_name="Day",
-        value_name="Value"
-    )
-    daily_sum = melted.groupby(["BuildingID", "VariableName"])["Value"].sum().reset_index()
-    daily_sum.rename(columns={"Value": "TotalEnergy_J"}, inplace=True)
-
-    # Filter for the target_variable
-    daily_sum = daily_sum[daily_sum["VariableName"] == target_variable]
-
-    # Merge scenario pivot with daily sum
-    merged = pd.merge(
-        pivot_df,
-        daily_sum,
-        on="BuildingID",
-        how="inner"
-    )
-
-    # Now we have param columns + "TotalEnergy_J"
-    exclude_cols = ["BuildingID", "ogc_fid", "VariableName", "TotalEnergy_J"]
-    param_cols = [c for c in merged.columns if c not in exclude_cols]
-
-    corr_list = []
-    for col in param_cols:
-        # must be numeric
-        if pd.api.types.is_numeric_dtype(merged[col]):
-            cval = merged[[col, "TotalEnergy_J"]].corr().iloc[0, 1]
-            corr_list.append((col, cval))
-        else:
-            corr_list.append((col, np.nan))
-
-    corr_df = pd.DataFrame(corr_list, columns=["Parameter", "Correlation"])
-    corr_df["AbsCorrelation"] = corr_df["Correlation"].abs()
-    corr_df.sort_values("AbsCorrelation", ascending=False, inplace=True)
-    return corr_df
-
-
-##############################################################################
-# 5) SALib-based Morris
-##############################################################################
-
-def run_morris(
-    params_meta: pd.DataFrame,
-    simulate_func,
-    n_trajectories: int = 10,
-    num_levels: int = 4
-):
-    """
-    Perform a Morris screening using SALib.
-
-    :param params_meta: DataFrame with ['name', 'min_value', 'max_value']
-    :param simulate_func: user function that takes {param_name: value} -> float
-    :param n_trajectories: number of trajectories (N in SALib's morris.sample)
-    :param num_levels: levels in the Morris design
-    :return: (morris_res, X, Y) where
-         morris_res is SALib's analysis result,
-         X is the sample array,
-         Y is the model outputs array
-    """
-    if not HAVE_SALIB:
-        raise ImportError("SALib is not installed. Cannot run Morris.")
-
-    problem = build_salib_problem(params_meta)
-
-    # sample
-    X = morris.sample(
-        problem,
-        N=n_trajectories,
-        num_levels=num_levels
-    )
-
-    # evaluate
-    Y = []
-    for row in X:
-        param_dict = {}
-        for i, name in enumerate(problem["names"]):
-            param_dict[name] = row[i]
-        val = simulate_func(param_dict)
-        Y.append(val)
-    Y = np.array(Y)
-
-    # analyze
-    morris_res = morris_analyze.analyze(
-        problem,
-        X,
-        Y,
-        conf_level=0.95,
-        print_to_console=False
-    )
-    return morris_res, X, Y
-
-
-##############################################################################
-# 6) SALib-based Sobol
-##############################################################################
-
-def run_sobol(
-    params_meta: pd.DataFrame,
-    simulate_func,
-    n_samples: int = 256
-):
-    """
-    Perform a Sobol analysis using SALib.
-
-    :param params_meta: DataFrame with ['name', 'min_value', 'max_value']
-    :param simulate_func: user function that takes {param_name: value} -> float
-    :param n_samples: base sample size for Saltelli sampler
-    :return: (sobol_res, X, Y) where
-         sobol_res is SALib's analysis result,
-         X is the sample array,
-         Y is the model outputs array
-    """
-    if not HAVE_SALIB:
-        raise ImportError("SALib is not installed. Cannot run Sobol.")
-
-    problem = build_salib_problem(params_meta)
-
-    X = saltelli.sample(
-        problem,
-        n_samples,
-        calc_second_order=True
-    )
-
-    Y = []
-    for row in X:
-        param_dict = {}
-        for i, name in enumerate(problem["names"]):
-            param_dict[name] = row[i]
-        val = simulate_func(param_dict)
-        Y.append(val)
-    Y = np.array(Y)
-
-    # analyze
-    sobol_res = sobol.analyze(
-        problem,
-        Y,
-        calc_second_order=True,
-        print_to_console=False
-    )
-    return sobol_res, X, Y
-
-
-##############################################################################
-# 7) EXAMPLE SIMULATION FUNCTION
-##############################################################################
-
-def default_simulate_func(param_dict: Dict[str, float]) -> float:
-    """
-    A placeholder for your real or surrogate-based simulation.
-    We'll sum param_dict values + some random noise.
-
-    In practice, you would:
-      - write param_dict to an IDF or call your surrogate
-      - compute a mismatch vs. real data
-      - return that mismatch.
+    Example: sum of param_dict + random noise.
+    Replace with your E+ or Surrogate call if you want real analysis.
     """
     base_sum = sum(param_dict.values())
     noise = np.random.uniform(-0.5, 0.5)
     return base_sum + noise
 
 
-##############################################################################
-# 8) MAIN ORCHESTRATOR
-##############################################################################
+def run_morris_method(params_meta: pd.DataFrame, simulate_func, n_trajectories=10, num_levels=4):
+    """
+    SALib Morris
+    """
+    if not HAVE_SALIB:
+        raise ImportError("SALib not installed. Cannot run Morris.")
+    problem = build_salib_problem(params_meta)
+    X = morris_sample.sample(problem, N=n_trajectories, num_levels=num_levels)
+    Y = []
+    for row in X:
+        param_dict = {}
+        for i, name in enumerate(problem["names"]):
+            param_dict[name] = row[i]
+        Y.append(simulate_func(param_dict))
+    Y = np.array(Y)
+    res = morris_analyze.analyze(problem, X, Y, conf_level=0.95, print_to_console=False)
+    return res, X, Y
 
+
+def run_sobol_method(params_meta: pd.DataFrame, simulate_func, n_samples=256):
+    """
+    SALib Sobol
+    """
+    if not HAVE_SALIB:
+        raise ImportError("SALib not installed. Cannot run Sobol.")
+    problem = build_salib_problem(params_meta)
+    X = saltelli.sample(problem, n_samples, calc_second_order=True)
+    Y = []
+    for row in X:
+        param_dict = {}
+        for i, name in enumerate(problem["names"]):
+            param_dict[name] = row[i]
+        Y.append(simulate_func(param_dict))
+    Y = np.array(Y)
+    sres = sobol.analyze(problem, Y, calc_second_order=True, print_to_console=False)
+    return sres, X, Y
+
+
+###############################################################################
+# 6) MAIN ORCHESTRATION
+###############################################################################
 def run_sensitivity_analysis(
     scenario_folder: str,
     method: str = "morris",
-    param_min_col: str = "param_min",
-    param_max_col: str = "param_max",
-    output_csv: str = "sensitivity_results.csv",
     results_csv: Optional[str] = None,
-    target_variable: Optional[str] = None,
+    target_variable: Union[str, List[str], None] = None,
+    output_csv: str = "sensitivity_output.csv",
     n_morris_trajectories: int = 10,
     num_levels: int = 4,
     n_sobol_samples: int = 256
 ):
     """
-    Orchestrate the entire sensitivity process. We handle:
-      1) correlation-based OR SALib-based (morris/sobol)
-      2) reading scenario CSVs from scenario_folder
-      3) extracting param ranges if param_min / param_max exist
-      4) fallback if missing
-      5) run the chosen method
-      6) save results to output_csv
+    Called from main.py to do correlation, Morris, or Sobol sensitivity.
+    Now supports multiple target variables in correlation-based approach.
 
-    :param scenario_folder: folder with scenario_params_*.csv
+    :param scenario_folder: path to folder with scenario_params_*.csv
     :param method: "correlation", "morris", or "sobol"
-    :param param_min_col: name of col with min. Typically "param_min"
-    :param param_max_col: name of col with max. Typically "param_max"
-    :param output_csv: where to store results
-    :param results_csv: if using correlation, we need the simulation results
-    :param target_variable: if correlation-based, pick a variable
-    :param n_morris_trajectories: how many Morris trajectories
-    :param num_levels: Morris levels
-    :param n_sobol_samples: how many Saltelli samples for Sobol
+    :param results_csv: path to results CSV (for correlation)
+    :param target_variable: string or list of strings (for correlation).
+    :param output_csv: results file
+    :param n_morris_trajectories: int
+    :param num_levels: Morris design
+    :param n_sobol_samples: int
     """
-    print(f"=== Running Sensitivity: method={method} ===")
+    print(f"[INFO] run_sensitivity_analysis => method={method}, folder='{scenario_folder}'")
 
-    # 1) load scenario data
-    merged_df = load_scenario_params(scenario_folder)
+    # 1) Load scenario parameters
+    df_params = load_scenario_params(scenario_folder)
+    if df_params.empty:
+        print("[WARNING] No numeric scenario parameters => no analysis.")
+        return
 
-    # If correlation-based, we need results_csv & target_variable
+    # 2) If correlation-based
     if method.lower() == "correlation":
-        if not results_csv:
-            raise ValueError("Must provide results_csv for correlation-based analysis.")
+        if not results_csv or not os.path.isfile(results_csv):
+            raise ValueError("For correlation-based, must provide a valid results_csv.")
         if not target_variable:
-            raise ValueError("Must provide target_variable for correlation-based analysis.")
+            raise ValueError("For correlation-based, must provide target_variable (string or list).")
 
-        df_results = pd.read_csv(results_csv)
+        df_res = pd.read_csv(results_csv)
         corr_df = correlation_sensitivity(
-            df_scenarios=merged_df,
-            df_results=df_results,
-            target_variable=target_variable
+            df_scenarios=df_params,
+            df_results=df_res,
+            target_variables=target_variable
         )
-        print("\n=== Correlation-based Sensitivity ===")
-        print(corr_df.head(20))
-
         corr_df.to_csv(output_csv, index=False)
-        print(f"[INFO] Correlation results => {output_csv}")
+        print(f"[INFO] Correlation-based results => {output_csv}")
         return
 
-    # else we do SALib-based (morris or sobol)
-    # 2) extract param ranges
-    params_meta = extract_parameter_ranges(
-        merged_df,
-        param_min_col=param_min_col,
-        param_max_col=param_max_col
-    )
-
-    # If all parameters were skipped (e.g., all were non-numeric), SALib will fail.
+    # 3) SALib-based => extract ranges
+    params_meta = extract_parameter_ranges(df_params)
     if params_meta.empty:
-        print("[WARNING] No valid numeric parameters found. Skipping SALib-based analysis.")
+        print("[WARNING] All parameters were invalid or had no numeric data => no SALib analysis.")
         return
 
-    # define a local function for simulation
-    def local_sim_func(param_dict: Dict[str, float]) -> float:
-        # user can replace this with their real approach
-        return default_simulate_func(param_dict)
+    # Replace with real E+ or surrogate
+    simulate_func = default_simulation_function
 
     if method.lower() == "morris":
-        if not HAVE_SALIB:
-            raise ImportError("SALib not installed. Cannot run Morris.")
-        morris_res, X, Y = run_morris(
-            params_meta, local_sim_func,
+        # Morris
+        res, X, Y = run_morris_method(
+            params_meta=params_meta,
+            simulate_func=simulate_func,
             n_trajectories=n_morris_trajectories,
             num_levels=num_levels
         )
-        # Build DataFrame of results
         df_out = pd.DataFrame({
-            "param": params_meta["name"],
-            "mu_star": morris_res["mu_star"],
-            "mu_star_conf": morris_res["mu_star_conf"],
-            "sigma": morris_res["sigma"]
+            "param": params_meta["name"].values,
+            "mu_star": res["mu_star"],
+            "mu_star_conf": res["mu_star_conf"],
+            "sigma": res["sigma"]
         })
         df_out.to_csv(output_csv, index=False)
-        print(f"[INFO] Morris results => {output_csv}")
-        # Print short summary
-        print("[Morris] mu_star:", morris_res['mu_star'])
-        print("[Morris] sigma  :", morris_res['sigma'])
+        print(f"[INFO] Morris sensitivity results => {output_csv}")
 
     elif method.lower() == "sobol":
-        if not HAVE_SALIB:
-            raise ImportError("SALib not installed. Cannot run Sobol.")
-        sobol_res, X, Y = run_sobol(
-            params_meta, local_sim_func,
+        # Sobol
+        sres, X, Y = run_sobol_method(
+            params_meta=params_meta,
+            simulate_func=simulate_func,
             n_samples=n_sobol_samples
         )
-        # Build DataFrame
         df_out = pd.DataFrame({
-            "param": params_meta["name"],
-            "S1": sobol_res["S1"],
-            "ST": sobol_res["ST"]
+            "param": params_meta["name"].values,
+            "S1": sres["S1"],
+            "S1_conf": sres["S1_conf"],
+            "ST": sres["ST"],
+            "ST_conf": sres["ST_conf"]
         })
-        # s2 is a matrix in sobol_res["S2"], etc.
         df_out.to_csv(output_csv, index=False)
-        print(f"[INFO] Sobol results => {output_csv}")
-        # Print summary
-        print("[Sobol] S1 =>", sobol_res["S1"])
-        print("[Sobol] ST =>", sobol_res["ST"])
+        print(f"[INFO] Sobol sensitivity results => {output_csv}")
 
     else:
-        raise ValueError(f"Unknown method: {method}. Choose 'correlation', 'morris', or 'sobol'.")
-
-
-##############################################################################
-# 9) SCRIPT ENTRY POINT (if needed)
-##############################################################################
-
-if __name__ == "__main__":
-    # Example usage -- adjust your config as needed
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--scenario_folder", type=str, required=True, help="Path to folder with scenario_params_*.csv")
-    parser.add_argument("--method", type=str, default="morris", choices=["correlation","morris","sobol"], help="Analysis method")
-    parser.add_argument("--results_csv", type=str, default="", help="Results CSV (for correlation only)")
-    parser.add_argument("--target_variable", type=str, default="", help="Target variable (for correlation only)")
-    parser.add_argument("--output_csv", type=str, default="sensitivity_output.csv", help="Output CSV")
-    parser.add_argument("--n_morris_trajectories", type=int, default=10)
-    parser.add_argument("--num_levels", type=int, default=4)
-    parser.add_argument("--n_sobol_samples", type=int, default=256)
-
-    args = parser.parse_args()
-
-    run_sensitivity_analysis(
-        scenario_folder=args.scenario_folder,
-        method=args.method,
-        results_csv=args.results_csv,
-        target_variable=args.target_variable,
-        output_csv=args.output_csv,
-        n_morris_trajectories=args.n_morris_trajectories,
-        num_levels=args.num_levels,
-        n_sobol_samples=args.n_sobol_samples
-    )
+        raise ValueError(f"Unknown method='{method}'. Must be 'correlation','morris','sobol'.")

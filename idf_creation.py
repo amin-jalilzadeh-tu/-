@@ -64,6 +64,10 @@ from idf_objects.setzone.add_outdoor_air_and_zone_sizing_to_all_zones import add
 # Ground Temps (example placeholder)
 from idf_objects.tempground.add_ground_temperatures import add_ground_temperatures
 
+from idf_objects.other.zonelist import create_zonelist
+
+
+
 # Outputs & Simulations (example placeholders)
 from idf_objects.outputdef.assign_output_settings import assign_output_settings
 from idf_objects.outputdef.add_output_definitions import add_output_definitions
@@ -190,6 +194,11 @@ def create_idf_for_building(
         assigned_fenez_log=assigned_fenez_log
     )
     assign_constructions_to_surfaces(idf, construction_map)
+
+
+
+    create_zonelist(idf, zonelist_name="ALL_ZONES")
+
 
     # 5) Fenestration
     add_fenestration(

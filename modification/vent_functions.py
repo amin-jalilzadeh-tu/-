@@ -1,327 +1,400 @@
-# vent_functions.py
-
 """
-Contains functions for applying Ventilation & Infiltration parameters
-to an IDF in a manner similar to hvac_functions.py and dhw_functions.py.
+vent_functions.py
+
+Provides:
+  1) create_vent_scenarios(...) 
+     - Generates scenario-level data for both building-level and zone-level vent parameters,
+       possibly incorporating min/max ranges for infiltration_base, infiltration_flow_m3_s, etc.
+     - Writes or returns a single scenario DataFrame (or multiple, if you prefer them separate).
+
+  2) apply_building_level_vent(idf, vent_params)
+     - Applies building-level infiltration/vent parameters to the IDF.
+
+  3) apply_zone_level_vent(idf, df_zone_scen)
+     - Applies zone-level infiltration/vent parameters to the IDF by creating or updating
+       ZoneInfiltration:DesignFlowRate and ZoneVentilation:DesignFlowRate objects.
 """
 
+import os
 import random
+import pandas as pd
 
-##############################################################################
-# 1) APPLY BUILDING-LEVEL VENTILATION
-##############################################################################
 
-def apply_building_level_vent(idf, param_dict):
+# ---------------------------------------------------------------------------
+# 1) CREATE VENTILATION SCENARIOS
+# ---------------------------------------------------------------------------
+def create_vent_scenarios(
+    df_building,
+    df_zones,
+    building_id,
+    num_scenarios=5,
+    picking_method="random_uniform",
+    random_seed=42,
+    scenario_csv_out=None
+):
     """
-    Takes a dict of building-level ventilation parameters, e.g. from
-    assigned_vent_building.csv (after scenario picks). Example keys:
-      {
-        "infiltration_base": 1.2278853596915769,
-        "infiltration_base_range": (1.1,1.3),
-        "year_factor": 0.9050021510445334,
-        "year_factor_range": (0.9,1.1),
-        "fan_pressure": 0.0,
-        "fan_pressure_range": (0.0,0.0),
-        "f_ctrl": 0.9223210738148823,
-        "f_ctrl_range": (0.9,1.0),
-        "hrv_eff": 0.0,
-        "hrv_eff_range": (0.0,0.0),
-        "infiltration_schedule_name": "AlwaysOnSched",
-        "ventilation_schedule_name": "VentSched_DayNight",
-        "system_type": "A",
-        "flow_exponent": 0.67,
-        "infiltration_total_m3_s": 0.001979822,
-        "ventilation_total_m3_s": 0.035
-      }
+    Generate a scenario-level DataFrame that combines building-level vent parameters
+    (from df_building) and zone-level vent parameters (from df_zones), including
+    param_min/param_max if present. Then optionally randomizes or adjusts them
+    for each scenario.
 
-    This function:
-     - Loops over all ZONE objects in the IDF
-     - Creates infiltration objects and ventilation objects for each zone
-       (or uses IdealLoads if system_type=="D").
-     - Splits infiltration_total_m3_s among the zones,
-       splits ventilation_total_m3_s among the zones.
-     - Applies infiltration_schedule_name / ventilation_schedule_name.
+    Args:
+      df_building (pd.DataFrame): building-level vent data, typically from
+        "assigned_vent_building.csv" with columns like:
+         - ogc_fid, param_name, param_value
+         - param_name might also have a "_range" companion row with min/max in parentheses
+      df_zones (pd.DataFrame): zone-level vent data from
+        "assigned_vent_zones.csv" with columns like:
+         - ogc_fid, zone_name, param_name, param_value
+      building_id: int or str, the building ID to filter on
+      num_scenarios: int, how many scenario sets to create
+      picking_method: str, e.g. "random_uniform", "fixed", etc.
+      random_seed: int, for reproducible random picks
+      scenario_csv_out: str or None, if not None we write final DataFrame to CSV
 
-    If you already have infiltration/vent objects, it can update them
-    (or you can handle that in a separate function).
+    Returns:
+      df_scen (pd.DataFrame): A "long" DataFrame with columns like:
+        [scenario_index, ogc_fid, zone_name, param_name, param_value,
+         param_min, param_max, picking_method, ...]
+      - zone_name may be empty/None for building-level params
+      - param_min/param_max extracted from e.g. infiltration_base_range
+      - param_value potentially randomized if picking_method == "random_uniform"
     """
+    if random_seed is not None:
+        random.seed(random_seed)
 
-    zones = idf.idfobjects["ZONE"]
-    if not zones:
-        print("[VENT] No zones found; skipping infiltration/ventilation creation.")
-        return
+    # 1) Filter for this building
+    df_bldg = df_building[df_building["ogc_fid"] == building_id].copy()
+    df_zone = df_zones[df_zones["ogc_fid"] == building_id].copy()
 
-    infiltration_m3_s_total = param_dict.get("infiltration_total_m3_s", 0.0)
-    ventilation_m3_s_total  = param_dict.get("ventilation_total_m3_s", 0.0)
-    n_zones = len(zones)
-    if n_zones < 1:
-        return
+    if df_bldg.empty and df_zone.empty:
+        print(f"[create_vent_scenarios] No ventilation data found for ogc_fid={building_id}.")
+        return pd.DataFrame()
 
-    # We distribute total infiltration & ventilation evenly among the zones
-    infil_per_zone = infiltration_m3_s_total / n_zones
-    vent_per_zone  = ventilation_m3_s_total / n_zones
+    # 2) Build building param list, with param_min/param_max if they appear in "xxx_range" rows
+    bldg_params = parse_building_vent_params(df_bldg)
 
-    infiltration_sched = param_dict.get("infiltration_schedule_name", "AlwaysOnSched")
-    ventilation_sched  = param_dict.get("ventilation_schedule_name", "VentSched_DayNight")
-    system_type        = param_dict.get("system_type", "A")
+    # 3) Build zone param list
+    zone_params = parse_zone_vent_params(df_zone)
 
-    print(f"[VENT] Applying building-level infiltration={infiltration_m3_s_total:.5f} m3/s, "
-          f"ventilation={ventilation_m3_s_total:.5f} m3/s, system={system_type}, n_zones={n_zones}")
+    scenario_rows = []
 
-    for zone_obj in zones:
-        zone_name = zone_obj.Name
-        # 1) Create infiltration object
-        iobj_name = f"Infil_{system_type}_{zone_name}"
-        iobj = _create_or_update_infiltration(
-            idf, iobj_name, zone_name, infil_per_zone, infiltration_sched
-        )
+    # 4) For each scenario, we pick new param_value for each building-level param
+    for scenario_i in range(num_scenarios):
+        # A) Building-level
+        for p in bldg_params:
+            p_name = p["param_name"]
+            p_val  = p["param_value"]  # base
+            p_min  = p["param_min"]
+            p_max  = p["param_max"]
 
-        # 2) If system_type != "D" => create a ZONEVENTILATION:DESIGNFLOWRATE object
-        #    If system_type == "D" => update zone's IdealLoads or skip
-        if system_type.upper() == "D":
-            # Balanced mechanical with HRV => we might rely on IdealLoads (like an infiltration stand-in)
-            vobj = _attach_vent_to_ideal_loads(idf, zone_name, vent_per_zone)
+            new_val = pick_value(p_val, p_min, p_max, picking_method)
+            scenario_rows.append({
+                "scenario_index": scenario_i,
+                "ogc_fid": building_id,
+                "zone_name": None,  # building-level param
+                "param_name": p_name,
+                "param_value": new_val,
+                "param_min": p_min,
+                "param_max": p_max,
+                "picking_method": picking_method
+            })
+
+        # B) Zone-level
+        for z in zone_params:
+            z_name  = z["zone_name"]
+            p_name  = z["param_name"]
+            p_val   = z["param_value"]
+            p_min   = z["param_min"]
+            p_max   = z["param_max"]
+
+            new_val = pick_value(p_val, p_min, p_max, picking_method)
+            scenario_rows.append({
+                "scenario_index": scenario_i,
+                "ogc_fid": building_id,
+                "zone_name": z_name,
+                "param_name": p_name,
+                "param_value": new_val,
+                "param_min": p_min,
+                "param_max": p_max,
+                "picking_method": picking_method
+            })
+
+    # 5) Convert to DataFrame
+    df_scen = pd.DataFrame(scenario_rows)
+
+    # 6) Optionally write to CSV
+    if scenario_csv_out:
+        os.makedirs(os.path.dirname(scenario_csv_out), exist_ok=True)
+        df_scen.to_csv(scenario_csv_out, index=False)
+        print(f"[create_vent_scenarios] Wrote scenario vent params => {scenario_csv_out}")
+
+    return df_scen
+
+
+def parse_building_vent_params(df_bldg):
+    """
+    Helper to parse building-level vent parameters from
+    assigned_vent_building.csv into a list of dicts with
+      [param_name, param_value, param_min, param_max]
+
+    - If param_name == "infiltration_base_range" => store param_min/param_max from the tuple
+      matched with param_name="infiltration_base".
+    - Similarly for "year_factor_range", "fan_pressure_range", etc.
+    """
+    # We read rows like:
+    #   infiltration_base, 100.3639
+    #   infiltration_base_range, (100.3, 100.4)
+    # We'll store them in a dictionary keyed by the "base param"
+    param_map = {}  # e.g. "infiltration_base" => {value:..., min:..., max:...}
+
+    for row in df_bldg.itertuples():
+        name = row.param_name
+        val  = row.param_value
+
+        # e.g. name="infiltration_base_range"
+        if name.endswith("_range"):
+            base_name = name.replace("_range", "")
+            if base_name not in param_map:
+                param_map[base_name] = {"param_value": None, "param_min": None, "param_max": None}
+
+            # parse (min,max)
+            t = parse_tuple(val)
+            if t and len(t) == 2:
+                param_map[base_name]["param_min"] = t[0]
+                param_map[base_name]["param_max"] = t[1]
         else:
-            # create zone ventilation design flow
-            vobj_name = f"Vent_{system_type}_{zone_name}"
-            vobj = _create_or_update_ventilation(
-                idf, vobj_name, zone_name, vent_per_zone, ventilation_sched
-            )
+            # normal param
+            if name not in param_map:
+                param_map[name] = {"param_value": None, "param_min": None, "param_max": None}
+            param_map[name]["param_value"] = val
 
-        # Optionally log or print
-        print(f"  => Zone {zone_name}: infiltration={infil_per_zone:.5f}, vent={vent_per_zone:.5f}")
+    # Now produce a list of dict
+    result = []
+    for p_name, dct in param_map.items():
+        result.append({
+            "param_name":  p_name,
+            "param_value": dct["param_value"],
+            "param_min":   dct["param_min"],
+            "param_max":   dct["param_max"]
+        })
+    return result
 
 
-def _create_or_update_infiltration(idf, obj_name, zone_name, infil_flow_m3_s, sched_name):
+def parse_zone_vent_params(df_zone):
     """
-    Creates or updates a ZONEINFILTRATION:DESIGNFLOWRATE object.
+    Helper to parse zone-level vent params from assigned_vent_zones.csv
+    into a list of dicts with zone_name, param_name, param_value, param_min, param_max.
+
+    Typically, assigned_vent_zones doesn't store param_min/param_max,
+    so we might keep them as None. But if your code logs them, parse them similarly.
     """
-    existing = [
-        inf for inf in idf.idfobjects["ZONEINFILTRATION:DESIGNFLOWRATE"]
-        if inf.Name == obj_name
-    ]
-    if existing:
-        iobj = existing[0]
-    else:
-        iobj = idf.newidfobject("ZONEINFILTRATION:DESIGNFLOWRATE", Name=obj_name)
+    results = []
+    # e.g. row: zone_name="Zone1_FrontPerimeter", param_name="infiltration_flow_m3_s", param_value=0.255
+    for row in df_zone.itertuples():
+        zname = row.zone_name
+        pname = row.param_name
+        val   = row.param_value
 
-    if hasattr(iobj, "Zone_or_ZoneList_or_Space_or_SpaceList_Name"):
-        iobj.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zone_name
-    else:
-        iobj.Zone_or_ZoneList_Name = zone_name
+        # If you store param ranges in zone CSV, parse them similarly to parse_tuple
+        # For now, we assume no range => None
+        results.append({
+            "zone_name": zname,
+            "param_name": pname,
+            "param_value": val,
+            "param_min": None,
+            "param_max": None
+        })
+    return results
 
-    iobj.Schedule_Name = sched_name
-    iobj.Design_Flow_Rate_Calculation_Method = "Flow/Zone"
-    iobj.Design_Flow_Rate = infil_flow_m3_s
-    return iobj
 
-
-def _create_or_update_ventilation(idf, obj_name, zone_name, vent_flow_m3_s, sched_name):
+def parse_tuple(val):
     """
-    Creates or updates a ZONEVENTILATION:DESIGNFLOWRATE object.
+    If val is like "(100.3, 100.4)", parse to (100.3, 100.4). Otherwise None.
     """
-    existing = [
-        vent for vent in idf.idfobjects["ZONEVENTILATION:DESIGNFLOWRATE"]
-        if vent.Name == obj_name
-    ]
-    if existing:
-        vobj = existing[0]
-    else:
-        vobj = idf.newidfobject("ZONEVENTILATION:DESIGNFLOWRATE", Name=obj_name)
-
-    if hasattr(vobj, "Zone_or_ZoneList_or_Space_or_SpaceList_Name"):
-        vobj.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zone_name
-    else:
-        vobj.Zone_or_ZoneList_Name = zone_name
-
-    vobj.Schedule_Name = sched_name
-    vobj.Design_Flow_Rate_Calculation_Method = "Flow/Zone"
-    vobj.Design_Flow_Rate = vent_flow_m3_s
-    return vobj
-
-
-def _attach_vent_to_ideal_loads(idf, zone_name, vent_flow_m3_s):
-    """
-    If system_type=="D", we rely on ZONEHVAC:IDEALLOADSAIRSYSTEM for ventilation.
-    Typically you'd set the supply air flow rates. We'll do a simple approach:
-      - find <zone_name> Ideal Loads
-      - set Maximum_Cooling_Air_Flow_Rate & Maximum_Heating_Air_Flow_Rate to vent_flow_m3_s
-    Or store additional fields (like infiltration fraction).
-    """
-    ideal_name = f"{zone_name} Ideal Loads"
-    ideal_obj = [
-        ild for ild in idf.idfobjects["ZONEHVAC:IDEALLOADSAIRSYSTEM"]
-        if ild.Name == ideal_name
-    ]
-    if not ideal_obj:
-        print(f"[VENT WARNING] {zone_name} Ideal Loads not found; can't set vent flow. Skipping.")
+    if not isinstance(val, str):
+        return None
+    val_str = val.strip()
+    if not (val_str.startswith("(") and val_str.endswith(")")):
+        return None
+    try:
+        # e.g. ast.literal_eval could do this too, but let's do a simple approach:
+        inner = val_str[1:-1]  # remove parens
+        parts = inner.split(",")
+        if len(parts) != 2:
+            return None
+        p1 = float(parts[0])
+        p2 = float(parts[1])
+        return (p1, p2)
+    except:
         return None
 
-    iobj = ideal_obj[0]
-    # Example approach => "NoLimit" or "LimitFlowRate"
-    iobj.Heating_Limit = "LimitFlowRate"
-    iobj.Maximum_Heating_Air_Flow_Rate = vent_flow_m3_s
-    iobj.Cooling_Limit = "LimitFlowRate"
-    iobj.Maximum_Cooling_Air_Flow_Rate = vent_flow_m3_s
 
-    # E+ allows infiltration to be done as well in the same object if desired,
-    # but usually infiltration is a separate "ZONEINFILTRATION:DESIGNFLOWRATE".
-    return iobj
-
-
-##############################################################################
-# 2) APPLY ZONE-LEVEL VENTILATION
-##############################################################################
-
-def apply_zone_level_vent(idf, df_zone_sub):
+def pick_value(base_val, p_min, p_max, picking_method):
     """
-    Given a DataFrame with columns like:
-       ogc_fid, zone_name, param_name, param_value
+    Given a base_val (float or str), optional p_min/p_max, and a method,
+    return a new value. Example:
+      - If picking_method == "random_uniform" and p_min/p_max are not None,
+        pick random in [p_min, p_max].
+      - Else keep base_val as is.
 
-    Specifically for infiltration & ventilation, you might have:
-       zone_name, infiltration_object_name, infiltration_object_type, infiltration_flow_m3_s,
-       infiltration_schedule_name, ventilation_object_name, ventilation_object_type,
-       ventilation_flow_m3_s, ventilation_schedule_name
-
-    For each row in df_zone_sub, create or update the infiltration + ventilation objects
-    named as in param_value.
-
-    Example row:
-       ogc_fid=4136730, zone_name="Zone1", param_name="infiltration_object_name", param_value="Infil_A_Zone1"
-       ...
-    We can parse df_zone_sub row by row or group by zone_name.
-
-    Steps:
-      1) group by zone_name
-      2) parse infiltration object name + type + flow + schedule
-      3) parse ventilation object name + type + flow + schedule
-      4) create or update these objects in the IDF.
+    Adjust as needed for more complex logic (like scale factors).
     """
-    # We'll group by "zone_name" so we can gather infiltration/vent info in a single pass.
-    zone_groups = df_zone_sub.groupby("zone_name")
+    # Attempt float conversion
+    try:
+        base_f = float(base_val)
+    except:
+        base_f = None
 
-    for zone_name, zone_df in zone_groups:
-        # We'll keep a local dictionary for infiltration & ventilation info
-        infil_name = None
-        infil_type = "ZONEINFILTRATION:DESIGNFLOWRATE"
-        infil_flow = 0.0
-        infil_sched = "AlwaysOnSched"
+    if picking_method == "random_uniform" and p_min is not None and p_max is not None:
+        try:
+            fmin = float(p_min)
+            fmax = float(p_max)
+            if fmax >= fmin:
+                return random.uniform(fmin, fmax)
+        except:
+            pass
+        # fallback => base_val
+        return base_val
 
-        vent_name = None
-        vent_type = "ZONEVENTILATION:DESIGNFLOWRATE"
-        vent_flow = 0.0
-        vent_sched = "AlwaysOnSched"
+    # if picking_method == "fixed", or no range, just return base_val
+    return base_val
 
-        for row in zone_df.itertuples():
+
+# ---------------------------------------------------------------------------
+# 2) APPLY BUILDING-LEVEL VENT
+# ---------------------------------------------------------------------------
+def apply_building_level_vent(idf, vent_params):
+    """
+    Applies building-level infiltration/vent parameters (like infiltration_base,
+    infiltration_total_m3_s, schedules, etc.) to the IDF in a "coarse" manner.
+
+    Example usage:
+        vent_params = {
+          "infiltration_base": 0.5,
+          "ventilation_total_m3_s": 0.01,
+          "infiltration_schedule_name": "AlwaysOnSched",
+          ...
+        }
+        apply_building_level_vent(my_idf, vent_params)
+    """
+    # This is a placeholder approach, as building-level infiltration often
+    # needs to be distributed to zones. But let's assume you have a
+    # "global infiltration" or "HVAC system infiltration" object in IDF
+    # that you can set.
+
+    infiltration_base = vent_params.get("infiltration_base")
+    infiltration_sched = vent_params.get("infiltration_schedule_name")
+    # etc.
+
+    print(f"[VENT] Applying building-level infiltration_base={infiltration_base}, schedule={infiltration_sched}")
+
+    # If you have a top-level infiltration object or design object, you can find it:
+    # e.g. "ZoneInfiltration:DesignFlowRate" object named "GlobalInfil" or similar
+    # This is just a pseudo-illustration:
+    # infiltration_obj = find_or_create_infiltration_object(idf, name="GlobalInfil")
+    # infiltration_obj.Design_Flow_Rate = infiltration_base
+    # infiltration_obj.Schedule_Name = infiltration_sched
+
+    # If you want to store infiltration_total_m3_s, etc. do similarly
+    # ...
+    pass
+
+
+# ---------------------------------------------------------------------------
+# 3) APPLY ZONE-LEVEL VENT
+# ---------------------------------------------------------------------------
+def apply_zone_level_vent(idf, df_zone_scen):
+    """
+    Applies zone-level infiltration/vent parameters to each zone. The DataFrame
+    is expected to have columns:
+       [zone_name, param_name, param_value, ...]
+    derived from scenario-based picks or from assigned_vent_zones.csv.
+
+    Each zone might have infiltration_object_name, infiltration_flow_m3_s,
+    infiltration_schedule_name, ventilation_object_name, ventilation_flow_m3_s,
+    ventilation_schedule_name, etc.
+
+    We'll group by zone_name, create or update the infiltration/vent objects
+    in IDF.
+    """
+    # group by zone_name
+    grouped = df_zone_scen.groupby("zone_name")
+
+    for z_name, z_df in grouped:
+        print(f"[VENT] => Zone={z_name}, {len(z_df)} param rows")
+
+        # We can parse infiltrationX / ventilationX from param_name => param_value
+        # A simple approach is to build a dict
+        z_params = {}
+        for row in z_df.itertuples():
             pname = row.param_name
-            val   = row.param_value
+            pval  = row.param_value
+            z_params[pname] = pval
 
-            # Try to interpret numeric fields
-            try:
-                val_float = float(val)
-            except:
-                val_float = None
+        # infiltration
+        infil_obj_name  = z_params.get("infiltration_object_name")
+        infil_obj_type  = z_params.get("infiltration_object_type", "ZONEINFILTRATION:DESIGNFLOWRATE")
+        infil_flow      = z_params.get("infiltration_flow_m3_s", 0.0)
+        infil_schedule  = z_params.get("infiltration_schedule_name", "AlwaysOnSched")
 
-            if pname == "infiltration_object_name":
-                infil_name = val
-            elif pname == "infiltration_object_type":
-                infil_type = val
-            elif pname == "infiltration_flow_m3_s" and val_float is not None:
-                infil_flow = val_float
-            elif pname == "infiltration_schedule_name":
-                infil_sched = val
+        # find or create infiltration object
+        if infil_obj_name:
+            infil_obj = find_or_create_object(idf, infil_obj_type, infil_obj_name)
+            # set infiltration fields (some fields vary by object type)
+            if hasattr(infil_obj, "Name"):
+                infil_obj.Name = infil_obj_name
+            if hasattr(infil_obj, "Zone_or_ZoneList_Name"):
+                infil_obj.Zone_or_ZoneList_Name = z_name
+            if hasattr(infil_obj, "Design_Flow_Rate"):
+                try:
+                    infil_obj.Design_Flow_Rate = float(infil_flow)
+                except:
+                    pass
+            if hasattr(infil_obj, "Schedule_Name"):
+                infil_obj.Schedule_Name = infil_schedule
 
-            elif pname == "ventilation_object_name":
-                vent_name = val
-            elif pname == "ventilation_object_type":
-                vent_type = val
-            elif pname == "ventilation_flow_m3_s" and val_float is not None:
-                vent_flow = val_float
-            elif pname == "ventilation_schedule_name":
-                vent_sched = val
+        # ventilation
+        vent_obj_name   = z_params.get("ventilation_object_name")
+        vent_obj_type   = z_params.get("ventilation_object_type", "ZONEVENTILATION:DESIGNFLOWRATE")
+        vent_flow       = z_params.get("ventilation_flow_m3_s", 0.0)
+        vent_schedule   = z_params.get("ventilation_schedule_name", "AlwaysOnSched")
 
-        # Now we have infiltration + vent parameters for zone_name
-        # Create or update infiltration object
-        iobj = _create_zone_level_object(
-            idf, obj_name=infil_name, obj_type=infil_type,
-            zone_name=zone_name,
-            design_flow=infil_flow,
-            sched_name=infil_sched
-        )
-
-        # Create or update ventilation (or attach to IdealLoads if type=ZONEHVAC:IDEALLOADSAIRSYSTEM)
-        vobj = None
-        if vent_type.upper() == "ZONEHVAC:IDEALLOADSAIRSYSTEM":
-            # We interpret vent_name as the "Name" of an existing IdealLoads
-            # Then set max flow to vent_flow, or we skip if not found
-            ideal = idf.getobject(vent_type, vent_name.upper())
-            if ideal:
-                # set max flow
-                ideal.Heating_Limit = "LimitFlowRate"
-                ideal.Maximum_Heating_Air_Flow_Rate = vent_flow
-                ideal.Cooling_Limit = "LimitFlowRate"
-                ideal.Maximum_Cooling_Air_Flow_Rate = vent_flow
-                vobj = ideal
-                print(f"[VENT] Updated IdealLoads '{vent_name}' => flow={vent_flow:.5f}")
-            else:
-                print(f"[VENT WARNING] IdealLoads '{vent_name}' not found for zone '{zone_name}'.")
-        else:
-            # Assume "ZONEVENTILATION:DESIGNFLOWRATE"
-            vobj = _create_zone_level_object(
-                idf, obj_name=vent_name, obj_type=vent_type,
-                zone_name=zone_name,
-                design_flow=vent_flow,
-                sched_name=vent_sched
-            )
-
-        print(f"Zone={zone_name} => infiltration={infil_name}@{infil_flow:.5f}, vent={vent_name}@{vent_flow:.5f}")
+        if vent_obj_name:
+            vent_obj = find_or_create_object(idf, vent_obj_type, vent_obj_name)
+            if hasattr(vent_obj, "Name"):
+                vent_obj.Name = vent_obj_name
+            if hasattr(vent_obj, "Zone_or_ZoneList_Name"):
+                vent_obj.Zone_or_ZoneList_Name = z_name
+            if hasattr(vent_obj, "Design_Flow_Rate"):
+                try:
+                    vent_obj.Design_Flow_Rate = float(vent_flow)
+                except:
+                    pass
+            if hasattr(vent_obj, "Schedule_Name"):
+                vent_obj.Schedule_Name = vent_schedule
 
 
-def _create_zone_level_object(idf, obj_name, obj_type, zone_name, design_flow, sched_name):
+def find_or_create_object(idf, obj_type_upper, obj_name):
     """
-    A helper that creates or updates a zone-level infiltration or ventilation object,
-    depending on obj_type (e.g. "ZONEINFILTRATION:DESIGNFLOWRATE",
-    "ZONEVENTILATION:DESIGNFLOWRATE", etc.).
+    Utility to find an existing object in IDF by type & name, or create a new one.
+    e.g. find_or_create_object(idf, "ZONEINFILTRATION:DESIGNFLOWRATE", "Infil_Zone1")
     """
-    if not obj_type:
-        print(f"[VENT WARNING] No obj_type provided for zone {zone_name}, skipping.")
+    if not obj_type_upper:
         return None
-    if not obj_name:
-        print(f"[VENT WARNING] No obj_name provided for zone {zone_name}, skipping.")
-        return None
-
-    # If the IDF doesn't have that object type, we skip
-    # (E.g. if user typed 'ZONEINFILTRATION:DESIGNFLOWRATE' incorrectly)
-    obj_type_upper = obj_type.upper()
     if obj_type_upper not in idf.idfobjects:
-        print(f"[VENT WARNING] IDF has no object type '{obj_type_upper}'. Skipping zone {zone_name}.")
-        return None
+        # If IDF doesn't have that object class, attempt creation
+        new_obj = idf.newidfobject(obj_type_upper)
+        return new_obj
 
+    # try to find by name
     existing = [
-        obj for obj in idf.idfobjects[obj_type_upper]
-        if obj.Name.upper() == obj_name.upper()
+        o for o in idf.idfobjects[obj_type_upper]
+        if hasattr(o, "Name") and str(o.Name) == str(obj_name)
     ]
     if existing:
-        obj = existing[0]
+        return existing[0]
     else:
-        obj = idf.newidfobject(obj_type_upper, Name=obj_name)
-
-    # Assign the zone name
-    if hasattr(obj, "Zone_or_ZoneList_or_Space_or_SpaceList_Name"):
-        obj.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zone_name
-    else:
-        # older or different IDD field name
-        obj.Zone_or_ZoneList_Name = zone_name
-
-    if hasattr(obj, "Schedule_Name"):
-        obj.Schedule_Name = sched_name
-
-    # For infiltration/vent design flow
-    if hasattr(obj, "Design_Flow_Rate_Calculation_Method"):
-        obj.Design_Flow_Rate_Calculation_Method = "Flow/Zone"
-        obj.Design_Flow_Rate = design_flow
-    else:
-        # If it's IdealLoads or something else, we do a custom approach
-        pass
-
-    return obj
+        # create new
+        new_obj = idf.newidfobject(obj_type_upper)
+        return new_obj

@@ -18,8 +18,8 @@
         "building_function": "residential",
         "age_range": "1992-2005",
         "param_name": "setpoint_c",
-        "min_val": 558.0,
-        "max_val": 600.0
+        "min_val": 58.0,
+        "max_val": 60.0
       },
       {
         "building_function": "non_residential",
