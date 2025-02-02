@@ -43,7 +43,7 @@ dhw_lookup = {
         "Accommodation Function": 12.5,  # typical hotel factor
         "Other Use Function":     2.4    # fallback
     },
-
+    
 
     # ---------------------------------------------------------------------
     #  "pre_calibration" => broad ranges, approximate
@@ -551,3 +551,5 @@ We also updated the "TABLE_13_1_KWH_PER_M2" keys to match the new
 non-res naming (e.g. "Meeting Function", "Healthcare Function", etc.).
 Adjust or extend these as needed.
 """
+
+

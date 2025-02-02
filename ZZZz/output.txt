@@ -1,537 +1,1735 @@
-Folder: D:\Documents\E_Plus_2030_py\validation
+Folder: D:\Documents\E_Plus_2030_py\cal
 
-  File: compare_sims_with_measured.py
+  File: unified_calibration.py
   --- File Contents Start ---
-# validation/compare_sims_with_measured.py
-import pandas as pd
-
-def load_csv_as_df(real_data_path, sim_data_path):
-    """
-    Loads real and simulated data from CSV into DataFrames.
-    Just a simple utility function, used if needed.
-    """
-    print(f"[DEBUG] Loading real data from: {real_data_path}")
-    print(f"[DEBUG] Loading sim data  from: {sim_data_path}")
-
-    df_real = pd.read_csv(real_data_path)
-    df_sim  = pd.read_csv(sim_data_path)
-
-    print("[DEBUG] df_real shape:", df_real.shape)
-    print("[DEBUG] df_sim  shape:", df_sim.shape)
-    print("[DEBUG] df_real columns:", df_real.columns.to_list())
-    print("[DEBUG] df_sim columns: ", df_sim.columns.to_list())
-    return df_real, df_sim
-
-
-def align_data_for_variable(df_real, df_sim, real_building_id, sim_building_id, variable_name):
-    """
-    Returns aligned arrays of sim vs. obs for a given (real_building_id, sim_building_id, variable).
-    - df_real and df_sim should be *already filtered* to the appropriate building + var
-      (i.e., df_real_sub, df_sim_sub).
-    - This function melts them from wide to long format and merges on 'Date'.
-
-    Returns: (sim_values_array, obs_values_array, merged_dataframe)
-    """
-
-    # 1) Filter again for safety, though presumably df_real and df_sim are already subset
-    real_sel = df_real[
-        (df_real['BuildingID'] == real_building_id) &
-        (df_real['VariableName'] == variable_name)
-    ]
-    sim_sel  = df_sim[
-        (df_sim['BuildingID'] == sim_building_id) &
-        (df_sim['VariableName'] == variable_name)
-    ]
-
-    # Debug prints
-    print(f"   > Aligning real Bldg={real_building_id} vs sim Bldg={sim_building_id}, Var={variable_name}")
-    print(f"   > real_sel shape={real_sel.shape}, sim_sel shape={sim_sel.shape}")
-
-    # If empty, return empty arrays
-    if real_sel.empty or sim_sel.empty:
-        return [], [], pd.DataFrame()
-
-    # 2) Melt from wide to long
-    real_long = real_sel.melt(
-        id_vars=['BuildingID','VariableName'],
-        var_name='Date',
-        value_name='Value'
-    ).dropna(subset=['Value'])
-
-    sim_long = sim_sel.melt(
-        id_vars=['BuildingID','VariableName'],
-        var_name='Date',
-        value_name='Value'
-    ).dropna(subset=['Value'])
-
-    # 3) Merge on 'Date'
-    merged = pd.merge(
-        real_long[['Date','Value']],
-        sim_long[['Date','Value']],
-        on='Date', how='inner', suffixes=('_obs','_sim')
-    )
-
-    # 4) Return arrays plus the merged DataFrame
-    return merged['Value_sim'].values, merged['Value_obs'].values, merged
-
-  --- File Contents End ---
-
-  File: main_validation.py
-  --- File Contents Start ---
-# main_validation.py
 """
-validation/main_validation.py
+unified_calibration.py
 
-This module provides a reusable function `run_validation_process` that:
-- Reads user config for validation
-- Calls validate_with_ranges(...) from validate_results_custom.py
-- Prints and saves a CSV of metrics
-- Optionally generates a bar chart (or time-series/scatter) if skip_plots is False
+Key Features:
+  - Load scenario CSV files you want to calibrate (DH, Elec, Fenez, etc.).
+  - Optionally filter parameters by a sensitivity CSV (top N).
+  - Create ParamSpecs for param_value (and optionally param_min, param_max).
+  - Provide random, GA, or Bayesian methods to find param sets that minimize an error.
+  - The error function can be:
+       (A) Re-run E+ (placeholder here),
+       (B) Use a trained surrogate (with "use_surrogate": true).
+  - Save one calibration_history.csv for all attempts.
+  - Write separate best-param CSV for each scenario file, e.g.:
+       calibrated_params_scenario_params_dhw.csv
+       calibrated_params_scenario_params_elec.csv
+    with updated values for param_value, param_min, param_max, etc.
 
-Added Feature:
-- Uses config["variables_to_compare"] to restrict which VariableNames to validate.
-
-Dependencies (unchanged):
-- validation.compare_sims_with_measured
-- validation.metrics
-- validation.validate_results_custom (must be updated to accept `variables_to_compare`)
-- validation.visualize
+Author: Example
 """
 
+import os
 import csv
-import matplotlib.pyplot as plt
+import random
+import copy
+import numpy as np
+import pandas as pd
+from typing import List, Dict, Tuple, Callable, Optional
 
-from validation.validate_results_custom import validate_with_ranges
+# scikit-optimize for bayesian calibration
+try:
+    from skopt import gp_minimize
+    from skopt.space import Real, Integer
+    from skopt.utils import use_named_args
+    HAVE_SKOPT = True
+except ImportError:
+    gp_minimize = None
+    Real = None
+    Integer = None
+    use_named_args = None
+    HAVE_SKOPT = False
 
-def run_validation_process(config):
+# For Surrogate usage
+import joblib
+
+###############################################################################
+# 0) Global placeholders for loaded Surrogate + Real Data
+###############################################################################
+MODEL_SURROGATE = None
+MODEL_COLUMNS   = None
+REAL_DATA_DICT  = None
+
+###############################################################################
+# 1) ParamSpec
+###############################################################################
+
+class ParamSpec:
     """
-    Runs a validation process based on a user config dict.
+    name: the internal name of the parameter (str)
+    min_value, max_value: float boundaries
+    is_integer: bool => if True, round to int
+    """
+    def __init__(self, name: str, min_value: float, max_value: float, is_integer: bool = False):
+        self.name = name
+        self.min_value = min_value
+        self.max_value = max_value
+        self.is_integer = is_integer
 
-    Example config structure:
+    def sample_random(self) -> float:
+        val = random.uniform(self.min_value, self.max_value)
+        return int(round(val)) if self.is_integer else val
+
+
+###############################################################################
+# 2) Scenario CSV loading
+###############################################################################
+
+def load_scenario_csvs(scenario_folder: str, scenario_files: List[str]) -> pd.DataFrame:
+    """
+    Reads specified scenario CSVs from scenario_folder, merges them.
+    Each file is expected to have columns e.g.:
+      scenario_index, ogc_fid, object_name, param_name,
+      param_value, param_min, param_max, ...
+    We'll store "source_file" for each row. 
+    """
+    if not scenario_files:
+        # default to all
+        scenario_files = [
+            "scenario_params_dhw.csv",
+            "scenario_params_elec.csv",
+            "scenario_params_fenez.csv",
+            "scenario_params_hvac.csv",
+            "scenario_params_vent.csv"
+        ]
+
+    dfs = []
+    for fname in scenario_files:
+        fpath = os.path.join(scenario_folder, fname)
+        if os.path.isfile(fpath):
+            df_temp = pd.read_csv(fpath)
+            df_temp["source_file"] = fname
+            dfs.append(df_temp)
+        else:
+            print(f"[WARN] Scenario file '{fname}' not found => skipping.")
+    if not dfs:
+        raise FileNotFoundError(f"No scenario CSV found in {scenario_folder} for files={scenario_files}")
+
+    merged = pd.concat(dfs, ignore_index=True)
+    return merged
+
+
+def optionally_filter_by_sensitivity(
+    df_scen: pd.DataFrame,
+    sensitivity_csv: str,
+    top_n: int = 10,
+    param_col: str = "param",
+    metric_col: str = "mu_star"
+) -> pd.DataFrame:
+    """
+    If 'sensitivity_csv' is found, read it, sort by metric_col descending,
+    pick top_n param names => keep only those in df_scen. 
+    We'll match df_scen["param_name"] to param_col in the sensitivity CSV.
+    """
+    if not sensitivity_csv or not os.path.isfile(sensitivity_csv):
+        print("[INFO] No sensitivity CSV or not found => skipping filter.")
+        return df_scen
+
+    df_sens = pd.read_csv(sensitivity_csv)
+    if param_col not in df_sens.columns or metric_col not in df_sens.columns:
+        print(f"[WARN] param_col='{param_col}' or metric_col='{metric_col}' not found => skipping filter.")
+        return df_scen
+
+    df_sens_sorted = df_sens.sort_values(metric_col, ascending=False)
+    top_params = df_sens_sorted[param_col].head(top_n).tolist()
+    print(f"[INFO] Filtering scenario params to top {top_n} from {sensitivity_csv} => {top_params}")
+
+    df_filt = df_scen[df_scen["param_name"].isin(top_params)].copy()
+    if df_filt.empty:
+        print("[WARN] After filter, no scenario params remain => returning original.")
+        return df_scen
+    return df_filt
+
+
+###############################################################################
+# 3) Build ParamSpecs from scenario rows
+###############################################################################
+
+def build_param_specs_from_scenario(
+    df_scen: pd.DataFrame,
+    calibrate_min_max: bool = True
+) -> List[ParamSpec]:
+    """
+    For each row in df_scen, produce param_value plus param_min/param_max if calibrate_min_max is True.
+
+    We do something like:
+      base_key = f"{source_file}:{param_name}"
+      Then create:
+         base_key_VAL
+         base_key_MIN
+         base_key_MAX
+    with numeric ranges.
+
+    You can revise the logic so param_min param_max come from row["param_min"], row["param_max"] if you want them separate.
+    """
+
+    specs = []
+    for idx, row in df_scen.iterrows():
+        p_name = row.get("param_name", "UnknownParam")
+        source_file = row.get("source_file", "")
+        base_val    = row.get("param_value", np.nan)
+        base_min    = row.get("param_min",  np.nan)
+        base_max    = row.get("param_max",  np.nan)
+
+        # unify a base key
+        base_key = f"{source_file}:{p_name}".replace(".csv","")
+
+        # fallback if param_value is missing
+        try:
+            valf = float(base_val)
+        except:
+            valf = 1.0  # fallback
+
+        # fallback if param_min/param_max missing
+        # we do a small check => if invalid, use ±20% around val
+        if pd.isna(base_min) or pd.isna(base_max) or (base_min >= base_max):
+            base_min = valf * 0.8
+            base_max = valf * 1.2
+            if base_min >= base_max:
+                base_max = base_min + 0.001
+
+        # (A) param_value => name= base_key+"_VAL"
+        specs.append(ParamSpec(
+            name=f"{base_key}_VAL",
+            min_value=float(base_min),
+            max_value=float(base_max),
+            is_integer=False
+        ))
+
+        if calibrate_min_max:
+            # (B) param_min => vary in [0, valf], or [0, base_min], or something
+            # We'll just do e.g. [0, min(valf, base_min)]
+            mmn = 0.0
+            mmx = min(valf, base_min) if base_min < valf else valf
+            if mmx <= mmn:
+                mmx = mmn + 0.001
+            specs.append(ParamSpec(
+                name=f"{base_key}_MIN",
+                min_value=mmn,
+                max_value=mmx,
+                is_integer=False
+            ))
+
+            # (C) param_max => vary in [valf, 2*], or [base_max, 2 base_max], etc.
+            mm2 = max(valf, base_max)
+            mm2b = mm2 * 2.0
+            specs.append(ParamSpec(
+                name=f"{base_key}_MAX",
+                min_value=mm2,
+                max_value=mm2b,
+                is_integer=False
+            ))
+
+    return specs
+
+
+###############################################################################
+# 4) Evaluate param_dict => surrogate or E+
+###############################################################################
+
+def load_surrogate_once(model_path: str, columns_path: str):
+    """
+    Loads the surrogate model and column list into global variables if not loaded yet.
+    Adjust as needed if you have multiple surrogates or different model paths.
+    """
+    global MODEL_SURROGATE, MODEL_COLUMNS
+    if MODEL_SURROGATE is None or MODEL_COLUMNS is None:
+        print(f"[INFO] Loading surrogate => {model_path} / {columns_path}")
+        MODEL_SURROGATE = joblib.load(model_path)
+        MODEL_COLUMNS   = joblib.load(columns_path)
+
+
+def load_real_data_once(real_csv: str):
+    """
+    You can interpret your real_data_csv and store it as a dictionary 
+    if you have multiple scenario_index or building IDs. For this example, 
+    we store a single usage or a dict with a single key.
+    """
+    global REAL_DATA_DICT
+    if REAL_DATA_DICT is None:
+        print(f"[INFO] Loading real data => {real_csv}")
+        # Example approach: read the entire CSV, sum or do something
+        df = pd.read_csv(real_csv)
+        # We'll just store a single number or store a dict of building-> usage
+        # For demonstration, do a single building => buildingID=0 => usage= 1.23e7
+        REAL_DATA_DICT = {0: 1.23e7}
+
+
+def transform_calib_name_to_surrogate_col(full_name: str) -> str:
+    """
+    If your calibration param name is "scenario_params_dhw.csv:dhw.setpoint_c_VAL",
+    we might want to map it to "dhw.setpoint_c" for the surrogate.
+    This is a simple approach:
+      1) remove "_VAL", "_MIN", "_MAX"
+      2) remove "scenario_params_dhw.csv:" prefix
+    """
+    # remove prefix
+    if ":" in full_name:
+        full_name = full_name.split(":",1)[1]  # e.g. "dhw.setpoint_c_VAL"
+    # remove suffix
+    for suffix in ["_VAL","_MIN","_MAX"]:
+        if full_name.endswith(suffix):
+            full_name = full_name[: -len(suffix)]
+    return full_name
+
+
+def build_feature_row_from_param_dict(param_dict: Dict[str, float]) -> pd.DataFrame:
+    """
+    1) We have a list of columns the surrogate expects => MODEL_COLUMNS
+    2) param_dict keys are e.g. "scenario_params_dhw.csv:dhw.setpoint_c_VAL" => 58.0
+    3) Map them => "dhw.setpoint_c" => 58.0
+    """
+    global MODEL_COLUMNS
+    row_dict = {col: 0.0 for col in MODEL_COLUMNS}
+
+    for k, v in param_dict.items():
+        short_k = transform_calib_name_to_surrogate_col(k)
+        if short_k in row_dict:
+            row_dict[short_k] = v
+
+    return pd.DataFrame([row_dict])
+
+
+def predict_error_with_surrogate(param_dict: Dict[str, float], config: dict) -> float:
+    """
+    1) load surrogate if not loaded
+    2) build feature row
+    3) predict => predicted usage
+    4) get real usage => compute error
+    """
+    model_path  = config.get("surrogate_model_path", "heating_surrogate_model.joblib")
+    columns_path= config.get("surrogate_columns_path","heating_surrogate_columns.joblib")
+    real_csv    = config.get("real_data_csv", "")
+
+    load_surrogate_once(model_path, columns_path)
+    load_real_data_once(real_csv)
+
+    df_sample = build_feature_row_from_param_dict(param_dict)
+    preds = MODEL_SURROGATE.predict(df_sample)
+
+    # If single-output => preds is shape (1,)
+    predicted_usage = preds[0] if len(preds.shape)==1 else preds[0,0]
+
+    # Retrieve real usage. Here we just pick buildingID=0
+    # If you have multiple buildingIDs => param_dict might contain scenario_index
+    real_usage = REAL_DATA_DICT[0]
+
+    # error measure => absolute difference
+    error = abs(predicted_usage - real_usage)
+    return error
+
+
+def run_energyplus_and_compute_error(param_dict: Dict[str, float], config: dict) -> float:
+    """
+    Placeholder for re-running E+. 
+    For now, we do sum of param_dict + random noise, measure difference from 50.
+    """
+    val_sum = sum(param_dict.values())
+    noise = random.uniform(-2.0, 2.0)
+    error = abs(val_sum - 50) + noise
+    return error
+
+
+def simulate_or_surrogate(param_dict: Dict[str, float], config: dict) -> float:
+    """
+    If config["use_surrogate"] => call surrogate
+    else => re-run E+
+    """
+    use_sur = config.get("use_surrogate", False)
+    if use_sur:
+        return predict_error_with_surrogate(param_dict, config)
+    else:
+        return run_energyplus_and_compute_error(param_dict, config)
+
+
+###############################################################################
+# 5) Random / GA / Bayes calibration
+###############################################################################
+
+def random_search_calibration(
+    param_specs: List[ParamSpec],
+    eval_func: Callable[[Dict[str, float]], float],
+    n_iterations: int
+) -> Tuple[Dict[str, float], float, list]:
+    best_params = None
+    best_err = float('inf')
+    history = []
+    for _ in range(n_iterations):
+        p_dict = {}
+        for s in param_specs:
+            p_dict[s.name] = s.sample_random()
+        err = eval_func(p_dict)
+        history.append((p_dict, err))
+        if err < best_err:
+            best_err = err
+            best_params = p_dict
+    return best_params, best_err, history
+
+
+def ga_calibration(
+    param_specs: List[ParamSpec],
+    eval_func: Callable[[Dict[str, float]], float],
+    pop_size: int,
+    generations: int,
+    crossover_prob: float,
+    mutation_prob: float
+) -> Tuple[Dict[str, float], float, list]:
+
+    def random_individual():
+        p = {}
+        for s in param_specs:
+            p[s.name] = s.sample_random()
+        return p
+
+    def evaluate(ind: dict) -> Tuple[float, float]:
+        e = eval_func(ind)
+        # fitness = 1 / (1+error)
+        fit = 1.0 / (1.0 + e)
+        return fit, e
+
+    def tournament_select(pop, k=3):
+        contenders = random.sample(pop, k)
+        best = max(contenders, key=lambda x: x["fitness"])
+        return copy.deepcopy(best)
+
+    def crossover(p1: dict, p2: dict):
+        c1, c2 = {}, {}
+        for k in p1.keys():
+            if random.random() < 0.5:
+                c1[k] = p1[k]
+                c2[k] = p2[k]
+            else:
+                c1[k] = p2[k]
+                c2[k] = p1[k]
+        return c1, c2
+
+    def mutate(ind: dict):
+        for s in param_specs:
+            if random.random() < mutation_prob:
+                ind[s.name] = s.sample_random()
+
+    population = []
+    history = []
+    # init
+    for _ in range(pop_size):
+        ind = random_individual()
+        fit, err = evaluate(ind)
+        population.append({"params": ind, "fitness": fit, "error": err})
+        history.append((ind, err))
+
+    for g in range(generations):
+        new_pop = []
+        while len(new_pop) < pop_size:
+            pa = tournament_select(population)
+            pb = tournament_select(population)
+            if random.random() < crossover_prob:
+                c1, c2 = crossover(pa["params"], pb["params"])
+            else:
+                c1, c2 = pa["params"], pb["params"]
+            mutate(c1)
+            mutate(c2)
+            f1, e1 = evaluate(c1)
+            f2, e2 = evaluate(c2)
+            new_pop.append({"params": c1, "fitness": f1, "error": e1})
+            new_pop.append({"params": c2, "fitness": f2, "error": e2})
+            history.append((c1, e1))
+            history.append((c2, e2))
+        # sort by fitness desc, keep top pop_size
+        new_pop.sort(key=lambda x: x["fitness"], reverse=True)
+        population = new_pop[:pop_size]
+        best_ind = max(population, key=lambda x: x["fitness"])
+        print(f"[GA] gen={g} best_error={best_ind['error']:.3f}")
+
+    best_ind = max(population, key=lambda x: x["fitness"])
+    return best_ind["params"], best_ind["error"], history
+
+
+def bayes_calibration(
+    param_specs: List[ParamSpec],
+    eval_func: Callable[[Dict[str, float]], float],
+    n_calls: int
+) -> Tuple[Dict[str, float], float, list]:
+    if not HAVE_SKOPT or gp_minimize is None:
+        print("[WARN] scikit-optimize not installed => fallback random.")
+        return random_search_calibration(param_specs, eval_func, n_calls)
+
+    skopt_dims = []
+    param_names = []
+    for s in param_specs:
+        param_names.append(s.name)
+        if s.is_integer:
+            skopt_dims.append(Integer(s.min_value, s.max_value, name=s.name))
+        else:
+            skopt_dims.append(Real(s.min_value, s.max_value, name=s.name))
+
+    @use_named_args(skopt_dims)
+    def objective(**kwargs):
+        return eval_func(kwargs)
+
+    res = gp_minimize(
+        objective,
+        dimensions=skopt_dims,
+        n_calls=n_calls,
+        n_initial_points=5,
+        random_state=42
+    )
+    best_err = res.fun
+    best_x = res.x
+    best_params = {}
+    for i, val in enumerate(best_x):
+        best_params[param_names[i]] = val
+
+    history = []
+    for i, x_list in enumerate(res.x_iters):
+        pdict = {}
+        for j, val in enumerate(x_list):
+            pdict[param_names[j]] = val
+        e = res.func_vals[i]
+        history.append((pdict, e))
+
+    return best_params, best_err, history
+
+
+###############################################################################
+# 6) Save history & best param CSV
+###############################################################################
+
+def save_history_to_csv(history: list, filename: str):
+    if not history:
+        print("[WARN] No history => skipping save.")
+        return
+    rows = []
+    all_params = set()
+    for (pdict, err) in history:
+        rows.append((pdict, err))
+        all_params.update(pdict.keys())
+    all_params = sorted(all_params)
+    os.makedirs(os.path.dirname(filename) or ".", exist_ok=True)
+    with open(filename, "w", newline="") as f:
+        writer = csv.writer(f)
+        header = list(all_params) + ["error"]
+        writer.writerow(header)
+        for (pdict, err) in rows:
+            rowvals = [pdict.get(p, "") for p in all_params]
+            rowvals.append(err)
+            writer.writerow(rowvals)
+    print(f"[INFO] Wrote calibration history => {filename}")
+
+
+def fix_min_max_relations(best_params: Dict[str, float]):
+    """
+    Optional step: ensure param_min <= param_val <= param_max.
+    For each group: basekey_VAL, basekey_MIN, basekey_MAX, reorder if needed.
+    E.g. 'scenario_params_dhw.csv:dhw.setpoint_c_VAL' => ...
+    """
+    from collections import defaultdict
+    groups = defaultdict(dict)
+    for k,v in best_params.items():
+        if k.endswith("_VAL"):
+            base = k[:-4]  # remove _VAL
+            groups[base]["VAL"] = v
+        elif k.endswith("_MIN"):
+            base = k[:-4]  # remove _MIN
+            groups[base]["MIN"] = v
+        elif k.endswith("_MAX"):
+            base = k[:-4]  # remove _MAX
+            groups[base]["MAX"] = v
+
+    for base, triple in groups.items():
+        if "VAL" in triple and "MIN" in triple and "MAX" in triple:
+            mn  = triple["MIN"]
+            val = triple["VAL"]
+            mx  = triple["MAX"]
+            new_min = min(mn, val, mx)
+            new_max = max(mn, val, mx)
+            new_val = max(new_min, min(val, new_max))
+            best_params[base+"_MIN"] = new_min
+            best_params[base+"_VAL"] = new_val
+            best_params[base+"_MAX"] = new_max
+
+
+def save_best_params_separately(
+    best_params: Dict[str, float],
+    df_scen: pd.DataFrame,
+    out_folder: str = "./",
+    prefix: str = "calibrated_params_"
+):
+    """
+    Writes separate CSV for each scenario file.
+    E.g.: prefix + "scenario_params_dhw.csv"
+    Each file has rows with columns:
+      scenario_index, ogc_fid, object_name, param_name,
+      old_param_value, new_param_value,
+      old_param_min, new_param_min,
+      old_param_max, new_param_max,
+      source_file
+    """
+    fix_min_max_relations(best_params)
+    os.makedirs(out_folder, exist_ok=True)
+    grouped = df_scen.groupby("source_file")
+
+    for sfile, group_df in grouped:
+        out_rows = []
+        for _, row in group_df.iterrows():
+            p_name = row["param_name"]
+            s_file = row["source_file"]
+            old_val = row.get("param_value",  np.nan)
+            old_min = row.get("param_min",    np.nan)
+            old_max = row.get("param_max",    np.nan)
+
+            base_key = f"{s_file}:{p_name}".replace(".csv","")
+            new_val_key = base_key + "_VAL"
+            new_min_key = base_key + "_MIN"
+            new_max_key = base_key + "_MAX"
+
+            new_val = best_params.get(new_val_key, old_val)
+            new_min = best_params.get(new_min_key, old_min)
+            new_max = best_params.get(new_max_key, old_max)
+
+            out_rows.append({
+                "scenario_index": row.get("scenario_index",""),
+                "ogc_fid": row.get("ogc_fid",""),
+                "object_name": row.get("object_name",""),
+                "param_name": p_name,
+                "old_param_value": old_val,
+                "new_param_value": new_val,
+                "old_param_min": old_min,
+                "new_param_min": new_min,
+                "old_param_max": old_max,
+                "new_param_max": new_max,
+                "source_file": s_file
+            })
+
+        df_out = pd.DataFrame(out_rows)
+        out_name = prefix + sfile  # e.g. "calibrated_params_scenario_params_dhw.csv"
+        out_path = os.path.join(out_folder, out_name)
+        df_out.to_csv(out_path, index=False)
+        print(f"[INFO] Wrote best params => {out_path}")
+
+
+###############################################################################
+# 7) Master function => run_unified_calibration
+###############################################################################
+
+def run_unified_calibration(calibration_config: dict):
+    """
+    Example usage from main.py:
+      if cal_cfg.get("perform_calibration", False):
+          run_unified_calibration(cal_cfg)
+
+    The calibration_config can have keys like:
     {
-        "real_data_csv": "path/to/real_data.csv",
-        "sim_data_csv":  "path/to/sim_data.csv",
-        "bldg_ranges":   { "0": [0, 1, 2], "1": [1] },
-        "variables_to_compare": [
-            "Electricity:Facility [J](Hourly)",
-            "Heating:EnergyTransfer [J](Hourly)"
-        ],
-        "threshold_cv_rmse": 30.0,
-        "skip_plots": false,
-        "output_csv": "validation_report.csv"
+      "scenario_folder": "output/scenarios",
+      "scenario_files": [ "scenario_params_dhw.csv", ... ],
+      "subset_sensitivity_csv": "morris_sensitivity.csv",
+      "top_n_params": 10,
+      "method": "ga",
+      "use_surrogate": true,
+      "real_data_csv": "output/results/mock_merged_daily_mean.csv",
+      "surrogate_model_path": "heating_surrogate_model.joblib",
+      "surrogate_columns_path": "heating_surrogate_columns.joblib",
+      "calibrate_min_max": true,
+      "ga_pop_size": 10,
+      "ga_generations": 5,
+      "ga_crossover_prob": 0.7,
+      "ga_mutation_prob": 0.2,
+      "bayes_n_calls": 15,
+      "random_n_iter": 20,
+      "output_history_csv": "calibration_history.csv",
+      "best_params_folder": "output/calibrated",
+      "history_folder": "output/calibrated"
     }
     """
 
-    # 1) Extract config values
-    real_data_csv     = config.get("real_data_csv", "")
-    sim_data_csv      = config.get("sim_data_csv", "")
-    bldg_ranges       = config.get("bldg_ranges", {})
-    threshold_cv_rmse = config.get("threshold_cv_rmse", 30.0)
-    skip_plots        = config.get("skip_plots", False)
-    output_csv        = config.get("output_csv", "validation_report.csv")
+    scenario_folder = calibration_config["scenario_folder"]
+    scenario_files  = calibration_config.get("scenario_files", [])
+    subset_sens     = calibration_config.get("subset_sensitivity_csv", "")
+    top_n           = calibration_config.get("top_n_params", 9999)
+    method          = calibration_config.get("method", "ga")  # "random","ga","bayes"
+    calibrate_mm    = calibration_config.get("calibrate_min_max", True)
+    output_hist_csv = calibration_config.get("output_history_csv", "calibration_history.csv")
+    best_params_dir = calibration_config.get("best_params_folder","./")
+    hist_dir        = calibration_config.get("history_folder","./")
 
-    # NEW: A list of variable names to compare
-    variables_to_compare = config.get("variables_to_compare", [])
+    # 1) load scenario CSV
+    df_scen = load_scenario_csvs(scenario_folder, scenario_files)
 
-    print(f"[INFO] Starting validation with:")
-    print(f"   Real data CSV = {real_data_csv}")
-    print(f"   Sim  data CSV = {sim_data_csv}")
-    print(f"   Building Ranges = {bldg_ranges}")
-    print(f"   Variables to Compare = {variables_to_compare}")
-    print(f"   Threshold CV(RMSE) = {threshold_cv_rmse}")
-    print(f"   skip_plots = {skip_plots}")
-    print(f"   output_csv = {output_csv}")
+    # 2) optional filter by sensitivity
+    df_scen = optionally_filter_by_sensitivity(df_scen, subset_sens, top_n)
 
-    # 2) Call validate_with_ranges
-    metric_results = validate_with_ranges(
-        real_data_path=real_data_csv,
-        sim_data_path=sim_data_csv,
-        bldg_ranges=bldg_ranges,
-        variables_to_compare=variables_to_compare,   # pass in the new argument
-        threshold_cv_rmse=threshold_cv_rmse,
-        skip_plots=skip_plots
+    # 3) build param specs
+    param_specs = build_param_specs_from_scenario(df_scen, calibrate_min_max=calibrate_mm)
+
+    # 4) define local eval function
+    def local_eval_func(pdict: Dict[str, float]) -> float:
+        return simulate_or_surrogate(pdict, calibration_config)
+
+    # 5) run method
+    if method == "random":
+        n_iter = calibration_config.get("random_n_iter", 20)
+        best_params, best_err, history = random_search_calibration(param_specs, local_eval_func, n_iter)
+    elif method == "ga":
+        pop_size       = calibration_config.get("ga_pop_size", 10)
+        generations    = calibration_config.get("ga_generations", 5)
+        crossover_prob = calibration_config.get("ga_crossover_prob", 0.7)
+        mutation_prob  = calibration_config.get("ga_mutation_prob", 0.2)
+        best_params, best_err, history = ga_calibration(
+            param_specs, local_eval_func,
+            pop_size, generations, crossover_prob, mutation_prob
+        )
+    elif method == "bayes":
+        n_calls = calibration_config.get("bayes_n_calls", 15)
+        best_params, best_err, history = bayes_calibration(param_specs, local_eval_func, n_calls)
+    else:
+        raise ValueError(f"Unknown calibration method: {method}")
+
+    print(f"[CAL] Method={method}, Best error={best_err:.3f}, best_params={best_params}")
+
+    # 6) Save history
+    hist_path = os.path.join(hist_dir, output_hist_csv)
+    save_history_to_csv(history, hist_path)
+
+    # 7) Create separate best-param CSV for each scenario file
+    save_best_params_separately(
+        best_params,
+        df_scen,
+        out_folder=best_params_dir,
+        prefix="calibrated_params_"
     )
 
-    # 3) Print summary to console
-    print("\n=== Validation Summary ===")
-    for (real_bldg, sim_bldg, var_name), mvals in metric_results.items():
-        print(
-            f"Real={real_bldg}, Sim={sim_bldg}, Var={var_name} => "
-            f"MBE={mvals['MBE']:.2f}, "
-            f"CV(RMSE)={mvals['CVRMSE']:.2f}, "
-            f"NMBE={mvals['NMBE']:.2f}, "
-            f"Pass={mvals['Pass']}"
-        )
-
-    # 4) Save metrics to CSV
-    print(f"\n[INFO] Saving metrics to {output_csv}")
-    with open(output_csv, 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(["RealBldg", "SimBldg", "VariableName", "MBE", "CVRMSE", "NMBE", "Pass"])
-        for (real_bldg, sim_bldg, var_name), mvals in metric_results.items():
-            writer.writerow([
-                real_bldg,
-                sim_bldg,
-                var_name,
-                f"{mvals['MBE']:.2f}",
-                f"{mvals['CVRMSE']:.2f}",
-                f"{mvals['NMBE']:.2f}",
-                mvals['Pass']
-            ])
-
-    # 5) Check for calibration triggers if CV(RMSE) fails
-    print("\n=== Checking for Calibration Needs ===")
-    for (real_bldg, sim_bldg, var_name), mvals in metric_results.items():
-        if not mvals['Pass']:
-            print(
-                f"[CALIBRATION] RealBldg={real_bldg}, SimBldg={sim_bldg}, Var={var_name}: "
-                f"CV(RMSE)={mvals['CVRMSE']:.2f}% > threshold => Trigger calibration steps..."
-            )
-
-    # 6) Optional bar chart: CV(RMSE) for each (RealBldg, SimBldg, Var)
-    #    We'll define an inline function here or import from visualize.
-    bar_chart_metrics_for_triple(metric_results, title="CV(RMSE) Validation (Per Real vs. Sim)")
-
-def bar_chart_metrics_for_triple(metric_dict, title="Validation Metrics"):
-    """
-    Create a bar chart of CV(RMSE) for each (RealBldg, SimBldg, Var).
-    Bars are green if pass, red if fail.
-    """
-    if not metric_dict:
-        print("[DEBUG] No metrics to plot - metric_dict is empty.")
-        return
-
-    labels = []
-    cvrmse_values = []
-    pass_status = []
-
-    for (real_bldg, sim_bldg, var_name), mvals in metric_dict.items():
-        label = f"R{real_bldg}-S{sim_bldg}-{var_name}"
-        labels.append(label)
-        cvrmse_values.append(mvals['CVRMSE'])
-        pass_status.append(mvals['Pass'])
-
-    x = range(len(labels))
-
-    plt.figure(figsize=(12, 6))
-    bars = plt.bar(x, cvrmse_values, alpha=0.7)
-
-    for i, bar in enumerate(bars):
-        bar.set_color('green' if pass_status[i] else 'red')
-
-    plt.xticks(list(x), labels, rotation=45, ha='right')
-    plt.ylabel("CV(RMSE) (%)")
-    plt.title(title)
-    if cvrmse_values:
-        plt.ylim(0, max(cvrmse_values)*1.1)
-    plt.tight_layout()
-    plt.show()
+    print("[CAL] Calibration complete.")
 
   --- File Contents End ---
 
-  File: metrics.py
+  File: unified_sensitivity.py
   --- File Contents Start ---
-# validation/metrics.py
+"""
+unified_sensitivity.py
+
+Updated to handle multiple target variables for correlation-based sensitivity.
+You can specify in your config:
+    "target_variable": [
+      "Heating:EnergyTransfer [J](Hourly)",
+      "Cooling:EnergyTransfer [J](Hourly)",
+      ...
+    ]
+or a single string (like "Heating:EnergyTransfer [J](Hourly)").
+
+Author: Your Team
+"""
+
+import os
 import numpy as np
-
-def mean_bias_error(sim_values, obs_values):
-    """
-    MBE = ( sum(obs_i - sim_i) / sum(obs_i) ) * 100
-    """
-    sim = np.array(sim_values, dtype=float)
-    obs = np.array(obs_values, dtype=float)
-    denominator = np.sum(obs)
-    if denominator == 0:
-        return float('nan')
-    mbe = (np.sum(obs - sim) / denominator) * 100.0
-    return mbe
-
-def cv_rmse(sim_values, obs_values):
-    """
-    CV(RMSE) = ( RMSE / mean(obs) ) * 100
-    """
-    sim = np.array(sim_values, dtype=float)
-    obs = np.array(obs_values, dtype=float)
-    obs_mean = np.mean(obs)
-    if obs_mean == 0:
-        return float('nan')
-    mse = np.mean((obs - sim)**2)
-    rmse = np.sqrt(mse)
-    return (rmse / obs_mean) * 100.0
-
-def nmbe(sim_values, obs_values):
-    """
-    NMBE = 100 * ( sum(obs_i - sim_i) / (n * mean(obs)) )
-    """
-    sim = np.array(sim_values, dtype=float)
-    obs = np.array(obs_values, dtype=float)
-    n = len(sim)
-    obs_mean = np.mean(obs)
-    if obs_mean == 0:
-        return float('nan')
-    nmbe_val = 100.0 * (np.sum(obs - sim) / (n * obs_mean))
-    return nmbe_val
-
-  --- File Contents End ---
-
-  File: validate_results_custom.py
-  --- File Contents Start ---
-# validation/validate_results_custom.py
-
 import pandas as pd
+from typing import Dict, Any, Optional, Union, List
 
-from validation.compare_sims_with_measured import align_data_for_variable
-from validation.metrics import mean_bias_error, cv_rmse, nmbe
-from validation.visualize import (
-    plot_time_series_comparison,
-    scatter_plot_comparison,
-)
+# Attempt SALib imports
+try:
+    from SALib.sample import morris as morris_sample
+    from SALib.sample import saltelli
+    from SALib.analyze import morris as morris_analyze
+    from SALib.analyze import sobol
+    HAVE_SALIB = True
+except ImportError:
+    HAVE_SALIB = False
+    morris_sample = None
+    morris_analyze = None
+    saltelli = None
+    sobol = None
 
-def validate_with_ranges(
-    real_data_path,
-    sim_data_path,
-    bldg_ranges,
-    variables_to_compare=None,
-    threshold_cv_rmse=30.0,
-    skip_plots=False
+
+###############################################################################
+# 1) HELPERS FOR CATEGORICAL ENCODING & NAME BUILD
+###############################################################################
+
+def encode_categorical_if_known(param_name: str, param_value) -> Optional[float]:
+    """
+    Tries to interpret 'param_value' as numeric:
+      1) Direct float conversion
+      2) If that fails, attempt known label encodings
+      3) Return None if unknown => skip param
+
+    Modify or expand the logic as you see fit to cover more discrete strings.
+    """
+    if param_value is None or pd.isna(param_value):
+        return None
+
+    # (A) Try direct float conversion
+    try:
+        return float(param_value)
+    except (ValueError, TypeError):
+        pass  # not a direct float
+
+    # (B) Attempt known label encodings
+
+    # Example 1: "Electricity" -> 0.0, "Gas" -> 1.0
+    if param_name.lower().endswith("fuel_type"):
+        if param_value == "Electricity":
+            return 0.0
+        elif param_value == "Gas":
+            return 1.0
+        return None
+
+    # Example 2: Roughness => "MediumRough" -> 2.0, etc.
+    if "roughness" in param_name.lower():
+        rough_map = {
+            "Smooth": 0.0,
+            "MediumSmooth": 1.0,
+            "MediumRough": 2.0,
+            "Rough": 3.0
+        }
+        if param_value in rough_map:
+            return rough_map[param_value]
+        return None
+
+    # Example 3: "Yes"/"No" => 1.0 / 0.0
+    if param_value in ["Yes", "No"]:
+        return 1.0 if param_value == "Yes" else 0.0
+
+    # Example 4: "SpectralAverage" => encode as 0.0, or skip
+    if param_value == "SpectralAverage":
+        return 0.0
+
+    # Example 5: Generic "Electricity"/"Gas" if not caught above:
+    if param_value == "Electricity":
+        return 0.0
+    elif param_value == "Gas":
+        return 1.0
+
+    # If we get here => no recognized encoding => skip
+    return None
+
+
+def build_unified_param_name(row: pd.Series) -> str:
+    """
+    Combine columns (zone_name, object_name, sub_key, param_name)
+    to produce a single unique param_name in the final DataFrame.
+    Modify to your preference.
+    """
+    base_name = str(row.get("param_name", "UnknownParam"))
+    name_parts = []
+
+    zname = row.get("zone_name", None)
+    if pd.notna(zname) and isinstance(zname, str) and zname.strip():
+        name_parts.append(zname.strip())
+
+    oname = row.get("object_name", None)
+    if pd.notna(oname) and isinstance(oname, str) and oname.strip():
+        name_parts.append(oname.strip())
+
+    skey = row.get("sub_key", None)
+    if pd.notna(skey) and isinstance(skey, str) and skey.strip():
+        name_parts.append(skey.strip())
+
+    # Finally the base param_name
+    name_parts.append(base_name)
+
+    # Join with double underscore
+    return "__".join(name_parts)
+
+
+###############################################################################
+# 2) LOADING SCENARIO PARAMS
+###############################################################################
+
+def load_scenario_params(scenario_folder: str) -> pd.DataFrame:
+    """
+    Reads scenario_params_*.csv from scenario_folder, merges them into
+    a single DataFrame with columns:
+      ["scenario_index", "param_name", "assigned_value", "param_min", "param_max", "ogc_fid", "source_file"]
+    and attempts to convert assigned_value to float or a known label-encoded numeric.
+
+    If it cannot be encoded => we skip that row.
+    """
+    scenario_files = [
+        "scenario_params_dhw.csv",
+        "scenario_params_elec.csv",
+        "scenario_params_fenez.csv",
+        "scenario_params_hvac.csv",
+        "scenario_params_vent.csv"
+    ]
+
+    all_rows = []
+
+    for fname in scenario_files:
+        fpath = os.path.join(scenario_folder, fname)
+        if not os.path.isfile(fpath):
+            continue
+
+        df_raw = pd.read_csv(fpath)
+        if df_raw.empty:
+            continue
+
+        for _, row in df_raw.iterrows():
+            scenario_index = row.get("scenario_index", None)
+            unified_name = build_unified_param_name(row)
+
+            # assigned_value might be 'assigned_value' or 'param_value'
+            val = row.get("assigned_value", None)
+            if val is None or pd.isna(val):
+                val = row.get("param_value", None)
+
+            # Attempt to convert/encode
+            numeric_val = encode_categorical_if_known(unified_name, val)
+            if numeric_val is None:
+                print(f"[WARNING] Skipping param '{unified_name}' => "
+                      f"no numeric encoding for value: {val}")
+                continue
+
+            # param_min / param_max
+            pmin = row.get("param_min", np.nan)
+            pmax = row.get("param_max", np.nan)
+
+            # ogc_fid
+            ogc_fid = row.get("ogc_fid", None)
+
+            all_rows.append({
+                "scenario_index": scenario_index,
+                "param_name": unified_name,
+                "assigned_value": numeric_val,
+                "param_min": pmin,
+                "param_max": pmax,
+                "ogc_fid": ogc_fid,
+                "source_file": fname
+            })
+
+    if not all_rows:
+        print(f"[WARNING] No valid numeric parameters found in '{scenario_folder}' (all skipped?)")
+        return pd.DataFrame()
+
+    return pd.DataFrame(all_rows)
+
+
+###############################################################################
+# 3) CORRELATION-BASED SENSITIVITY (SINGLE or MULTIPLE Variables)
+###############################################################################
+
+def correlation_sensitivity(
+    df_scenarios: pd.DataFrame,
+    df_results: pd.DataFrame,
+    target_variables: Union[str, List[str]],
+    scenario_index_col: str = "scenario_index",
+    assigned_val_col: str = "assigned_value"
+) -> pd.DataFrame:
+    """
+    Performs correlation-based sensitivity between each parameter and
+    one or more target variables from the results.
+
+    If target_variables is a single string, we produce a DF with:
+       [Parameter, Correlation, AbsCorrelation]
+
+    If target_variables is a list of strings, we produce one row per param,
+    with correlation columns for each variable, e.g.:
+       [Parameter,
+        Corr_<var1>, AbsCorr_<var1>,
+        Corr_<var2>, AbsCorr_<var2>, ...
+       ]
+
+    Steps:
+      1) Pivot df_scenarios => wide (index=scenario_index, columns=param_name)
+      2) Melt df_results => sum across days => pivot wide so each variable has
+         its own column.
+      3) Merge scenario pivot with results pivot
+      4) Correlate each param col with each variable col
+
+    Returns a DataFrame of correlation results.
+    """
+    # Normalize target_variables to a list
+    if isinstance(target_variables, str):
+        target_vars_list = [target_variables]
+    elif isinstance(target_variables, list):
+        target_vars_list = target_variables
+    else:
+        raise ValueError("target_variables must be a string or a list of strings.")
+
+    # 1) Pivot scenario => wide
+    pivot_df = df_scenarios.pivot_table(
+        index=scenario_index_col,
+        columns="param_name",
+        values=assigned_val_col,
+        aggfunc="first"
+    ).reset_index()
+
+    # 2) Melt results & sum across days
+    if "BuildingID" in df_results.columns and scenario_index_col != "BuildingID":
+        df_results = df_results.rename(columns={"BuildingID": scenario_index_col})
+
+    melted = df_results.melt(
+        id_vars=[scenario_index_col, "VariableName"],
+        var_name="Day",
+        value_name="Value"
+    )
+    daily_sum = melted.groupby([scenario_index_col, "VariableName"])["Value"].sum().reset_index()
+    daily_sum.rename(columns={"Value": "SumValue"}, inplace=True)
+
+    # 3) Pivot variables => each var a column
+    #    If multiple target variables, we want them all to appear as columns
+    #    in the pivot. If you have more variables than in target_vars_list,
+    #    that's OK; we can keep them, or filter them.
+    pivot_results = daily_sum.pivot(
+        index=scenario_index_col,
+        columns="VariableName",
+        values="SumValue"
+    ).reset_index()
+
+    # If you want to filter pivot_results to only keep the target vars:
+    all_cols = list(pivot_results.columns)
+    # the first is scenario_index_col, so skip it
+    keep_cols = [scenario_index_col]
+    # keep only columns in target_vars_list if they exist
+    for varname in target_vars_list:
+        if varname in all_cols:
+            keep_cols.append(varname)
+    pivot_results = pivot_results[keep_cols]
+
+    # 4) Merge scenario pivot with results pivot
+    merged = pd.merge(
+        pivot_df,
+        pivot_results,
+        on=scenario_index_col,
+        how="inner"
+    )
+
+    # Now columns = [scenario_index, paramA, paramB, ..., var1, var2, ...]
+    # We do correlation paramX vs. varY for each pair
+    # param_cols are the scenario param columns, var_cols are the target variable columns
+    var_cols = [c for c in pivot_results.columns if c != scenario_index_col]
+    param_cols = [c for c in pivot_df.columns if c != scenario_index_col]
+
+    # If there's only 1 target var, produce the old layout.
+    if len(var_cols) == 1:
+        var_col = var_cols[0]
+        corr_list = []
+        for col in param_cols:
+            if pd.api.types.is_numeric_dtype(merged[col]):
+                cval = merged[[col, var_col]].corr().iloc[0, 1]
+                corr_list.append((col, cval))
+            else:
+                corr_list.append((col, np.nan))
+        corr_df = pd.DataFrame(corr_list, columns=["Parameter", "Correlation"])
+        corr_df["AbsCorrelation"] = corr_df["Correlation"].abs()
+        corr_df.sort_values("AbsCorrelation", ascending=False, inplace=True)
+        return corr_df
+
+    # Else multiple variables => produce one row per param, with correlation columns for each var
+    # e.g. param, Corr_var1, AbsCorr_var1, Corr_var2, AbsCorr_var2, ...
+    corr_rows = []
+    for col in param_cols:
+        row_dict = {"Parameter": col}
+        if not pd.api.types.is_numeric_dtype(merged[col]):
+            # skip or store NaNs
+            for v in var_cols:
+                row_dict[f"Corr_{v}"] = np.nan
+                row_dict[f"AbsCorr_{v}"] = np.nan
+        else:
+            # param is numeric
+            for v in var_cols:
+                if not pd.api.types.is_numeric_dtype(merged[v]):
+                    row_dict[f"Corr_{v}"] = np.nan
+                    row_dict[f"AbsCorr_{v}"] = np.nan
+                else:
+                    cval = merged[[col, v]].corr().iloc[0, 1]
+                    row_dict[f"Corr_{v}"] = cval
+                    row_dict[f"AbsCorr_{v}"] = abs(cval)
+        corr_rows.append(row_dict)
+
+    corr_df = pd.DataFrame(corr_rows)
+    # Optionally you can sort by one variable's AbsCorr_ if you want:
+    # e.g. if the first var is var_cols[0], sort by that
+    # but let's just leave it unsorted or sort by "Parameter"
+    corr_df.sort_values("Parameter", inplace=True)
+    return corr_df
+
+
+###############################################################################
+# 4) SALib UTILS: EXTRACT RANGES, BUILD PROBLEM
+###############################################################################
+
+def extract_parameter_ranges(
+    merged_df: pd.DataFrame,
+    param_name_col: str = "param_name",
+    assigned_val_col: str = "assigned_value",
+    param_min_col: str = "param_min",
+    param_max_col: str = "param_max"
+) -> pd.DataFrame:
+    """
+    Builds DF [name, min_value, max_value].
+    If param_min / param_max are missing/invalid, fallback to ±20% around assigned_value.
+    """
+    out_rows = []
+    unique_params = merged_df[param_name_col].unique()
+    for p in unique_params:
+        sub = merged_df[merged_df[param_name_col] == p]
+        row = sub.iloc[0]  # any row for param p
+
+        assigned_val = row.get(assigned_val_col, np.nan)
+        if pd.isna(assigned_val):
+            continue
+
+        pmin = row.get(param_min_col, np.nan)
+        pmax = row.get(param_max_col, np.nan)
+        try:
+            pmin = float(pmin)
+        except:
+            pmin = np.nan
+        try:
+            pmax = float(pmax)
+        except:
+            pmax = np.nan
+
+        if np.isnan(pmin) or np.isnan(pmax) or (pmin >= pmax):
+            base = float(assigned_val)
+            delta = abs(base) * 0.2
+            pmin = base - delta
+            pmax = base + delta
+            if pmin >= pmax:
+                pmax += 1e-4
+
+        out_rows.append({
+            "name": p,
+            "min_value": pmin,
+            "max_value": pmax
+        })
+
+    return pd.DataFrame(out_rows)
+
+
+def build_salib_problem(params_df: pd.DataFrame) -> Dict[str, Any]:
+    """
+    Convert DF [name, min_value, max_value] => SALib problem dict
+    """
+    return {
+        "num_vars": len(params_df),
+        "names": params_df["name"].tolist(),
+        "bounds": [
+            [row["min_value"], row["max_value"]]
+            for _, row in params_df.iterrows()
+        ]
+    }
+
+
+###############################################################################
+# 5) SALib: MORRIS & SOBOL
+###############################################################################
+
+def default_simulation_function(param_dict: Dict[str, float]) -> float:
+    """
+    Example: sum of param_dict + random noise.
+    Replace with your E+ or Surrogate call if you want real analysis.
+    """
+    base_sum = sum(param_dict.values())
+    noise = np.random.uniform(-0.5, 0.5)
+    return base_sum + noise
+
+
+def run_morris_method(params_meta: pd.DataFrame, simulate_func, n_trajectories=10, num_levels=4):
+    """
+    SALib Morris
+    """
+    if not HAVE_SALIB:
+        raise ImportError("SALib not installed. Cannot run Morris.")
+    problem = build_salib_problem(params_meta)
+    X = morris_sample.sample(problem, N=n_trajectories, num_levels=num_levels)
+    Y = []
+    for row in X:
+        param_dict = {}
+        for i, name in enumerate(problem["names"]):
+            param_dict[name] = row[i]
+        Y.append(simulate_func(param_dict))
+    Y = np.array(Y)
+    res = morris_analyze.analyze(problem, X, Y, conf_level=0.95, print_to_console=False)
+    return res, X, Y
+
+
+def run_sobol_method(params_meta: pd.DataFrame, simulate_func, n_samples=256):
+    """
+    SALib Sobol
+    """
+    if not HAVE_SALIB:
+        raise ImportError("SALib not installed. Cannot run Sobol.")
+    problem = build_salib_problem(params_meta)
+    X = saltelli.sample(problem, n_samples, calc_second_order=True)
+    Y = []
+    for row in X:
+        param_dict = {}
+        for i, name in enumerate(problem["names"]):
+            param_dict[name] = row[i]
+        Y.append(simulate_func(param_dict))
+    Y = np.array(Y)
+    sres = sobol.analyze(problem, Y, calc_second_order=True, print_to_console=False)
+    return sres, X, Y
+
+
+###############################################################################
+# 6) MAIN ORCHESTRATION
+###############################################################################
+def run_sensitivity_analysis(
+    scenario_folder: str,
+    method: str = "morris",
+    results_csv: Optional[str] = None,
+    target_variable: Union[str, List[str], None] = None,
+    output_csv: str = "sensitivity_output.csv",
+    n_morris_trajectories: int = 10,
+    num_levels: int = 4,
+    n_sobol_samples: int = 256
 ):
     """
-    Compare real vs sim data for specified building mappings and variable names.
+    Called from main.py to do correlation, Morris, or Sobol sensitivity.
+    Now supports multiple target variables in correlation-based approach.
 
-    :param real_data_path: Path to the CSV file with real data
-    :param sim_data_path: Path to the CSV file with sim data
-    :param bldg_ranges: dict mapping real_bldg (string) -> list of sim_bldgs. 
-                       e.g. {"0": [0, 1, 2]}, or {"4136730": ["4136730"]}
-    :param variables_to_compare: list of variable names (strings) to be validated.
-    :param threshold_cv_rmse: pass/fail threshold for CV(RMSE) in percent
-    :param skip_plots: if True, disable time-series and scatter plots
-    :return: a dict of metrics keyed by (real_bldg, sim_bldg, variable_name)
+    :param scenario_folder: path to folder with scenario_params_*.csv
+    :param method: "correlation", "morris", or "sobol"
+    :param results_csv: path to results CSV (for correlation)
+    :param target_variable: string or list of strings (for correlation).
+    :param output_csv: results file
+    :param n_morris_trajectories: int
+    :param num_levels: Morris design
+    :param n_sobol_samples: int
     """
+    print(f"[INFO] run_sensitivity_analysis => method={method}, folder='{scenario_folder}'")
 
-    if variables_to_compare is None:
-        # If none provided, default to empty => no variables will be compared
-        variables_to_compare = []
+    # 1) Load scenario parameters
+    df_params = load_scenario_params(scenario_folder)
+    if df_params.empty:
+        print("[WARNING] No numeric scenario parameters => no analysis.")
+        return
 
-    # 1) Load the CSVs
-    df_real = pd.read_csv(real_data_path)
-    df_sim  = pd.read_csv(sim_data_path)
+    # 2) If correlation-based
+    if method.lower() == "correlation":
+        if not results_csv or not os.path.isfile(results_csv):
+            raise ValueError("For correlation-based, must provide a valid results_csv.")
+        if not target_variable:
+            raise ValueError("For correlation-based, must provide target_variable (string or list).")
 
-    # 2) Clean up any trailing whitespace in VariableName
-    df_real["VariableName"] = df_real["VariableName"].astype(str).str.strip()
-    df_sim["VariableName"]  = df_sim["VariableName"].astype(str).str.strip()
+        df_res = pd.read_csv(results_csv)
+        corr_df = correlation_sensitivity(
+            df_scenarios=df_params,
+            df_results=df_res,
+            target_variables=target_variable
+        )
+        corr_df.to_csv(output_csv, index=False)
+        print(f"[INFO] Correlation-based results => {output_csv}")
+        return
 
-    # 3) Initialize a results dictionary
-    results = {}
+    # 3) SALib-based => extract ranges
+    params_meta = extract_parameter_ranges(df_params)
+    if params_meta.empty:
+        print("[WARNING] All parameters were invalid or had no numeric data => no SALib analysis.")
+        return
 
-    # 4) Keep track of missing variables for debug
-    missing_in_real = []
-    missing_in_sim  = []
+    # Replace with real E+ or surrogate
+    simulate_func = default_simulation_function
 
-    # 5) Iterate over building mappings
-    for real_bldg_str, sim_bldg_list in bldg_ranges.items():
-        # Convert the real building ID from string to int
-        # (If your CSV has building IDs as int64, this ensures a match)
-        try:
-            real_bldg = int(real_bldg_str)
-        except ValueError:
-            print(f"[WARN] Could not convert real building '{real_bldg_str}' to int; skipping.")
-            continue
+    if method.lower() == "morris":
+        # Morris
+        res, X, Y = run_morris_method(
+            params_meta=params_meta,
+            simulate_func=simulate_func,
+            n_trajectories=n_morris_trajectories,
+            num_levels=num_levels
+        )
+        df_out = pd.DataFrame({
+            "param": params_meta["name"].values,
+            "mu_star": res["mu_star"],
+            "mu_star_conf": res["mu_star_conf"],
+            "sigma": res["sigma"]
+        })
+        df_out.to_csv(output_csv, index=False)
+        print(f"[INFO] Morris sensitivity results => {output_csv}")
 
-        # Subset real data for this real_bldg
-        df_real_sub = df_real[df_real["BuildingID"] == real_bldg]
-        if df_real_sub.empty:
-            print(f"[WARN] No real data for building {real_bldg}")
-            continue
+    elif method.lower() == "sobol":
+        # Sobol
+        sres, X, Y = run_sobol_method(
+            params_meta=params_meta,
+            simulate_func=simulate_func,
+            n_samples=n_sobol_samples
+        )
+        df_out = pd.DataFrame({
+            "param": params_meta["name"].values,
+            "S1": sres["S1"],
+            "S1_conf": sres["S1_conf"],
+            "ST": sres["ST"],
+            "ST_conf": sres["ST_conf"]
+        })
+        df_out.to_csv(output_csv, index=False)
+        print(f"[INFO] Sobol sensitivity results => {output_csv}")
 
-        for sb in sim_bldg_list:
-            # If the sim building is a string, also convert it to int
-            try:
-                sim_bldg = int(sb)
-            except ValueError:
-                print(f"[WARN] Could not convert sim building '{sb}' to int; skipping.")
-                continue
-
-            # Subset sim data for this sim_bldg
-            df_sim_sub = df_sim[df_sim["BuildingID"] == sim_bldg]
-            if df_sim_sub.empty:
-                print(f"[WARN] No sim data for building {sim_bldg}")
-                continue
-
-            # 6) Loop over user-specified variables
-            for var_name in variables_to_compare:
-                # Check presence in real data
-                if var_name not in df_real_sub["VariableName"].unique():
-                    missing_in_real.append((real_bldg, var_name))
-                    continue
-
-                # Check presence in sim data
-                if var_name not in df_sim_sub["VariableName"].unique():
-                    missing_in_sim.append((sim_bldg, var_name))
-                    continue
-
-                # 7) Align data
-                sim_vals, obs_vals, merged_df = align_data_for_variable(
-                    df_real_sub,
-                    df_sim_sub,
-                    real_bldg,
-                    sim_bldg,
-                    var_name
-                )
-
-                # If no overlap or empty arrays, skip
-                if len(sim_vals) == 0 or len(obs_vals) == 0:
-                    print(f"[WARN] No overlap in dates for RealBldg={real_bldg}, SimBldg={sim_bldg}, Var={var_name}")
-                    continue
-
-                # 8) Compute metrics
-                this_mbe   = mean_bias_error(sim_vals, obs_vals)
-                this_cvrmse = cv_rmse(sim_vals, obs_vals)
-                this_nmbe  = nmbe(sim_vals, obs_vals)
-
-                pass_fail = False
-                if this_cvrmse is not None and not (this_cvrmse is float('nan')):
-                    pass_fail = (this_cvrmse < threshold_cv_rmse)
-
-                # 9) Store results
-                results[(real_bldg, sim_bldg, var_name)] = {
-                    "MBE":    this_mbe,
-                    "CVRMSE": this_cvrmse,
-                    "NMBE":   this_nmbe,
-                    "Pass":   pass_fail
-                }
-
-                # 10) Optionally plot
-                if not skip_plots:
-                    label_for_plot = f"{real_bldg}_VS_{sim_bldg}"
-                    plot_time_series_comparison(merged_df, label_for_plot, var_name)
-                    scatter_plot_comparison(merged_df, label_for_plot, var_name)
-
-    # 11) Print missing variable info
-    if missing_in_real:
-        print("\n[INFO] Variables missing in REAL data for these (Building, Var):")
-        unique_missing_real = set(missing_in_real)
-        for (bldg, var) in unique_missing_real:
-            print(f"   - RealBldg={bldg}, Var={var}")
-
-    if missing_in_sim:
-        print("\n[INFO] Variables missing in SIM data for these (Building, Var):")
-        unique_missing_sim = set(missing_in_sim)
-        for (bldg, var) in unique_missing_sim:
-            print(f"   - SimBldg={bldg}, Var={var}")
-
-    # Return the final dictionary of metrics
-    return results
+    else:
+        raise ValueError(f"Unknown method='{method}'. Must be 'correlation','morris','sobol'.")
 
   --- File Contents End ---
 
-  File: visualize.py
+  File: unified_surrogate.py
   --- File Contents Start ---
-# validation/visualize.py
-import matplotlib.pyplot as plt
+"""
+unified_surrogate.py
 
-def plot_time_series_comparison(merged_df, building_id, variable_name):
+Purpose:
+  1) Loads scenario-based parameter CSVs (dhw, elec, fenez, hvac, vent) from 
+     the scenario_folder, converting any known categorical text (e.g. "Electricity") 
+     to numeric. Skips unknown text values.
+  2) Pivots them so each scenario is one row, each parameter is one column.
+  3) Loads simulation results (like merged_daily_mean_mocked.csv) which 
+     has columns [BuildingID, VariableName, Day1, Day2, ...].
+  4) Sums daily columns => "TotalEnergy_J" per (BuildingID, VariableName).
+  5) Merges scenario data with E+ results, focusing on a single or multiple 
+     target_variable(s).
+  6) Trains a RandomForest surrogate (single-output if target_variable is a string, 
+     multi-output if it's a list).
+  7) Saves the fitted model and the list of feature columns for future predictions.
+
+Typical usage in main.py:
+    if sur_cfg.get("perform_surrogate", False):
+        df_scen = sur_load_scenario_params(scenario_folder)
+        pivot_df = pivot_scenario_params(df_scen)
+        # optional: pivot_df = filter_top_parameters(pivot_df, "morris_sensitivity.csv", top_n=5)
+        df_sim = load_sim_results(results_csv)
+        df_agg = aggregate_results(df_sim)
+        merged_df = merge_params_with_results(pivot_df, df_agg, target_var)
+        build_and_save_surrogate(
+            df_data=merged_df,
+            target_col=target_var,
+            model_out_path=model_out,
+            columns_out_path=cols_out,
+            test_size=test_size
+        )
+
+Author: Your Team
+"""
+
+import os
+import pandas as pd
+import numpy as np
+import joblib
+from typing import Optional, List, Union
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split, RandomizedSearchCV
+from sklearn.multioutput import MultiOutputRegressor
+from sklearn.metrics import r2_score, mean_absolute_error
+
+
+###############################################################################
+# 1) HELPER: Encode known text -> numeric
+###############################################################################
+
+def encode_categorical_if_known(param_name: str, param_value) -> Optional[float]:
     """
-    Creates a simple line plot comparing sim vs. obs over time 
-    (e.g., 01-Jan, 02-Jan, etc.).
-    merged_df has columns: Date, Value_obs, Value_sim
+    1) Attempt float conversion
+    2) If fails, check known label encodings
+    3) If still unknown => return None => skip row
+
+    Modify or expand to handle your typical discrete strings.
     """
-    if merged_df.empty:
-        print(f"[DEBUG] No data to plot for Bldg={building_id}, Var={variable_name}")
-        return
+    if param_value is None or pd.isna(param_value):
+        return None
 
-    x_vals = merged_df['Date']  # might be strings like '01-Jan'
-    obs_vals = merged_df['Value_obs']
-    sim_vals = merged_df['Value_sim']
+    # (A) Direct float conversion
+    try:
+        return float(param_value)
+    except (ValueError, TypeError):
+        pass
 
-    plt.figure(figsize=(10,6))
-    plt.plot(x_vals, obs_vals, 'o-', label='Observed')
-    plt.plot(x_vals, sim_vals, 's-', label='Simulated')
+    # (B) Known label encodings
 
-    plt.title(f"Building {building_id} - {variable_name}")
-    plt.xlabel("Date")
-    plt.ylabel("Value")
-    plt.legend()
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.show()
+    # Example: "Electricity" => 0.0, "Gas" => 1.0
+    if param_value == "Electricity":
+        return 0.0
+    elif param_value == "Gas":
+        return 1.0
 
-def scatter_plot_comparison(merged_df, building_id, variable_name):
+    # Example: Roughness
+    rough_map = {
+        "Smooth": 0.0,
+        "MediumSmooth": 1.0,
+        "MediumRough": 2.0,
+        "Rough": 3.0
+    }
+    if param_value in rough_map:
+        return rough_map[param_value]
+
+    # Example: "Yes"/"No" => 1.0 / 0.0
+    if param_value in ["Yes", "No"]:
+        return 1.0 if param_value == "Yes" else 0.0
+
+    # Not recognized => skip
+    return None
+
+
+###############################################################################
+# 2) SCENARIO LOADING & PIVOT
+###############################################################################
+
+def load_scenario_file(filepath: str) -> pd.DataFrame:
     """
-    Creates a scatter plot of Observed vs. Simulated for a quick correlation check.
+    Reads one scenario CSV, ensures a column 'assigned_value' which is numeric.
+    If row can't be converted => skip. Returns a numeric-only DataFrame for that file.
     """
-    if merged_df.empty:
-        print(f"[DEBUG] No data to plot scatter for Bldg={building_id}, Var={variable_name}")
-        return
+    df_in = pd.read_csv(filepath)
 
-    obs_vals = merged_df['Value_obs']
-    sim_vals = merged_df['Value_sim']
+    # unify to 'assigned_value'
+    if "assigned_value" not in df_in.columns and "param_value" in df_in.columns:
+        df_in.rename(columns={"param_value": "assigned_value"}, inplace=True)
 
-    plt.figure(figsize=(6,6))
-    plt.scatter(obs_vals, sim_vals, alpha=0.7)
-    # 1:1 line
-    mn, mx = min(obs_vals.min(), sim_vals.min()), max(obs_vals.max(), sim_vals.max())
-    plt.plot([mn, mx], [mn, mx], color='red', linestyle='--', label='1:1 line')
+    # We'll keep only rows that produce a numeric assigned_value
+    rows_out = []
+    for _, row in df_in.iterrows():
+        val = row.get("assigned_value", None)
+        if val is None or pd.isna(val):
+            continue
 
-    plt.title(f"Scatter Comparison: Bldg={building_id}, Var={variable_name}")
-    plt.xlabel("Observed")
-    plt.ylabel("Simulated")
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
+        # Attempt numeric or known label
+        param_name = str(row.get("param_name", ""))
+        num_val = encode_categorical_if_known(param_name, val)
+        if num_val is None:
+            # skip
+            continue
 
-def bar_chart_metrics(metric_dict, title="Validation Metrics"):
+        new_row = row.copy()
+        new_row["assigned_value"] = num_val
+        rows_out.append(new_row)
+
+    if not rows_out:
+        return pd.DataFrame()
+
+    return pd.DataFrame(rows_out)
+
+
+def load_scenario_params(scenario_folder: str) -> pd.DataFrame:
     """
-    Suppose metric_dict is e.g.:
-      {
-        (0, 'Cooling'): {'MBE': 2.3, 'CVRMSE': 18.5, 'NMBE': -0.4, 'Pass': True},
-        (0, 'Heating'): { ... },
-        (1, 'Cooling'): { ... },
-        ...
-      }
-    We'll create a bar chart of CV(RMSE) across all keys.
+    Merges scenario_params_{dhw, elec, fenez, hvac, vent}.csv from scenario_folder.
+    Each file is label-encoded. Unknown text -> skipped.
+    Returns a unified DataFrame with columns like:
+      [scenario_index, param_name, assigned_value, ogc_fid, ...]
     """
-    import numpy as np
+    scenario_files = [
+        "scenario_params_dhw.csv",
+        "scenario_params_elec.csv",
+        "scenario_params_fenez.csv",
+        "scenario_params_hvac.csv",
+        "scenario_params_vent.csv"
+    ]
 
-    if not metric_dict:
-        print("[DEBUG] No metrics to plot - metric_dict is empty.")
-        return
+    all_dfs = []
+    for fname in scenario_files:
+        fpath = os.path.join(scenario_folder, fname)
+        if not os.path.isfile(fpath):
+            print(f"[INFO] Not found => {fpath}")
+            continue
 
-    labels = []
-    cvrmse_values = []
-    pass_status = []
-
-    for (b_id, var), mvals in metric_dict.items():
-        label = f"B{b_id}-{var}"
-        labels.append(label)
-        cvrmse_values.append(mvals['CVRMSE'])
-        pass_status.append(mvals['Pass'])
-
-    x = range(len(labels))
-
-    plt.figure(figsize=(10,5))
-    bars = plt.bar(x, cvrmse_values, color='blue', alpha=0.6)
-
-    # Color code pass/fail if you want:
-    for i, bar in enumerate(bars):
-        if pass_status[i]:
-            bar.set_color('green')
+        df_scenario = load_scenario_file(fpath)
+        if df_scenario.empty:
+            print(f"[WARN] No numeric row data in => {fpath} (skipped all).")
         else:
-            bar.set_color('red')
+            # Optionally add a 'source_file' column
+            df_scenario["source_file"] = fname
+            all_dfs.append(df_scenario)
 
-    plt.xticks(list(x), labels, rotation=45, ha='right')
-    plt.ylabel("CV(RMSE) (%)")
-    plt.title(title)
+    if not all_dfs:
+        raise FileNotFoundError(f"[ERROR] No scenario CSV with numeric data found in '{scenario_folder}'.")
+    return pd.concat(all_dfs, ignore_index=True)
 
-    if cvrmse_values:
-        plt.ylim(0, max(cvrmse_values)*1.1)
-    plt.tight_layout()
-    plt.show()
+
+def pivot_scenario_params(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Pivots so each scenario_index is a row, each param_name is a column, assigned_value are cells.
+    Also preserves 'ogc_fid' if present.
+
+    Example final columns:
+      scenario_index, ogc_fid, paramA, paramB, ...
+    """
+    if "scenario_index" not in df.columns or "param_name" not in df.columns or "assigned_value" not in df.columns:
+        raise ValueError("DataFrame must have columns: scenario_index, param_name, assigned_value")
+
+    if "ogc_fid" not in df.columns:
+        df["ogc_fid"] = 0
+
+    pivot_df = df.pivot_table(
+        index=["scenario_index", "ogc_fid"],
+        columns="param_name",
+        values="assigned_value",
+        aggfunc="first"
+    ).reset_index()
+
+    pivot_df.columns.name = None
+    return pivot_df
+
+
+def filter_top_parameters(
+    df_pivot: pd.DataFrame,
+    sensitivity_csv: str,
+    top_n: int,
+    param_col: str = "param",
+    metric_col: str = "mu_star"
+) -> pd.DataFrame:
+    """
+    Reads a Morris sensitivity CSV, picks top_n 'param' by mu_star, 
+    filters df_pivot to only those columns plus scenario_index, ogc_fid.
+    """
+    if not os.path.isfile(sensitivity_csv):
+        print(f"[INFO] Sensitivity file '{sensitivity_csv}' not found => skipping filter.")
+        return df_pivot
+
+    sens_df = pd.read_csv(sensitivity_csv)
+    if param_col not in sens_df.columns or metric_col not in sens_df.columns:
+        print(f"[ERROR] param_col='{param_col}' or metric_col='{metric_col}' not in {sensitivity_csv}.")
+        return df_pivot
+
+    top_params = sens_df.sort_values(metric_col, ascending=False)[param_col].head(top_n).tolist()
+    keep_cols = ["scenario_index", "ogc_fid"] + [p for p in top_params if p in df_pivot.columns]
+    filtered = df_pivot[keep_cols].copy()
+    print(f"[INFO] Filtered pivot from {df_pivot.shape} -> {filtered.shape} using top {top_n} params.")
+    return filtered
+
+
+###############################################################################
+# 3) LOADING & AGGREGATING SIM RESULTS
+###############################################################################
+
+def load_sim_results(results_csv: str) -> pd.DataFrame:
+    """
+    Typically: [BuildingID, VariableName, Day1, Day2, ...]
+    """
+    return pd.read_csv(results_csv)
+
+
+def aggregate_results(df_sim: pd.DataFrame) -> pd.DataFrame:
+    """
+    Sums across days => [BuildingID, VariableName, TotalEnergy_J].
+    Ensures we have "BuildingID", "VariableName".
+    """
+    needed = {"BuildingID", "VariableName"}
+    if not needed.issubset(df_sim.columns):
+        raise ValueError("df_sim must have columns BuildingID, VariableName plus day columns.")
+    melted = df_sim.melt(
+        id_vars=["BuildingID", "VariableName"],
+        var_name="Day",
+        value_name="Value"
+    )
+    daily_sum = melted.groupby(["BuildingID", "VariableName"])["Value"].sum().reset_index()
+    daily_sum.rename(columns={"Value": "TotalEnergy_J"}, inplace=True)
+    return daily_sum
+
+
+def merge_params_with_results(
+    pivot_df: pd.DataFrame,
+    df_agg: pd.DataFrame,
+    target_var: Union[str, List[str], None] = None
+) -> pd.DataFrame:
+    """
+    Merges pivoted scenario data (with columns [scenario_index->BuildingID, paramA..])
+    + aggregated results => single DataFrame for model training.
+
+    If target_var is None => merges all "VariableName" => multiple rows per building.
+    If str => picks that var => single column => rename to var name => merges one row per building
+    If list => pivot each var => multi columns => merges one row per building => multi-output
+    """
+    merged = pivot_df.copy()
+    # rename scenario_index => BuildingID
+    merged.rename(columns={"scenario_index": "BuildingID"}, inplace=True)
+
+    if target_var is None:
+        # Just join, no filtering => multiple rows
+        return pd.merge(merged, df_agg, on="BuildingID", how="inner")
+
+    if isinstance(target_var, str):
+        # single var => one column
+        df_sub = df_agg[df_agg["VariableName"] == target_var].copy()
+        df_sub.rename(columns={"TotalEnergy_J": target_var}, inplace=True)
+        df_sub.drop(columns=["VariableName"], inplace=True, errors="ignore")
+        return pd.merge(merged, df_sub, on="BuildingID", how="inner")
+
+    if isinstance(target_var, list):
+        # multi-output => pivot each var => multiple columns
+        df_sub = df_agg[df_agg["VariableName"].isin(target_var)]
+        pivot_vars = df_sub.pivot(
+            index="BuildingID",
+            columns="VariableName",
+            values="TotalEnergy_J"
+        ).reset_index()
+        return pd.merge(merged, pivot_vars, on="BuildingID", how="inner")
+
+    raise ValueError("target_var must be None, str, or list[str].")
+
+
+###############################################################################
+# 4) SURROGATE TRAINING
+###############################################################################
+
+def build_and_save_surrogate(
+    df_data: pd.DataFrame,
+    target_col: Union[str, List[str]] = "TotalEnergy_J",
+    model_out_path: str = "surrogate_model.joblib",
+    columns_out_path: str = "surrogate_columns.joblib",
+    test_size: float = 0.3,
+    random_state: int = 42
+):
+    """
+    1) Splits data into X,y. If target_col is a single string => single-output.
+       If list => multi-output.
+    2) Builds a RandomForest via RandomizedSearchCV => best params.
+    3) If multi-output => wraps in MultiOutputRegressor.
+    4) Saves model + list of feature columns.
+
+    Returns (model, feature_cols).
+    """
+    # 1) Determine target columns
+    if isinstance(target_col, str):
+        if target_col not in df_data.columns:
+            print(f"[ERROR] target_col '{target_col}' not in df_data.")
+            return None, None
+        y_data = df_data[[target_col]].copy()
+        multi_output = False
+    elif isinstance(target_col, list):
+        missing = [t for t in target_col if t not in df_data.columns]
+        if missing:
+            print(f"[ERROR] Some target columns missing: {missing}")
+            return None, None
+        y_data = df_data[target_col].copy()
+        multi_output = (len(target_col) > 1)
+    else:
+        print("[ERROR] target_col must be str or list[str].")
+        return None, None
+
+    # 2) Build features
+    exclude_cols = ["BuildingID", "ogc_fid", "VariableName", "source_file"]
+    if multi_output:
+        exclude_cols.extend(target_col)
+    else:
+        exclude_cols.append(target_col)
+
+    candidate_cols = [c for c in df_data.columns if c not in exclude_cols]
+    # Keep only numeric columns
+    numeric_cols = [c for c in candidate_cols if pd.api.types.is_numeric_dtype(df_data[c])]
+
+    if not numeric_cols:
+        print("[ERROR] No numeric feature columns found => can't train surrogate.")
+        return None, None
+
+    # Drop rows with any NaN in X or y
+    full_df = df_data[numeric_cols + list(y_data.columns)].dropna()
+    if full_df.empty:
+        print("[ERROR] All data is NaN => can't train surrogate.")
+        return None, None
+
+    X_data = full_df[numeric_cols]
+    Y_data = full_df[y_data.columns]
+
+    # Must have enough rows
+    if len(X_data) < 5:
+        print(f"[ERROR] Not enough data => only {len(X_data)} row(s).")
+        return None, None
+
+    # 3) Train/test split
+    X_train, X_test, Y_train, Y_test = train_test_split(
+        X_data, Y_data, test_size=test_size, random_state=random_state
+    )
+
+    # 4) RandomizedSearchCV for best RF params
+    param_dist = {
+        "n_estimators": [50, 100, 200],
+        "max_depth": [None, 5, 10, 20],
+        "max_features": ["auto", "sqrt", 0.5]
+    }
+    base_rf = RandomForestRegressor(random_state=random_state)
+    search = RandomizedSearchCV(
+        base_rf,
+        param_distributions=param_dist,
+        n_iter=10,
+        cv=3,
+        random_state=random_state,
+        n_jobs=-1
+    )
+
+    if multi_output:
+        # Use only first target col for the hyperparam search 
+        # (or do a multi-object approach if you prefer).
+        first_col = Y_train.columns[0]
+        search.fit(X_train, Y_train[first_col].values.ravel())
+        best_params = search.best_params_
+
+        # Then train multi-output
+        best_rf = RandomForestRegressor(random_state=random_state, **best_params)
+        model = MultiOutputRegressor(best_rf)
+        model.fit(X_train, Y_train)
+    else:
+        # Single-output
+        search.fit(X_train, Y_train.values.ravel())
+        best_params = search.best_params_
+        best_rf = RandomForestRegressor(random_state=random_state, **best_params)
+        best_rf.fit(X_train, Y_train.values.ravel())
+        model = best_rf
+
+    # 5) Evaluate
+    Y_pred_train = model.predict(X_train)
+    Y_pred_test  = model.predict(X_test)
+
+    # Ensure shape for multi-output
+    if not multi_output:
+        Y_pred_train = Y_pred_train.reshape(-1, 1)
+        Y_pred_test  = Y_pred_test.reshape(-1, 1)
+
+    print("\n[Surrogate Training Summary]")
+    print(f"Best Params: {best_params}")
+
+    for i, col_name in enumerate(Y_data.columns):
+        r2_train = r2_score(Y_train.iloc[:, i], Y_pred_train[:, i])
+        r2_test  = r2_score(Y_test.iloc[:, i],  Y_pred_test[:, i])
+        mae_test = mean_absolute_error(Y_test.iloc[:, i], Y_pred_test[:, i])
+        print(f"Target='{col_name}': Train R2={r2_train:.3f},  Test R2={r2_test:.3f},  MAE={mae_test:.3f}")
+
+    # 6) Save model & columns
+    joblib.dump(model, model_out_path)
+    joblib.dump(numeric_cols, columns_out_path)
+    print(f"[INFO] Saved surrogate model => {model_out_path}")
+    print(f"[INFO] Saved columns => {columns_out_path}")
+
+    return model, numeric_cols
+
+
+###############################################################################
+# 5) LOADING A TRAINED SURROGATE, PREDICTING
+###############################################################################
+
+def load_surrogate_and_predict(
+    model_path: str,
+    columns_path: str,
+    sample_features: dict
+):
+    """
+    1) Load trained model + feature columns
+    2) Convert sample_features => row DataFrame with the same columns
+    3) predict => returns array
+    """
+    # Load
+    model = joblib.load(model_path)
+    feature_cols = joblib.load(columns_path)
+
+    # Construct DF
+    df_sample = pd.DataFrame([sample_features])
+    # Insert missing columns
+    for col in feature_cols:
+        if col not in df_sample.columns:
+            df_sample[col] = 0.0  # or np.nan
+
+    df_sample = df_sample[feature_cols].fillna(0.0)
+
+    # Predict
+    y_pred = model.predict(df_sample)
+    return y_pred
+
+  --- File Contents End ---
+
+  File: __init__.py
+  --- File Contents Start ---
 
   --- File Contents End ---
 
 ================================================================================
 
-Folder: D:\Documents\E_Plus_2030_py\validation\__pycache__
+Folder: D:\Documents\E_Plus_2030_py\cal\__pycache__
 
 ================================================================================
 

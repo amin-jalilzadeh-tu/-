@@ -16,7 +16,7 @@ Orchestrates the entire workflow:
   7) If "perform_validation" is true, calls global validation.
   8) If "perform_sensitivity" is true, runs a sensitivity analysis.
   9) If "perform_surrogate" is true, builds a surrogate model.
- 10) If "perform_calibration" is true, does calibration steps.
+ 10) If "perform_calibration" is true, does calibration steps using `run_unified_calibration`.
 """
 
 import os
@@ -50,13 +50,6 @@ from validation.main_validation import run_validation_process
 # --------------------------------------------------------------------------
 # D) Calibration, Sensitivity, Surrogate modules
 # --------------------------------------------------------------------------
-from cal.unified_calibration import (
-    load_scenario_params as cal_load_scenario_params,
-    build_param_specs_from_scenario,
-    simulate_or_surrogate,
-    CalibrationManager,
-    save_history_to_csv
-)
 from cal.unified_sensitivity import run_sensitivity_analysis
 from cal.unified_surrogate import (
     load_scenario_params as sur_load_scenario_params,
@@ -67,6 +60,8 @@ from cal.unified_surrogate import (
     merge_params_with_results,
     build_and_save_surrogate
 )
+# Import the new calibration entry point:
+from cal.unified_calibration import run_unified_calibration
 
 
 ###############################################################################
@@ -463,57 +458,8 @@ def main():
     # --------------------------------------------------------------------------
     if cal_cfg.get("perform_calibration", False):
         logger.info("[INFO] Calibration steps are ENABLED.")
-
-        scenario_folder = cal_cfg["scenario_folder"]
-        if not os.path.isdir(scenario_folder):
-            logger.error(f"[ERROR] Scenario folder not found: {scenario_folder}")
-        else:
-            # 1) Load scenario data
-            df_scen = cal_load_scenario_params(scenario_folder)
-            param_specs = build_param_specs_from_scenario(df_scen)
-
-            # 2) Create manager
-            manager = CalibrationManager(param_specs, simulate_or_surrogate)
-
-            # 3) GA approach
-            logger.info("[CAL] => GA approach")
-            best_params_ga, best_err_ga, hist_ga = manager.run_calibration(
-                method="ga",
-                pop_size=cal_cfg.get("ga_pop_size", 10),
-                generations=cal_cfg.get("ga_generations", 5),
-                crossover_prob=cal_cfg.get("ga_crossover_prob", 0.7),
-                mutation_prob=cal_cfg.get("ga_mutation_prob", 0.2)
-            )
-            logger.info(f"[GA] Best error={best_err_ga:.2f}, best params={best_params_ga}")
-            save_history_to_csv(hist_ga, "calibration_history_ga.csv")
-
-            # 4) Bayesian approach
-            logger.info("[CAL] => Bayesian approach")
-            best_params_bayes, best_err_bayes, hist_bayes = manager.run_calibration(
-                method="bayes",
-                n_calls=cal_cfg.get("bayes_n_calls", 15)
-            )
-            logger.info(f"[Bayes] Best error={best_err_bayes:.2f}, best params={best_params_bayes}")
-            save_history_to_csv(hist_bayes, "calibration_history_bayes.csv")
-
-            # 5) Random approach
-            logger.info("[CAL] => Random approach")
-            best_params_rand, best_err_rand, hist_rand = manager.run_calibration(
-                method="random",
-                n_iterations=cal_cfg.get("random_n_iter", 20)
-            )
-            logger.info(f"[Random] Best error={best_err_rand:.2f}, best params={best_params_rand}")
-            save_history_to_csv(hist_rand, "calibration_history_random.csv")
-
-            # 6) Compare final best among GA, Bayes, Random
-            results = [
-                ("GA", best_params_ga, best_err_ga),
-                ("Bayes", best_params_bayes, best_err_bayes),
-                ("Random", best_params_rand, best_err_rand)
-            ]
-            results.sort(key=lambda x: x[2])  # sort by error ascending
-            logger.info("\n=== Overall Best Among GA, Bayes, Random ===")
-            logger.info(f"Method={results[0][0]}, err={results[0][2]:.2f}, params={results[0][1]}")
+        # Simply call run_unified_calibration with the entire cal_cfg
+        run_unified_calibration(cal_cfg)
     else:
         logger.info("[INFO] Skipping calibration steps.")
 
