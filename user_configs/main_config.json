@@ -131,8 +131,8 @@
       },
       "perform_validation": true,
       "validation_config": {
-        "real_data_csv": "output/results/mock_merged_daily_mean.csv",
-        "sim_data_csv": "output/results/merged_daily_mean_mocked.csv",
+        "real_data_csv": "output/results/mock_merged_daily_mean.csv", 
+        "sim_data_csv": "output/results/merged_daily_mean.csv",   
 
         "bldg_ranges": { "0": [0, 1, 2] },
         "variables_to_compare": [
@@ -152,7 +152,7 @@
     "perform_validation": true,
     "config": {
       "real_data_csv": "output/results/mock_merged_daily_mean.csv",
-      "sim_data_csv": "output/results/merged_daily_mean_mocked.csv",
+      "sim_data_csv": "output/results_scenarioes/merged_daily_mean_scenarios.csv",
 
       "bldg_ranges": { "0": [0, 1, 2] },
       "variables_to_compare": [
@@ -173,7 +173,7 @@
     "perform_sensitivity": true,
     "scenario_folder": "output/scenarios",
     "method": "morris",
-    "results_csv": "output/results/merged_daily_mean_mocked.csv",
+    "results_csv": "output/results_scenarioes/merged_daily_mean_scenarios.csv",
     "target_variable": [
     "Heating:EnergyTransfer [J](Hourly)",
     "Cooling:EnergyTransfer [J](Hourly)",
@@ -187,7 +187,7 @@
   "surrogate": {
     "perform_surrogate": true,
     "scenario_folder": "output/scenarios",
-    "results_csv": "output/results/merged_daily_mean_mocked.csv",
+    "results_csv": "output/results_scenarioes/merged_daily_mean_scenarios.csv",
     "target_variable": "Heating:EnergyTransfer [J](Hourly)",
     "model_out": "heating_surrogate_model.joblib",
     "cols_out": "heating_surrogate_columns.joblib",

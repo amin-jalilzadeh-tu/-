@@ -1,10 +1,10 @@
 RealBldg,SimBldg,VariableName,MBE,CVRMSE,NMBE,Pass
-0,0,Electricity:Facility [J](Hourly),0.62,40.49,0.62,False
-0,0,Heating:EnergyTransfer [J](Hourly),4.94,59.27,4.94,False
-0,0,Cooling:EnergyTransfer [J](Hourly),-19.40,102.06,-19.40,False
-0,1,Electricity:Facility [J](Hourly),0.07,42.86,0.07,False
-0,1,Heating:EnergyTransfer [J](Hourly),6.12,61.57,6.12,False
-0,1,Cooling:EnergyTransfer [J](Hourly),-18.73,99.44,-18.73,False
-0,2,Electricity:Facility [J](Hourly),1.06,42.85,1.06,False
-0,2,Heating:EnergyTransfer [J](Hourly),5.73,61.19,5.73,False
-0,2,Cooling:EnergyTransfer [J](Hourly),-18.22,103.58,-18.22,False
+0,0,Electricity:Facility [J](Hourly),-47.47,62.39,-47.47,False
+0,0,Heating:EnergyTransfer [J](Hourly),-3140.06,4196.01,-3140.06,False
+0,0,Cooling:EnergyTransfer [J](Hourly),59.75,299.41,59.75,False
+0,1,Electricity:Facility [J](Hourly),-43.91,59.73,-43.91,False
+0,1,Heating:EnergyTransfer [J](Hourly),-3142.84,4198.80,-3142.84,False
+0,1,Cooling:EnergyTransfer [J](Hourly),59.91,298.79,59.91,False
+0,2,Electricity:Facility [J](Hourly),-48.41,63.11,-48.41,False
+0,2,Heating:EnergyTransfer [J](Hourly),-3139.32,4195.26,-3139.32,False
+0,2,Cooling:EnergyTransfer [J](Hourly),59.71,299.55,59.71,False
