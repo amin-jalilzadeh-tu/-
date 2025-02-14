@@ -1,0 +1,48 @@
+# version: "3.8"
+
+services:
+  app:
+    build: .
+    container_name: ep_app
+    env_file:
+      - .env
+    # The environment block sets or overrides variables that your Python code can see.
+    environment:
+      IDD_PATH: "/usr/local/EnergyPlus-${ENERGYPLUS_VERSION}/Energy+.idd"
+      BASE_IDF_PATH: "/app/data/Minimal.idf"
+      EPW_PATH: "/app/data/weather/NLD_Amsterdam.062400_IWEC.epw"
+      OUTPUT_DIR: "/app/output"
+
+      DB_NAME: "${DB_NAME}"
+      DB_USER: "${DB_USER}"
+      DB_PASSWORD: "${DB_PASSWORD}"
+      DB_HOST: "${DB_HOST}"
+      DB_PORT: "${DB_PORT}"
+
+      ENERGYPLUS_VERSION: "${ENERGYPLUS_VERSION}"
+      ENERGYPLUS_INSTALLATION_DIR: "${ENERGYPLUS_INSTALLATION_DIR}"
+    volumes:
+      - ./data:/app/data
+      - ./output:/app/output
+      - ./data/weather:/app/data/weather
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  db:
+    image: postgres:13
+    container_name: ep_db
+    restart: always
+    environment:
+      POSTGRES_DB: "${DB_NAME}"
+      POSTGRES_USER: "${DB_USER}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+
+volumes:
+  postgres_data:

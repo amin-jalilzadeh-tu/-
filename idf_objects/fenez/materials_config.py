@@ -1,8 +1,8 @@
 # fenez/materials_config.py
 
 import random
-from .data_materials_residential import residential_materials_data
-from .data_materials_non_residential import non_residential_materials_data
+from Lookups.data_materials_residential import residential_materials_data
+from Lookups.data_materials_non_residential import non_residential_materials_data
 from .materials_lookup import material_lookup
 
 ###############################################################################

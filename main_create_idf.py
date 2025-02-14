@@ -63,8 +63,8 @@ from epw.epw_overrides_from_excel import read_epw_overrides_from_excel, apply_ep
 
 
 
-from idf_objects.fenez.data_materials_residential import residential_materials_data
-from idf_objects.fenez.data_materials_non_residential import non_residential_materials_data
+from Lookups.data_materials_residential import residential_materials_data
+from Lookups.data_materials_non_residential import non_residential_materials_data
 
 
 from idf_objects.shading.shading import add_shading_to_idf  # <-- The new shading integration
