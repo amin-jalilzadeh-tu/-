@@ -1,0 +1,5 @@
+digraph Inheritance {
+  rankdir="BT";  // draw arrow from bottom to top for inheritance
+  node [shape=record, style=filled, fillcolor=lightblue];
+  "unified_calibration.py:ParamSpec" [label="ParamSpec\n(unified_calibration.py)"]
+}

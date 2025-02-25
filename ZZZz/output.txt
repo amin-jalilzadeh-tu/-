@@ -1,1735 +1,1717 @@
-Folder: D:\Documents\E_Plus_2030_py\cal
+Folder: D:\Documents\E_Plus_2030_py\idf_objects\ventilation
 
-  File: unified_calibration.py
+  File: add_ventilation.py
   --- File Contents Start ---
-"""
-unified_calibration.py
-
-Key Features:
-  - Load scenario CSV files you want to calibrate (DH, Elec, Fenez, etc.).
-  - Optionally filter parameters by a sensitivity CSV (top N).
-  - Create ParamSpecs for param_value (and optionally param_min, param_max).
-  - Provide random, GA, or Bayesian methods to find param sets that minimize an error.
-  - The error function can be:
-       (A) Re-run E+ (placeholder here),
-       (B) Use a trained surrogate (with "use_surrogate": true).
-  - Save one calibration_history.csv for all attempts.
-  - Write separate best-param CSV for each scenario file, e.g.:
-       calibrated_params_scenario_params_dhw.csv
-       calibrated_params_scenario_params_elec.csv
-    with updated values for param_value, param_min, param_max, etc.
-
-Author: Example
-"""
-
-import os
-import csv
-import random
-import copy
-import numpy as np
-import pandas as pd
-from typing import List, Dict, Tuple, Callable, Optional
-
-# scikit-optimize for bayesian calibration
-try:
-    from skopt import gp_minimize
-    from skopt.space import Real, Integer
-    from skopt.utils import use_named_args
-    HAVE_SKOPT = True
-except ImportError:
-    gp_minimize = None
-    Real = None
-    Integer = None
-    use_named_args = None
-    HAVE_SKOPT = False
-
-# For Surrogate usage
-import joblib
-
-###############################################################################
-# 0) Global placeholders for loaded Surrogate + Real Data
-###############################################################################
-MODEL_SURROGATE = None
-MODEL_COLUMNS   = None
-REAL_DATA_DICT  = None
-
-###############################################################################
-# 1) ParamSpec
-###############################################################################
-
-class ParamSpec:
-    """
-    name: the internal name of the parameter (str)
-    min_value, max_value: float boundaries
-    is_integer: bool => if True, round to int
-    """
-    def __init__(self, name: str, min_value: float, max_value: float, is_integer: bool = False):
-        self.name = name
-        self.min_value = min_value
-        self.max_value = max_value
-        self.is_integer = is_integer
-
-    def sample_random(self) -> float:
-        val = random.uniform(self.min_value, self.max_value)
-        return int(round(val)) if self.is_integer else val
-
-
-###############################################################################
-# 2) Scenario CSV loading
-###############################################################################
-
-def load_scenario_csvs(scenario_folder: str, scenario_files: List[str]) -> pd.DataFrame:
-    """
-    Reads specified scenario CSVs from scenario_folder, merges them.
-    Each file is expected to have columns e.g.:
-      scenario_index, ogc_fid, object_name, param_name,
-      param_value, param_min, param_max, ...
-    We'll store "source_file" for each row. 
-    """
-    if not scenario_files:
-        # default to all
-        scenario_files = [
-            "scenario_params_dhw.csv",
-            "scenario_params_elec.csv",
-            "scenario_params_fenez.csv",
-            "scenario_params_hvac.csv",
-            "scenario_params_vent.csv"
-        ]
-
-    dfs = []
-    for fname in scenario_files:
-        fpath = os.path.join(scenario_folder, fname)
-        if os.path.isfile(fpath):
-            df_temp = pd.read_csv(fpath)
-            df_temp["source_file"] = fname
-            dfs.append(df_temp)
-        else:
-            print(f"[WARN] Scenario file '{fname}' not found => skipping.")
-    if not dfs:
-        raise FileNotFoundError(f"No scenario CSV found in {scenario_folder} for files={scenario_files}")
-
-    merged = pd.concat(dfs, ignore_index=True)
-    return merged
-
-
-def optionally_filter_by_sensitivity(
-    df_scen: pd.DataFrame,
-    sensitivity_csv: str,
-    top_n: int = 10,
-    param_col: str = "param",
-    metric_col: str = "mu_star"
-) -> pd.DataFrame:
-    """
-    If 'sensitivity_csv' is found, read it, sort by metric_col descending,
-    pick top_n param names => keep only those in df_scen. 
-    We'll match df_scen["param_name"] to param_col in the sensitivity CSV.
-    """
-    if not sensitivity_csv or not os.path.isfile(sensitivity_csv):
-        print("[INFO] No sensitivity CSV or not found => skipping filter.")
-        return df_scen
-
-    df_sens = pd.read_csv(sensitivity_csv)
-    if param_col not in df_sens.columns or metric_col not in df_sens.columns:
-        print(f"[WARN] param_col='{param_col}' or metric_col='{metric_col}' not found => skipping filter.")
-        return df_scen
-
-    df_sens_sorted = df_sens.sort_values(metric_col, ascending=False)
-    top_params = df_sens_sorted[param_col].head(top_n).tolist()
-    print(f"[INFO] Filtering scenario params to top {top_n} from {sensitivity_csv} => {top_params}")
-
-    df_filt = df_scen[df_scen["param_name"].isin(top_params)].copy()
-    if df_filt.empty:
-        print("[WARN] After filter, no scenario params remain => returning original.")
-        return df_scen
-    return df_filt
-
-
-###############################################################################
-# 3) Build ParamSpecs from scenario rows
-###############################################################################
-
-def build_param_specs_from_scenario(
-    df_scen: pd.DataFrame,
-    calibrate_min_max: bool = True
-) -> List[ParamSpec]:
-    """
-    For each row in df_scen, produce param_value plus param_min/param_max if calibrate_min_max is True.
-
-    We do something like:
-      base_key = f"{source_file}:{param_name}"
-      Then create:
-         base_key_VAL
-         base_key_MIN
-         base_key_MAX
-    with numeric ranges.
-
-    You can revise the logic so param_min param_max come from row["param_min"], row["param_max"] if you want them separate.
-    """
-
-    specs = []
-    for idx, row in df_scen.iterrows():
-        p_name = row.get("param_name", "UnknownParam")
-        source_file = row.get("source_file", "")
-        base_val    = row.get("param_value", np.nan)
-        base_min    = row.get("param_min",  np.nan)
-        base_max    = row.get("param_max",  np.nan)
-
-        # unify a base key
-        base_key = f"{source_file}:{p_name}".replace(".csv","")
-
-        # fallback if param_value is missing
-        try:
-            valf = float(base_val)
-        except:
-            valf = 1.0  # fallback
-
-        # fallback if param_min/param_max missing
-        # we do a small check => if invalid, use ±20% around val
-        if pd.isna(base_min) or pd.isna(base_max) or (base_min >= base_max):
-            base_min = valf * 0.8
-            base_max = valf * 1.2
-            if base_min >= base_max:
-                base_max = base_min + 0.001
-
-        # (A) param_value => name= base_key+"_VAL"
-        specs.append(ParamSpec(
-            name=f"{base_key}_VAL",
-            min_value=float(base_min),
-            max_value=float(base_max),
-            is_integer=False
-        ))
-
-        if calibrate_min_max:
-            # (B) param_min => vary in [0, valf], or [0, base_min], or something
-            # We'll just do e.g. [0, min(valf, base_min)]
-            mmn = 0.0
-            mmx = min(valf, base_min) if base_min < valf else valf
-            if mmx <= mmn:
-                mmx = mmn + 0.001
-            specs.append(ParamSpec(
-                name=f"{base_key}_MIN",
-                min_value=mmn,
-                max_value=mmx,
-                is_integer=False
-            ))
-
-            # (C) param_max => vary in [valf, 2*], or [base_max, 2 base_max], etc.
-            mm2 = max(valf, base_max)
-            mm2b = mm2 * 2.0
-            specs.append(ParamSpec(
-                name=f"{base_key}_MAX",
-                min_value=mm2,
-                max_value=mm2b,
-                is_integer=False
-            ))
-
-    return specs
-
-
-###############################################################################
-# 4) Evaluate param_dict => surrogate or E+
-###############################################################################
-
-def load_surrogate_once(model_path: str, columns_path: str):
-    """
-    Loads the surrogate model and column list into global variables if not loaded yet.
-    Adjust as needed if you have multiple surrogates or different model paths.
-    """
-    global MODEL_SURROGATE, MODEL_COLUMNS
-    if MODEL_SURROGATE is None or MODEL_COLUMNS is None:
-        print(f"[INFO] Loading surrogate => {model_path} / {columns_path}")
-        MODEL_SURROGATE = joblib.load(model_path)
-        MODEL_COLUMNS   = joblib.load(columns_path)
-
-
-def load_real_data_once(real_csv: str):
-    """
-    You can interpret your real_data_csv and store it as a dictionary 
-    if you have multiple scenario_index or building IDs. For this example, 
-    we store a single usage or a dict with a single key.
-    """
-    global REAL_DATA_DICT
-    if REAL_DATA_DICT is None:
-        print(f"[INFO] Loading real data => {real_csv}")
-        # Example approach: read the entire CSV, sum or do something
-        df = pd.read_csv(real_csv)
-        # We'll just store a single number or store a dict of building-> usage
-        # For demonstration, do a single building => buildingID=0 => usage= 1.23e7
-        REAL_DATA_DICT = {0: 1.23e7}
-
-
-def transform_calib_name_to_surrogate_col(full_name: str) -> str:
-    """
-    If your calibration param name is "scenario_params_dhw.csv:dhw.setpoint_c_VAL",
-    we might want to map it to "dhw.setpoint_c" for the surrogate.
-    This is a simple approach:
-      1) remove "_VAL", "_MIN", "_MAX"
-      2) remove "scenario_params_dhw.csv:" prefix
-    """
-    # remove prefix
-    if ":" in full_name:
-        full_name = full_name.split(":",1)[1]  # e.g. "dhw.setpoint_c_VAL"
-    # remove suffix
-    for suffix in ["_VAL","_MIN","_MAX"]:
-        if full_name.endswith(suffix):
-            full_name = full_name[: -len(suffix)]
-    return full_name
-
-
-def build_feature_row_from_param_dict(param_dict: Dict[str, float]) -> pd.DataFrame:
-    """
-    1) We have a list of columns the surrogate expects => MODEL_COLUMNS
-    2) param_dict keys are e.g. "scenario_params_dhw.csv:dhw.setpoint_c_VAL" => 58.0
-    3) Map them => "dhw.setpoint_c" => 58.0
-    """
-    global MODEL_COLUMNS
-    row_dict = {col: 0.0 for col in MODEL_COLUMNS}
-
-    for k, v in param_dict.items():
-        short_k = transform_calib_name_to_surrogate_col(k)
-        if short_k in row_dict:
-            row_dict[short_k] = v
-
-    return pd.DataFrame([row_dict])
-
-
-def predict_error_with_surrogate(param_dict: Dict[str, float], config: dict) -> float:
-    """
-    1) load surrogate if not loaded
-    2) build feature row
-    3) predict => predicted usage
-    4) get real usage => compute error
-    """
-    model_path  = config.get("surrogate_model_path", "heating_surrogate_model.joblib")
-    columns_path= config.get("surrogate_columns_path","heating_surrogate_columns.joblib")
-    real_csv    = config.get("real_data_csv", "")
-
-    load_surrogate_once(model_path, columns_path)
-    load_real_data_once(real_csv)
-
-    df_sample = build_feature_row_from_param_dict(param_dict)
-    preds = MODEL_SURROGATE.predict(df_sample)
-
-    # If single-output => preds is shape (1,)
-    predicted_usage = preds[0] if len(preds.shape)==1 else preds[0,0]
-
-    # Retrieve real usage. Here we just pick buildingID=0
-    # If you have multiple buildingIDs => param_dict might contain scenario_index
-    real_usage = REAL_DATA_DICT[0]
-
-    # error measure => absolute difference
-    error = abs(predicted_usage - real_usage)
-    return error
-
-
-def run_energyplus_and_compute_error(param_dict: Dict[str, float], config: dict) -> float:
-    """
-    Placeholder for re-running E+. 
-    For now, we do sum of param_dict + random noise, measure difference from 50.
-    """
-    val_sum = sum(param_dict.values())
-    noise = random.uniform(-2.0, 2.0)
-    error = abs(val_sum - 50) + noise
-    return error
-
-
-def simulate_or_surrogate(param_dict: Dict[str, float], config: dict) -> float:
-    """
-    If config["use_surrogate"] => call surrogate
-    else => re-run E+
-    """
-    use_sur = config.get("use_surrogate", False)
-    if use_sur:
-        return predict_error_with_surrogate(param_dict, config)
-    else:
-        return run_energyplus_and_compute_error(param_dict, config)
-
-
-###############################################################################
-# 5) Random / GA / Bayes calibration
-###############################################################################
-
-def random_search_calibration(
-    param_specs: List[ParamSpec],
-    eval_func: Callable[[Dict[str, float]], float],
-    n_iterations: int
-) -> Tuple[Dict[str, float], float, list]:
-    best_params = None
-    best_err = float('inf')
-    history = []
-    for _ in range(n_iterations):
-        p_dict = {}
-        for s in param_specs:
-            p_dict[s.name] = s.sample_random()
-        err = eval_func(p_dict)
-        history.append((p_dict, err))
-        if err < best_err:
-            best_err = err
-            best_params = p_dict
-    return best_params, best_err, history
-
-
-def ga_calibration(
-    param_specs: List[ParamSpec],
-    eval_func: Callable[[Dict[str, float]], float],
-    pop_size: int,
-    generations: int,
-    crossover_prob: float,
-    mutation_prob: float
-) -> Tuple[Dict[str, float], float, list]:
-
-    def random_individual():
-        p = {}
-        for s in param_specs:
-            p[s.name] = s.sample_random()
-        return p
-
-    def evaluate(ind: dict) -> Tuple[float, float]:
-        e = eval_func(ind)
-        # fitness = 1 / (1+error)
-        fit = 1.0 / (1.0 + e)
-        return fit, e
-
-    def tournament_select(pop, k=3):
-        contenders = random.sample(pop, k)
-        best = max(contenders, key=lambda x: x["fitness"])
-        return copy.deepcopy(best)
-
-    def crossover(p1: dict, p2: dict):
-        c1, c2 = {}, {}
-        for k in p1.keys():
-            if random.random() < 0.5:
-                c1[k] = p1[k]
-                c2[k] = p2[k]
-            else:
-                c1[k] = p2[k]
-                c2[k] = p1[k]
-        return c1, c2
-
-    def mutate(ind: dict):
-        for s in param_specs:
-            if random.random() < mutation_prob:
-                ind[s.name] = s.sample_random()
-
-    population = []
-    history = []
-    # init
-    for _ in range(pop_size):
-        ind = random_individual()
-        fit, err = evaluate(ind)
-        population.append({"params": ind, "fitness": fit, "error": err})
-        history.append((ind, err))
-
-    for g in range(generations):
-        new_pop = []
-        while len(new_pop) < pop_size:
-            pa = tournament_select(population)
-            pb = tournament_select(population)
-            if random.random() < crossover_prob:
-                c1, c2 = crossover(pa["params"], pb["params"])
-            else:
-                c1, c2 = pa["params"], pb["params"]
-            mutate(c1)
-            mutate(c2)
-            f1, e1 = evaluate(c1)
-            f2, e2 = evaluate(c2)
-            new_pop.append({"params": c1, "fitness": f1, "error": e1})
-            new_pop.append({"params": c2, "fitness": f2, "error": e2})
-            history.append((c1, e1))
-            history.append((c2, e2))
-        # sort by fitness desc, keep top pop_size
-        new_pop.sort(key=lambda x: x["fitness"], reverse=True)
-        population = new_pop[:pop_size]
-        best_ind = max(population, key=lambda x: x["fitness"])
-        print(f"[GA] gen={g} best_error={best_ind['error']:.3f}")
-
-    best_ind = max(population, key=lambda x: x["fitness"])
-    return best_ind["params"], best_ind["error"], history
-
-
-def bayes_calibration(
-    param_specs: List[ParamSpec],
-    eval_func: Callable[[Dict[str, float]], float],
-    n_calls: int
-) -> Tuple[Dict[str, float], float, list]:
-    if not HAVE_SKOPT or gp_minimize is None:
-        print("[WARN] scikit-optimize not installed => fallback random.")
-        return random_search_calibration(param_specs, eval_func, n_calls)
-
-    skopt_dims = []
-    param_names = []
-    for s in param_specs:
-        param_names.append(s.name)
-        if s.is_integer:
-            skopt_dims.append(Integer(s.min_value, s.max_value, name=s.name))
-        else:
-            skopt_dims.append(Real(s.min_value, s.max_value, name=s.name))
-
-    @use_named_args(skopt_dims)
-    def objective(**kwargs):
-        return eval_func(kwargs)
-
-    res = gp_minimize(
-        objective,
-        dimensions=skopt_dims,
-        n_calls=n_calls,
-        n_initial_points=5,
-        random_state=42
-    )
-    best_err = res.fun
-    best_x = res.x
-    best_params = {}
-    for i, val in enumerate(best_x):
-        best_params[param_names[i]] = val
-
-    history = []
-    for i, x_list in enumerate(res.x_iters):
-        pdict = {}
-        for j, val in enumerate(x_list):
-            pdict[param_names[j]] = val
-        e = res.func_vals[i]
-        history.append((pdict, e))
-
-    return best_params, best_err, history
-
-
-###############################################################################
-# 6) Save history & best param CSV
-###############################################################################
-
-def save_history_to_csv(history: list, filename: str):
-    if not history:
-        print("[WARN] No history => skipping save.")
-        return
-    rows = []
-    all_params = set()
-    for (pdict, err) in history:
-        rows.append((pdict, err))
-        all_params.update(pdict.keys())
-    all_params = sorted(all_params)
-    os.makedirs(os.path.dirname(filename) or ".", exist_ok=True)
-    with open(filename, "w", newline="") as f:
-        writer = csv.writer(f)
-        header = list(all_params) + ["error"]
-        writer.writerow(header)
-        for (pdict, err) in rows:
-            rowvals = [pdict.get(p, "") for p in all_params]
-            rowvals.append(err)
-            writer.writerow(rowvals)
-    print(f"[INFO] Wrote calibration history => {filename}")
-
-
-def fix_min_max_relations(best_params: Dict[str, float]):
-    """
-    Optional step: ensure param_min <= param_val <= param_max.
-    For each group: basekey_VAL, basekey_MIN, basekey_MAX, reorder if needed.
-    E.g. 'scenario_params_dhw.csv:dhw.setpoint_c_VAL' => ...
-    """
-    from collections import defaultdict
-    groups = defaultdict(dict)
-    for k,v in best_params.items():
-        if k.endswith("_VAL"):
-            base = k[:-4]  # remove _VAL
-            groups[base]["VAL"] = v
-        elif k.endswith("_MIN"):
-            base = k[:-4]  # remove _MIN
-            groups[base]["MIN"] = v
-        elif k.endswith("_MAX"):
-            base = k[:-4]  # remove _MAX
-            groups[base]["MAX"] = v
-
-    for base, triple in groups.items():
-        if "VAL" in triple and "MIN" in triple and "MAX" in triple:
-            mn  = triple["MIN"]
-            val = triple["VAL"]
-            mx  = triple["MAX"]
-            new_min = min(mn, val, mx)
-            new_max = max(mn, val, mx)
-            new_val = max(new_min, min(val, new_max))
-            best_params[base+"_MIN"] = new_min
-            best_params[base+"_VAL"] = new_val
-            best_params[base+"_MAX"] = new_max
-
-
-def save_best_params_separately(
-    best_params: Dict[str, float],
-    df_scen: pd.DataFrame,
-    out_folder: str = "./",
-    prefix: str = "calibrated_params_"
+# ventilation/add_ventilation.py
+
+from idf_objects.ventilation.assign_ventilation_values import (
+    assign_ventilation_params_with_overrides
+)
+from idf_objects.ventilation.schedules import (
+    create_always_on_schedule,
+    create_day_night_schedule,
+    create_workhours_schedule
+)
+from idf_objects.ventilation.create_ventilation_systems import create_ventilation_system
+from idf_objects.ventilation.calc_functions import (
+    calc_infiltration,
+    calc_required_ventilation_flow
+)
+from idf_objects.ventilation.mappings import (
+    safe_lower,
+    map_age_range_to_year_key,
+    map_infiltration_key,
+    map_usage_key
+)
+
+def add_ventilation_to_idf(
+    idf,
+    building_row,
+    calibration_stage="pre_calibration",
+    strategy="A",            # "A" => pick midpoint, "B" => random, ...
+    random_seed=None,
+    user_config_vent=None,
+    assigned_vent_log=None
 ):
     """
-    Writes separate CSV for each scenario file.
-    E.g.: prefix + "scenario_params_dhw.csv"
-    Each file has rows with columns:
-      scenario_index, ogc_fid, object_name, param_name,
-      old_param_value, new_param_value,
-      old_param_min, new_param_min,
-      old_param_max, new_param_max,
-      source_file
-    """
-    fix_min_max_relations(best_params)
-    os.makedirs(out_folder, exist_ok=True)
-    grouped = df_scen.groupby("source_file")
+    Adds infiltration + ventilation to the IDF based on building_row data
+    (using assign_ventilation_params_with_overrides). Creates infiltration
+    and (optionally) ventilation objects in each zone. Also logs both
+    building-level and zone-level picks to assigned_vent_log.
 
-    for sfile, group_df in grouped:
-        out_rows = []
-        for _, row in group_df.iterrows():
-            p_name = row["param_name"]
-            s_file = row["source_file"]
-            old_val = row.get("param_value",  np.nan)
-            old_min = row.get("param_min",    np.nan)
-            old_max = row.get("param_max",    np.nan)
+    Args:
+        idf: geomeppy IDF object
+        building_row: dict-like row containing e.g. "ogc_fid", "building_function", "age_range", "scenario", "area"
+        calibration_stage: str, e.g. "pre_calibration" or "post_calibration"
+        strategy: str, e.g. "A" => midpoint, "B" => random
+        random_seed: int or None
+        user_config_vent: list of user override dicts for ventilation
+        assigned_vent_log: dict to store final building-level & zone-level picks
 
-            base_key = f"{s_file}:{p_name}".replace(".csv","")
-            new_val_key = base_key + "_VAL"
-            new_min_key = base_key + "_MIN"
-            new_max_key = base_key + "_MAX"
-
-            new_val = best_params.get(new_val_key, old_val)
-            new_min = best_params.get(new_min_key, old_min)
-            new_max = best_params.get(new_max_key, old_max)
-
-            out_rows.append({
-                "scenario_index": row.get("scenario_index",""),
-                "ogc_fid": row.get("ogc_fid",""),
-                "object_name": row.get("object_name",""),
-                "param_name": p_name,
-                "old_param_value": old_val,
-                "new_param_value": new_val,
-                "old_param_min": old_min,
-                "new_param_min": new_min,
-                "old_param_max": old_max,
-                "new_param_max": new_max,
-                "source_file": s_file
-            })
-
-        df_out = pd.DataFrame(out_rows)
-        out_name = prefix + sfile  # e.g. "calibrated_params_scenario_params_dhw.csv"
-        out_path = os.path.join(out_folder, out_name)
-        df_out.to_csv(out_path, index=False)
-        print(f"[INFO] Wrote best params => {out_path}")
-
-
-###############################################################################
-# 7) Master function => run_unified_calibration
-###############################################################################
-
-def run_unified_calibration(calibration_config: dict):
-    """
-    Example usage from main.py:
-      if cal_cfg.get("perform_calibration", False):
-          run_unified_calibration(cal_cfg)
-
-    The calibration_config can have keys like:
-    {
-      "scenario_folder": "output/scenarios",
-      "scenario_files": [ "scenario_params_dhw.csv", ... ],
-      "subset_sensitivity_csv": "morris_sensitivity.csv",
-      "top_n_params": 10,
-      "method": "ga",
-      "use_surrogate": true,
-      "real_data_csv": "output/results/mock_merged_daily_mean.csv",
-      "surrogate_model_path": "heating_surrogate_model.joblib",
-      "surrogate_columns_path": "heating_surrogate_columns.joblib",
-      "calibrate_min_max": true,
-      "ga_pop_size": 10,
-      "ga_generations": 5,
-      "ga_crossover_prob": 0.7,
-      "ga_mutation_prob": 0.2,
-      "bayes_n_calls": 15,
-      "random_n_iter": 20,
-      "output_history_csv": "calibration_history.csv",
-      "best_params_folder": "output/calibrated",
-      "history_folder": "output/calibrated"
-    }
+    Returns:
+        None. (The IDF is modified in place; the picks are stored in assigned_vent_log if provided.)
     """
 
-    scenario_folder = calibration_config["scenario_folder"]
-    scenario_files  = calibration_config.get("scenario_files", [])
-    subset_sens     = calibration_config.get("subset_sensitivity_csv", "")
-    top_n           = calibration_config.get("top_n_params", 9999)
-    method          = calibration_config.get("method", "ga")  # "random","ga","bayes"
-    calibrate_mm    = calibration_config.get("calibrate_min_max", True)
-    output_hist_csv = calibration_config.get("output_history_csv", "calibration_history.csv")
-    best_params_dir = calibration_config.get("best_params_folder","./")
-    hist_dir        = calibration_config.get("history_folder","./")
+    # 1) Ensure key schedules exist (the default ones)
+    if not idf.getobject("SCHEDULE:CONSTANT", "AlwaysOnSched"):
+        create_always_on_schedule(idf, "AlwaysOnSched")
+    if not idf.getobject("SCHEDULE:COMPACT", "VentSched_DayNight"):
+        create_day_night_schedule(idf, "VentSched_DayNight")
+    if not idf.getobject("SCHEDULE:COMPACT", "WorkHoursSched"):
+        create_workhours_schedule(idf, "WorkHoursSched")
 
-    # 1) load scenario CSV
-    df_scen = load_scenario_csvs(scenario_folder, scenario_files)
+    # 2) Extract building info
+    bldg_id = building_row.get("ogc_fid", 0)
+    bldg_func = safe_lower(building_row.get("building_function", "residential"))
+    if bldg_func not in ("residential", "non_residential"):
+        bldg_func = "residential"
 
-    # 2) optional filter by sensitivity
-    df_scen = optionally_filter_by_sensitivity(df_scen, subset_sens, top_n)
+    age_range_str = building_row.get("age_range", "2015 and later")
+    scenario = building_row.get("scenario", "scenario1")
+    floor_area_m2 = building_row.get("area", 100.0)
 
-    # 3) build param specs
-    param_specs = build_param_specs_from_scenario(df_scen, calibrate_min_max=calibrate_mm)
+    # 3) Decide infiltration key, usage key, etc.
+    infiltration_key = map_infiltration_key(building_row)
+    usage_key = map_usage_key(building_row)
+    is_res = (bldg_func == "residential")
 
-    # 4) define local eval function
-    def local_eval_func(pdict: Dict[str, float]) -> float:
-        return simulate_or_surrogate(pdict, calibration_config)
-
-    # 5) run method
-    if method == "random":
-        n_iter = calibration_config.get("random_n_iter", 20)
-        best_params, best_err, history = random_search_calibration(param_specs, local_eval_func, n_iter)
-    elif method == "ga":
-        pop_size       = calibration_config.get("ga_pop_size", 10)
-        generations    = calibration_config.get("ga_generations", 5)
-        crossover_prob = calibration_config.get("ga_crossover_prob", 0.7)
-        mutation_prob  = calibration_config.get("ga_mutation_prob", 0.2)
-        best_params, best_err, history = ga_calibration(
-            param_specs, local_eval_func,
-            pop_size, generations, crossover_prob, mutation_prob
-        )
-    elif method == "bayes":
-        n_calls = calibration_config.get("bayes_n_calls", 15)
-        best_params, best_err, history = bayes_calibration(param_specs, local_eval_func, n_calls)
-    else:
-        raise ValueError(f"Unknown calibration method: {method}")
-
-    print(f"[CAL] Method={method}, Best error={best_err:.3f}, best_params={best_params}")
-
-    # 6) Save history
-    hist_path = os.path.join(hist_dir, output_hist_csv)
-    save_history_to_csv(history, hist_path)
-
-    # 7) Create separate best-param CSV for each scenario file
-    save_best_params_separately(
-        best_params,
-        df_scen,
-        out_folder=best_params_dir,
-        prefix="calibrated_params_"
+    # 4) Call the function that picks infiltration_base, year_factor, schedules, etc.
+    assigned_vent = assign_ventilation_params_with_overrides(
+        building_id=bldg_id,
+        building_function=bldg_func,
+        age_range=age_range_str,
+        scenario=scenario,
+        calibration_stage=calibration_stage,
+        strategy=strategy,
+        random_seed=random_seed,
+        user_config_vent=user_config_vent,
+        assigned_vent_log=None,        # We'll do the logging here instead
+        infiltration_key=infiltration_key,
+        year_key=map_age_range_to_year_key(age_range_str),
+        is_residential=is_res,
+        default_flow_exponent=0.67
     )
 
-    print("[CAL] Calibration complete.")
+    # 5) Unpack the chosen building-level picks
+    infiltration_base   = assigned_vent["infiltration_base"]
+    infiltration_rng    = assigned_vent["infiltration_base_range"]
+    year_factor         = assigned_vent["year_factor"]
+    year_factor_rng     = assigned_vent["year_factor_range"]
+    fan_pressure        = assigned_vent["fan_pressure"]
+    fan_pressure_rng    = assigned_vent["fan_pressure_range"]
+    f_ctrl              = assigned_vent["f_ctrl"]
+    f_ctrl_rng          = assigned_vent["f_ctrl_range"]
+    hrv_eff             = assigned_vent["hrv_eff"]
+    hrv_eff_rng         = assigned_vent["hrv_eff_range"]
+
+    infiltration_sched  = assigned_vent["infiltration_schedule_name"]
+    ventilation_sched   = assigned_vent["ventilation_schedule_name"]
+    system_type         = assigned_vent["system_type"]
+    flow_exponent       = assigned_vent["flow_exponent"]
+
+    # 6) Print or debug
+    print(
+        f"[VENT OVERRIDES] bldg={bldg_id}, infiltration_base={infiltration_base}, "
+        f"year_factor={year_factor}, sys={system_type}, f_ctrl={f_ctrl}, "
+        f"fanP={fan_pressure}, hrv_eff={hrv_eff}, infiltration_sched={infiltration_sched}, "
+        f"vent_sched={ventilation_sched}"
+    )
+
+    # 7) Calculate total infiltration & ventilation flows for the building
+    infiltration_m3_s_total = calc_infiltration(
+        infiltration_base=infiltration_base,
+        year_factor=year_factor,
+        flow_exponent=flow_exponent,
+        floor_area_m2=floor_area_m2
+    )
+    vent_flow_m3_s_total = calc_required_ventilation_flow(
+        building_function=bldg_func,
+        f_ctrl_val=f_ctrl,
+        floor_area_m2=floor_area_m2,
+        usage_key=usage_key
+    )
+
+    # 7b) Retrieve zones
+    zones = idf.idfobjects["ZONE"]
+    if not zones:
+        print("[VENT] No zones found, skipping creation of infiltration/ventilation objects.")
+        return
+
+    n_zones = len(zones)
+    infiltration_per_zone = infiltration_m3_s_total / n_zones
+    vent_per_zone = vent_flow_m3_s_total / n_zones
+
+    # 8) If we want to store building-level data in assigned_vent_log
+    if assigned_vent_log is not None:
+        if bldg_id not in assigned_vent_log:
+            assigned_vent_log[bldg_id] = {}
+
+        assigned_vent_log[bldg_id]["building_params"] = {
+            # Numeric picks + ranges
+            "infiltration_base": infiltration_base,
+            "infiltration_base_range": infiltration_rng,
+            "year_factor": year_factor,
+            "year_factor_range": year_factor_rng,
+            "fan_pressure": fan_pressure,
+            "fan_pressure_range": fan_pressure_rng,
+            "f_ctrl": f_ctrl,
+            "f_ctrl_range": f_ctrl_rng,
+            "hrv_eff": hrv_eff,
+            "hrv_eff_range": hrv_eff_rng,
+            # Schedules
+            "infiltration_schedule_name": infiltration_sched,
+            "ventilation_schedule_name": ventilation_sched,
+            "system_type": system_type,
+            "flow_exponent": flow_exponent,
+            # Flows for entire building
+            "infiltration_total_m3_s": infiltration_m3_s_total,
+            "ventilation_total_m3_s": vent_flow_m3_s_total
+        }
+
+        # We'll create a sub-dict for zone-level data
+        assigned_vent_log[bldg_id]["zones"] = {}
+
+    print(
+        f"[VENTILATION] Building {bldg_id}, system={system_type}, infiltration={infiltration_m3_s_total:.3f} m3/s, "
+        f"vent={vent_flow_m3_s_total:.3f} m3/s, #zones={n_zones}"
+    )
+
+    # 9) For each zone => create infiltration + ventilation objects
+    for zone_obj in zones:
+        zone_name = zone_obj.Name
+
+        iobj, vobj = create_ventilation_system(
+            idf=idf,
+            building_function=bldg_func,
+            system_type=system_type,
+            zone_name=zone_name,
+            infiltration_m3_s=infiltration_per_zone,
+            vent_flow_m3_s=vent_per_zone,
+            infiltration_sched_name=infiltration_sched,
+            ventilation_sched_name=ventilation_sched,
+            pick_strategy="random" if strategy == "B" else "midpoint"
+        )
+
+        print(
+            f"   => Created infiltration for {zone_name}: {infiltration_per_zone:.4f} m3/s, "
+            f"ventilation: {vent_per_zone:.4f} m3/s"
+        )
+
+        # 9b) Log zone-level data
+        if assigned_vent_log is not None:
+            assigned_vent_log[bldg_id]["zones"][zone_name] = {
+                "infiltration_object_name": iobj.Name,
+                "infiltration_object_type": iobj.key,
+                "infiltration_flow_m3_s": infiltration_per_zone,
+                "infiltration_schedule_name": infiltration_sched,
+                # If system_type != "D", we have vobj => ZONEVENTILATION:DESIGNFLOWRATE
+                # If system_type == "D", vobj might be the same as iobj or None
+                #   Actually in create_ventilation_system, iobj is infiltration, vobj is either
+                #   a ZONEVENTILATION:DESIGNFLOWRATE or an IdealLoads object (for system D).
+                "ventilation_object_name": vobj.Name if vobj else None,
+                "ventilation_object_type": vobj.key if vobj else None,
+                "ventilation_flow_m3_s": vent_per_zone if vobj else 0.0,
+                "ventilation_schedule_name": ventilation_sched
+            }
+
+    # 10) If system_type == "D", optionally confirm HRV on IdealLoads
+    # (The create_ventilation_system already sets sensible HRV if the IDD field exists).
+    if system_type == "D" and hrv_eff > 0.0:
+        for zone_obj in zones:
+            zone_name = zone_obj.Name
+            ideal_name = f"{zone_name} Ideal Loads"
+            ideal_obj = idf.getobject("ZONEHVAC:IDEALLOADSAIRSYSTEM", ideal_name)
+            if not ideal_obj:
+                print(f"[VENT WARNING] {zone_name}: Ideal Loads not found for system D, can't set HRV.")
+            else:
+                if hasattr(ideal_obj, "Sensible_Heat_Recovery_Effectiveness"):
+                    # It's presumably set in create_ventilation_system, but you could confirm or adjust:
+                    print(f"      -> {zone_name} IdealLoads has HRV = {hrv_eff:.2f}")
+                else:
+                    print(f"      -> {zone_name} IdealLoads object lacks HRV fields in IDD.")
 
   --- File Contents End ---
 
-  File: unified_sensitivity.py
+  File: assign_ventilation_values.py
   --- File Contents Start ---
-"""
-unified_sensitivity.py
+# ventilation/assign_ventilation_values.py
 
-Updated to handle multiple target variables for correlation-based sensitivity.
-You can specify in your config:
-    "target_variable": [
-      "Heating:EnergyTransfer [J](Hourly)",
-      "Cooling:EnergyTransfer [J](Hourly)",
-      ...
-    ]
-or a single string (like "Heating:EnergyTransfer [J](Hourly)").
+# ventilation/assign_ventilation_params_with_overrides.py
 
-Author: Your Team
-"""
+import random
+from .ventilation_lookup import ventilation_lookup
 
-import os
-import numpy as np
-import pandas as pd
-from typing import Dict, Any, Optional, Union, List
-
-# Attempt SALib imports
-try:
-    from SALib.sample import morris as morris_sample
-    from SALib.sample import saltelli
-    from SALib.analyze import morris as morris_analyze
-    from SALib.analyze import sobol
-    HAVE_SALIB = True
-except ImportError:
-    HAVE_SALIB = False
-    morris_sample = None
-    morris_analyze = None
-    saltelli = None
-    sobol = None
-
-
-###############################################################################
-# 1) HELPERS FOR CATEGORICAL ENCODING & NAME BUILD
-###############################################################################
-
-def encode_categorical_if_known(param_name: str, param_value) -> Optional[float]:
+def find_vent_overrides(
+    building_id,
+    building_function,
+    age_range,
+    scenario,
+    calibration_stage,
+    user_config
+):
     """
-    Tries to interpret 'param_value' as numeric:
-      1) Direct float conversion
-      2) If that fails, attempt known label encodings
-      3) Return None if unknown => skip param
-
-    Modify or expand the logic as you see fit to cover more discrete strings.
+    Return a list of user_config rows that match all provided criteria:
+      - building_id
+      - building_function
+      - age_range
+      - scenario
+      - calibration_stage
     """
-    if param_value is None or pd.isna(param_value):
-        return None
-
-    # (A) Try direct float conversion
-    try:
-        return float(param_value)
-    except (ValueError, TypeError):
-        pass  # not a direct float
-
-    # (B) Attempt known label encodings
-
-    # Example 1: "Electricity" -> 0.0, "Gas" -> 1.0
-    if param_name.lower().endswith("fuel_type"):
-        if param_value == "Electricity":
-            return 0.0
-        elif param_value == "Gas":
-            return 1.0
-        return None
-
-    # Example 2: Roughness => "MediumRough" -> 2.0, etc.
-    if "roughness" in param_name.lower():
-        rough_map = {
-            "Smooth": 0.0,
-            "MediumSmooth": 1.0,
-            "MediumRough": 2.0,
-            "Rough": 3.0
-        }
-        if param_value in rough_map:
-            return rough_map[param_value]
-        return None
-
-    # Example 3: "Yes"/"No" => 1.0 / 0.0
-    if param_value in ["Yes", "No"]:
-        return 1.0 if param_value == "Yes" else 0.0
-
-    # Example 4: "SpectralAverage" => encode as 0.0, or skip
-    if param_value == "SpectralAverage":
-        return 0.0
-
-    # Example 5: Generic "Electricity"/"Gas" if not caught above:
-    if param_value == "Electricity":
-        return 0.0
-    elif param_value == "Gas":
-        return 1.0
-
-    # If we get here => no recognized encoding => skip
-    return None
-
-
-def build_unified_param_name(row: pd.Series) -> str:
-    """
-    Combine columns (zone_name, object_name, sub_key, param_name)
-    to produce a single unique param_name in the final DataFrame.
-    Modify to your preference.
-    """
-    base_name = str(row.get("param_name", "UnknownParam"))
-    name_parts = []
-
-    zname = row.get("zone_name", None)
-    if pd.notna(zname) and isinstance(zname, str) and zname.strip():
-        name_parts.append(zname.strip())
-
-    oname = row.get("object_name", None)
-    if pd.notna(oname) and isinstance(oname, str) and oname.strip():
-        name_parts.append(oname.strip())
-
-    skey = row.get("sub_key", None)
-    if pd.notna(skey) and isinstance(skey, str) and skey.strip():
-        name_parts.append(skey.strip())
-
-    # Finally the base param_name
-    name_parts.append(base_name)
-
-    # Join with double underscore
-    return "__".join(name_parts)
-
-
-###############################################################################
-# 2) LOADING SCENARIO PARAMS
-###############################################################################
-
-def load_scenario_params(scenario_folder: str) -> pd.DataFrame:
-    """
-    Reads scenario_params_*.csv from scenario_folder, merges them into
-    a single DataFrame with columns:
-      ["scenario_index", "param_name", "assigned_value", "param_min", "param_max", "ogc_fid", "source_file"]
-    and attempts to convert assigned_value to float or a known label-encoded numeric.
-
-    If it cannot be encoded => we skip that row.
-    """
-    scenario_files = [
-        "scenario_params_dhw.csv",
-        "scenario_params_elec.csv",
-        "scenario_params_fenez.csv",
-        "scenario_params_hvac.csv",
-        "scenario_params_vent.csv"
-    ]
-
-    all_rows = []
-
-    for fname in scenario_files:
-        fpath = os.path.join(scenario_folder, fname)
-        if not os.path.isfile(fpath):
-            continue
-
-        df_raw = pd.read_csv(fpath)
-        if df_raw.empty:
-            continue
-
-        for _, row in df_raw.iterrows():
-            scenario_index = row.get("scenario_index", None)
-            unified_name = build_unified_param_name(row)
-
-            # assigned_value might be 'assigned_value' or 'param_value'
-            val = row.get("assigned_value", None)
-            if val is None or pd.isna(val):
-                val = row.get("param_value", None)
-
-            # Attempt to convert/encode
-            numeric_val = encode_categorical_if_known(unified_name, val)
-            if numeric_val is None:
-                print(f"[WARNING] Skipping param '{unified_name}' => "
-                      f"no numeric encoding for value: {val}")
+    matches = []
+    if user_config:
+        for row in user_config:
+            # building_id match if present
+            if "building_id" in row and row["building_id"] != building_id:
                 continue
-
-            # param_min / param_max
-            pmin = row.get("param_min", np.nan)
-            pmax = row.get("param_max", np.nan)
-
-            # ogc_fid
-            ogc_fid = row.get("ogc_fid", None)
-
-            all_rows.append({
-                "scenario_index": scenario_index,
-                "param_name": unified_name,
-                "assigned_value": numeric_val,
-                "param_min": pmin,
-                "param_max": pmax,
-                "ogc_fid": ogc_fid,
-                "source_file": fname
-            })
-
-    if not all_rows:
-        print(f"[WARNING] No valid numeric parameters found in '{scenario_folder}' (all skipped?)")
-        return pd.DataFrame()
-
-    return pd.DataFrame(all_rows)
+            # building_function match if present
+            if "building_function" in row and row["building_function"] != building_function:
+                continue
+            # age_range match if present
+            if "age_range" in row and row["age_range"] != age_range:
+                continue
+            # scenario match if present
+            if "scenario" in row and row["scenario"] != scenario:
+                continue
+            # calibration_stage match if present
+            if "calibration_stage" in row and row["calibration_stage"] != calibration_stage:
+                continue
+            matches.append(row)
+    return matches
 
 
-###############################################################################
-# 3) CORRELATION-BASED SENSITIVITY (SINGLE or MULTIPLE Variables)
-###############################################################################
-
-def correlation_sensitivity(
-    df_scenarios: pd.DataFrame,
-    df_results: pd.DataFrame,
-    target_variables: Union[str, List[str]],
-    scenario_index_col: str = "scenario_index",
-    assigned_val_col: str = "assigned_value"
-) -> pd.DataFrame:
+def pick_val_with_range(
+    rng_tuple,
+    strategy="A",
+    log_dict=None,
+    param_name=None
+):
     """
-    Performs correlation-based sensitivity between each parameter and
-    one or more target variables from the results.
+    rng_tuple = (min_val, max_val) or None.
+    strategy  = "A"=>midpoint, "B"=>random, "C"=>pick min, etc.
+    log_dict  => optional dictionary for storing final picks.
+    param_name=> e.g. "infiltration_base", "fan_pressure", etc.
 
-    If target_variables is a single string, we produce a DF with:
-       [Parameter, Correlation, AbsCorrelation]
+    Returns the chosen numeric value.
+    Also logs (param_name + param_name_range) if log_dict is provided.
+    """
+    if rng_tuple is None:
+        return 0.0  # fallback => 0
 
-    If target_variables is a list of strings, we produce one row per param,
-    with correlation columns for each variable, e.g.:
-       [Parameter,
-        Corr_<var1>, AbsCorr_<var1>,
-        Corr_<var2>, AbsCorr_<var2>, ...
-       ]
+    min_v, max_v = rng_tuple
+
+    # pick final
+    if strategy == "A":
+        chosen = (min_v + max_v) / 2.0
+    elif strategy == "B":
+        chosen = random.uniform(min_v, max_v)
+    elif strategy == "C":
+        chosen = min_v  # pick min
+    else:
+        chosen = min_v  # default => pick min
+
+    if log_dict is not None and param_name:
+        # store the numeric range
+        log_dict[f"{param_name}_range"] = (min_v, max_v)
+        # store the final
+        log_dict[param_name] = chosen
+
+    return chosen
+
+
+def assign_ventilation_params_with_overrides(
+    building_id=None,
+    building_function="residential",
+    age_range="2015 and later",
+    scenario="scenario1",
+    calibration_stage="pre_calibration",
+    strategy="A",         # "A" => midpoint, "B" => random, "C" => min, etc.
+    random_seed=None,
+    user_config_vent=None,     # possibly a list of override rows
+    assigned_vent_log=None,    # dictionary to store final picks if desired
+    infiltration_key=None,     # e.g. "two_and_a_half_story_house"
+    year_key=None,             # e.g. "1970-1992"
+    is_residential=True,
+    default_flow_exponent=0.67
+):
+    """
+    Returns a dict containing:
+        {
+          "infiltration_base": float,
+          "infiltration_base_range": (min, max),
+          "year_factor": float,
+          "year_factor_range": (min, max),
+          "system_type": str,
+          "fan_pressure": float,
+          "fan_pressure_range": (min, max),
+          "f_ctrl": float,
+          "f_ctrl_range": (min, max),
+          "hrv_eff": float,
+          "hrv_eff_range": (min, max),
+          "infiltration_schedule_name": str,
+          "ventilation_schedule_name": str,
+          "flow_exponent": default_flow_exponent
+        }
 
     Steps:
-      1) Pivot df_scenarios => wide (index=scenario_index, columns=param_name)
-      2) Melt df_results => sum across days => pivot wide so each variable has
-         its own column.
-      3) Merge scenario pivot with results pivot
-      4) Correlate each param col with each variable col
-
-    Returns a DataFrame of correlation results.
+      1) Look up default ranges from ventilation_lookup (scenario, calibration_stage).
+      2) Merge user overrides => modifies these ranges or sets fixed values.
+      3) Use 'strategy' to pick final numeric values from each range.
+      4) Return the final assigned dictionary, which includes both final picks & range info.
+      5) Optionally log them to assigned_vent_log if provided.
     """
-    # Normalize target_variables to a list
-    if isinstance(target_variables, str):
-        target_vars_list = [target_variables]
-    elif isinstance(target_variables, list):
-        target_vars_list = target_variables
+    if random_seed is not None:
+        random.seed(random_seed)
+
+    # 1) Fallback checks
+    if scenario not in ventilation_lookup:
+        scenario = "scenario1"
+    if calibration_stage not in ventilation_lookup[scenario]:
+        calibration_stage = "pre_calibration"
+
+    stage_dict = ventilation_lookup[scenario][calibration_stage]
+
+    # Prepare a local dictionary for logging (if assigned_vent_log is used).
+    # We'll store picks in log_dict and also keep them in the final 'assigned' dict.
+    log_dict = None
+    if assigned_vent_log is not None:
+        if building_id not in assigned_vent_log:
+            assigned_vent_log[building_id] = {}
+        log_dict = assigned_vent_log[building_id]
+
+    # 2) Default infiltration_base range from infiltration_key
+    if is_residential:
+        res_infil = stage_dict["residential_infiltration_range"]
+        infiltration_base_rng = res_infil.get(infiltration_key, (1.0, 1.0))
+        sys_ctrl_ranges = stage_dict["system_control_range_res"]
     else:
-        raise ValueError("target_variables must be a string or a list of strings.")
+        nonres_infil = stage_dict["non_res_infiltration_range"]
+        infiltration_base_rng = nonres_infil.get(infiltration_key, (0.5, 0.5))
+        sys_ctrl_ranges = stage_dict["system_control_range_nonres"]
 
-    # 1) Pivot scenario => wide
-    pivot_df = df_scenarios.pivot_table(
-        index=scenario_index_col,
-        columns="param_name",
-        values=assigned_val_col,
-        aggfunc="first"
-    ).reset_index()
+    # 3) year_factor range
+    year_factor_rng = stage_dict["year_factor_range"].get(year_key, (1.0, 1.0))
 
-    # 2) Melt results & sum across days
-    if "BuildingID" in df_results.columns and scenario_index_col != "BuildingID":
-        df_results = df_results.rename(columns={"BuildingID": scenario_index_col})
+    # 4) default system_type => "A" if residential else "D"
+    default_system_type = "A" if is_residential else "D"
+    system_type_final = default_system_type
 
-    melted = df_results.melt(
-        id_vars=[scenario_index_col, "VariableName"],
-        var_name="Day",
-        value_name="Value"
-    )
-    daily_sum = melted.groupby([scenario_index_col, "VariableName"])["Value"].sum().reset_index()
-    daily_sum.rename(columns={"Value": "SumValue"}, inplace=True)
-
-    # 3) Pivot variables => each var a column
-    #    If multiple target variables, we want them all to appear as columns
-    #    in the pivot. If you have more variables than in target_vars_list,
-    #    that's OK; we can keep them, or filter them.
-    pivot_results = daily_sum.pivot(
-        index=scenario_index_col,
-        columns="VariableName",
-        values="SumValue"
-    ).reset_index()
-
-    # If you want to filter pivot_results to only keep the target vars:
-    all_cols = list(pivot_results.columns)
-    # the first is scenario_index_col, so skip it
-    keep_cols = [scenario_index_col]
-    # keep only columns in target_vars_list if they exist
-    for varname in target_vars_list:
-        if varname in all_cols:
-            keep_cols.append(varname)
-    pivot_results = pivot_results[keep_cols]
-
-    # 4) Merge scenario pivot with results pivot
-    merged = pd.merge(
-        pivot_df,
-        pivot_results,
-        on=scenario_index_col,
-        how="inner"
-    )
-
-    # Now columns = [scenario_index, paramA, paramB, ..., var1, var2, ...]
-    # We do correlation paramX vs. varY for each pair
-    # param_cols are the scenario param columns, var_cols are the target variable columns
-    var_cols = [c for c in pivot_results.columns if c != scenario_index_col]
-    param_cols = [c for c in pivot_df.columns if c != scenario_index_col]
-
-    # If there's only 1 target var, produce the old layout.
-    if len(var_cols) == 1:
-        var_col = var_cols[0]
-        corr_list = []
-        for col in param_cols:
-            if pd.api.types.is_numeric_dtype(merged[col]):
-                cval = merged[[col, var_col]].corr().iloc[0, 1]
-                corr_list.append((col, cval))
-            else:
-                corr_list.append((col, np.nan))
-        corr_df = pd.DataFrame(corr_list, columns=["Parameter", "Correlation"])
-        corr_df["AbsCorrelation"] = corr_df["Correlation"].abs()
-        corr_df.sort_values("AbsCorrelation", ascending=False, inplace=True)
-        return corr_df
-
-    # Else multiple variables => produce one row per param, with correlation columns for each var
-    # e.g. param, Corr_var1, AbsCorr_var1, Corr_var2, AbsCorr_var2, ...
-    corr_rows = []
-    for col in param_cols:
-        row_dict = {"Parameter": col}
-        if not pd.api.types.is_numeric_dtype(merged[col]):
-            # skip or store NaNs
-            for v in var_cols:
-                row_dict[f"Corr_{v}"] = np.nan
-                row_dict[f"AbsCorr_{v}"] = np.nan
-        else:
-            # param is numeric
-            for v in var_cols:
-                if not pd.api.types.is_numeric_dtype(merged[v]):
-                    row_dict[f"Corr_{v}"] = np.nan
-                    row_dict[f"AbsCorr_{v}"] = np.nan
-                else:
-                    cval = merged[[col, v]].corr().iloc[0, 1]
-                    row_dict[f"Corr_{v}"] = cval
-                    row_dict[f"AbsCorr_{v}"] = abs(cval)
-        corr_rows.append(row_dict)
-
-    corr_df = pd.DataFrame(corr_rows)
-    # Optionally you can sort by one variable's AbsCorr_ if you want:
-    # e.g. if the first var is var_cols[0], sort by that
-    # but let's just leave it unsorted or sort by "Parameter"
-    corr_df.sort_values("Parameter", inplace=True)
-    return corr_df
-
-
-###############################################################################
-# 4) SALib UTILS: EXTRACT RANGES, BUILD PROBLEM
-###############################################################################
-
-def extract_parameter_ranges(
-    merged_df: pd.DataFrame,
-    param_name_col: str = "param_name",
-    assigned_val_col: str = "assigned_value",
-    param_min_col: str = "param_min",
-    param_max_col: str = "param_max"
-) -> pd.DataFrame:
-    """
-    Builds DF [name, min_value, max_value].
-    If param_min / param_max are missing/invalid, fallback to ±20% around assigned_value.
-    """
-    out_rows = []
-    unique_params = merged_df[param_name_col].unique()
-    for p in unique_params:
-        sub = merged_df[merged_df[param_name_col] == p]
-        row = sub.iloc[0]  # any row for param p
-
-        assigned_val = row.get(assigned_val_col, np.nan)
-        if pd.isna(assigned_val):
-            continue
-
-        pmin = row.get(param_min_col, np.nan)
-        pmax = row.get(param_max_col, np.nan)
-        try:
-            pmin = float(pmin)
-        except:
-            pmin = np.nan
-        try:
-            pmax = float(pmax)
-        except:
-            pmax = np.nan
-
-        if np.isnan(pmin) or np.isnan(pmax) or (pmin >= pmax):
-            base = float(assigned_val)
-            delta = abs(base) * 0.2
-            pmin = base - delta
-            pmax = base + delta
-            if pmin >= pmax:
-                pmax += 1e-4
-
-        out_rows.append({
-            "name": p,
-            "min_value": pmin,
-            "max_value": pmax
-        })
-
-    return pd.DataFrame(out_rows)
-
-
-def build_salib_problem(params_df: pd.DataFrame) -> Dict[str, Any]:
-    """
-    Convert DF [name, min_value, max_value] => SALib problem dict
-    """
-    return {
-        "num_vars": len(params_df),
-        "names": params_df["name"].tolist(),
-        "bounds": [
-            [row["min_value"], row["max_value"]]
-            for _, row in params_df.iterrows()
-        ]
-    }
-
-
-###############################################################################
-# 5) SALib: MORRIS & SOBOL
-###############################################################################
-
-def default_simulation_function(param_dict: Dict[str, float]) -> float:
-    """
-    Example: sum of param_dict + random noise.
-    Replace with your E+ or Surrogate call if you want real analysis.
-    """
-    base_sum = sum(param_dict.values())
-    noise = np.random.uniform(-0.5, 0.5)
-    return base_sum + noise
-
-
-def run_morris_method(params_meta: pd.DataFrame, simulate_func, n_trajectories=10, num_levels=4):
-    """
-    SALib Morris
-    """
-    if not HAVE_SALIB:
-        raise ImportError("SALib not installed. Cannot run Morris.")
-    problem = build_salib_problem(params_meta)
-    X = morris_sample.sample(problem, N=n_trajectories, num_levels=num_levels)
-    Y = []
-    for row in X:
-        param_dict = {}
-        for i, name in enumerate(problem["names"]):
-            param_dict[name] = row[i]
-        Y.append(simulate_func(param_dict))
-    Y = np.array(Y)
-    res = morris_analyze.analyze(problem, X, Y, conf_level=0.95, print_to_console=False)
-    return res, X, Y
-
-
-def run_sobol_method(params_meta: pd.DataFrame, simulate_func, n_samples=256):
-    """
-    SALib Sobol
-    """
-    if not HAVE_SALIB:
-        raise ImportError("SALib not installed. Cannot run Sobol.")
-    problem = build_salib_problem(params_meta)
-    X = saltelli.sample(problem, n_samples, calc_second_order=True)
-    Y = []
-    for row in X:
-        param_dict = {}
-        for i, name in enumerate(problem["names"]):
-            param_dict[name] = row[i]
-        Y.append(simulate_func(param_dict))
-    Y = np.array(Y)
-    sres = sobol.analyze(problem, Y, calc_second_order=True, print_to_console=False)
-    return sres, X, Y
-
-
-###############################################################################
-# 6) MAIN ORCHESTRATION
-###############################################################################
-def run_sensitivity_analysis(
-    scenario_folder: str,
-    method: str = "morris",
-    results_csv: Optional[str] = None,
-    target_variable: Union[str, List[str], None] = None,
-    output_csv: str = "sensitivity_output.csv",
-    n_morris_trajectories: int = 10,
-    num_levels: int = 4,
-    n_sobol_samples: int = 256
-):
-    """
-    Called from main.py to do correlation, Morris, or Sobol sensitivity.
-    Now supports multiple target variables in correlation-based approach.
-
-    :param scenario_folder: path to folder with scenario_params_*.csv
-    :param method: "correlation", "morris", or "sobol"
-    :param results_csv: path to results CSV (for correlation)
-    :param target_variable: string or list of strings (for correlation).
-    :param output_csv: results file
-    :param n_morris_trajectories: int
-    :param num_levels: Morris design
-    :param n_sobol_samples: int
-    """
-    print(f"[INFO] run_sensitivity_analysis => method={method}, folder='{scenario_folder}'")
-
-    # 1) Load scenario parameters
-    df_params = load_scenario_params(scenario_folder)
-    if df_params.empty:
-        print("[WARNING] No numeric scenario parameters => no analysis.")
-        return
-
-    # 2) If correlation-based
-    if method.lower() == "correlation":
-        if not results_csv or not os.path.isfile(results_csv):
-            raise ValueError("For correlation-based, must provide a valid results_csv.")
-        if not target_variable:
-            raise ValueError("For correlation-based, must provide target_variable (string or list).")
-
-        df_res = pd.read_csv(results_csv)
-        corr_df = correlation_sensitivity(
-            df_scenarios=df_params,
-            df_results=df_res,
-            target_variables=target_variable
-        )
-        corr_df.to_csv(output_csv, index=False)
-        print(f"[INFO] Correlation-based results => {output_csv}")
-        return
-
-    # 3) SALib-based => extract ranges
-    params_meta = extract_parameter_ranges(df_params)
-    if params_meta.empty:
-        print("[WARNING] All parameters were invalid or had no numeric data => no SALib analysis.")
-        return
-
-    # Replace with real E+ or surrogate
-    simulate_func = default_simulation_function
-
-    if method.lower() == "morris":
-        # Morris
-        res, X, Y = run_morris_method(
-            params_meta=params_meta,
-            simulate_func=simulate_func,
-            n_trajectories=n_morris_trajectories,
-            num_levels=num_levels
-        )
-        df_out = pd.DataFrame({
-            "param": params_meta["name"].values,
-            "mu_star": res["mu_star"],
-            "mu_star_conf": res["mu_star_conf"],
-            "sigma": res["sigma"]
-        })
-        df_out.to_csv(output_csv, index=False)
-        print(f"[INFO] Morris sensitivity results => {output_csv}")
-
-    elif method.lower() == "sobol":
-        # Sobol
-        sres, X, Y = run_sobol_method(
-            params_meta=params_meta,
-            simulate_func=simulate_func,
-            n_samples=n_sobol_samples
-        )
-        df_out = pd.DataFrame({
-            "param": params_meta["name"].values,
-            "S1": sres["S1"],
-            "S1_conf": sres["S1_conf"],
-            "ST": sres["ST"],
-            "ST_conf": sres["ST_conf"]
-        })
-        df_out.to_csv(output_csv, index=False)
-        print(f"[INFO] Sobol sensitivity results => {output_csv}")
-
-    else:
-        raise ValueError(f"Unknown method='{method}'. Must be 'correlation','morris','sobol'.")
-
-  --- File Contents End ---
-
-  File: unified_surrogate.py
-  --- File Contents Start ---
-"""
-unified_surrogate.py
-
-Purpose:
-  1) Loads scenario-based parameter CSVs (dhw, elec, fenez, hvac, vent) from 
-     the scenario_folder, converting any known categorical text (e.g. "Electricity") 
-     to numeric. Skips unknown text values.
-  2) Pivots them so each scenario is one row, each parameter is one column.
-  3) Loads simulation results (like merged_daily_mean_mocked.csv) which 
-     has columns [BuildingID, VariableName, Day1, Day2, ...].
-  4) Sums daily columns => "TotalEnergy_J" per (BuildingID, VariableName).
-  5) Merges scenario data with E+ results, focusing on a single or multiple 
-     target_variable(s).
-  6) Trains a RandomForest surrogate (single-output if target_variable is a string, 
-     multi-output if it's a list).
-  7) Saves the fitted model and the list of feature columns for future predictions.
-
-Typical usage in main.py:
-    if sur_cfg.get("perform_surrogate", False):
-        df_scen = sur_load_scenario_params(scenario_folder)
-        pivot_df = pivot_scenario_params(df_scen)
-        # optional: pivot_df = filter_top_parameters(pivot_df, "morris_sensitivity.csv", top_n=5)
-        df_sim = load_sim_results(results_csv)
-        df_agg = aggregate_results(df_sim)
-        merged_df = merge_params_with_results(pivot_df, df_agg, target_var)
-        build_and_save_surrogate(
-            df_data=merged_df,
-            target_col=target_var,
-            model_out_path=model_out,
-            columns_out_path=cols_out,
-            test_size=test_size
-        )
-
-Author: Your Team
-"""
-
-import os
-import pandas as pd
-import numpy as np
-import joblib
-from typing import Optional, List, Union
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split, RandomizedSearchCV
-from sklearn.multioutput import MultiOutputRegressor
-from sklearn.metrics import r2_score, mean_absolute_error
-
-
-###############################################################################
-# 1) HELPER: Encode known text -> numeric
-###############################################################################
-
-def encode_categorical_if_known(param_name: str, param_value) -> Optional[float]:
-    """
-    1) Attempt float conversion
-    2) If fails, check known label encodings
-    3) If still unknown => return None => skip row
-
-    Modify or expand to handle your typical discrete strings.
-    """
-    if param_value is None or pd.isna(param_value):
-        return None
-
-    # (A) Direct float conversion
-    try:
-        return float(param_value)
-    except (ValueError, TypeError):
+    # 5) fan_pressure => can be looked up from stage_dict["fan_pressure_range"] if needed
+    #    but often it may not be subdivided by infiltration_key. We'll store a fallback
+    fan_pressure_rng = (0.0, 0.0)
+    if "fan_pressure_range" in stage_dict:
+        # Example: we might have:
+        #  stage_dict["fan_pressure_range"] = {
+        #     "res_mech":(40,60), "nonres_intake":(90,110), ...
+        #  }
+        # But we don't necessarily know which subkey to pick. 
+        # For now let's keep it as (0,0) unless user override sets it.
         pass
 
-    # (B) Known label encodings
+    # 6) f_ctrl => pick from system_control_range (depending on system_type)
+    if system_type_final in sys_ctrl_ranges:
+        f_ctrl_rng = sys_ctrl_ranges[system_type_final].get("f_ctrl_range", (1.0, 1.0))
+    else:
+        f_ctrl_rng = (1.0, 1.0)
 
-    # Example: "Electricity" => 0.0, "Gas" => 1.0
-    if param_value == "Electricity":
-        return 0.0
-    elif param_value == "Gas":
-        return 1.0
+    # 7) HRV => only relevant if system_type=="D"
+    hrv_eff_rng = (0.0, 0.0)
+    if "hrv_sensible_eff_range" in stage_dict:
+        hrv_eff_rng = stage_dict["hrv_sensible_eff_range"]
 
-    # Example: Roughness
-    rough_map = {
-        "Smooth": 0.0,
-        "MediumSmooth": 1.0,
-        "MediumRough": 2.0,
-        "Rough": 3.0
+    # 8) apply user overrides
+    #    We'll scan for rows that match (bldg_id, building_function, etc.) 
+    #    and override infiltration_base, year_factor, system_type, fan_pressure, f_ctrl, hrv_eff, schedules, ...
+    matches = find_vent_overrides(
+        building_id or 0,
+        building_function or "residential",
+        age_range or "2015 and later",
+        scenario or "scenario1",
+        calibration_stage,
+        user_config_vent
+    )
+
+    def override_range(current_range, row):
+        """
+        If row has 'fixed_value', convert it to (val, val).
+        If row has 'min_val' and 'max_val', return that tuple.
+        Otherwise return current_range.
+        """
+        if "fixed_value" in row:
+            val = row["fixed_value"]
+            # if numeric, store as (val,val). If string, we'll handle separately below.
+            try:
+                f = float(val)
+                return (f, f)
+            except (ValueError, TypeError):
+                # it's a string => return current_range, let separate logic handle
+                return current_range
+        elif "min_val" in row and "max_val" in row:
+            return (row["min_val"], row["max_val"])
+        return current_range
+
+    # Potential placeholders for schedule overrides
+    infiltration_sched_name = "AlwaysOnSched"
+    ventilation_sched_name  = "VentSched_DayNight"
+
+    for row in matches:
+        pname = row.get("param_name", "")
+        if pname == "infiltration_base":
+            infiltration_base_rng = override_range(infiltration_base_rng, row)
+
+        elif pname == "year_factor":
+            year_factor_rng = override_range(year_factor_rng, row)
+
+        elif pname == "system_type":
+            # If user sets a fixed_value => override system_type_final
+            if "fixed_value" in row:
+                system_type_final = row["fixed_value"]
+
+        elif pname == "fan_pressure":
+            fan_pressure_rng = override_range(fan_pressure_rng, row)
+
+        elif pname == "f_ctrl":
+            f_ctrl_rng = override_range(f_ctrl_rng, row)
+
+        elif pname == "hrv_eff":
+            hrv_eff_rng = override_range(hrv_eff_rng, row)
+
+        elif pname == "infiltration_schedule_name":
+            # override infiltration_sched_name if fixed_value is present
+            if "fixed_value" in row:
+                infiltration_sched_name = row["fixed_value"]
+
+        elif pname == "ventilation_schedule_name":
+            # override ventilation_sched_name if fixed_value is present
+            if "fixed_value" in row:
+                ventilation_sched_name = row["fixed_value"]
+
+    # 8b) If system_type_final == "D", we might pick from hrv_eff_rng 
+    #     but if it's "A","B","C", set hrv_eff to 0
+    # (We do that picking below with pick_val_with_range.)
+
+    # 9) pick final infiltration_base, year_factor, fan_pressure, f_ctrl, hrv_eff
+    #    storing into a local dictionary
+    local_log = {}
+    infiltration_base_val = pick_val_with_range(infiltration_base_rng, strategy, local_log, "infiltration_base")
+    year_factor_val       = pick_val_with_range(year_factor_rng,       strategy, local_log, "year_factor")
+    fan_pressure_val      = pick_val_with_range(fan_pressure_rng,      strategy, local_log, "fan_pressure")
+    f_ctrl_val            = pick_val_with_range(f_ctrl_rng,            strategy, local_log, "f_ctrl")
+
+    hrv_eff_val = 0.0
+    if system_type_final == "D":
+        hrv_eff_val = pick_val_with_range(hrv_eff_rng, strategy, local_log, "hrv_eff")
+    else:
+        # store hrv_eff=0, but also store range if we like
+        local_log["hrv_eff_range"] = (0.0, 0.0)
+        local_log["hrv_eff"] = 0.0
+
+    # 10) infiltration/vent schedules => infiltration_sched_name, ventilation_sched_name
+    # We'll store them in local_log as well
+    local_log["infiltration_schedule_name"] = infiltration_sched_name
+    local_log["ventilation_schedule_name"]  = ventilation_sched_name
+
+    # Also store final system_type in local_log
+    local_log["system_type"] = system_type_final
+
+    # 11) Build final assigned dict with *both* the final picks and their ranges
+    #     Because pick_val_with_range stored infiltration_base_range in local_log["infiltration_base_range"], etc.
+    #     We'll combine them in a single dict.
+    assigned = {
+        # infiltration_base (val + range)
+        "infiltration_base": local_log["infiltration_base"],
+        "infiltration_base_range": local_log["infiltration_base_range"],
+
+        # year_factor (val + range)
+        "year_factor": local_log["year_factor"],
+        "year_factor_range": local_log["year_factor_range"],
+
+        # fan_pressure (val + range)
+        "fan_pressure": local_log["fan_pressure"],
+        "fan_pressure_range": local_log["fan_pressure_range"],
+
+        # f_ctrl (val + range)
+        "f_ctrl": local_log["f_ctrl"],
+        "f_ctrl_range": local_log["f_ctrl_range"],
+
+        # hrv_eff (val + range)
+        "hrv_eff": local_log["hrv_eff"],
+        "hrv_eff_range": local_log["hrv_eff_range"],
+
+        # Schedules
+        "infiltration_schedule_name": local_log["infiltration_schedule_name"],
+        "ventilation_schedule_name": local_log["ventilation_schedule_name"],
+
+        # System type
+        "system_type": local_log["system_type"],
+
+        # Flow exponent
+        "flow_exponent": default_flow_exponent
     }
-    if param_value in rough_map:
-        return rough_map[param_value]
 
-    # Example: "Yes"/"No" => 1.0 / 0.0
-    if param_value in ["Yes", "No"]:
-        return 1.0 if param_value == "Yes" else 0.0
+    # If logging externally => store in assigned_vent_log[building_id]
+    # e.g. assigned_vent_log[bldg_id]["ventilation_params"] = assigned
+    if log_dict is not None:
+        log_dict["ventilation_params"] = assigned
 
-    # Not recognized => skip
-    return None
+    return assigned
 
 
-###############################################################################
-# 2) SCENARIO LOADING & PIVOT
-###############################################################################
 
-def load_scenario_file(filepath: str) -> pd.DataFrame:
+
+
     """
-    Reads one scenario CSV, ensures a column 'assigned_value' which is numeric.
-    If row can't be converted => skip. Returns a numeric-only DataFrame for that file.
+    Searches a user_config list/dict for any override entries matching the
+    building_id, building_function, age_range, scenario, and calibration_stage.
+    Returns a list of matching dict rows.
+
+    Each 'row' in user_config can specify:
+      - "building_id"
+      - "building_function"
+      - "age_range"
+      - "scenario"
+      - "calibration_stage"
+      - plus override fields for infiltration_base, year_factor, system_type, fan_pressure, f_ctrl, hrv_eff, etc.
+
+    If any of those fields are present in the row and do not match the
+    current building, that row is skipped. Otherwise, the row is considered
+    a match and is returned in the list.
     """
-    df_in = pd.read_csv(filepath)
 
-    # unify to 'assigned_value'
-    if "assigned_value" not in df_in.columns and "param_value" in df_in.columns:
-        df_in.rename(columns={"param_value": "assigned_value"}, inplace=True)
-
-    # We'll keep only rows that produce a numeric assigned_value
-    rows_out = []
-    for _, row in df_in.iterrows():
-        val = row.get("assigned_value", None)
-        if val is None or pd.isna(val):
-            continue
-
-        # Attempt numeric or known label
-        param_name = str(row.get("param_name", ""))
-        num_val = encode_categorical_if_known(param_name, val)
-        if num_val is None:
-            # skip
-            continue
-
-        new_row = row.copy()
-        new_row["assigned_value"] = num_val
-        rows_out.append(new_row)
-
-    if not rows_out:
-        return pd.DataFrame()
-
-    return pd.DataFrame(rows_out)
-
-
-def load_scenario_params(scenario_folder: str) -> pd.DataFrame:
     """
-    Merges scenario_params_{dhw, elec, fenez, hvac, vent}.csv from scenario_folder.
-    Each file is label-encoded. Unknown text -> skipped.
-    Returns a unified DataFrame with columns like:
-      [scenario_index, param_name, assigned_value, ogc_fid, ...]
+    Return a dict with infiltration_base, year_factor, system_type, f_ctrl, fan_pressure,
+    hrv_eff, infiltration_schedule_name, ventilation_schedule_name, etc.
+
+    This function uses:
+      1) The scenario & calibration_stage to locate a sub-dict in 'ventilation_lookup'
+      2) The infiltration_key/year_key to get infiltration & year_factor ranges
+      3) user_config_vent overrides to optionally override any of the above
+      4) A picking strategy (A=midpoint, B=uniform random, C=lower bound) for final selection
+      5) The building_function & usage_key to also fetch schedule_info from 'ventilation_lookup'
+         => infiltration_schedule_name & ventilation_schedule_name
+
+    Then logs final picks into assigned_vent_log if provided (dict-based log).
     """
-    scenario_files = [
-        "scenario_params_dhw.csv",
-        "scenario_params_elec.csv",
-        "scenario_params_fenez.csv",
-        "scenario_params_hvac.csv",
-        "scenario_params_vent.csv"
-    ]
 
-    all_dfs = []
-    for fname in scenario_files:
-        fpath = os.path.join(scenario_folder, fname)
-        if not os.path.isfile(fpath):
-            print(f"[INFO] Not found => {fpath}")
-            continue
-
-        df_scenario = load_scenario_file(fpath)
-        if df_scenario.empty:
-            print(f"[WARN] No numeric row data in => {fpath} (skipped all).")
-        else:
-            # Optionally add a 'source_file' column
-            df_scenario["source_file"] = fname
-            all_dfs.append(df_scenario)
-
-    if not all_dfs:
-        raise FileNotFoundError(f"[ERROR] No scenario CSV with numeric data found in '{scenario_folder}'.")
-    return pd.concat(all_dfs, ignore_index=True)
-
-
-def pivot_scenario_params(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Pivots so each scenario_index is a row, each param_name is a column, assigned_value are cells.
-    Also preserves 'ogc_fid' if present.
-
-    Example final columns:
-      scenario_index, ogc_fid, paramA, paramB, ...
-    """
-    if "scenario_index" not in df.columns or "param_name" not in df.columns or "assigned_value" not in df.columns:
-        raise ValueError("DataFrame must have columns: scenario_index, param_name, assigned_value")
-
-    if "ogc_fid" not in df.columns:
-        df["ogc_fid"] = 0
-
-    pivot_df = df.pivot_table(
-        index=["scenario_index", "ogc_fid"],
-        columns="param_name",
-        values="assigned_value",
-        aggfunc="first"
-    ).reset_index()
-
-    pivot_df.columns.name = None
-    return pivot_df
-
-
-def filter_top_parameters(
-    df_pivot: pd.DataFrame,
-    sensitivity_csv: str,
-    top_n: int,
-    param_col: str = "param",
-    metric_col: str = "mu_star"
-) -> pd.DataFrame:
-    """
-    Reads a Morris sensitivity CSV, picks top_n 'param' by mu_star, 
-    filters df_pivot to only those columns plus scenario_index, ogc_fid.
-    """
-    if not os.path.isfile(sensitivity_csv):
-        print(f"[INFO] Sensitivity file '{sensitivity_csv}' not found => skipping filter.")
-        return df_pivot
-
-    sens_df = pd.read_csv(sensitivity_csv)
-    if param_col not in sens_df.columns or metric_col not in sens_df.columns:
-        print(f"[ERROR] param_col='{param_col}' or metric_col='{metric_col}' not in {sensitivity_csv}.")
-        return df_pivot
-
-    top_params = sens_df.sort_values(metric_col, ascending=False)[param_col].head(top_n).tolist()
-    keep_cols = ["scenario_index", "ogc_fid"] + [p for p in top_params if p in df_pivot.columns]
-    filtered = df_pivot[keep_cols].copy()
-    print(f"[INFO] Filtered pivot from {df_pivot.shape} -> {filtered.shape} using top {top_n} params.")
-    return filtered
-
-
-###############################################################################
-# 3) LOADING & AGGREGATING SIM RESULTS
-###############################################################################
-
-def load_sim_results(results_csv: str) -> pd.DataFrame:
-    """
-    Typically: [BuildingID, VariableName, Day1, Day2, ...]
-    """
-    return pd.read_csv(results_csv)
-
-
-def aggregate_results(df_sim: pd.DataFrame) -> pd.DataFrame:
-    """
-    Sums across days => [BuildingID, VariableName, TotalEnergy_J].
-    Ensures we have "BuildingID", "VariableName".
-    """
-    needed = {"BuildingID", "VariableName"}
-    if not needed.issubset(df_sim.columns):
-        raise ValueError("df_sim must have columns BuildingID, VariableName plus day columns.")
-    melted = df_sim.melt(
-        id_vars=["BuildingID", "VariableName"],
-        var_name="Day",
-        value_name="Value"
-    )
-    daily_sum = melted.groupby(["BuildingID", "VariableName"])["Value"].sum().reset_index()
-    daily_sum.rename(columns={"Value": "TotalEnergy_J"}, inplace=True)
-    return daily_sum
-
-
-def merge_params_with_results(
-    pivot_df: pd.DataFrame,
-    df_agg: pd.DataFrame,
-    target_var: Union[str, List[str], None] = None
-) -> pd.DataFrame:
-    """
-    Merges pivoted scenario data (with columns [scenario_index->BuildingID, paramA..])
-    + aggregated results => single DataFrame for model training.
-
-    If target_var is None => merges all "VariableName" => multiple rows per building.
-    If str => picks that var => single column => rename to var name => merges one row per building
-    If list => pivot each var => multi columns => merges one row per building => multi-output
-    """
-    merged = pivot_df.copy()
-    # rename scenario_index => BuildingID
-    merged.rename(columns={"scenario_index": "BuildingID"}, inplace=True)
-
-    if target_var is None:
-        # Just join, no filtering => multiple rows
-        return pd.merge(merged, df_agg, on="BuildingID", how="inner")
-
-    if isinstance(target_var, str):
-        # single var => one column
-        df_sub = df_agg[df_agg["VariableName"] == target_var].copy()
-        df_sub.rename(columns={"TotalEnergy_J": target_var}, inplace=True)
-        df_sub.drop(columns=["VariableName"], inplace=True, errors="ignore")
-        return pd.merge(merged, df_sub, on="BuildingID", how="inner")
-
-    if isinstance(target_var, list):
-        # multi-output => pivot each var => multiple columns
-        df_sub = df_agg[df_agg["VariableName"].isin(target_var)]
-        pivot_vars = df_sub.pivot(
-            index="BuildingID",
-            columns="VariableName",
-            values="TotalEnergy_J"
-        ).reset_index()
-        return pd.merge(merged, pivot_vars, on="BuildingID", how="inner")
-
-    raise ValueError("target_var must be None, str, or list[str].")
-
-
-###############################################################################
-# 4) SURROGATE TRAINING
-###############################################################################
-
-def build_and_save_surrogate(
-    df_data: pd.DataFrame,
-    target_col: Union[str, List[str]] = "TotalEnergy_J",
-    model_out_path: str = "surrogate_model.joblib",
-    columns_out_path: str = "surrogate_columns.joblib",
-    test_size: float = 0.3,
-    random_state: int = 42
-):
-    """
-    1) Splits data into X,y. If target_col is a single string => single-output.
-       If list => multi-output.
-    2) Builds a RandomForest via RandomizedSearchCV => best params.
-    3) If multi-output => wraps in MultiOutputRegressor.
-    4) Saves model + list of feature columns.
-
-    Returns (model, feature_cols).
-    """
-    # 1) Determine target columns
-    if isinstance(target_col, str):
-        if target_col not in df_data.columns:
-            print(f"[ERROR] target_col '{target_col}' not in df_data.")
-            return None, None
-        y_data = df_data[[target_col]].copy()
-        multi_output = False
-    elif isinstance(target_col, list):
-        missing = [t for t in target_col if t not in df_data.columns]
-        if missing:
-            print(f"[ERROR] Some target columns missing: {missing}")
-            return None, None
-        y_data = df_data[target_col].copy()
-        multi_output = (len(target_col) > 1)
-    else:
-        print("[ERROR] target_col must be str or list[str].")
-        return None, None
-
-    # 2) Build features
-    exclude_cols = ["BuildingID", "ogc_fid", "VariableName", "source_file"]
-    if multi_output:
-        exclude_cols.extend(target_col)
-    else:
-        exclude_cols.append(target_col)
-
-    candidate_cols = [c for c in df_data.columns if c not in exclude_cols]
-    # Keep only numeric columns
-    numeric_cols = [c for c in candidate_cols if pd.api.types.is_numeric_dtype(df_data[c])]
-
-    if not numeric_cols:
-        print("[ERROR] No numeric feature columns found => can't train surrogate.")
-        return None, None
-
-    # Drop rows with any NaN in X or y
-    full_df = df_data[numeric_cols + list(y_data.columns)].dropna()
-    if full_df.empty:
-        print("[ERROR] All data is NaN => can't train surrogate.")
-        return None, None
-
-    X_data = full_df[numeric_cols]
-    Y_data = full_df[y_data.columns]
-
-    # Must have enough rows
-    if len(X_data) < 5:
-        print(f"[ERROR] Not enough data => only {len(X_data)} row(s).")
-        return None, None
-
-    # 3) Train/test split
-    X_train, X_test, Y_train, Y_test = train_test_split(
-        X_data, Y_data, test_size=test_size, random_state=random_state
-    )
-
-    # 4) RandomizedSearchCV for best RF params
-    param_dist = {
-        "n_estimators": [50, 100, 200],
-        "max_depth": [None, 5, 10, 20],
-        "max_features": ["auto", "sqrt", 0.5]
-    }
-    base_rf = RandomForestRegressor(random_state=random_state)
-    search = RandomizedSearchCV(
-        base_rf,
-        param_distributions=param_dist,
-        n_iter=10,
-        cv=3,
-        random_state=random_state,
-        n_jobs=-1
-    )
-
-    if multi_output:
-        # Use only first target col for the hyperparam search 
-        # (or do a multi-object approach if you prefer).
-        first_col = Y_train.columns[0]
-        search.fit(X_train, Y_train[first_col].values.ravel())
-        best_params = search.best_params_
-
-        # Then train multi-output
-        best_rf = RandomForestRegressor(random_state=random_state, **best_params)
-        model = MultiOutputRegressor(best_rf)
-        model.fit(X_train, Y_train)
-    else:
-        # Single-output
-        search.fit(X_train, Y_train.values.ravel())
-        best_params = search.best_params_
-        best_rf = RandomForestRegressor(random_state=random_state, **best_params)
-        best_rf.fit(X_train, Y_train.values.ravel())
-        model = best_rf
-
-    # 5) Evaluate
-    Y_pred_train = model.predict(X_train)
-    Y_pred_test  = model.predict(X_test)
-
-    # Ensure shape for multi-output
-    if not multi_output:
-        Y_pred_train = Y_pred_train.reshape(-1, 1)
-        Y_pred_test  = Y_pred_test.reshape(-1, 1)
-
-    print("\n[Surrogate Training Summary]")
-    print(f"Best Params: {best_params}")
-
-    for i, col_name in enumerate(Y_data.columns):
-        r2_train = r2_score(Y_train.iloc[:, i], Y_pred_train[:, i])
-        r2_test  = r2_score(Y_test.iloc[:, i],  Y_pred_test[:, i])
-        mae_test = mean_absolute_error(Y_test.iloc[:, i], Y_pred_test[:, i])
-        print(f"Target='{col_name}': Train R2={r2_train:.3f},  Test R2={r2_test:.3f},  MAE={mae_test:.3f}")
-
-    # 6) Save model & columns
-    joblib.dump(model, model_out_path)
-    joblib.dump(numeric_cols, columns_out_path)
-    print(f"[INFO] Saved surrogate model => {model_out_path}")
-    print(f"[INFO] Saved columns => {columns_out_path}")
-
-    return model, numeric_cols
-
-
-###############################################################################
-# 5) LOADING A TRAINED SURROGATE, PREDICTING
-###############################################################################
-
-def load_surrogate_and_predict(
-    model_path: str,
-    columns_path: str,
-    sample_features: dict
-):
-    """
-    1) Load trained model + feature columns
-    2) Convert sample_features => row DataFrame with the same columns
-    3) predict => returns array
-    """
-    # Load
-    model = joblib.load(model_path)
-    feature_cols = joblib.load(columns_path)
-
-    # Construct DF
-    df_sample = pd.DataFrame([sample_features])
-    # Insert missing columns
-    for col in feature_cols:
-        if col not in df_sample.columns:
-            df_sample[col] = 0.0  # or np.nan
-
-    df_sample = df_sample[feature_cols].fillna(0.0)
-
-    # Predict
-    y_pred = model.predict(df_sample)
-    return y_pred
 
   --- File Contents End ---
 
-  File: __init__.py
+  File: calc_functions.py
   --- File Contents Start ---
+# ventilation/calc_functions.py
+
+import math
+
+def calc_infiltration(
+    infiltration_base,  # e.g. assigned["infiltration_base"] from assign_ventilation_values
+    year_factor,        # assigned["year_factor"] from overrides
+    flow_exponent,      # typically 0.67 (standard infiltration exponent)
+    floor_area_m2       # total building area
+):
+    """
+    Calculate infiltration in m3/s based on an 'infiltration_base' at 10 Pa.
+
+    Steps:
+      1) Multiply infiltration_base by year_factor => qv10_lea_ref (represents
+         infiltration at 10 Pa for the building, e.g. in dm3/s·m2 or similar).
+      2) Convert qv10 => qv1 by applying exponent:
+            qv1 = qv10 * (1/10)^n
+         (n = flow_exponent, e.g. 0.67 per NTA 8800).
+      3) Multiply qv1_lea_ref_per_m2_h by total floor area => infiltration_m3/h.
+      4) Convert infiltration_m3/h => infiltration_m3/s by dividing by 3600.
+
+    NTA 8800 basis:
+      - Table 11.2 prescribes n=0.67 for leak losses (infiltration).
+      - Section 11.2.5 references how infiltration is often reported at 10 Pa
+        and needs converting to 1 Pa. This code parallels that approach.
+
+    Returns infiltration in m3/s.
+    """
+
+    # 1) infiltration_base * year_factor => infiltration at 10 Pa
+    qv10_lea_ref = infiltration_base * year_factor
+
+    # 2) Convert from qv10 to qv1 by (1/10)^exponent
+    qv1_lea_ref_per_m2_h = qv10_lea_ref * (1.0 / 10.0)**flow_exponent
+
+    # 3) Multiply by floor area => infiltration in m3/h
+    infiltration_m3_h = qv1_lea_ref_per_m2_h * floor_area_m2
+
+    # 4) Convert from m3/h => m3/s
+    infiltration_m3_s = infiltration_m3_h / 3600.0
+    return infiltration_m3_s
+
+
+def calc_required_ventilation_flow(
+    building_function,
+    f_ctrl_val,
+    floor_area_m2,
+    usage_key=None
+):
+    """
+    Calculate the required ventilation flow (m3/s).
+
+    Approach:
+      - If residential: 0.9 dm3/s/m2 is used as base, then multiplied by
+        control factor (f_ctrl_val). A minimum of ~126 m3/h is enforced.
+        => 126 m3/h = 35 L/s, typical minimal design flow for dwellings.
+
+      - If non-residential: usage_key (office_area_based, childcare, retail, etc.)
+        references typical design flows (dm3/s/m2). Then multiplied by f_ctrl_val.
+
+    NTA 8800 basis:
+      - In Section 11.2.2.5 or Table 11.8, typical air supply rates are given
+        for various functions. This code uses simplified example values.
+
+    Returns flow in m3/s.
+    """
+
+    if building_function == "residential":
+        # base usage flow in dm3/s
+        qv_uspec = 0.9
+        # multiply by floor area => dm3/s
+        qv_oda_req_des_dm3_s = qv_uspec * floor_area_m2
+        # convert to m3/h
+        qv_oda_req_des_m3_h = qv_oda_req_des_dm3_s * 3.6
+
+        # apply control factor
+        qv_oda_req_m3_h = f_ctrl_val * qv_oda_req_des_m3_h
+
+        # enforce minimum ~126 m3/h
+        if qv_oda_req_m3_h < 126:
+            qv_oda_req_m3_h = 126
+
+        # return m3/s
+        return qv_oda_req_m3_h / 3600.0
+
+    else:
+        # non-res => usage_key references typical design rates
+        usage_flow_map = {
+            "office_area_based": 1.0,  # dm3/s per m2
+            "childcare": 4.8,
+            "retail": 0.6
+        }
+        qv_usage = usage_flow_map.get(usage_key, 1.0)  # fallback 1.0 dm3/s/m2
+        qv_oda_req_des_dm3_s = qv_usage * floor_area_m2
+        qv_oda_req_des_m3_h  = qv_oda_req_des_dm3_s * 3.6
+
+        # apply control factor
+        qv_oda_req_m3_h = f_ctrl_val * qv_oda_req_des_m3_h
+        return qv_oda_req_m3_h / 3600.0
+
+
+def calc_fan_power(fan_pressure, fan_efficiency, flow_m3_s):
+    """
+    Compute fan power in W:
+      P_fan = (fan_pressure * flow_m3_s) / fan_efficiency
+
+    NTA 8800 doesn't provide a direct formula for fan power in W in exactly
+    these terms, but this approach is standard fluid power:
+       Pressure (Pa) * Volumetric Flow (m3/s) = Power in J/s (Watts),
+       then / efficiency to account for fan energy losses.
+
+    fan_pressure: Pa
+    flow_m3_s: m3/s
+    fan_efficiency: fraction (0.0 < eff <= 1.0)
+    returns: fan power in Watts
+    """
+    if fan_efficiency <= 0:
+        fan_efficiency = 0.7
+    return (fan_pressure * flow_m3_s) / fan_efficiency
+
+  --- File Contents End ---
+
+  File: config_systems.py
+  --- File Contents Start ---
+# ventilation/config_systems.py
+
+"""
+Defines a dictionary SYSTEMS_CONFIG with separate entries for:
+  - building_function: "residential" vs. "non_residential"
+  - system_type:       "A", "B", "C", or "D"
+
+Each system entry has:
+  1) "description"                => short text label
+  2) "ventilation_object_type"    => e.g. 'ZONEVENTILATION:DESIGNFLOWRATE'
+  3) "ventilation_type_options"   => a list of possible Ventilation_Type strings
+  4) "range_params"               => dictionary of numeric fields that are stored as (min, max) ranges
+  5) "use_ideal_loads"            => boolean (True if system D uses IdealLoads, etc.)
+
+Later, in your `create_ventilation_systems.py`, you can pick or compute final single values:
+  - either pick a random or midpoint from "Fan_Pressure_Rise" range
+  - or pick one of the "ventilation_type_options", etc.
+"""
+
+SYSTEMS_CONFIG = {
+    "residential": {
+        # -----------------------------------------------------------
+        # System A
+        # -----------------------------------------------------------
+        "A": {
+            "description": "Natural supply + Natural exhaust",
+            "ventilation_object_type": "ZONEVENTILATION:DESIGNFLOWRATE",
+            "ventilation_type_options": [
+                "Natural"  # Could allow more, e.g. "Intake", "Exhaust" if you want
+            ],
+            "range_params": {
+                # If you want a zero fan pressure for natural, but let's keep an example range
+                "Fan_Pressure_Rise": (0.0, 0.0),
+                "Fan_Total_Efficiency": (0.6, 0.8)
+            },
+            "use_ideal_loads": False
+        },
+
+        # -----------------------------------------------------------
+        # System B
+        # -----------------------------------------------------------
+        "B": {
+            "description": "Mechanical supply + Natural infiltration",
+            "ventilation_object_type": "ZONEVENTILATION:DESIGNFLOWRATE",
+            "ventilation_type_options": [
+                "Intake"
+            ],
+            "range_params": {
+                "Fan_Pressure_Rise": (40.0, 60.0),
+                "Fan_Total_Efficiency": (0.65, 0.75)
+            },
+            "use_ideal_loads": False
+        },
+
+        # -----------------------------------------------------------
+        # System C
+        # -----------------------------------------------------------
+        "C": {
+            "description": "Natural supply + Mechanical exhaust",
+            "ventilation_object_type": "ZONEVENTILATION:DESIGNFLOWRATE",
+            "ventilation_type_options": [
+                "Exhaust"
+            ],
+            "range_params": {
+                "Fan_Pressure_Rise": (40.0, 60.0),
+                "Fan_Total_Efficiency": (0.65, 0.75)
+            },
+            "use_ideal_loads": False
+        },
+
+        # -----------------------------------------------------------
+        # System D
+        # -----------------------------------------------------------
+        "D": {
+            "description": "Balanced mechanical (supply + exhaust), with HRV",
+            "ventilation_object_type": "ZONEHVAC:IDEALLOADSAIRSYSTEM",
+            "ventilation_type_options": [
+                "Balanced"
+            ],
+            "range_params": {
+                "Fan_Pressure_Rise": (50.0, 80.0),
+                "Fan_Total_Efficiency": (0.7, 0.85),
+                # Example for HRV fields if you want them here:
+                "Sensible_Heat_Recovery_Effectiveness": (0.70, 0.80),
+                "Latent_Heat_Recovery_Effectiveness": (0.0, 0.0)
+            },
+            "use_ideal_loads": True
+        }
+    },
+
+    "non_residential": {
+        # -----------------------------------------------------------
+        # System A
+        # -----------------------------------------------------------
+        "A": {
+            "description": "Natural supply + Natural exhaust",
+            "ventilation_object_type": "ZONEVENTILATION:DESIGNFLOWRATE",
+            "ventilation_type_options": [
+                "Natural"
+            ],
+            "range_params": {
+                "Fan_Pressure_Rise": (0.0, 0.0),
+                "Fan_Total_Efficiency": (0.5, 0.6)
+            },
+            "use_ideal_loads": False
+        },
+
+        # -----------------------------------------------------------
+        # System B
+        # -----------------------------------------------------------
+        "B": {
+            "description": "Mechanical supply + Natural exhaust",
+            "ventilation_object_type": "ZONEVENTILATION:DESIGNFLOWRATE",
+            "ventilation_type_options": [
+                "Intake"
+            ],
+            "range_params": {
+                "Fan_Pressure_Rise": (90.0, 110.0),
+                "Fan_Total_Efficiency": (0.65, 0.75)
+            },
+            "use_ideal_loads": False
+        },
+
+        # -----------------------------------------------------------
+        # System C
+        # -----------------------------------------------------------
+        "C": {
+            "description": "Natural supply + Mechanical exhaust",
+            "ventilation_object_type": "ZONEVENTILATION:DESIGNFLOWRATE",
+            "ventilation_type_options": [
+                "Exhaust"
+            ],
+            "range_params": {
+                "Fan_Pressure_Rise": (140.0, 160.0),
+                "Fan_Total_Efficiency": (0.70, 0.80)
+            },
+            "use_ideal_loads": False
+        },
+
+        # -----------------------------------------------------------
+        # System D
+        # -----------------------------------------------------------
+        "D": {
+            "description": "Balanced mechanical supply & exhaust (with optional HRV)",
+            "ventilation_object_type": "ZONEHVAC:IDEALLOADSAIRSYSTEM",
+            "ventilation_type_options": [
+                "Balanced"
+            ],
+            "range_params": {
+                "Fan_Pressure_Rise": (100.0, 120.0),
+                "Fan_Total_Efficiency": (0.65, 0.80),
+                "Sensible_Heat_Recovery_Effectiveness": (0.75, 0.85),
+                "Latent_Heat_Recovery_Effectiveness": (0.0, 0.0)
+            },
+            "use_ideal_loads": True
+        }
+    }
+}
+
+  --- File Contents End ---
+
+  File: create_ventilation_systems.py
+  --- File Contents Start ---
+# ventilation/create_ventilation_systems.py
+
+import random
+from idf_objects.ventilation.config_systems import SYSTEMS_CONFIG
+
+def create_ventilation_system(
+    idf,
+    building_function,      # 'residential' or 'non_residential'
+    system_type,            # 'A', 'B', 'C', or 'D'
+    zone_name,
+    infiltration_m3_s,
+    vent_flow_m3_s,
+    infiltration_sched_name="AlwaysOnSched",
+    ventilation_sched_name="VentSched_DayNight",
+    pick_strategy="midpoint"  # or "random"
+):
+    """
+    Creates two objects for the zone:
+      1) A ZONEINFILTRATION:DESIGNFLOWRATE object (always).
+      2) Depending on system_type:
+         - A/B/C => a ZONEVENTILATION:DESIGNFLOWRATE object
+         - D     => modifies an existing ZONEHVAC:IDEALLOADSAIRSYSTEM
+                    (already added by add_HVAC_Ideal_to_all_zones, if used)
+
+    Returns (infiltration_obj, vent_obj_or_ideal_obj).
+    """
+
+    # -------------------------------------------------------
+    # 1) Grab the config for this system
+    # -------------------------------------------------------
+    if building_function not in SYSTEMS_CONFIG:
+        building_function = "residential"
+    if system_type not in SYSTEMS_CONFIG[building_function]:
+        system_type = "A"
+
+    config = SYSTEMS_CONFIG[building_function][system_type]
+
+    # -------------------------------------------------------
+    # 2) Helper to pick a single value from a (min, max) range
+    # -------------------------------------------------------
+    def pick_val(rng):
+        """
+        rng is (min_val, max_val).
+        pick_strategy == 'midpoint' => return average
+        pick_strategy == 'random'   => return random.uniform(...)
+        """
+        if pick_strategy == "random":
+            return random.uniform(rng[0], rng[1])
+        else:
+            # default => midpoint
+            return (rng[0] + rng[1]) / 2.0
+
+    # -------------------------------------------------------
+    # 3) Create infiltration object (ZONEINFILTRATION:DESIGNFLOWRATE)
+    # -------------------------------------------------------
+    iobj = idf.newidfobject("ZONEINFILTRATION:DESIGNFLOWRATE")
+    iobj.Name = f"Infil_{building_function}_{system_type}_{zone_name}"
+
+    # Some E+ versions use .Zone_or_ZoneList_or_Space_or_SpaceList_Name
+    # others use .Zone_or_ZoneList_Name
+    if hasattr(iobj, "Zone_or_ZoneList_or_Space_or_SpaceList_Name"):
+        iobj.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zone_name
+    else:
+        iobj.Zone_or_ZoneList_Name = zone_name
+
+    # Assign infiltration schedule and flow
+    iobj.Schedule_Name = infiltration_sched_name
+    iobj.Design_Flow_Rate_Calculation_Method = "Flow/Zone"
+    iobj.Design_Flow_Rate = infiltration_m3_s
+
+    # -------------------------------------------------------
+    # 4) Prepare final param values from config["range_params"]
+    #    e.g. fan pressure, heat recovery, etc.
+    # -------------------------------------------------------
+    chosen_params = {}
+    range_dict = config.get("range_params", {})
+    for param_name, rng in range_dict.items():
+        chosen_val = pick_val(rng)
+        chosen_params[param_name] = chosen_val
+
+    # Choose from the ventilation_type_options if present
+    ventilation_type_list = config.get("ventilation_type_options", [])
+    if ventilation_type_list:
+        chosen_vent_type = random.choice(ventilation_type_list)
+    else:
+        chosen_vent_type = "Natural"  # fallback if none provided
+
+    # -------------------------------------------------------
+    # 5) If system D => update an existing IdealLoads object
+    #    else => create a ZONEVENTILATION:DESIGNFLOWRATE
+    # -------------------------------------------------------
+    if config["use_ideal_loads"]:
+        # System D => Balanced mechanical => find the existing IdealLoads object
+        ideal_name = f"{zone_name} Ideal Loads"
+        ideal_obj = idf.getobject("ZONEHVAC:IDEALLOADSAIRSYSTEM", ideal_name)
+
+        if ideal_obj:
+            # Example: set fields in the IdealLoads that exist in chosen_params
+            # e.g. if param_name == "Sensible_Heat_Recovery_Effectiveness"
+            for param_field, final_val in chosen_params.items():
+                # We must confirm the IDD field name matches param_field
+                if hasattr(ideal_obj, param_field):
+                    setattr(ideal_obj, param_field, final_val)
+
+            # If desired, you could limit the air flow to 'vent_flow_m3_s' here:
+            #   ideal_obj.Heating_Limit = "LimitFlowRate"
+            #   ideal_obj.Maximum_Heating_Air_Flow_Rate = vent_flow_m3_s
+            #   ideal_obj.Cooling_Limit = "LimitFlowRate"
+            #   ideal_obj.Maximum_Cooling_Air_Flow_Rate = vent_flow_m3_s
+
+            return iobj, ideal_obj
+        else:
+            print(f"[VENT WARNING] {zone_name} Ideal Loads not found; system D creation skipped.")
+            return iobj, None
+
+    else:
+        # Systems A, B, C => create a ZONEVENTILATION:DESIGNFLOWRATE
+        vobj = idf.newidfobject(config["ventilation_object_type"])
+        vobj.Name = f"Vent_{building_function}_{system_type}_{zone_name}"
+        if hasattr(vobj, "Zone_or_ZoneList_or_Space_or_SpaceList_Name"):
+            vobj.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zone_name
+        else:
+            vobj.Zone_or_ZoneList_Name = zone_name
+
+        # Assign the chosen (or default) ventilation schedule and flow
+        vobj.Schedule_Name = ventilation_sched_name
+        vobj.Design_Flow_Rate_Calculation_Method = "Flow/Zone"
+        vobj.Design_Flow_Rate = vent_flow_m3_s
+
+        # Insert system-specific fields if they exist in the object
+        if hasattr(vobj, "Ventilation_Type"):
+            vobj.Ventilation_Type = chosen_vent_type
+
+        if hasattr(vobj, "Fan_Pressure_Rise") and "Fan_Pressure_Rise" in chosen_params:
+            vobj.Fan_Pressure_Rise = chosen_params["Fan_Pressure_Rise"]
+
+        if hasattr(vobj, "Fan_Total_Efficiency") and "Fan_Total_Efficiency" in chosen_params:
+            vobj.Fan_Total_Efficiency = chosen_params["Fan_Total_Efficiency"]
+
+        return iobj, vobj
+
+  --- File Contents End ---
+
+  File: mappings.py
+  --- File Contents Start ---
+# ventilation/mappings.py
+
+def safe_lower(val):
+    """Helper to safely lowercase a string."""
+    if isinstance(val, str):
+        return val.lower()
+    return ""
+
+def map_age_range_to_year_key(age_range_str):
+    """
+    Convert your main DataFrame's age_range
+    into the short keys used in your infiltration/vent lookup or NTA data.
+
+    Now expanded to include:
+      - "1900-2000" => "1900-2000"
+      - "2000-2024" => "2000-2024"
+      - plus older ones like "<1970", "1970-1992", etc.
+    """
+    # You can expand as needed.
+    mapping = {
+        "pre-1970": "<1970",
+        "1970 - 1992": "1970-1992",
+        "1992 - 2005": "1992-2005",
+        "2005 - 2015": "2005-2015",
+        "2015 and later": ">2015",
+        "1900-2000": "1900-2000",
+        "2000-2024": "2000-2024"
+    }
+    return mapping.get(age_range_str, ">2015")  # fallback => >2015
+
+def map_infiltration_key(building_row):
+    """
+    Decide infiltration key from building function + sub-type fields.
+    Updated to handle e.g. 'two_and_a_half_story_house' for certain residential types,
+    or 'meeting_function' for certain non-res types, etc.
+
+    If not recognized, fall back to a perimeter-based logic or default.
+    """
+    bldg_func = safe_lower(building_row.get("building_function", "residential"))
+    if bldg_func == "residential":
+        # 1) check if we have a recognized 'residential_type'
+        res_type = safe_lower(building_row.get("residential_type", ""))
+        if "two-and-a-half-story" in res_type:
+            return "two_and_a_half_story_house"
+        # Could add more if/elif logic for other residential_type strings:
+        # elif "row house" in res_type:
+        #     return "row_house"
+        #
+        # else fallback to perimeter-based approach as in original
+        perimeter = building_row.get("perimeter", 40)
+        if perimeter > 60:
+            return "A_detached"
+        else:
+            return "A_corner"
+
+    else:
+        # Non-res => check 'non_residential_type'
+        nonres_type = safe_lower(building_row.get("non_residential_type", ""))
+        if "meeting function" in nonres_type:
+            return "meeting_function"
+        # else fallback
+        return "office_multi_top"
+
+def map_usage_key(building_row):
+    """
+    For non-res ventilation usage flow reference. 
+    If building is residential => usage_key => None.
+    If it's e.g. 'meeting function' => 'office_area_based' (example).
+    """
+    bldg_func = safe_lower(building_row.get("building_function", "residential"))
+    if bldg_func == "residential":
+        return None
+    else:
+        nonres_type = safe_lower(building_row.get("non_residential_type", ""))
+        if "meeting function" in nonres_type:
+            return "office_area_based"
+        else:
+            return "retail"
+
+def map_ventilation_system(building_row):
+    """
+    Decide system type (A, B, C, or D) from building row.
+    As an example: default 'C' for residential, 'D' for non-res.
+    """
+    bldg_func = safe_lower(building_row.get("building_function", "residential"))
+    if bldg_func == "residential":
+        return "C"  # default mechanical exhaust for res
+    else:
+        return "D"  # default balanced w/ HRV for non-res
+
+  --- File Contents End ---
+
+  File: schedules.py
+  --- File Contents Start ---
+# ventilation/schedules.py
+
+from geomeppy import IDF
+
+def create_always_on_schedule(idf, sched_name="AlwaysOnSched"):
+    """
+    Creates a SCHEDULE:CONSTANT with a Fraction = 1.0
+    for infiltration or ventilation that runs 24/7.
+    """
+    # Check if already exists
+    existing = idf.getobject("SCHEDULE:CONSTANT", sched_name.upper())
+    if existing:
+        return existing  # No need to recreate
+
+    schedule = idf.newidfobject("SCHEDULE:CONSTANT")
+    schedule.Name = sched_name
+    schedule.Schedule_Type_Limits_Name = "Fraction"
+    schedule.Hourly_Value = 1.0
+    return schedule
+
+
+def create_day_night_schedule(idf, sched_name="VentSched_DayNight"):
+    """
+    Day/Night schedule that is 0.5 at night, 1.0 during day.
+    Example: 06:00-22:00 => 1.0, else => 0.5
+    """
+    # Check if already exists
+    existing = idf.getobject("SCHEDULE:COMPACT", sched_name.upper())
+    if existing:
+        return existing
+
+    schedule = idf.newidfobject("SCHEDULE:COMPACT")
+    schedule.Name = sched_name
+    schedule.Schedule_Type_Limits_Name = "Fraction"
+
+    schedule.Field_1 = "Through: 12/31"
+    schedule.Field_2 = "For: AllDays"
+    schedule.Field_3 = "Until: 06:00,0.5"
+    schedule.Field_4 = "Until: 22:00,1.0"
+    schedule.Field_5 = "Until: 24:00,0.5"
+    return schedule
+
+
+def create_workhours_schedule(idf, sched_name="WorkHoursSched"):
+    """
+    Workhours schedule: 
+      - 0.2 fraction from midnight to 09:00,
+      - 1.0 from 09:00 to 17:00,
+      - 0.2 from 17:00 to midnight,
+      - weekends/holidays => 0.2 all day
+    """
+    # Check if already exists
+    existing = idf.getobject("SCHEDULE:COMPACT", sched_name.upper())
+    if existing:
+        return existing
+
+    schedule = idf.newidfobject("SCHEDULE:COMPACT")
+    schedule.Name = sched_name
+    schedule.Schedule_Type_Limits_Name = "Fraction"
+
+    schedule.Field_1 = "Through: 12/31"
+    schedule.Field_2 = "For: Weekdays"
+    schedule.Field_3 = "Until: 09:00,0.2"
+    schedule.Field_4 = "Until: 17:00,1.0"
+    schedule.Field_5 = "Until: 24:00,0.2"
+    schedule.Field_6 = "For: Saturday Sunday Holiday"
+    schedule.Field_7 = "Until: 24:00,0.2"
+    return schedule
+
+
+# ------------------------------------------------------------------------
+# NEW HELPER FUNCTIONS FOR DYNAMIC SCHEDULES
+# ------------------------------------------------------------------------
+
+def create_schedule_from_pattern(idf, sched_name, pattern, schedule_type_limits="Fraction"):
+    """
+    Creates a SCHEDULE:COMPACT in the IDF from a single pattern of
+    (start_hour, end_hour, fraction_value) tuples for ALL days.
+
+    :param idf: geomeppy IDF instance
+    :param sched_name: name of the schedule in E+
+    :param pattern: list of (start_hour, end_hour, value), e.g. [(0,6,0.5), (6,22,1.0), (22,24,0.5)]
+    :param schedule_type_limits: e.g. "Fraction" or "OnOff"
+    :returns: the new or existing SCHEDULE:COMPACT object
+    """
+    # Check if schedule already exists
+    existing = idf.getobject("SCHEDULE:COMPACT", sched_name.upper())
+    if existing:
+        return existing
+
+    sched_obj = idf.newidfobject("SCHEDULE:COMPACT")
+    sched_obj.Name = sched_name
+    sched_obj.Schedule_Type_Limits_Name = schedule_type_limits
+
+    # We'll define just one set of rules "Through: 12/31", "For: AllDays"
+    # If you want to differentiate weekdays vs. weekends in the same schedule,
+    # see create_schedule_from_weekday_weekend_pattern() below.
+    field_idx = 1
+    sched_obj[f"Field_{field_idx}"] = "Through: 12/31"
+    field_idx += 1
+
+    sched_obj[f"Field_{field_idx}"] = "For: AllDays"
+    field_idx += 1
+
+    # Now loop over the pattern, building lines like "Until: HH:MM, fraction"
+    for (start_hr, end_hr, val) in pattern:
+        # E+ SCHEDULE:COMPACT lines are sequential. We just say "Until: end_hr"
+        # The fraction applies from previous end_hr to new end_hr.
+        # For the first chunk, it starts at midnight implicitly.
+        # e.g. "Until: 06:00,0.5"
+        line_str = f"Until: {end_hr:02d}:00,{val}"
+        sched_obj[f"Field_{field_idx}"] = line_str
+        field_idx += 1
+
+    return sched_obj
+
+
+def create_schedule_from_weekday_weekend_pattern(idf, sched_name, weekday_pattern, weekend_pattern, 
+                                                 schedule_type_limits="Fraction"):
+    """
+    Creates a SCHEDULE:COMPACT with two sets of rules:
+    - One for Weekdays
+    - One for Saturday Sunday Holiday
+
+    :param idf: geomeppy IDF instance
+    :param sched_name: name of the schedule in E+
+    :param weekday_pattern: list of (start_hr, end_hr, fraction) for M-F
+    :param weekend_pattern: list of (start_hr, end_hr, fraction) for Sat/Sun/Holiday
+    :param schedule_type_limits: e.g. "Fraction"
+    :returns: new or existing SCHEDULE:COMPACT
+    """
+    existing = idf.getobject("SCHEDULE:COMPACT", sched_name.upper())
+    if existing:
+        return existing
+
+    sched_obj = idf.newidfobject("SCHEDULE:COMPACT")
+    sched_obj.Name = sched_name
+    sched_obj.Schedule_Type_Limits_Name = schedule_type_limits
+
+    # First chunk: Through: 12/31, For: Weekdays
+    field_idx = 1
+    sched_obj[f"Field_{field_idx}"] = "Through: 12/31"
+    field_idx += 1
+
+    sched_obj[f"Field_{field_idx}"] = "For: Weekdays"
+    field_idx += 1
+
+    for (start_hr, end_hr, val) in weekday_pattern:
+        line_str = f"Until: {end_hr:02d}:00,{val}"
+        sched_obj[f"Field_{field_idx}"] = line_str
+        field_idx += 1
+
+    # Next chunk: For Saturday Sunday Holiday
+    sched_obj[f"Field_{field_idx}"] = "For: Saturday Sunday Holiday"
+    field_idx += 1
+
+    for (start_hr, end_hr, val) in weekend_pattern:
+        line_str = f"Until: {end_hr:02d}:00,{val}"
+        sched_obj[f"Field_{field_idx}"] = line_str
+        field_idx += 1
+
+    return sched_obj
+
+
+def ensure_dynamic_schedule(idf, sched_name, weekday_pattern=None, weekend_pattern=None):
+    """
+    A convenience function that:
+     - if only weekday_pattern is provided, creates schedule from that pattern for all days;
+     - if both weekday & weekend patterns provided, creates a weekday/weekend schedule.
+
+    :param idf: geomeppy IDF
+    :param sched_name: string
+    :param weekday_pattern: list of (start_hr, end_hr, fraction)
+    :param weekend_pattern: list of (start_hr, end_hr, fraction)
+    :return: the schedule object
+    """
+    existing = idf.getobject("SCHEDULE:COMPACT", sched_name.upper())
+    if existing:
+        return existing
+
+    if weekday_pattern and not weekend_pattern:
+        # same pattern for all days
+        return create_schedule_from_pattern(idf, sched_name, weekday_pattern)
+
+    elif weekday_pattern and weekend_pattern:
+        return create_schedule_from_weekday_weekend_pattern(idf, sched_name, weekday_pattern, weekend_pattern)
+
+    else:
+        # fallback => always on
+        return create_always_on_schedule(idf, sched_name)
+
+  --- File Contents End ---
+
+  File: ventilation_lookup.py
+  --- File Contents Start ---
+# ventilation_lookup.py
+
+"""
+This file defines a large nested dictionary called `ventilation_lookup`
+that organizes infiltration/ventilation parameters by:
+  1) scenario ("scenario1" or "scenario2")
+  2) calibration stage ("pre_calibration" or "post_calibration")
+Inside each stage, you have infiltration ranges, year factors, system controls, etc.
+
+Example usage:
+    from ventilation_lookup import ventilation_lookup
+
+    # Suppose we want infiltration info for scenario2, pre_calibration, a "two_and_a_half_story_house"
+    infiltration_ranges = ventilation_lookup["scenario2"]["pre_calibration"]["residential_infiltration_range"]
+    infiltration_tuple = infiltration_ranges.get("two_and_a_half_story_house", (1.0, 1.2))
+    # infiltration_tuple might be something like (1.3, 1.5) if you set it below
+"""
+
+ventilation_lookup = {
+    # -------------------------------------------------------------------------
+    # SCENARIO 1
+    # -------------------------------------------------------------------------
+    "scenario1": {
+        "pre_calibration": {
+            # -----------------------------------------------------------
+            # 1) Infiltration ranges
+            # -----------------------------------------------------------
+            "residential_infiltration_range": {
+                # Example new sub-type for a residential building
+                "two_and_a_half_story_house": (1.1, 1.3),
+                "apartment": (0.9, 1.1),
+                "row_house": (1.0, 1.2),
+            },
+            "non_res_infiltration_range": {
+                "meeting_function": (0.5, 0.7),
+                "office_multi_lower": (0.4, 0.6),
+                "office_multi_top": (0.6, 0.8)
+            },
+
+            # -----------------------------------------------------------
+            # 2) Year-of-construction factor
+            # -----------------------------------------------------------
+            "year_factor_range": {
+                "1900-2000":  (2.0, 2.4),
+                "2000-2024":  (1.2, 1.4),
+                "<1970":      (2.5, 3.5),
+                "1970-1992":  (1.8, 2.2),
+                "1992-2005":  (1.4, 1.6),
+                "2005-2015":  (1.1, 1.3),
+                ">2015":      (0.9, 1.1)
+            },
+
+            # -----------------------------------------------------------
+            # 3) System control factors
+            # -----------------------------------------------------------
+            "system_control_range_res": {
+                "A": {"f_ctrl_range": (0.9, 1.0)},
+                "B": {"f_ctrl_range": (0.50, 0.60)},
+                "C": {"f_ctrl_range": (0.80, 0.90)},
+                "D": {"f_ctrl_range": (0.95, 1.05)}
+            },
+            "system_control_range_nonres": {
+                "A": {"f_ctrl_range": (0.9, 1.0)},
+                "B": {"f_ctrl_range": (0.80, 0.90)},
+                "C": {"f_ctrl_range": (0.60, 0.70)},
+                "D": {"f_ctrl_range": (0.75, 0.85)}
+            },
+
+            # -----------------------------------------------------------
+            # 4) Fan pressure, HRV efficiency
+            # -----------------------------------------------------------
+            "fan_pressure_range": {
+                "res_mech": (40, 60),
+                "nonres_intake": (90, 110),
+                "nonres_exhaust": (140, 160)
+            },
+            "hrv_sensible_eff_range": (0.7, 0.8)
+        },
+
+        "post_calibration": {
+            "residential_infiltration_range": {
+                "two_and_a_half_story_house": (1.2, 1.2),
+                "apartment": (1.0, 1.0),
+                "row_house": (1.1, 1.1)
+            },
+            "non_res_infiltration_range": {
+                "meeting_function": (0.6, 0.6),
+                "office_multi_lower": (0.5, 0.5),
+                "office_multi_top": (0.7, 0.7)
+            },
+
+            "year_factor_range": {
+                "1900-2000":  (2.2, 2.2),
+                "2000-2024":  (1.3, 1.3),
+                "<1970":      (3.0, 3.0),
+                "1970-1992":  (2.0, 2.0),
+                "1992-2005":  (1.5, 1.5),
+                "2005-2015":  (1.2, 1.2),
+                ">2015":      (1.0, 1.0)
+            },
+
+            "system_control_range_res": {
+                "A": {"f_ctrl_range": (1.0, 1.0)},
+                "B": {"f_ctrl_range": (0.57, 0.57)},
+                "C": {"f_ctrl_range": (0.85, 0.85)},
+                "D": {"f_ctrl_range": (1.0, 1.0)}
+            },
+            "system_control_range_nonres": {
+                "A": {"f_ctrl_range": (1.0, 1.0)},
+                "B": {"f_ctrl_range": (0.85, 0.85)},
+                "C": {"f_ctrl_range": (0.65, 0.65)},
+                "D": {"f_ctrl_range": (0.8, 0.8)}
+            },
+
+            "fan_pressure_range": {
+                "res_mech": (50, 50),
+                "nonres_intake": (100, 100),
+                "nonres_exhaust": (150, 150)
+            },
+            "hrv_sensible_eff_range": (0.75, 0.75)
+        }
+    },
+
+    # -------------------------------------------------------------------------
+    # SCENARIO 2
+    # -------------------------------------------------------------------------
+    "scenario2": {
+        "pre_calibration": {
+            "residential_infiltration_range": {
+                # maybe scenario2 has slightly higher infiltration
+                "two_and_a_half_story_house": (1.3, 1.5),
+                "apartment": (1.0, 1.2),
+                "row_house": (1.1, 1.3)
+            },
+            "non_res_infiltration_range": {
+                # or scenario2 meeting_function infiltration a bit bigger
+                "meeting_function": (0.6, 0.8),
+                "office_multi_lower": (0.4, 0.7),
+                "office_multi_top": (0.7, 0.9)
+            },
+
+            "year_factor_range": {
+                "1900-2000":  (2.1, 2.5),
+                "2000-2024":  (1.3, 1.5),
+                "<1970":      (2.5, 3.5),
+                "1970-1992":  (1.8, 2.2),
+                "1992-2005":  (1.4, 1.6),
+                "2005-2015":  (1.1, 1.3),
+                ">2015":      (0.9, 1.1)
+            },
+
+            "system_control_range_res": {
+                "A": {"f_ctrl_range": (0.85, 0.95)},
+                "B": {"f_ctrl_range": (0.45, 0.55)},
+                "C": {"f_ctrl_range": (0.70, 0.80)},
+                "D": {"f_ctrl_range": (0.90, 1.00)}
+            },
+            "system_control_range_nonres": {
+                "A": {"f_ctrl_range": (0.85, 0.95)},
+                "B": {"f_ctrl_range": (0.75, 0.85)},
+                "C": {"f_ctrl_range": (0.55, 0.65)},
+                "D": {"f_ctrl_range": (0.70, 0.80)}
+            },
+
+            "fan_pressure_range": {
+                "res_mech": (45, 65),
+                "nonres_intake": (95, 115),
+                "nonres_exhaust": (145, 165)
+            },
+            "hrv_sensible_eff_range": (0.65, 0.75)
+        },
+
+        "post_calibration": {
+            "residential_infiltration_range": {
+                "two_and_a_half_story_house": (1.4, 1.4),
+                "apartment": (1.1, 1.1),
+                "row_house": (1.2, 1.2)
+            },
+            "non_res_infiltration_range": {
+                "meeting_function": (0.7, 0.7),
+                "office_multi_lower": (0.6, 0.6),
+                "office_multi_top": (0.75, 0.75)
+            },
+
+            "year_factor_range": {
+                "1900-2000":  (2.3, 2.3),
+                "2000-2024":  (1.4, 1.4),
+                "<1970":      (3.2, 3.2),
+                "1970-1992":  (2.2, 2.2),
+                "1992-2005":  (1.6, 1.6),
+                "2005-2015":  (1.3, 1.3),
+                ">2015":      (1.0, 1.0)
+            },
+
+            "system_control_range_res": {
+                "A": {"f_ctrl_range": (1.0, 1.0)},
+                "B": {"f_ctrl_range": (0.60, 0.60)},
+                "C": {"f_ctrl_range": (0.80, 0.80)},
+                "D": {"f_ctrl_range": (0.95, 0.95)}
+            },
+            "system_control_range_nonres": {
+                "A": {"f_ctrl_range": (1.0, 1.0)},
+                "B": {"f_ctrl_range": (0.80, 0.80)},
+                "C": {"f_ctrl_range": (0.60, 0.60)},
+                "D": {"f_ctrl_range": (0.75, 0.75)}
+            },
+
+            "fan_pressure_range": {
+                "res_mech": (55, 55),
+                "nonres_intake": (105, 105),
+                "nonres_exhaust": (155, 155)
+            },
+            "hrv_sensible_eff_range": (0.70, 0.70)
+        }
+    }
+}
+
+  --- File Contents End ---
+
+  File: ventilation_overrides_from_excel.py
+  --- File Contents Start ---
+# ventilation/ventilation_overrides_from_excel.py
+
+import pandas as pd
+import copy
+import math
+
+def read_ventilation_overrides_from_excel(excel_path):
+    """
+    Reads an Excel file with columns:
+        - calibration_stage
+        - main_key
+        - sub_key
+        - param_name
+        - min_val
+        - max_val
+        - fixed_value
+
+    Returns a nested dict: override_data[stage][main_key][sub_key][param_name] = ...
+    
+    Where the "..." can be:
+      - a tuple (min, max) if numeric
+      - a single string or numeric if 'fixed_value' is provided and is non-NaN
+        (we store it as (val, val) if numeric, or keep as a plain string if textual).
+    
+    This can override infiltration ranges, year_factor ranges, OR new schedule info.
+    For schedule overrides, 'main_key' might be "schedule_info",
+    sub_key might be e.g. "residential", param_name might be "default_infiltration_schedule",
+    and fixed_value could be e.g. "InfilResSched".
+
+    Example row:
+        calibration_stage = "pre_calibration"
+        main_key          = "schedule_info"
+        sub_key           = "residential"
+        param_name        = "default_infiltration_schedule"
+        min_val           = NaN
+        max_val           = NaN
+        fixed_value       = "MyInfilResSched"
+
+    The resulting override_data will have:
+        override_data["pre_calibration"]["schedule_info"]["residential"]["default_infiltration_schedule"] = "MyInfilResSched"
+    """
+    df = pd.read_excel(excel_path)
+
+    required_cols = ["calibration_stage","main_key","sub_key","param_name","min_val","max_val","fixed_value"]
+    for c in required_cols:
+        if c not in df.columns:
+            raise ValueError(f"Missing column '{c}' in {excel_path}")
+
+    override_data = {}
+
+    for _, row in df.iterrows():
+        stage = str(row["calibration_stage"]).strip()
+        mkey  = str(row["main_key"]).strip()       # e.g. "residential_infiltration_range" or "schedule_info"
+        skey  = str(row["sub_key"]).strip()        # e.g. "A_corner" or "residential" or ""
+        pname = str(row["param_name"]).strip()     # e.g. "f_ctrl_range", "default_infiltration_schedule", or ""
+
+        fv = row["fixed_value"]  # could be numeric or string
+        mn = row["min_val"]      # typically numeric or NaN
+        mx = row["max_val"]      # typically numeric or NaN
+
+        if stage not in override_data:
+            override_data[stage] = {}
+        if mkey not in override_data[stage]:
+            override_data[stage][mkey] = {}
+
+        # Decide how to store
+        # 1) If fixed_value is not NaN => store that
+        #    - If it's purely numeric, we store as (fv,fv) for consistency with min,max range
+        #    - If it's a string, we'll store it as a plain string override
+        # 2) Else if min_val and max_val are numeric => store as (min_val,max_val)
+        # 3) Otherwise skip if all are NaN
+
+        # Helper to test if something is numeric
+        def is_number(x):
+            try:
+                float(x)
+                return True
+            except (ValueError, TypeError):
+                return False
+
+        if pd.notna(fv):
+            # If the fixed_value is numeric => store as a numeric tuple (fv,fv)
+            if is_number(fv):
+                val_tuple = (float(fv), float(fv))
+                final_value = val_tuple
+            else:
+                # It's likely a string => store it directly as that string
+                final_value = str(fv).strip()
+        elif pd.notna(mn) and pd.notna(mx) and is_number(mn) and is_number(mx):
+            val_tuple = (float(mn), float(mx))
+            final_value = val_tuple
+        else:
+            # skip if no valid data
+            continue
+
+        # Insert into override_data
+        # Cases:
+        #    (a) skey == "" and pname == "" => override_data[stage][mkey] = final_value
+        #    (b) skey != "" and pname == "" => override_data[stage][mkey][skey] = final_value
+        #    (c) skey + pname => override_data[stage][mkey][skey][pname] = final_value
+        if skey == "" and pname == "":
+            override_data[stage][mkey] = final_value
+        elif skey != "" and pname == "":
+            if not isinstance(override_data[stage][mkey], dict):
+                override_data[stage][mkey] = {}
+            override_data[stage][mkey][skey] = final_value
+        else:
+            # if we have a param_name => store in stage[mkey][skey][pname]
+            if skey not in override_data[stage][mkey] or not isinstance(override_data[stage][mkey][skey], dict):
+                override_data[stage][mkey][skey] = {}
+            override_data[stage][mkey][skey][pname] = final_value
+
+    return override_data
+
+
+def apply_ventilation_overrides_to_lookup(default_lookup, override_data):
+    """
+    Merges override_data into default_lookup (similar to ventilation_lookup).
+    
+    override_data structure:
+      override_data[stage][main_key][sub_key][param_name] = final_value
+        (final_value can be a tuple (min,max), or a string for schedules)
+
+    For each stage in override_data:
+      - If stage doesn't exist in default_lookup, we create it.
+      - For each main_key in override_data => if it's a tuple or string, override
+        directly. If it's a dict => merge deeper.
+    
+    Example usage:
+      new_lookup = apply_ventilation_overrides_to_lookup(ventilation_lookup, override_data)
+    """
+    # If you prefer not to mutate default_lookup in place, do a copy
+    new_lookup = copy.deepcopy(default_lookup)
+
+    for stage, stage_dict in override_data.items():
+        if stage not in new_lookup:
+            new_lookup[stage] = {}
+
+        for mkey, val_mkey in stage_dict.items():
+            # val_mkey might be:
+            #   - a numeric tuple or string => direct override
+            #   - a dict => deeper merges (subkeys, param_names)
+
+            if not isinstance(val_mkey, dict):
+                # So if it's a tuple or a string => direct override
+                new_lookup[stage][mkey] = val_mkey
+                continue
+
+            # if it's a dict => we merge it
+            if mkey not in new_lookup[stage]:
+                new_lookup[stage][mkey] = {}
+
+            for subk, subv in val_mkey.items():
+                # subv might be a tuple, string, or another dict
+                if not isinstance(subv, dict):
+                    # direct override
+                    new_lookup[stage][mkey][subk] = subv
+                else:
+                    # deeper dict => e.g. {param_name: (min,max) or string}
+                    if subk not in new_lookup[stage][mkey]:
+                        new_lookup[stage][mkey][subk] = {}
+                    for param_key, param_val in subv.items():
+                        # param_val could be tuple or string
+                        new_lookup[stage][mkey][subk][param_key] = param_val
+
+    return new_lookup
 
   --- File Contents End ---
 
 ================================================================================
 
-Folder: D:\Documents\E_Plus_2030_py\cal\__pycache__
+Folder: D:\Documents\E_Plus_2030_py\idf_objects\ventilation\__pycache__
 
 ================================================================================
 

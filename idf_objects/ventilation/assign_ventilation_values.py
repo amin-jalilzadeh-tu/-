@@ -1,7 +1,5 @@
 # ventilation/assign_ventilation_values.py
 
-# ventilation/assign_ventilation_params_with_overrides.py
-
 import random
 from .ventilation_lookup import ventilation_lookup
 
@@ -92,8 +90,8 @@ def assign_ventilation_params_with_overrides(
     random_seed=None,
     user_config_vent=None,     # possibly a list of override rows
     assigned_vent_log=None,    # dictionary to store final picks if desired
-    infiltration_key=None,     # e.g. "two_and_a_half_story_house"
-    year_key=None,             # e.g. "1970-1992"
+    infiltration_key=None,     # e.g. "Corner House" or "Office Function"
+    year_key=None,             # e.g. "1975 - 1991"
     is_residential=True,
     default_flow_exponent=0.67
 ):
@@ -122,11 +120,14 @@ def assign_ventilation_params_with_overrides(
       3) Use 'strategy' to pick final numeric values from each range.
       4) Return the final assigned dictionary, which includes both final picks & range info.
       5) Optionally log them to assigned_vent_log if provided.
+
+    The infiltration_key for a residential building might be "Corner House", etc.
+    For non-residential, infiltration_key might be "Office Function", etc.
     """
     if random_seed is not None:
         random.seed(random_seed)
 
-    # 1) Fallback checks
+    # 1) Ensure scenario & calibration_stage exist in ventilation_lookup
     if scenario not in ventilation_lookup:
         scenario = "scenario1"
     if calibration_stage not in ventilation_lookup[scenario]:
@@ -135,7 +136,6 @@ def assign_ventilation_params_with_overrides(
     stage_dict = ventilation_lookup[scenario][calibration_stage]
 
     # Prepare a local dictionary for logging (if assigned_vent_log is used).
-    # We'll store picks in log_dict and also keep them in the final 'assigned' dict.
     log_dict = None
     if assigned_vent_log is not None:
         if building_id not in assigned_vent_log:
@@ -145,33 +145,42 @@ def assign_ventilation_params_with_overrides(
     # 2) Default infiltration_base range from infiltration_key
     if is_residential:
         res_infil = stage_dict["residential_infiltration_range"]
-        infiltration_base_rng = res_infil.get(infiltration_key, (1.0, 1.0))
+        infiltration_base_rng = res_infil.get(infiltration_key, (1.0, 1.0))  # fallback
         sys_ctrl_ranges = stage_dict["system_control_range_res"]
     else:
         nonres_infil = stage_dict["non_res_infiltration_range"]
-        infiltration_base_rng = nonres_infil.get(infiltration_key, (0.5, 0.5))
+        infiltration_base_rng = nonres_infil.get(infiltration_key, (0.5, 0.5))  # fallback
         sys_ctrl_ranges = stage_dict["system_control_range_nonres"]
 
     # 3) year_factor range
     year_factor_rng = stage_dict["year_factor_range"].get(year_key, (1.0, 1.0))
 
-    # 4) default system_type => "A" if residential else "D"
+    # 4) Determine system_type from the system_type_map if available
+    #    Otherwise fallback to "A" for residential, "D" for non-res.
     default_system_type = "A" if is_residential else "D"
     system_type_final = default_system_type
 
-    # 5) fan_pressure => can be looked up from stage_dict["fan_pressure_range"] if needed
-    #    but often it may not be subdivided by infiltration_key. We'll store a fallback
+    if "system_type_map" in stage_dict:
+        stm = stage_dict["system_type_map"]
+        func_key = "residential" if is_residential else "non_residential"
+        if func_key in stm:
+            func_map = stm[func_key]
+            if year_key in func_map:
+                subtype_map = func_map[year_key]
+                # pick system if infiltration_key is in subtype_map
+                if infiltration_key in subtype_map:
+                    system_type_final = subtype_map[infiltration_key]
+
+    # 5) fan_pressure => we might pull from stage_dict["fan_pressure_range"] if needed
+    #    but typically that is a single dictionary with subkeys like "res_mech", "nonres_intake", etc.
+    #    We'll set a default (0.0,0.0) and let user overrides do the rest if needed.
     fan_pressure_rng = (0.0, 0.0)
     if "fan_pressure_range" in stage_dict:
-        # Example: we might have:
-        #  stage_dict["fan_pressure_range"] = {
-        #     "res_mech":(40,60), "nonres_intake":(90,110), ...
-        #  }
-        # But we don't necessarily know which subkey to pick. 
-        # For now let's keep it as (0,0) unless user override sets it.
+        # For example, we might choose "res_mech" for residential, "nonres_intake"/"nonres_exhaust" for non-res.
+        # But you can do more advanced logic if desired. We'll keep it 0 unless user overrides it.
         pass
 
-    # 6) f_ctrl => pick from system_control_range (depending on system_type)
+    # 6) f_ctrl => pick from system_control_range (depending on system_type_final)
     if system_type_final in sys_ctrl_ranges:
         f_ctrl_rng = sys_ctrl_ranges[system_type_final].get("f_ctrl_range", (1.0, 1.0))
     else:
@@ -183,8 +192,6 @@ def assign_ventilation_params_with_overrides(
         hrv_eff_rng = stage_dict["hrv_sensible_eff_range"]
 
     # 8) apply user overrides
-    #    We'll scan for rows that match (bldg_id, building_function, etc.) 
-    #    and override infiltration_base, year_factor, system_type, fan_pressure, f_ctrl, hrv_eff, schedules, ...
     matches = find_vent_overrides(
         building_id or 0,
         building_function or "residential",
@@ -202,20 +209,17 @@ def assign_ventilation_params_with_overrides(
         """
         if "fixed_value" in row:
             val = row["fixed_value"]
-            # if numeric, store as (val,val). If string, we'll handle separately below.
             try:
                 f = float(val)
                 return (f, f)
             except (ValueError, TypeError):
-                # it's a string => return current_range, let separate logic handle
                 return current_range
         elif "min_val" in row and "max_val" in row:
             return (row["min_val"], row["max_val"])
         return current_range
 
-    # Potential placeholders for schedule overrides
     infiltration_sched_name = "AlwaysOnSched"
-    ventilation_sched_name  = "VentSched_DayNight"
+    ventilation_sched_name = "VentSched_DayNight"
 
     for row in matches:
         pname = row.get("param_name", "")
@@ -240,21 +244,14 @@ def assign_ventilation_params_with_overrides(
             hrv_eff_rng = override_range(hrv_eff_rng, row)
 
         elif pname == "infiltration_schedule_name":
-            # override infiltration_sched_name if fixed_value is present
             if "fixed_value" in row:
                 infiltration_sched_name = row["fixed_value"]
 
         elif pname == "ventilation_schedule_name":
-            # override ventilation_sched_name if fixed_value is present
             if "fixed_value" in row:
                 ventilation_sched_name = row["fixed_value"]
 
-    # 8b) If system_type_final == "D", we might pick from hrv_eff_rng 
-    #     but if it's "A","B","C", set hrv_eff to 0
-    # (We do that picking below with pick_val_with_range.)
-
     # 9) pick final infiltration_base, year_factor, fan_pressure, f_ctrl, hrv_eff
-    #    storing into a local dictionary
     local_log = {}
     infiltration_base_val = pick_val_with_range(infiltration_base_rng, strategy, local_log, "infiltration_base")
     year_factor_val       = pick_val_with_range(year_factor_rng,       strategy, local_log, "year_factor")
@@ -265,39 +262,33 @@ def assign_ventilation_params_with_overrides(
     if system_type_final == "D":
         hrv_eff_val = pick_val_with_range(hrv_eff_rng, strategy, local_log, "hrv_eff")
     else:
-        # store hrv_eff=0, but also store range if we like
         local_log["hrv_eff_range"] = (0.0, 0.0)
         local_log["hrv_eff"] = 0.0
 
     # 10) infiltration/vent schedules => infiltration_sched_name, ventilation_sched_name
-    # We'll store them in local_log as well
     local_log["infiltration_schedule_name"] = infiltration_sched_name
     local_log["ventilation_schedule_name"]  = ventilation_sched_name
-
-    # Also store final system_type in local_log
     local_log["system_type"] = system_type_final
 
-    # 11) Build final assigned dict with *both* the final picks and their ranges
-    #     Because pick_val_with_range stored infiltration_base_range in local_log["infiltration_base_range"], etc.
-    #     We'll combine them in a single dict.
+    # 11) Build final assigned dict
     assigned = {
-        # infiltration_base (val + range)
+        # infiltration_base
         "infiltration_base": local_log["infiltration_base"],
         "infiltration_base_range": local_log["infiltration_base_range"],
 
-        # year_factor (val + range)
+        # year_factor
         "year_factor": local_log["year_factor"],
         "year_factor_range": local_log["year_factor_range"],
 
-        # fan_pressure (val + range)
+        # fan_pressure
         "fan_pressure": local_log["fan_pressure"],
         "fan_pressure_range": local_log["fan_pressure_range"],
 
-        # f_ctrl (val + range)
+        # f_ctrl
         "f_ctrl": local_log["f_ctrl"],
         "f_ctrl_range": local_log["f_ctrl_range"],
 
-        # hrv_eff (val + range)
+        # hrv_eff
         "hrv_eff": local_log["hrv_eff"],
         "hrv_eff_range": local_log["hrv_eff_range"],
 
@@ -312,13 +303,11 @@ def assign_ventilation_params_with_overrides(
         "flow_exponent": default_flow_exponent
     }
 
-    # If logging externally => store in assigned_vent_log[building_id]
-    # e.g. assigned_vent_log[bldg_id]["ventilation_params"] = assigned
+    # 12) If logging externally => store
     if log_dict is not None:
         log_dict["ventilation_params"] = assigned
 
     return assigned
-
 
 
 

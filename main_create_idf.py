@@ -25,6 +25,7 @@ from idf_objects.Elec.lighting_overrides_from_excel import (
 # DHW
 from idf_objects.DHW.water_heater import add_dhw_to_idf
 from idf_objects.DHW.dhw_lookup import dhw_lookup as default_dhw_lookup
+#from Lookups.dhw_lookup import dhw_lookup as default_dhw_lookup
 from idf_objects.DHW import dhw_lookup as dhw_lookup_module
 from idf_objects.DHW.dhw_overrides_from_excel import override_dhw_lookup_from_excel
 
@@ -395,8 +396,8 @@ assigned_shading_log = {}
 # IDF CONFIG & GLOBALS
 #######################################################
 idf_config = {
-    "iddfile": "D:/EnergyPlus/Energy+.idd",
-    "idf_file_path": "D:/Minimal.idf",
+    "iddfile": "EnergyPlus/Energy+.idd",
+    "idf_file_path": "EnergyPlus/Minimal.idf",
     "output_dir": "output/output_IDFs"
 }
 

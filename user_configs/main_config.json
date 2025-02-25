@@ -63,8 +63,8 @@
     "calibration_stage": "pre_calibration",
     "strategy": "B",
     "random_seed": 42,
-    "iddfile": "D:/EnergyPlus/Energy+.idd",
-    "idf_file_path": "D:/Minimal.idf",
+    "iddfile": "EnergyPlus/Energy+.idd",
+    "idf_file_path": "EnergyPlus/Minimal.idf",
     "output_idf_dir": "output/output_IDFs",
     "run_simulations": true,
     "simulate_config": {
@@ -127,7 +127,7 @@
     "perform_modification": true,
     "modify_config": {
       "base_idf_path": "output/output_IDFs/building_0.idf",
-      "idd_path": "D:/EnergyPlus/Energy+.idd",
+      "idd_path": "EnergyPlus/Energy+.idd",
       "assigned_csv": {
         "hvac_building": "output/assigned/assigned_hvac_building.csv",
         "hvac_zones": "output/assigned/assigned_hvac_zones.csv",

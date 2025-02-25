@@ -80,8 +80,8 @@ from epw.run_epw_sims import simulate_all
 # Default IDF config - update paths as needed
 ###############################################################################
 idf_config = {
-    "iddfile":       r"D:/EnergyPlus/Energy+.idd",  # Path to the Energy+.idd
-    "idf_file_path": r"D:/Minimal.idf",            # A base minimal IDF for geomeppy
+    "iddfile":       r"EnergyPlus/Energy+.idd",  # Path to the Energy+.idd
+    "idf_file_path": r"EnergyPlus/Minimal.idf",            # A base minimal IDF for geomeppy
     "output_dir":    r"output/output_IDFs"         # Folder where we'll save each building's IDF
 }
 

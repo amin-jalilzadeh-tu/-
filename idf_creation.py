@@ -48,8 +48,8 @@ from epw.run_epw_sims import simulate_all
 # You can override these in main.py or from main_config.json
 ###############################################################################
 idf_config = {
-    "iddfile": "D:/EnergyPlus/Energy+.idd",       # Default path to the IDD file
-    "idf_file_path": "D:/Minimal.idf",            # Default path to a minimal base IDF
+    "iddfile": "EnergyPlus/Energy+.idd",       # Default path to the IDD file
+    "idf_file_path": "EnergyPlus/Minimal.idf",            # Default path to a minimal base IDF
     "output_dir": "output/output_IDFs"            # Default folder to save generated IDFs
 }
 

@@ -1,0 +1,2714 @@
+{
+    "D:\\Documents\\E_Plus_2030_py\\database_handler.py": {
+        "functions": [
+            {
+                "name": "load_buildings_from_db",
+                "doc": "Connect to the PostgreSQL database (credentials from environment variables),\nbuild a SQL query for building data, apply optional filters, and return a\npandas DataFrame.\n\nfilter_criteria (dict) may include:\n------------------------------------------------------\n{\n  \"postcodes\": [\"1011AB\", \"1053PJ\", ...],   # list of multiple postcodes\n  \"ids\": [1001, 1002, 1003],               # list of ogc_fid\n  \"pand_ids\": [\"XYZ123\", \"XYZ456\"],        # list of pand_id if needed\n  \"bbox_xy\": [min_x, min_y, max_x, max_y], # bounding box in X/Y\n  \"bbox_latlon\": [min_lat, min_lon, max_lat, max_lon] # bounding box in lat/lon\n}\n------------------------------------------------------\n\nFor example:\n  \"bbox_xy\": [120000.0, 487000.0, 121000.0, 488000.0]\n  \"bbox_latlon\": [52.35, 4.85, 52.37, 4.92]\n\nReturns\n-------\npd.DataFrame"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "os",
+            "pandas",
+            "sqlalchemy"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\excel_overrides.py": {
+        "functions": [
+            {
+                "name": "override_fenestration_dicts_from_excel",
+                "doc": "If override_from_excel_flag is True and the excel_path exists,\ncalls a function like override_dictionaries_from_excel(...) to\nupdate 'default_res_data' and 'default_nonres_data'.\n\nOtherwise returns the original dictionaries unchanged."
+            },
+            {
+                "name": "override_dhw_lookup_from_excel_file",
+                "doc": "If override_dhw_flag is True and file exists, calls your\noverride_dhw_lookup_from_excel(...) function from\nidf_objects.DHW.dhw_overrides_from_excel to partially override\nthe default_dhw_lookup."
+            },
+            {
+                "name": "override_epw_lookup_from_excel_file",
+                "doc": "If override_epw_flag is True, read overrides from Excel\nand apply them to the epw_lookup in memory."
+            },
+            {
+                "name": "override_lighting_lookup_from_excel_file",
+                "doc": "If override_lighting_flag is True and file exists, calls read_lighting_overrides_from_excel\nand apply_lighting_overrides_to_lookup to override the lighting_lookup."
+            },
+            {
+                "name": "override_hvac_lookup_from_excel_file",
+                "doc": "If override_hvac_flag is True, read from Excel to override hvac_lookup in memory."
+            },
+            {
+                "name": "override_vent_lookup_from_excel_file",
+                "doc": "If override_vent_flag is True, read from Excel to override ventilation_lookup in memory."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "os",
+            "pandas"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_creation copy 2.py": {
+        "functions": [
+            {
+                "name": "create_idf_for_building",
+                "doc": "Builds an IDF for a single building row, applying all relevant overrides/logs.\nReturns the filename of the saved IDF.\n\nParameters\n----------\nbuilding_row : Series or dict\n    Contains building attributes (area, perimeter, orientation, etc.)\nbuilding_index : int\n    Index in df_buildings (or a building ID)\nscenario : str\ncalibration_stage : str\nstrategy : str\n    \"A\" => pick midpoint in range, \"B\" => pick random uniform, etc.\nrandom_seed : int\n    For reproducible random picks.\nuser_config_* : various\n    Partial user override arrays from JSON, if needed\nassigned_*_log : dict\n    If provided, we store the assigned final picks/ranges in it for CSV logging\nres_data, nonres_data : dict\n    Fenestration/material dictionaries after Excel + JSON merges\n\nReturns\n-------\nout_path : str\n    The path to the saved IDF file"
+            },
+            {
+                "name": "create_idfs_for_all_buildings",
+                "doc": "Loops over df_buildings, calls create_idf_for_building for each building, \noptionally runs E+ simulations, merges results, and writes assigned CSV logs.\n\nParameters\n----------\ndf_buildings : pd.DataFrame\n    Must contain columns like area, perimeter, orientation, ogc_fid, etc.\nscenario : str\ncalibration_stage : str\nstrategy : str\n    \"A\" => midpoint picks, \"B\" => random uniform, etc.\nrandom_seed : int\nuser_config_* : various\n    Partial user overrides from JSON for geometry, lighting, etc.\nres_data, nonres_data : dict\n    Fenestration dictionaries with Excel + JSON overrides\nrun_simulations : bool\nsimulate_config : dict\n    e.g. {\"num_workers\": 4}\npost_process : bool"
+            },
+            {
+                "name": "_write_geometry_csv",
+                "doc": null
+            },
+            {
+                "name": "_write_lighting_csv",
+                "doc": null
+            },
+            {
+                "name": "_write_fenestration_csv",
+                "doc": null
+            },
+            {
+                "name": "_write_dhw_csv",
+                "doc": null
+            },
+            {
+                "name": "_write_hvac_csv",
+                "doc": null
+            },
+            {
+                "name": "_write_vent_csv",
+                "doc": null
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "os",
+            "logging",
+            "pandas",
+            "geomeppy",
+            "idf_objects.geomz.building",
+            "idf_objects.fenez.fenestration",
+            "idf_objects.fenez.materials",
+            "idf_objects.Elec.lighting",
+            "idf_objects.DHW.water_heater",
+            "idf_objects.HVAC.custom_hvac",
+            "idf_objects.ventilation.add_ventilation",
+            "idf_objects.setzone.add_outdoor_air_and_zone_sizing_to_all_zones",
+            "idf_objects.tempground.add_ground_temperatures",
+            "idf_objects.other.zonelist",
+            "idf_objects.outputdef.assign_output_settings",
+            "idf_objects.outputdef.add_output_definitions",
+            "postproc.merge_results",
+            "epw.run_epw_sims",
+            "pandas",
+            "pandas",
+            "pandas",
+            "pandas",
+            "pandas",
+            "pandas"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_creation copy.py": {
+        "functions": [
+            {
+                "name": "create_idf_for_building",
+                "doc": "Builds an IDF for a single building row, applying all relevant overrides/logs.\nReturns the filename of the saved IDF.\n\nParameters\n----------\nbuilding_row : Series or dict\n    Contains building attributes (area, perimeter, orientation, etc.)\nbuilding_index : int\n    Index in df_buildings (or a building ID)\nscenario : str\ncalibration_stage : str\nstrategy : str\n    \"A\" => pick midpoint in range, \"B\" => pick random uniform, etc.\nrandom_seed : int\nuser_config_* : various\n    Partial user override arrays from JSON, if needed\nassigned_*_log : dict\n    If provided, we store the assigned final picks/ranges in it for CSV logging\nres_data, nonres_data : dict\n    Fenestration/material dictionaries after Excel + JSON merges\n\nReturns\n-------\nout_path : str\n    The path to the saved IDF file"
+            },
+            {
+                "name": "create_idfs_for_all_buildings",
+                "doc": "Loops over df_buildings, calls create_idf_for_building for each building,\noptionally runs E+ simulations, merges results, and writes assigned CSV logs.\n\nParameters\n----------\ndf_buildings : pd.DataFrame\n    Must contain columns like area, perimeter, orientation, ogc_fid, etc.\nscenario : str\ncalibration_stage : str\nstrategy : str\n    \"A\" => midpoint picks, \"B\" => random uniform, etc.\nrandom_seed : int\nuser_config_* : various\n    Partial user overrides from JSON for geometry, lighting, etc.\nres_data, nonres_data : dict\n    Fenestration dictionaries with Excel + JSON overrides\nrun_simulations : bool\nsimulate_config : dict\n    e.g. {\"num_workers\": 4}\npost_process : bool"
+            },
+            {
+                "name": "_write_geometry_csv",
+                "doc": null
+            },
+            {
+                "name": "_write_lighting_csv",
+                "doc": null
+            },
+            {
+                "name": "_write_fenestration_csv",
+                "doc": null
+            },
+            {
+                "name": "_write_dhw_csv",
+                "doc": null
+            },
+            {
+                "name": "_write_hvac_csv",
+                "doc": null
+            },
+            {
+                "name": "_write_vent_csv",
+                "doc": null
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "os",
+            "logging",
+            "pandas",
+            "geomeppy",
+            "idf_objects.geomz.building",
+            "idf_objects.fenez.fenestration",
+            "idf_objects.fenez.materials",
+            "idf_objects.Elec.lighting",
+            "idf_objects.DHW.water_heater",
+            "idf_objects.HVAC.custom_hvac",
+            "idf_objects.ventilation.add_ventilation",
+            "idf_objects.setzone.add_outdoor_air_and_zone_sizing_to_all_zones",
+            "idf_objects.tempground.add_ground_temperatures",
+            "idf_objects.other.zonelist",
+            "idf_objects.outputdef.assign_output_settings",
+            "idf_objects.outputdef.add_output_definitions",
+            "postproc.merge_results",
+            "epw.run_epw_sims",
+            "pandas",
+            "pandas",
+            "pandas",
+            "pandas",
+            "pandas",
+            "pandas"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_creation.py": {
+        "functions": [
+            {
+                "name": "create_idf_for_building",
+                "doc": "Build an IDF for a single building, applying geometry, fenestration, lighting,\nHVAC, ventilation, zone sizing, ground temps, and user overrides.\n\nParameters\n----------\nbuilding_row : Series or dict\n    Row from df_buildings containing building attributes (area, perimeter, orientation, etc.)\nbuilding_index : int\n    Index of the building in df_buildings.\nscenario : str\n    Scenario label, e.g. \"scenario1\".\ncalibration_stage : str\n    Calibration stage identifier, e.g. \"pre_calibration\", \"post_calibration\".\nstrategy : str\n    Strategy for picking param values, e.g. \"B\" => random uniform.\nrandom_seed : int\n    Random seed to ensure reproducibility in parameter picking.\nuser_config_geom : list or dict\n    Optional geometry overrides loaded from geometry.json if override_geometry_json is True.\nassigned_geom_log : dict\n    Dictionary to store assigned geometry parameters for logging.\nuser_config_lighting : list or dict\n    Optional lighting overrides from JSON.\nassigned_lighting_log : dict\n    Dictionary to store assigned lighting parameters for logging.\nuser_config_dhw : list or dict\n    Optional DHW overrides from JSON.\nassigned_dhw_log : dict\n    Dictionary to store assigned DHW parameters for logging.\nres_data : dict\n    Final dictionary of residential fenestration data after merges.\nnonres_data : dict\n    Final dictionary of non-res fenestration data after merges.\nassigned_fenez_log : dict\n    Dictionary to store assigned fenestration parameters for logging.\nuser_config_hvac : list or dict\n    Optional HVAC overrides from JSON.\nassigned_hvac_log : dict\n    Dictionary to store assigned HVAC parameters for logging.\nuser_config_vent : list or dict\n    Optional ventilation overrides from JSON.\nassigned_vent_log : dict\n    Dictionary to store assigned vent parameters for logging.\nassigned_setzone_log : dict\n    Dictionary to store assigned zone sizing parameters.\nassigned_groundtemp_log : dict\n    Dictionary to store assigned ground temp parameters.\noutput_definitions : dict\n    Contains desired_variables, desired_meters, override frequencies, etc.\n    e.g. {\n      \"desired_variables\": [...],\n      \"desired_meters\": [...],\n      \"override_variable_frequency\": \"Hourly\",\n      \"override_meter_frequency\": \"Hourly\",\n      \"include_tables\": True,\n      \"include_summary\": True\n    }\n\nReturns\n-------\nout_path : str\n    File path to the saved IDF."
+            },
+            {
+                "name": "create_idfs_for_all_buildings",
+                "doc": "Loops over df_buildings, calls create_idf_for_building for each building, \noptionally runs E+ simulations in parallel, and merges results if post_process=True.\n\nParameters\n----------\ndf_buildings : pd.DataFrame\n    Must contain columns like 'area', 'perimeter', 'orientation', 'ogc_fid', etc.\nscenario : str\ncalibration_stage : str\nstrategy : str\n    e.g. \"A\" => midpoint, \"B\" => random uniform\nrandom_seed : int\nuser_config_* : dict or list\n    JSON overrides for geometry, lighting, DHW, etc.\nres_data, nonres_data : dict\n    Fenestration dictionaries after merges of Excel + JSON overrides\nuser_config_epw : list or dict\n    If you're overriding EPW weather files from JSON or Excel\noutput_definitions : dict\n    Desired E+ variables/meters/frequencies to output\nrun_simulations : bool\n    Whether to run E+ simulations right after IDF creation\nsimulate_config : dict\n    e.g. {\"num_workers\": 4, \"ep_force_overwrite\": True, ...}\npost_process : bool\n    Whether to do result merging after simulation\npost_process_config : dict\n    Contains details for the merging, e.g. multiple daily/monthly passes\n\nReturns\n-------\ndf_buildings : pd.DataFrame\n    The input DataFrame with an additional column \"idf_name\" for the IDF filename."
+            },
+            {
+                "name": "_write_geometry_csv",
+                "doc": null
+            },
+            {
+                "name": "_write_lighting_csv",
+                "doc": null
+            },
+            {
+                "name": "_write_fenestration_csv",
+                "doc": null
+            },
+            {
+                "name": "_write_dhw_csv",
+                "doc": null
+            },
+            {
+                "name": "_write_hvac_csv",
+                "doc": null
+            },
+            {
+                "name": "_write_vent_csv",
+                "doc": null
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "os",
+            "logging",
+            "pandas",
+            "geomeppy",
+            "idf_objects.geomz.building",
+            "idf_objects.fenez.fenestration",
+            "idf_objects.fenez.materials",
+            "idf_objects.Elec.lighting",
+            "idf_objects.DHW.water_heater",
+            "idf_objects.HVAC.custom_hvac",
+            "idf_objects.ventilation.add_ventilation",
+            "idf_objects.setzone.add_outdoor_air_and_zone_sizing_to_all_zones",
+            "idf_objects.tempground.add_ground_temperatures",
+            "idf_objects.other.zonelist",
+            "idf_objects.outputdef.assign_output_settings",
+            "idf_objects.outputdef.add_output_definitions",
+            "postproc.merge_results",
+            "epw.run_epw_sims"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\main copy.py": {
+        "functions": [
+            {
+                "name": "setup_logging",
+                "doc": null
+            },
+            {
+                "name": "load_json",
+                "doc": null
+            },
+            {
+                "name": "main",
+                "doc": null
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "os",
+            "json",
+            "logging",
+            "pandas",
+            "database_handler",
+            "excel_overrides",
+            "idf_objects.fenez.fenez_config_manager",
+            "idf_creation",
+            "idf_creation",
+            "main_modifi",
+            "validation.main_validation",
+            "cal.unified_sensitivity",
+            "cal.unified_surrogate",
+            "cal.unified_calibration",
+            "idf_objects.fenez.fenez_config_manager",
+            "idf_objects.structuring.fenestration_structuring",
+            "idf_objects.structuring.dhw_structuring",
+            "idf_objects.structuring.flatten_hvac",
+            "idf_objects.structuring.flatten_assigned_vent",
+            "user_config_overrides",
+            "user_config_overrides"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\main.py": {
+        "functions": [
+            {
+                "name": "setup_logging",
+                "doc": null
+            },
+            {
+                "name": "load_json",
+                "doc": null
+            },
+            {
+                "name": "orchestrate_workflow",
+                "doc": "This function encapsulates the entire workflow that was previously run\nin the old 'main()' function. Now it can be invoked by a FastAPI endpoint."
+            },
+            {
+                "name": "health_check",
+                "doc": "Simple health check endpoint."
+            },
+            {
+                "name": "run_workflow",
+                "doc": "Endpoint to run the entire orchestration workflow.\nReturns a JSON status with success or error info."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "os",
+            "json",
+            "logging",
+            "typing",
+            "pandas",
+            "fastapi",
+            "uvicorn",
+            "excel_overrides",
+            "idf_objects.fenez.fenez_config_manager",
+            "idf_creation",
+            "idf_creation",
+            "main_modifi",
+            "validation.main_validation",
+            "cal.unified_sensitivity",
+            "cal.unified_surrogate",
+            "cal.unified_calibration",
+            "database_handler",
+            "idf_objects.structuring.fenestration_structuring",
+            "idf_objects.structuring.dhw_structuring",
+            "idf_objects.structuring.flatten_hvac",
+            "idf_objects.structuring.flatten_assigned_vent",
+            "user_config_overrides",
+            "user_config_overrides"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\main_create_idf.py": {
+        "functions": [
+            {
+                "name": "create_idf_for_building",
+                "doc": "Builds an IDF for a single building row, applying override+log for geometry, fenestration,\nlighting, DHW, HVAC, ventilation, zone sizing, ground temps.\nSaves the IDF to disk and returns the file name."
+            },
+            {
+                "name": "main",
+                "doc": null
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "os",
+            "logging",
+            "pandas",
+            "geomeppy",
+            "idf_objects.geomz.building",
+            "idf_objects.geomz.geometry_overrides_from_excel",
+            "idf_objects.fenez.fenestration",
+            "idf_objects.fenez.materials",
+            "idf_objects.fenez.dict_override_excel",
+            "idf_objects.Elec.lighting",
+            "idf_objects.Elec.lighting_lookup",
+            "idf_objects.Elec.lighting_overrides_from_excel",
+            "idf_objects.DHW.water_heater",
+            "idf_objects.DHW.dhw_lookup",
+            "idf_objects.DHW",
+            "idf_objects.DHW.dhw_overrides_from_excel",
+            "idf_objects.HVAC.custom_hvac",
+            "idf_objects.HVAC.hvac_lookup",
+            "idf_objects.HVAC.hvac_overrides_from_excel",
+            "idf_objects.ventilation.add_ventilation",
+            "idf_objects.ventilation.ventilation_lookup",
+            "idf_objects.ventilation.ventilation_overrides_from_excel",
+            "idf_objects.setzone.add_outdoor_air_and_zone_sizing_to_all_zones",
+            "idf_objects.tempground.add_ground_temperatures",
+            "idf_objects.outputdef.assign_output_settings",
+            "idf_objects.outputdef.add_output_definitions",
+            "postproc.merge_results",
+            "idf_objects.other.zonelist",
+            "epw.run_epw_sims",
+            "epw.epw_lookup",
+            "epw.epw_overrides_from_excel",
+            "Lookups.data_materials_residential",
+            "Lookups.data_materials_non_residential",
+            "idf_objects.shading.shading"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\main_modifi.py": {
+        "functions": [
+            {
+                "name": "run_all_idfs_in_folder",
+                "doc": "Utility function to find .idf files in folder_path and run them with simulate_all(...).\nAdjust lat/lon/year or load them from a side CSV if needed."
+            },
+            {
+                "name": "run_modification_workflow",
+                "doc": "Main function for scenario-based IDF creation + optional E+ simulation, \npost-processing, and validation.\n\nExample config structure:\n{\n  \"base_idf_path\": \"output/output_IDFs/building_0.idf\",\n  \"idd_path\": \"D:/EnergyPlus/Energy+.idd\",\n  \"assigned_csv\": {\n    \"hvac_building\": \"output/assigned/assigned_hvac_building.csv\",\n    \"hvac_zones\":    \"output/assigned/assigned_hvac_zones.csv\",\n    \"dhw\":           \"output/assigned/assigned_dhw_params.csv\",\n    \"vent_build\":    \"output/assigned/assigned_vent_building.csv\",\n    \"vent_zones\":    \"output/assigned/assigned_vent_zones.csv\",\n    \"elec\":          \"output/assigned/assigned_lighting.csv\",\n    \"fenez\":         \"output/assigned/structured_fenez_params.csv\"\n  },\n  \"scenario_csv\": {\n    \"hvac\":  \"output/scenarios/scenario_params_hvac.csv\",\n    \"dhw\":   \"output/scenarios/scenario_params_dhw.csv\",\n    \"vent\":  \"output/scenarios/scenario_params_vent.csv\",\n    \"elec\":  \"output/scenarios/scenario_params_elec.csv\",\n    \"fenez\": \"output/scenarios/scenario_params_fenez.csv\"\n  },\n  \"output_idf_dir\": \"output/scenario_idfs\",\n  \"building_id\": 4136730,\n  \"num_scenarios\": 5,\n  \"picking_method\": \"random_uniform\",\n  \"picking_scale_factor\": 0.5,\n\n  \"run_simulations\": true,\n  \"simulation_config\": {\n    \"num_workers\": 4,\n    \"output_dir\": \"output/Sim_Results/Scenarios\"\n  },\n  \"perform_post_process\": true,\n  \"post_process_config\": {\n    \"output_csv_as_is\": \"output/results_scenarioes/merged_as_is_scenarios.csv\",\n    \"output_csv_daily_mean\": \"output/results_scenarioes/merged_daily_mean_scenarios.csv\"\n  },\n  \"perform_validation\": true,\n  \"validation_config\": {\n    \"real_data_csv\": \"output/results/mock_merged_daily_mean.csv\",\n    \"sim_data_csv\": \"output/results/merged_daily_mean_mocked.csv\",\n    \"bldg_ranges\": { \"0\": [0, 1, 2, 3, 4] },\n    \"threshold_cv_rmse\": 30.0,\n    \"skip_plots\": false,\n    \"output_csv\": \"scenario_validation_report.csv\"\n  }\n}"
+            },
+            {
+                "name": "_make_param_dict",
+                "doc": "Builds a dict {param_name: value} from the scenario DataFrame columns,\nchecking 'assigned_value' or 'param_value'."
+            },
+            {
+                "name": "filter_for_building",
+                "doc": null
+            },
+            {
+                "name": "safe_load_scenario",
+                "doc": null
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "os",
+            "logging",
+            "pandas",
+            "modification.common_utils",
+            "modification.hvac_functions",
+            "modification.dhw_functions",
+            "modification.vent_functions",
+            "modification.elec_functions",
+            "modification.fenez_functions2",
+            "epw.run_epw_sims",
+            "postproc.merge_results",
+            "validation.main_validation",
+            "modification.dhw_functions"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\user_config_overrides.py": {
+        "functions": [
+            {
+                "name": "load_json_file",
+                "doc": "Safely load a single JSON file. \nReturns a Python dictionary or None if file not found or invalid."
+            },
+            {
+                "name": "load_all_user_configs",
+                "doc": "Loads multiple JSON files from the user_configs folder:\n  - main_config.json (if present)\n  - geometry.json\n  - fenestration.json\n  - dhw.json\n  - hvac.json\n  - lighting.json\n  - vent.json\n  - epw.json\n  - shading.json\n\nConsolidates them into a single dictionary. \n1) If main_config.json is found, we take that as the base user_config.\n2) Then we merge geometry.json => user_config[\"user_overrides\"][\"geometry\"] = [...]\n   fenestration.json => user_config[\"user_overrides\"][\"fenestration\"] = [...]\n   etc.\n3) If a top-level key conflicts, we allow the main_config.json to remain \n   but add the new data under user_config[\"user_overrides\"].\n\nReturns the final merged dictionary."
+            },
+            {
+                "name": "apply_geometry_user_config",
+                "doc": "user_config_geom: list of override rules:\n  [\n    { \"building_id\":4136730, \"param_name\":\"perimeter_depth\", \"fixed_value\":3.5 },\n    { \"building_type\":\"Meeting Function\", \"param_name\":\"has_core\", \"fixed_value\":True }\n  ]\nWe'll parse these rules & override geometry_dict accordingly."
+            },
+            {
+                "name": "apply_fenestration_user_config",
+                "doc": "user_config_fenez can be:\n  1) A list of rule dicts from fenestration.json, e.g.\n     [\n       {\n         \"building_id\":4136730,\n         \"building_function\":\"residential\",\n         \"age_range\":\"1992 - 2005\",\n         \"scenario\":\"scenario1\",\n         \"param_name\":\"wwr\",\n         \"min_val\":0.25,\n         \"max_val\":0.30\n       },\n       ...\n     ]\n  2) A dictionary of top-level keys like { \"wwr\":0.32, \"elements\":{...} } if loaded inline.\n\nWe'll handle both cases. For the list:\n  - We interpret param_name, fixed_value, min_val, max_val, etc. \n  - Possibly do random picks or store them.\n\nFor the dict:\n  - We just assign the keys directly to fenez_dict."
+            },
+            {
+                "name": "apply_dhw_user_config",
+                "doc": "If user_config_dhw is a list of rules, e.g. from dhw.json:\n  [\n     {\n         \"building_id\":4136730,\n         \"param_name\":\"occupant_density_m2_per_person\",\n         \"fixed_value\":null\n     },\n     {\n         \"dhw_key\":\"Office\",\n         \"param_name\":\"setpoint_c\",\n         \"min_val\":58.0,\n         \"max_val\":60.0\n     }\n  ]\nWe'll interpret them and partially override dhw_lookup in memory."
+            },
+            {
+                "name": "apply_lighting_user_config",
+                "doc": "user_config_lighting could be a list of rules from lighting.json:\n  [\n    { \"building_id\":4136730, \"param_name\":\"lights_wm2\",\"min_val\":8.0,\"max_val\":10.0 },\n    ...\n  ]\nWe'll parse them. For a real logic, you'd store or pick a random in [min_val,max_val]."
+            },
+            {
+                "name": "apply_hvac_user_config",
+                "doc": "user_config_hvac can be a list of rules from hvac.json:\n  [\n    {\n      \"building_id\":4136730,\n      \"param_name\":\"heating_day_setpoint\",\n      \"min_val\":20.0,\n      \"max_val\":21.0\n    },\n    ...\n  ]\nor a direct dict approach. We handle the list-of-rules approach here."
+            },
+            {
+                "name": "apply_ventilation_user_config",
+                "doc": "user_config_vent can be a list from vent.json:\n  [\n     {\"building_id\":4136730, \"param_name\":\"infiltration_base\",\"min_val\":1.3,\"max_val\":1.4},\n     ...\n  ]\nWe'll parse similarly."
+            },
+            {
+                "name": "apply_epw_user_config",
+                "doc": "user_config_epw might be a list from epw.json:\n  [\n    {\n        \"building_id\":4136730,\n        \"fixed_epw_path\":\"C:/MyCustom.epw\"\n    },\n    {\n        \"desired_year\":2050,\n        \"override_year_to\":2018\n    }\n  ]\nYou might store these in epw_lookup or handle them in another step \n(like picking the correct weather file)."
+            },
+            {
+                "name": "apply_shading_user_config",
+                "doc": "If you have shading.json with a list of rules:\n  [\n    {\n       \"building_id\":4136730,\n       \"param_name\":\"top_n_buildings\",\n       \"fixed_value\":5\n    },\n    {\n       \"building_function\":\"residential\",\n       \"param_name\":\"summer_value\",\n       \"min_val\":0.4,\"max_val\":0.6\n    }\n  ]\nWe store them in shading_dict or do some logic."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "os",
+            "json"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\cal\\main cal.py": {
+        "functions": [
+            {
+                "name": "main",
+                "doc": null
+            },
+            {
+                "name": "main",
+                "doc": null
+            },
+            {
+                "name": "main",
+                "doc": "1) Load scenario param CSVs => get param_min, param_max\n2) Build param_specs\n3) Define a calibration objective => simulate_or_surrogate\n4) Choose method (random, ga, bayes)\n5) Save best params + error, optional CSV log"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "cal.unified_sensitivity",
+            "os",
+            "pandas",
+            "cal.unified_surrogate",
+            "os",
+            "unified_calibration"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\cal\\unified_calibration.py": {
+        "functions": [
+            {
+                "name": "load_scenario_csvs",
+                "doc": "Reads specified scenario CSVs from scenario_folder, merges them.\nEach file is expected to have columns e.g.:\n  scenario_index, ogc_fid, object_name, param_name,\n  param_value, param_min, param_max, ...\nWe'll store \"source_file\" for each row. "
+            },
+            {
+                "name": "optionally_filter_by_sensitivity",
+                "doc": "If 'sensitivity_csv' is found, read it, sort by metric_col descending,\npick top_n param names => keep only those in df_scen. \nWe'll match df_scen[\"param_name\"] to param_col in the sensitivity CSV."
+            },
+            {
+                "name": "build_param_specs_from_scenario",
+                "doc": "For each row in df_scen, produce param_value plus param_min/param_max if calibrate_min_max is True.\n\nWe do something like:\n  base_key = f\"{source_file}:{param_name}\"\n  Then create:\n     base_key_VAL\n     base_key_MIN\n     base_key_MAX\nwith numeric ranges.\n\nYou can revise the logic so param_min param_max come from row[\"param_min\"], row[\"param_max\"] if you want them separate."
+            },
+            {
+                "name": "load_surrogate_once",
+                "doc": "Loads the surrogate model and column list into global variables if not loaded yet.\nAdjust as needed if you have multiple surrogates or different model paths."
+            },
+            {
+                "name": "load_real_data_once",
+                "doc": "You can interpret your real_data_csv and store it as a dictionary \nif you have multiple scenario_index or building IDs. For this example, \nwe store a single usage or a dict with a single key."
+            },
+            {
+                "name": "transform_calib_name_to_surrogate_col",
+                "doc": "If your calibration param name is \"scenario_params_dhw.csv:dhw.setpoint_c_VAL\",\nwe might want to map it to \"dhw.setpoint_c\" for the surrogate.\nThis is a simple approach:\n  1) remove \"_VAL\", \"_MIN\", \"_MAX\"\n  2) remove \"scenario_params_dhw.csv:\" prefix"
+            },
+            {
+                "name": "build_feature_row_from_param_dict",
+                "doc": "1) We have a list of columns the surrogate expects => MODEL_COLUMNS\n2) param_dict keys are e.g. \"scenario_params_dhw.csv:dhw.setpoint_c_VAL\" => 58.0\n3) Map them => \"dhw.setpoint_c\" => 58.0"
+            },
+            {
+                "name": "predict_error_with_surrogate",
+                "doc": "1) load surrogate if not loaded\n2) build feature row\n3) predict => predicted usage\n4) get real usage => compute error"
+            },
+            {
+                "name": "run_energyplus_and_compute_error",
+                "doc": "Placeholder for re-running E+. \nFor now, we do sum of param_dict + random noise, measure difference from 50."
+            },
+            {
+                "name": "simulate_or_surrogate",
+                "doc": "If config[\"use_surrogate\"] => call surrogate\nelse => re-run E+"
+            },
+            {
+                "name": "random_search_calibration",
+                "doc": null
+            },
+            {
+                "name": "ga_calibration",
+                "doc": null
+            },
+            {
+                "name": "bayes_calibration",
+                "doc": null
+            },
+            {
+                "name": "save_history_to_csv",
+                "doc": null
+            },
+            {
+                "name": "fix_min_max_relations",
+                "doc": "Optional step: ensure param_min <= param_val <= param_max.\nFor each group: basekey_VAL, basekey_MIN, basekey_MAX, reorder if needed.\nE.g. 'scenario_params_dhw.csv:dhw.setpoint_c_VAL' => ..."
+            },
+            {
+                "name": "save_best_params_separately",
+                "doc": "Writes separate CSV for each scenario file.\nE.g.: prefix + \"scenario_params_dhw.csv\"\nEach file has rows with columns:\n  scenario_index, ogc_fid, object_name, param_name,\n  old_param_value, new_param_value,\n  old_param_min, new_param_min,\n  old_param_max, new_param_max,\n  source_file"
+            },
+            {
+                "name": "run_unified_calibration",
+                "doc": "Example usage from main.py:\n  if cal_cfg.get(\"perform_calibration\", False):\n      run_unified_calibration(cal_cfg)\n\nThe calibration_config can have keys like:\n{\n  \"scenario_folder\": \"output/scenarios\",\n  \"scenario_files\": [ \"scenario_params_dhw.csv\", ... ],\n  \"subset_sensitivity_csv\": \"morris_sensitivity.csv\",\n  \"top_n_params\": 10,\n  \"method\": \"ga\",\n  \"use_surrogate\": true,\n  \"real_data_csv\": \"output/results/mock_merged_daily_mean.csv\",\n  \"surrogate_model_path\": \"heating_surrogate_model.joblib\",\n  \"surrogate_columns_path\": \"heating_surrogate_columns.joblib\",\n  \"calibrate_min_max\": true,\n  \"ga_pop_size\": 10,\n  \"ga_generations\": 5,\n  \"ga_crossover_prob\": 0.7,\n  \"ga_mutation_prob\": 0.2,\n  \"bayes_n_calls\": 15,\n  \"random_n_iter\": 20,\n  \"output_history_csv\": \"calibration_history.csv\",\n  \"best_params_folder\": \"output/calibrated\",\n  \"history_folder\": \"output/calibrated\"\n}"
+            },
+            {
+                "name": "__init__",
+                "doc": null
+            },
+            {
+                "name": "sample_random",
+                "doc": null
+            },
+            {
+                "name": "random_individual",
+                "doc": null
+            },
+            {
+                "name": "evaluate",
+                "doc": null
+            },
+            {
+                "name": "tournament_select",
+                "doc": null
+            },
+            {
+                "name": "crossover",
+                "doc": null
+            },
+            {
+                "name": "mutate",
+                "doc": null
+            },
+            {
+                "name": "objective",
+                "doc": null
+            },
+            {
+                "name": "local_eval_func",
+                "doc": null
+            }
+        ],
+        "classes": [
+            {
+                "name": "ParamSpec",
+                "doc": "name: the internal name of the parameter (str)\nmin_value, max_value: float boundaries\nis_integer: bool => if True, round to int",
+                "methods": [
+                    {
+                        "name": "__init__",
+                        "doc": null
+                    },
+                    {
+                        "name": "sample_random",
+                        "doc": null
+                    }
+                ]
+            }
+        ],
+        "imports": [
+            "os",
+            "csv",
+            "random",
+            "copy",
+            "numpy",
+            "pandas",
+            "typing",
+            "joblib",
+            "skopt",
+            "skopt.space",
+            "skopt.utils",
+            "collections"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\cal\\unified_sensitivity.py": {
+        "functions": [
+            {
+                "name": "encode_categorical_if_known",
+                "doc": "Tries to interpret 'param_value' as numeric:\n  1) Direct float conversion\n  2) If that fails, attempt known label encodings\n  3) Return None if unknown => skip param\n\nModify or expand the logic as you see fit to cover more discrete strings."
+            },
+            {
+                "name": "build_unified_param_name",
+                "doc": "Combine columns (zone_name, object_name, sub_key, param_name)\nto produce a single unique param_name in the final DataFrame.\nModify to your preference."
+            },
+            {
+                "name": "load_scenario_params",
+                "doc": "Reads scenario_params_*.csv from scenario_folder, merges them into\na single DataFrame with columns:\n  [\"scenario_index\", \"param_name\", \"assigned_value\", \"param_min\", \"param_max\", \"ogc_fid\", \"source_file\"]\nand attempts to convert assigned_value to float or a known label-encoded numeric.\n\nIf it cannot be encoded => we skip that row."
+            },
+            {
+                "name": "correlation_sensitivity",
+                "doc": "Performs correlation-based sensitivity between each parameter and\none or more target variables from the results.\n\nIf target_variables is a single string, we produce a DF with:\n   [Parameter, Correlation, AbsCorrelation]\n\nIf target_variables is a list of strings, we produce one row per param,\nwith correlation columns for each variable, e.g.:\n   [Parameter,\n    Corr_<var1>, AbsCorr_<var1>,\n    Corr_<var2>, AbsCorr_<var2>, ...\n   ]\n\nSteps:\n  1) Pivot df_scenarios => wide (index=scenario_index, columns=param_name)\n  2) Melt df_results => sum across days => pivot wide so each variable has\n     its own column.\n  3) Merge scenario pivot with results pivot\n  4) Correlate each param col with each variable col\n\nReturns a DataFrame of correlation results."
+            },
+            {
+                "name": "extract_parameter_ranges",
+                "doc": "Builds DF [name, min_value, max_value].\nIf param_min / param_max are missing/invalid, fallback to \u00b120% around assigned_value."
+            },
+            {
+                "name": "build_salib_problem",
+                "doc": "Convert DF [name, min_value, max_value] => SALib problem dict"
+            },
+            {
+                "name": "default_simulation_function",
+                "doc": "Example: sum of param_dict + random noise.\nReplace with your E+ or Surrogate call if you want real analysis."
+            },
+            {
+                "name": "run_morris_method",
+                "doc": "SALib Morris"
+            },
+            {
+                "name": "run_sobol_method",
+                "doc": "SALib Sobol"
+            },
+            {
+                "name": "run_sensitivity_analysis",
+                "doc": "Called from main.py to do correlation, Morris, or Sobol sensitivity.\nNow supports multiple target variables in correlation-based approach.\n\n:param scenario_folder: path to folder with scenario_params_*.csv\n:param method: \"correlation\", \"morris\", or \"sobol\"\n:param results_csv: path to results CSV (for correlation)\n:param target_variable: string or list of strings (for correlation).\n:param output_csv: results file\n:param n_morris_trajectories: int\n:param num_levels: Morris design\n:param n_sobol_samples: int"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "os",
+            "numpy",
+            "pandas",
+            "typing",
+            "SALib.sample",
+            "SALib.sample",
+            "SALib.analyze",
+            "SALib.analyze"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\cal\\unified_surrogate.py": {
+        "functions": [
+            {
+                "name": "encode_categorical_if_known",
+                "doc": "1) Attempt float conversion\n2) If fails, check known label encodings\n3) If still unknown => return None => skip row\n\nModify or expand to handle your typical discrete strings."
+            },
+            {
+                "name": "load_scenario_file",
+                "doc": "Reads one scenario CSV, ensures a column 'assigned_value' which is numeric.\nIf row can't be converted => skip. Returns a numeric-only DataFrame for that file."
+            },
+            {
+                "name": "load_scenario_params",
+                "doc": "Merges scenario_params_{dhw, elec, fenez, hvac, vent}.csv from scenario_folder.\nEach file is label-encoded. Unknown text -> skipped.\nReturns a unified DataFrame with columns like:\n  [scenario_index, param_name, assigned_value, ogc_fid, ...]"
+            },
+            {
+                "name": "pivot_scenario_params",
+                "doc": "Pivots so each scenario_index is a row, each param_name is a column, assigned_value are cells.\nAlso preserves 'ogc_fid' if present.\n\nExample final columns:\n  scenario_index, ogc_fid, paramA, paramB, ..."
+            },
+            {
+                "name": "filter_top_parameters",
+                "doc": "Reads a Morris sensitivity CSV, picks top_n 'param' by mu_star, \nfilters df_pivot to only those columns plus scenario_index, ogc_fid."
+            },
+            {
+                "name": "load_sim_results",
+                "doc": "Typically: [BuildingID, VariableName, Day1, Day2, ...]"
+            },
+            {
+                "name": "aggregate_results",
+                "doc": "Sums across days => [BuildingID, VariableName, TotalEnergy_J].\nEnsures we have \"BuildingID\", \"VariableName\"."
+            },
+            {
+                "name": "merge_params_with_results",
+                "doc": "Merges pivoted scenario data (with columns [scenario_index->BuildingID, paramA..])\n+ aggregated results => single DataFrame for model training.\n\nIf target_var is None => merges all \"VariableName\" => multiple rows per building.\nIf str => picks that var => single column => rename to var name => merges one row per building\nIf list => pivot each var => multi columns => merges one row per building => multi-output"
+            },
+            {
+                "name": "build_and_save_surrogate",
+                "doc": "1) Splits data into X,y. If target_col is a single string => single-output.\n   If list => multi-output.\n2) Builds a RandomForest via RandomizedSearchCV => best params.\n3) If multi-output => wraps in MultiOutputRegressor.\n4) Saves model + list of feature columns.\n\nReturns (model, feature_cols)."
+            },
+            {
+                "name": "load_surrogate_and_predict",
+                "doc": "1) Load trained model + feature columns\n2) Convert sample_features => row DataFrame with the same columns\n3) predict => returns array"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "os",
+            "pandas",
+            "numpy",
+            "joblib",
+            "typing",
+            "sklearn.ensemble",
+            "sklearn.model_selection",
+            "sklearn.multioutput",
+            "sklearn.metrics"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\cal\\__init__.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\epw\\assign_epw_file.py": {
+        "functions": [
+            {
+                "name": "find_epw_overrides",
+                "doc": null
+            },
+            {
+                "name": "assign_epw_for_building_with_overrides",
+                "doc": "Attempt to pick an EPW by:\n  1) checking user_config_epw for a forced or override logic\n  2) else calling the original logic from assign_epw_for_building"
+            },
+            {
+                "name": "pick_epw_from_lookup",
+                "doc": "The original logic from assign_epw_for_building\nthat picks among epw_lookup. Returns file_path or None."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "math",
+            ".epw_lookup"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\epw\\epw_lookup.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\epw\\epw_overrides_from_excel.py": {
+        "functions": [
+            {
+                "name": "read_epw_overrides_from_excel",
+                "doc": "Reads an Excel file with columns => file_path, year, lat, lon\nand returns a list of dicts => [ {\"file_path\":..., \"year\":..., \"lat\":..., \"lon\":...}, ... ]"
+            },
+            {
+                "name": "apply_epw_overrides_to_lookup",
+                "doc": "Merges override_list (a list of epw dicts) into default_lookup.\nIf the 'year' already exists in default_lookup, we either replace it\nor keep both. For example, if you prefer to update the existing entry \nfor that year, you'd do something like \"unique by year + lat/lon distance\".\nOr you can just append everything, resulting in duplicates.\n\nWe'll do a basic approach:\n  - For each override in override_list => \n     if there's an exact match (same year, lat, lon) in default_lookup, replace it\n     else append it as a new entry."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas",
+            "copy"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\epw\\run_epw_sims.py": {
+        "functions": [
+            {
+                "name": "run_simulation",
+                "doc": ":param args: tuple (idf_path, epwfile, iddfile, output_directory, building_index)"
+            },
+            {
+                "name": "generate_simulations",
+                "doc": null
+            },
+            {
+                "name": "simulate_all",
+                "doc": "Runs E+ simulations in parallel:\n  - For each row in df_buildings, we pick an EPW & IDF.\n  - Group results by year so all building results for year X go in base_output_dir/X."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "os",
+            "logging",
+            "eppy.modeleditor",
+            "multiprocessing",
+            ".assign_epw_file"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\DHW\\assign_dhw_values.py": {
+        "functions": [
+            {
+                "name": "find_dhw_overrides",
+                "doc": "Helper function to search user_config_dhw for any overrides matching:\n  - building_id (exact), if present in the row\n  - dhw_key (exact), if present in the row\n  - building_function (case-insensitive), if present in the row\n  - age_range (exact string match), if present in the row\n\nEach row in user_config might look like:\n  {\n    \"building_id\": 4136730,\n    \"dhw_key\": \"Apartment\",\n    \"param_name\": \"liters_per_person_per_day\",\n    \"fixed_value\": 52.0\n  }\n  or\n  {\n    \"building_function\": \"residential\",\n    \"age_range\": \"1992 - 2005\",\n    \"param_name\": \"setpoint_c\",\n    \"min_val\": 58.0,\n    \"max_val\": 60.0\n  }\n  etc."
+            },
+            {
+                "name": "pick_val_with_range",
+                "doc": "rng_tuple = (min_val, max_val)\nstrategy  = \"A\" => pick midpoint\n            \"B\" => random.uniform(min_val, max_val)\n            else => pick min_val as fallback\n\nIf log_dict is provided, store the final chosen value and (min_val, max_val)\nunder keys like log_dict[param_name] and log_dict[f\"{param_name}_range\"].\n\nIf both min_val and max_val are None => final value is None (no range)."
+            },
+            {
+                "name": "assign_dhw_parameters",
+                "doc": "Returns a dict of selected DHW parameter values from dhw_lookup + user overrides:\n\n  - occupant_density_m2_per_person\n  - liters_per_person_per_day\n  - default_tank_volume_liters\n  - default_heater_capacity_w\n  - setpoint_c\n  - usage_split_factor\n  - peak_hours\n  - sched_morning\n  - sched_peak\n  - sched_afternoon\n  - sched_evening\n\nSteps:\n  1) Identify param ranges from dhw_lookup[calibration_stage][dhw_key], or fallback.\n  2) Gather user_config overrides (if any) => override param ranges, possibly checking\n     building_function or age_range as well.\n  3) Possibly compute occupant density from building_row if none is found.\n  4) Use the chosen strategy (\"A\", \"B\") to pick final numeric values.\n  5) If use_nta=True => occupant-based usage override for residential.\n  6) Return a dict with final picks. Also store them in assigned_dhw_log if provided."
+            },
+            {
+                "name": "override_range",
+                "doc": "Convert override row to new (min_val, max_val) or (fixed_value, fixed_value)."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "random",
+            ".dhw_lookup"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\DHW\\building_type_map.py": {
+        "functions": [
+            {
+                "name": "map_building_function_to_dhw_key",
+                "doc": "Decide which DHW key from dhw_lookup to use, based on:\n  - building_function: 'Residential' or 'Non-Residential'\n  - For Residential, read the 'residential_type' field\n    directly. Return one of:\n      \"Corner House\"\n      \"Apartment\"\n      \"Terrace or Semi-detached House\"\n      \"Detached House\"\n      \"Two-and-a-half-story House\"\n    If it doesn't match exactly, fallback to e.g. \"Apartment\".\n  \n  - For Non-Residential, read the 'non_residential_type'\n    field and map directly to:\n      \"Meeting Function\", \"Healthcare Function\", ...\n      \"Other Use Function\" (fallback)"
+            }
+        ],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\DHW\\dhw_lookup.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\DHW\\dhw_overrides_from_excel.py": {
+        "functions": [
+            {
+                "name": "override_dhw_lookup_from_excel",
+                "doc": "Reads an Excel file with columns like:\n  - calibration_stage, dhw_key\n  - occupant_density_m2_per_person_min, occupant_density_m2_per_person_max\n  - setpoint_c_min, setpoint_c_max\n  - (etc.)\n\nOnly updates/extends the entries for which both `_min` and `_max` are non-empty.\nReturns a new dictionary with partial overrides applied."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas",
+            "copy"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\DHW\\parameters.py": {
+        "functions": [
+            {
+                "name": "calculate_dhw_parameters",
+                "doc": "assigned = {\n   \"occupant_density_m2_per_person\": ...,\n   \"liters_per_person_per_day\": ...,\n   \"default_tank_volume_liters\": ...,\n   \"default_heater_capacity_w\": ...,\n   \"setpoint_c\": ...,\n   \"usage_split_factor\": ...,\n   \"peak_hours\": ...\n   (plus schedule fields if needed)\n}\n\nWe compute:\n  occupant_count (if not given)\n  daily_liters\n  peak_flow_m3s\n  tank_volume_m3\n  heater_capacity_w\n  setpoint_c\n\nIf assigned_dhw_log and building_id are provided, we can\nstore these derived values in the log as well."
+            }
+        ],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\DHW\\schedules.py": {
+        "functions": [
+            {
+                "name": "create_dhw_schedules",
+                "doc": "Example: build a daily fraction schedule using the 4 'knobs':\n  - morning_val\n  - peak_val\n  - afternoon_val\n  - evening_val\nYou can shape this however you want."
+            }
+        ],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\DHW\\water_heater.py": {
+        "functions": [
+            {
+                "name": "add_dhw_to_idf",
+                "doc": "1) Retrieve 'dhw_key' from building_row (or fallback).\n2) Pull parameter ranges from dhw_lookup => assign final picks in assign_dhw_parameters().\n3) Merge with user_config_dhw if any (including building_function, age_range, etc.).\n4) Calculate occupant_count, daily usage, peak flow, etc.\n5) Create schedules, then WaterHeater:Mixed object in the IDF.\n6) Log object names and all relevant fields in assigned_dhw_log for debugging or future Eppy edits."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            ".assign_dhw_values",
+            ".parameters",
+            ".schedules"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\eequip\\assign_equip_values.py": {
+        "functions": [
+            {
+                "name": "assign_equipment_parameters",
+                "doc": "Returns a dict with \"equip_wm2\", \"tD\", \"tN\", etc. for electric equipment.\n\nSteps:\n  1) Check calibration_stage in equip_lookup; else fallback to \"pre_calibration\".\n  2) Get the dictionary for building_type (if missing => pick some default).\n  3) If user_config is provided, find all matching override rows for (building_id, building_type, age_range).\n  4) For each matching row, override the param's range (min_val, max_val).\n  5) Pick final value from the resulting range using 'strategy':\n     - A => midpoint\n     - B => random\n     - else => pick the min_val\n  6) Return assigned dictionary, optionally log it in assigned_log[building_id]."
+            },
+            {
+                "name": "pick_val",
+                "doc": null
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "random",
+            ".equip_lookup",
+            ".overrides_helper"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\eequip\\equip_lookup.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\eequip\\equip_overrides_from_excel.py": {
+        "functions": [
+            {
+                "name": "read_equipment_overrides_from_excel",
+                "doc": "Reads an Excel file (e.g. 'equipment_overrides.xlsx') and returns a structure \nthat can override the default equipment parameters in 'equip_lookup.py'.\n\nExpected columns in the Excel file:\n  - calibration_stage\n  - building_type\n  - param_name   (like 'equip_wm2', 'tD', 'tN', etc.)\n  - min_val\n  - max_val\n  - fixed_value\n\nExample usage:\n  override_data = read_equipment_overrides_from_excel(\"equipment_overrides.xlsx\")\n  # override_data => { stage -> { btype -> { param_name -> (mn, mx) } } }\n\nYou can then merge it into your default lookup with a function like\n`apply_equipment_overrides_to_lookup(...).`"
+            },
+            {
+                "name": "apply_equipment_overrides_to_lookup",
+                "doc": "Integrates override_data into the given default_lookup (in-place or by returning a new copy).\n\nFor each (stage -> btype -> param_name -> range), \nwe store it in default_lookup[stage][btype], \nconverting param_name to the appropriate key if needed:\n   - \"equip_wm2\" -> \"EQUIP_WM2_range\"\n   - \"tD\"        -> \"tD_range\"\n   - \"tN\"        -> \"tN_range\"\n   etc.\n\nExample usage:\n    from .equip_lookup import equip_lookup\n    from .equip_overrides_from_excel import read_equipment_overrides_from_excel, apply_equipment_overrides_to_lookup\n\n    override_data = read_equipment_overrides_from_excel(\"my_overrides.xlsx\")\n    new_equip_lookup = apply_equipment_overrides_to_lookup(equip_lookup, override_data)"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\eequip\\overrides_helper.py": {
+        "functions": [
+            {
+                "name": "find_applicable_overrides",
+                "doc": "This function filters the user_config (list of override rows)\nto find all rows that match the specified building_id, building_type, \nand age_range (if provided).\n\nEach 'row' in user_config is expected to be a dict with fields like:\n  {\n     \"building_id\": <int or None>,\n     \"building_type\": <str or None>,\n     \"age_range\": <str or None>,\n     \"param_name\": \"equip_wm2\",\n     \"min_val\": 8.0,\n     \"max_val\": 12.0\n  }\n\nReturns a list of matching rows."
+            }
+        ],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\eequip\\schedules.py": {
+        "functions": [
+            {
+                "name": "create_equipment_schedule",
+                "doc": "Creates a SCHEDULE:COMPACT object in the IDF representing a typical \nequipment usage pattern for weekdays vs. weekends, based on \nEQUIP_SCHEDULE_DEFINITIONS.\n\nParameters:\n    - idf: Eppy IDF object (or a similar interface)\n    - building_category: e.g. \"Residential\" or \"Non-Residential\"\n    - sub_type: e.g. \"Corner House\", \"Office Function\"\n    - schedule_name: name of the schedule in IDF\n\nReturns:\n    - The name of the new schedule object (same as schedule_name)."
+            },
+            {
+                "name": "create_equipment_parasitic_schedule",
+                "doc": "Creates a schedule that is always ON at 1.0 for parasitic equipment loads.\nYou can also rename it or adjust if you want partial load or special schedules.\n\nParameters:\n    - idf: Eppy IDF object\n    - sched_name: the schedule name in the IDF\n\nReturns:\n    - The name of the new schedule object"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            ".schedule_def"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\eequip\\schedule_def.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\Elec\\assign_lighting_values.py": {
+        "functions": [
+            {
+                "name": "assign_lighting_parameters",
+                "doc": "Determines final lighting parameters for a given building,\nmerging any user overrides from `lighting.json` with default \nranges found in lighting_lookup[calibration_stage][building_type].\n\nThe returned dict has keys like \"lights_wm2\", \"parasitic_wm2\", \n\"tD\", \"tN\", \"lights_fraction_radiant\", etc. Each key maps to a\nsub-dict of the form:\n  {\n    \"assigned_value\": float,\n    \"min_val\": float,\n    \"max_val\": float,\n    \"object_name\": \"LIGHTS\" or \"ELECTRICEQUIPMENT\" etc.\n  }\n\nSteps:\n  1) Identify default ranges from `lighting_lookup[calibration_stage][building_type]`.\n     If building_type not found, fallback to constants.\n  2) If user_config is provided, find all rows that match (building_id, building_type, age_range).\n  3) Override the relevant ranges with those rows (either fixed_value => (v,v) or min_val/max_val).\n  4) Pick the final assigned value from the resulting range using strategy:\n     - \"A\" => midpoint\n     - \"B\" => random.uniform\n     - else => pick the lower bound\n  5) Construct a final dict describing the assigned values \n     and (optionally) store in assigned_log[building_id].\n\nParameters\n----------\nbuilding_id : int\n    Unique identifier for the building (e.g. ogc_fid).\nbuilding_type : str\n    A string matching the keys in lighting_lookup[stage], e.g. \"Residential\" or \"Non-Residential\".\nage_range : str, optional\n    If you want to filter overrides by age_range.\ncalibration_stage : str, default \"pre_calibration\"\n    Typically \"pre_calibration\" or \"post_calibration\" (used as a top-level key in lighting_lookup).\nstrategy : {\"A\",\"B\"}, default \"A\"\n    \"A\" => pick midpoint in [min_val, max_val], \"B\" => pick random in that range.\nrandom_seed : int, optional\n    If you want reproducible random picks, pass an integer seed.\nuser_config : list of dicts, optional\n    The override data from lighting.json. Each dict can have fields like:\n      {\n         \"building_id\": 4136730,\n         \"building_type\": \"Residential\",\n         \"param_name\": \"lights_wm2\",\n         \"min_val\": 8.0,\n         \"max_val\": 10.0\n      }\n    or \"fixed_value\": ...\nassigned_log : dict, optional\n    If provided, the final structured picks are stored as assigned_log[building_id].\n\nReturns\n-------\ndict\n    A dictionary describing final picks, e.g.:\n    {\n      \"lights_wm2\": {\n        \"assigned_value\": 9.0,\n        \"min_val\": 8.0,\n        \"max_val\": 10.0,\n        \"object_name\": \"LIGHTS\"\n      },\n      ...\n    }"
+            },
+            {
+                "name": "pick_val",
+                "doc": null
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "random",
+            ".lighting_lookup",
+            ".constants",
+            ".overrides_helper"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\Elec\\constants.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\Elec\\lighting.py": {
+        "functions": [
+            {
+                "name": "get_building_category_and_subtype",
+                "doc": "Returns (building_category, sub_type) strings based on building_row.\nAdjust the logic as needed, depending on how your CSV or DB fields\nare structured.\n\nIf building_row[\"building_function\"] is something like \"Residential\"\nor \"Meeting Function\", use that as your sub_type.\nIf building_row[\"building_function\"] says \"Residential\", set building_category=\"Residential\".\nOtherwise, assume building_category=\"Non-Residential\".\n\nUpdate as necessary for your own classification logic."
+            },
+            {
+                "name": "add_lights_and_parasitics",
+                "doc": "1) Determine building_category (Residential/Non-Residential) and sub_type.\n2) Retrieve assigned lighting parameters (including fraction fields).\n3) Create schedules in IDF:\n   - A lighting schedule for the LIGHTS object\n   - An always-on parasitic schedule for ELECTRICEQUIPMENT\n4) Add LIGHTS and ELECTRICEQUIPMENT objects referencing a ZoneList in the IDF.\n\nThe assigned parameters and final picks are stored in assigned_values_log[ogc_fid]\nif assigned_values_log is provided."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            ".assign_lighting_values",
+            ".schedules"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\Elec\\lighting_lookup.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\Elec\\lighting_overrides_from_excel.py": {
+        "functions": [
+            {
+                "name": "read_lighting_overrides_from_excel",
+                "doc": "Reads lighting_overrides.xlsx and returns a structure like:\n  override_data[calibration_stage][building_type][param_name] = (min_val, max_val) or (val, val)\n\nExpected columns:\n  - calibration_stage\n  - building_type\n  - param_name (like 'lights_wm2', 'parasitic_wm2', 'tD', 'tN', etc.)\n  - min_val\n  - max_val\n  - fixed_value"
+            },
+            {
+                "name": "apply_lighting_overrides_to_lookup",
+                "doc": "Merges override_data into default_lookup in place (or you can copy first).\ndefault_lookup => e.g. lighting_lookup from lighting_lookup.py\n\nFor each stage/btype/param_name, we set or override the \n  param_name_range in default_lookup[stage][btype].\n\nE.g. if param_name is \"lights_wm2\", we need to store it as \"LIGHTS_WM2_range\".\nIf param_name is \"tD\", store it as \"tD_range\". \nWe'll do a small map or direct approach."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas",
+            "copy"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\Elec\\overrides_helper.py": {
+        "functions": [
+            {
+                "name": "find_applicable_overrides",
+                "doc": "Given a building's unique ID, type, and age_range, plus a user_config list (or table)\nof override definitions, returns the subset of rows that apply to this building.\n\nEach row in user_config might look like:\n  {\n    \"building_id\": 4136730,\n    \"building_type\": \"Meeting Function\",\n    \"age_range\": \"1992 - 2005\",\n    \"param_name\": \"lights_wm2\",\n    \"fixed_value\": 12.0,\n    \"min_val\": None,\n    \"max_val\": None\n  }\n\nor any variation. If a field is missing or doesn't match, we skip it.\nFor example:\n  - If row[\"building_id\"] is present but doesn't match the building_id, skip.\n  - If row[\"building_type\"] is present but doesn't match the building_type, skip.\n  - If row[\"age_range\"] is present but doesn't match the building's age_range, skip.\n\nReturns a list of all rows that pass these checks."
+            }
+        ],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\Elec\\schedules.py": {
+        "functions": [
+            {
+                "name": "create_lighting_schedule",
+                "doc": "Create a SCHEDULE:COMPACT in the IDF using SCHEDULE_DEFINITIONS[building_category][sub_type].\nWe define separate blocks for:\n  - For: WeekDays\n  - For: Saturday\n  - For: Sunday\n\nIf the sub_type is missing in SCHEDULE_DEFINITIONS, we fallback to a simple always-0.5 pattern.\n\nThe final IDF object name is `schedule_name`. We return that string for convenience."
+            },
+            {
+                "name": "create_parasitic_schedule",
+                "doc": "Creates an always-on schedule (1.0) for parasitic loads (24/7)."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            ".schedule_def"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\Elec\\schedule_def.py": {
+        "functions": [
+            {
+                "name": "read_schedule_overrides_from_excel",
+                "doc": "Example function to read schedule overrides from an Excel file.\n\nExpected columns (you can adjust to your needs):\n  - building_category   (e.g. \"Residential\" or \"Non-Residential\")\n  - sub_type            (e.g. \"Apartment\", \"Office Function\", etc.)\n  - day_type            (e.g. \"weekday\" or \"weekend\")\n  - start_hour\n  - end_hour\n  - fraction_value\n\nReturns a dict of form:\n  overrides[building_category][sub_type][day_type] = [\n     (start_hour, end_hour, fraction),\n     ...\n  ]"
+            },
+            {
+                "name": "apply_schedule_overrides_to_schedules",
+                "doc": "Applies the schedule overrides from 'overrides' to 'base_schedules' in-place.\n'base_schedules' is typically SCHEDULE_DEFINITIONS.\n'overrides' is from read_schedule_overrides_from_excel.\n\nFor each (cat, stype, day_type), we replace the entire list\nof (start_hour, end_hour, fraction) blocks with the override list.\n\nIf you want partial merges or something more advanced, adapt as needed."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\fenez\\assign_fenestration_values.py": {
+        "functions": [
+            {
+                "name": "assign_fenestration_parameters",
+                "doc": "Determine the final WWR for this building. If use_computed_wwr=False, \nwe look up a wwr_range from the final dictionaries and pick a value \n(randomly or midpoint, depending on 'strategy'). \nIf use_computed_wwr=True, we compute the ratio from sub-element areas.\n\nParameters\n----------\nbuilding_row : dict or Series\n    Must have building_function, age_range, possibly building_type, etc.\nscenario : str\n    e.g. \"scenario1\"\ncalibration_stage : str\n    e.g. \"pre_calibration\"\nstrategy : str\n    \"A\" => pick midpoint from the wwr_range\n    \"B\" => pick random uniform in the wwr_range\n    ...\nrandom_seed : int\n    For reproducible random picks if strategy=\"B\".\nres_data, nonres_data : dict\n    Final fenestration dictionaries that incorporate Excel & user JSON overrides.\nuse_computed_wwr : bool\n    If True, compute WWR by summing sub-element areas (windows, doors if \n    include_doors_in_wwr=True) vs. external_wall area.\ninclude_doors_in_wwr : bool\n    If True, add door area to the fenestration area when computing WWR.\n\nReturns\n-------\n(final_wwr, wwr_range_used) : (float, tuple or None)\n    The numeric WWR (0.0\u20131.0) and the range that was used (or None if computed)."
+            },
+            {
+                "name": "compute_wwr_from_row",
+                "doc": "Alternate fallback if you want to directly read building_row \nto compute the ratio of window_area / external_wall_area,\nincluding door_area if flagged. \n\nReturns a float WWR in [0,1]."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "random",
+            ".materials_config"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\fenez\\dict_override_excel.py": {
+        "functions": [
+            {
+                "name": "override_dictionaries_from_excel",
+                "doc": "Reads an Excel file containing envelope/fenestration data and uses it to override\nthe default dictionaries for residential and non_residential materials.\n\nThe Excel must contain columns:\n\n  building_function, building_type, year_range, scenario, calibration_stage,\n  element, area_m2, R_value_min, R_value_max, U_value_min, U_value_max,\n  roughness, material_opaque_lookup, material_window_lookup,\n  min_wwr, max_wwr\n\nParameters\n----------\nexcel_path : str\n    Path to the .xlsx file with columns described above.\ndefault_res_data : dict\n    The default residential fenestration/material dictionary.\ndefault_nonres_data : dict\n    The default non-residential fenestration/material dictionary.\ndefault_roughness : str\n    A fallback roughness if none is provided or if the Excel cell is blank.\nfallback_wwr_range : tuple\n    A default (min_wwr, max_wwr) if none is found.\n\nReturns\n-------\nnew_res_data : dict\nnew_nonres_data : dict\n    Updated copies of the input dictionaries with Excel overrides applied."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas",
+            "copy"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\fenez\\fenestration.py": {
+        "functions": [
+            {
+                "name": "add_fenestration",
+                "doc": "Adds fenestration to the given IDF for the specified building_row.\n\nSteps:\n  1) Determine building function => use 'res_data' or 'nonres_data'.\n  2) Call 'assign_fenestration_parameters(...)' to get final WWR or computed WWR.\n  3) Remove existing fenestration surfaces.\n  4) Use geomeppy 'idf.set_wwr(...)' to add windows with the final WWR.\n  5) Log picks & new fenestration object names in 'assigned_fenez_log'.\n\nParameters\n----------\nidf : geomeppy.IDF\n    The IDF to modify.\nbuilding_row : dict or Series\n    Contains building attributes like ogc_fid, building_function, age_range, orientation, etc.\nscenario, calibration_stage, strategy : str\n    For passing to the assignment logic or logging.\nrandom_seed : int\n    For reproducible random picks in the WWR range.\nres_data : dict\n    Final fenestration dictionary for residential (Excel + user JSON merged).\nnonres_data : dict\n    Final fenestration dictionary for non-res (Excel + user JSON merged).\nassigned_fenez_log : dict\n    A place to store assigned picks for CSV logging later.\nuse_computed_wwr : bool\n    If True, compute WWR from sub-element areas (windows, doors, etc.) \n    rather than from the dictionary's wwr_range.\ninclude_doors_in_wwr : bool\n    If True, door area is counted as fenestration in the WWR ratio."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas",
+            "geomeppy",
+            ".assign_fenestration_values"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\fenez\\fenez_config_manager.py": {
+        "functions": [
+            {
+                "name": "build_fenez_config",
+                "doc": "Builds the final fenestration configuration (for residential & non-res)\nby merging:\n\n  1) base_res_data, base_nonres_data (the \"default\" dictionaries).\n  2) Excel overrides (if do_excel_override=True and excel_path provided).\n  3) User overrides from fenestration.json (a list of rules).\n\nReturns (final_res_data, final_nonres_data).\n\nParameters\n----------\nbase_res_data : dict\n    Your default dictionary for residential fenestration/materials.\nbase_nonres_data : dict\n    Your default dictionary for non-res fenestration/materials.\nexcel_path : str\n    Path to the Excel file with fenestration overrides (if any).\ndo_excel_override : bool\n    If True, apply the Excel overrides first.\nuser_fenez_overrides : list or None\n    A list of overrides from fenestration.json, e.g.:\n    [\n      {\n        \"building_id\": 4136730,\n        \"building_function\": \"residential\",\n        \"age_range\": \"1992 - 2005\",\n        \"scenario\": \"scenario1\",\n        \"param_name\": \"wwr\",\n        \"min_val\": 0.25,\n        \"max_val\": 0.30\n      },\n      ...\n    ]"
+            },
+            {
+                "name": "apply_user_fenez_overrides",
+                "doc": "Applies user-defined overrides from fenestration.json to the in-memory dictionaries.\nEach item in `user_fenez_list` might look like:\n\n  {\n    \"building_id\": 4136730,\n    \"building_function\": \"residential\",\n    \"age_range\": \"1992 - 2005\",\n    \"scenario\": \"scenario1\",\n    \"calibration_stage\": \"pre_calibration\",  # optional\n    \"param_name\": \"wwr\",\n    \"fixed_value\": 0.28\n  }\n\nor:\n\n  {\n    \"building_function\": \"non_residential\",\n    \"age_range\": \"2015 and later\",\n    \"scenario\": \"scenario1\",\n    \"param_name\": \"roof_R_value\",\n    \"min_val\": 3.0,\n    \"max_val\": 3.5\n  }\n\nThis function interprets these overrides and modifies \nfinal_res_data or final_nonres_data accordingly."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "copy",
+            "pandas",
+            "idf_objects.fenez.dict_override_excel"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\fenez\\main cal.py": {
+        "functions": [
+            {
+                "name": "main",
+                "doc": null
+            },
+            {
+                "name": "main",
+                "doc": null
+            },
+            {
+                "name": "main",
+                "doc": "1) Load scenario param CSVs => get param_min, param_max\n2) Build param_specs\n3) Define a calibration objective => simulate_or_surrogate\n4) Choose method (random, ga, bayes)\n5) Save best params + error, optional CSV log"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "cal.unified_sensitivity",
+            "os",
+            "pandas",
+            "cal.unified_surrogate",
+            "os",
+            "unified_calibration"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\fenez\\materials.py": {
+        "functions": [
+            {
+                "name": "_store_material_picks",
+                "doc": "A helper to store final material picks (and any range fields) in assigned_fenez_log[building_id].\n`label` might be \"top_opq\", \"top_win\", or \"exterior_wall_opq\", etc.\n\nWe'll flatten the dict so that each key becomes:\n  \"fenez_{label}.{key}\" => value\n\nExample:\n  if label == \"top_opq\" and mat_data == {\n     \"obj_type\": \"MATERIAL\",\n     \"Thickness\": 0.2,\n     \"Thickness_range\": (0.15, 0.25),\n     ...\n  }\n  we'll store assigned_fenez_log[building_id][\"fenez_top_opq.obj_type\"] = \"MATERIAL\"\n  assigned_fenez_log[building_id][\"fenez_top_opq.Thickness_range\"] = (0.15, 0.25), etc."
+            },
+            {
+                "name": "update_construction_materials",
+                "doc": "1) Calls get_extended_materials_data(...) => returns a dict with final picks\n   (including sub-element R/U and range fields).\n2) Removes all existing Materials & Constructions from the IDF (clean slate).\n3) Creates new Opaque & Window materials => including top-level fallback\n   so geometry references remain valid.\n4) Creates distinct sub-element-based materials & constructions (e.g. \"exterior_wall_Construction\").\n5) Logs assigned final picks (and ranges) into assigned_fenez_log if provided.\n\nReturns\n-------\nconstruction_map : dict\n    Maps sub-element name => construction name\n    (e.g. {\"exterior_wall\": \"exterior_wall_Construction\", ...})."
+            },
+            {
+                "name": "assign_constructions_to_surfaces",
+                "doc": "Assign each BUILDINGSURFACE:DETAILED to a suitable construction name\nbased on sub-element keys and boundary conditions.\n\nconstruction_map: e.g.\n  {\n    \"exterior_wall\": \"exterior_wall_Construction\",\n    \"exterior_wall_window\": \"exterior_wall_WindowConst\",\n    \"ground_floor\": \"ground_floor_Construction\",\n    ...\n  }"
+            },
+            {
+                "name": "create_opaque_material",
+                "doc": null
+            },
+            {
+                "name": "create_window_material",
+                "doc": null
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "geomeppy",
+            ".materials_config"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\fenez\\materials_config.py": {
+        "functions": [
+            {
+                "name": "pick_val",
+                "doc": "Helper to pick a single float from (min_val, max_val).\nIf rng=(x,x), return x.\nIf strategy=\"A\", pick the midpoint. If \"B\", pick random uniform in the range.\nOtherwise, fallback to rng[0]."
+            },
+            {
+                "name": "assign_material_from_lookup",
+                "doc": "Takes a dict from material_lookup, which has fields like \"Thickness_range\",\n\"Conductivity_range\", etc. Returns a *copy* with final numeric picks assigned.\n\n# NEW OR CHANGED:\n# This function remains mostly the same, but you can store the picked range\n# in the returned dict if you want. For instance, final_mat[\"Thickness_range_used\"] = ..."
+            },
+            {
+                "name": "compute_wwr",
+                "doc": "Compute WWR => (window area) / (external wall area).\nIf include_doors=True, add door area as part of fenestration."
+            },
+            {
+                "name": "get_extended_materials_data",
+                "doc": "1) Looks up either residential_materials_data or non_residential_materials_data\n   by (building_type, age_range, scenario, calibration_stage).\n2) Picks from wwr_range => final wwr.\n3) Also grabs top-level 'material_opaque_lookup', 'material_window_lookup' if any.\n4) Then for sub-elements => e.g. ground_floor, windows, doors => picks R_value, U_value,\n   area, etc., plus references to 'material_opaque_lookup' or 'material_window_lookup' if present.\n5) user_config_fenez can override the final picks, the range picks, or both.\n6) We recompute 'Conductivity' or 'Thermal_Resistance' so the final R or U from data dictionary is used.\n7) Returns a dictionary with all final picks (and new \"xxx_range_used\" fields).\n\n# NEW OR CHANGED:\n# - We'll also store \"xxx_range_used\" so that you can record what range was used\n#   before picking the final value. Then in materials.py, you can log it in assigned_fenez_log.\n# - We handle user_config_fenez that might override \"R_value_range\", \"U_value_range\", etc."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "random",
+            "Lookups.data_materials_residential",
+            "Lookups.data_materials_non_residential",
+            ".materials_lookup"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\fenez\\materials_lookup.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\geomz\\assign_geometry_values.py": {
+        "functions": [
+            {
+                "name": "find_geom_overrides",
+                "doc": "Returns any matching rows from user_config for the given building_id / building_type.\nEach override can define:\n  - building_id (exact match, if provided)\n  - building_type (exact match, if provided)\n  - param_name in [\"perimeter_depth\", \"has_core\"]\n  - min_val, max_val (for numeric overrides)\n  - fixed_value (for boolean or \"lock\" numeric)"
+            },
+            {
+                "name": "pick_val_with_range",
+                "doc": "rng_tuple = (min_val, max_val)\nstrategy  = \"A\" => midpoint\n            \"B\" => random uniform\n            else => pick min_val\nlog_dict  => dictionary for logging (if not None)\nparam_name=> e.g. \"perimeter_depth\"\n\nWe log both the range and the final chosen value:\n   log_dict[\"perimeter_depth_range\"] = (2.0, 3.0)\n   log_dict[\"perimeter_depth\"]       = 2.45"
+            },
+            {
+                "name": "assign_geometry_values",
+                "doc": "1) Identify building_function => \"residential\" or \"non_residential\".\n2) Identify sub-type => read \"residential_type\" or \"non_residential_type\".\n3) Start from geometry_lookup[ building_function ][ sub_type ][ calibration_stage ] => param_dict\n   e.g. { \"perimeter_depth_range\": (2.0,3.0), \"has_core\": False }\n4) If excel_rules => override further (pick_geom_params_from_rules(...)).\n5) If user_config => partial override for \"perimeter_depth\" or \"has_core\".\n   - If param_name=\"perimeter_depth\" with min_val & max_val => update perimeter_depth_range.\n     If \"fixed_value\":true => interpret it as (min_val, min_val) => no randomness.\n   - If param_name=\"has_core\" and fixed_value => set has_core = that boolean\n6) We pick final perimeter_depth using pick_val_with_range(...).\n7) Return a dictionary => {\"perimeter_depth\": X, \"has_core\": Y}.\n8) Log final picks (and numeric range) in assigned_geom_log if provided."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "random",
+            ".geometry_lookup",
+            ".geometry_overrides_from_excel"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\geomz\\building.py": {
+        "functions": [
+            {
+                "name": "create_building_with_roof_type",
+                "doc": "Create building geometry in the IDF, multi-floor, optionally perimeter+core.\nNow includes logic to link each new floor's Floor to the old floor's Ceiling."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            ".assign_geometry_values",
+            ".geometry",
+            ".zoning"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\geomz\\geometry.py": {
+        "functions": [
+            {
+                "name": "rotate_point",
+                "doc": null
+            },
+            {
+                "name": "compute_dimensions_from_area_perimeter",
+                "doc": "Solve for width (w) and length (l) using area (A) and perimeter (P):\n  w = A / (P/4)\n  l = A / w"
+            },
+            {
+                "name": "create_building_base_polygon",
+                "doc": "Return 4 points in XY plane for a rectangle, rotate them by orientation degrees."
+            },
+            {
+                "name": "polygon_area",
+                "doc": "Compute area in XY plane via Shoelace formula."
+            },
+            {
+                "name": "inward_offset_polygon",
+                "doc": "Inward offset of rectangle ABCD by depth, returning [A2,B2,C2,D2] or None if invalid."
+            },
+            {
+                "name": "edge_offset",
+                "doc": null
+            },
+            {
+                "name": "line_intersect",
+                "doc": null
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "math",
+            "math"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\geomz\\geometry_lookup.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\geomz\\geometry_overrides_from_excel.py": {
+        "functions": [
+            {
+                "name": "read_geometry_overrides_excel",
+                "doc": "Reads an Excel file with geometry rules for perimeter depth & has_core \nbased on building_function, building_type, area, perimeter, etc.\n\nReturns a list (or dataframe) of rules, each rule a dict:\n  {\n    \"building_function\": \"residential\",\n    \"building_type\": \"Two-and-a-half-story House\",\n    \"min_area\": 0.0,\n    \"max_area\": 999.0,\n    \"min_perimeter\": 0.0,\n    \"max_perimeter\": 999.0,\n    \"perimeter_depth_min\": 2.0,\n    \"perimeter_depth_max\": 3.0,\n    \"has_core_value\": True/False/None\n    ...\n  }"
+            },
+            {
+                "name": "pick_geom_params_from_rules",
+                "doc": "Finds the first (or last) matching rule among all_rules that covers:\n  - building_function\n  - building_type (if not empty)\n  - calibration_stage (if present in rule and function call)\n  - area in [min_area, max_area]\n  - perimeter in [min_perimeter, max_perimeter]\n\nReturns a dict with {\n  \"perimeter_depth_range\": (x, y),\n  \"has_core_override\": True/False/None\n}\nor None if no rule matched."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas",
+            "copy",
+            "math"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\geomz\\geometry_overrides_helper.py": {
+        "functions": [
+            {
+                "name": "find_geom_overrides",
+                "doc": "Returns a list of geometry override rows that match the given building_id and/or building_type.\nEach row can have:\n  - building_id (exact match)\n  - building_type (exact match)\n  - param_name in [\"perimeter_depth\", \"has_core\"]\n  - for numeric: (min_val, max_val)\n  - for boolean: (fixed_value)"
+            }
+        ],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\geomz\\override_geometry_lookup_from_excel.py": {
+        "functions": [
+            {
+                "name": "override_geometry_lookup_from_excel",
+                "doc": "Read each row in excel_rules (list of dicts) and update geometry_lookup in-place.\n\nFor example, if excel_rules has keys like:\n  {\n    \"building_function\": \"residential\",\n    \"building_type\": \"Two-and-a-half-story House\",\n    \"calibration_stage\": \"pre_calibration\",  # optional\n    \"perimeter_depth_min\": 2.0,\n    \"perimeter_depth_max\": 3.0,\n    \"has_core_value\": True/False/None\n    ...\n  }\nwe insert or update geometry_lookup[function][type][stage] accordingly."
+            }
+        ],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\geomz\\zoning.py": {
+        "functions": [
+            {
+                "name": "link_surfaces",
+                "doc": "Cross-link two surfaces as interzone partitions:\n  1) Both Outside_Boundary_Condition = \"Surface\"\n  2) Each references the other's name\n\nThis is used for:\n  - Perimeter zone to core zone partitions\n  - Floor-to-ceiling linking between stories (in building.py)"
+            },
+            {
+                "name": "create_zone_surfaces",
+                "doc": "Create a rectangular zone (Floor, 4 Walls, and a Roof or Ceiling).\n\nParameters\n----------\nidf : geomeppy.IDF\n    The IDF to which we add surfaces.\nzone_name : str\n    Name of the new Zone object (e.g. \"Zone1\", \"Zone2_Core\", etc.).\nbase_poly : list of (x,y,z)\n    4 corner points (in order) for the zone\u2019s base polygon.\nwall_height : float\n    Height of the walls for this floor (e.g. 2.5 m).\nfloor_bc : str\n    Boundary Condition for the floor (e.g. \"Ground\", \"Adiabatic\", \"Outdoors\").\nwall_bcs : list of str or dict\n    4 items for the wall boundary conditions (one per edge).\n    If a dict, e.g. {\"bc\": \"Surface\", \"adj_surf_name\": \"...\"},\n    we can store info for cross-linking. If just a string, e.g. \"Outdoors\" or \"Adiabatic\".\nis_top_floor : bool\n    If True => create a roof with Outdoors, else => a ceiling with \"Adiabatic\" (or a placeholder\n    that can later be changed to \"Surface\" if linking to the floor above).\n\nReturns\n-------\n(zone_name, base_poly, top_poly, created_surfaces)\n  zone_name        : str\n  base_poly        : list of points (x,y,z) for the floor polygon\n  top_poly         : list of points (x,y,z) for the upper polygon (floor + wall_height)\n  created_surfaces : list of BUILDINGSURFACE:DETAILED objects created"
+            },
+            {
+                "name": "create_zones_with_perimeter_depth",
+                "doc": "Create multiple zones (4 perimeter + 1 core) or a single zone if no core.\nThen explicitly cross-link perimeter-to-core surfaces.\n\nReturns\n-------\ndict : { zone_name => (zname, bpoly, tpoly, list_of_surfaces) }\n\nExplanation:\n  - \"floor_type\" can be \"Ground\" for the 1st floor (so floor BC=\"Ground\"), or \"Internal\" for higher floors (so floor BC=\"Adiabatic\" initially).\n  - \"edge_types\" might be [\"facade\", \"shared\", ...], each mapping to \"Outdoors\" or \"Adiabatic\".\n  - \"has_core\" => if True, we do perimeter+core. Otherwise, a single zone.\n\nThe final dict has keys = zone_name (\"Zone1\", \"Zone1_Core\", etc.),\neach mapping to a tuple of 4 items: (zname, base_poly, top_poly, surfs_list).\nThat means index [3] is the list of surfaces, so we can do zone_data[zname][3]\nin building.py."
+            },
+            {
+                "name": "edge_to_bc",
+                "doc": "Convert textual edge label to an EnergyPlus BC string:\n  - \"facade\" => \"Outdoors\"\n  - \"shared\" => \"Adiabatic\"\n  - anything else => \"Outdoors\""
+            },
+            {
+                "name": "get_wall",
+                "doc": "For surfs array: \n  index 0 => Floor, \n  index 1..4 => Walls, \n  index 5 => Ceiling/Roof\nSo the perimeter interior wall (index=2) => surfs[1+2] => surfs[3]."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            ".geometry"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\geomz\\__init__.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\HVAC\\assign_hvac_values.py": {
+        "functions": [
+            {
+                "name": "find_hvac_overrides",
+                "doc": "Returns a list of user_config rows that match the specified building_id, \nbuilding_function, etc."
+            },
+            {
+                "name": "pick_val_with_range",
+                "doc": "rng_tuple = (min_val, max_val).\nstrategy  = \"A\" => midpoint, \"B\" => random, else => pick min_val.\nlog_dict  => optional dict to store param_name_range + param_name => chosen_value\nparam_name=> e.g. \"heating_day_setpoint\".\n\nReturns the chosen numeric value.\nAlso logs (param_name + param_name_range) if log_dict is provided."
+            },
+            {
+                "name": "assign_hvac_ideal_parameters",
+                "doc": "1) Looks up default parameter ranges from hvac_lookup using \n   (calibration_stage, scenario, building_function, subtype, age_range).\n2) Applies user_config overrides to update those ranges or fix values.\n3) Picks final values using pick_val_with_range(...).\n4) Builds a single dictionary 'final_hvac_params' that includes both the \n   final numeric picks and their ranges (e.g. \"heating_day_setpoint_range\").\n5) Optionally stores final_hvac_params in assigned_hvac_log[bldg_id][\"hvac_params\"].\n6) Returns final_hvac_params.\n\nThe returned dict might look like:\n{\n    \"heating_day_setpoint\": 20.2788,\n    \"heating_day_setpoint_range\": (19.0, 21.0),\n    \"heating_night_setpoint\": 15.0250,\n    \"heating_night_setpoint_range\": (15.0, 16.0),\n    ...\n    \"schedule_details\": {\n        \"day_start\": \"07:00\",\n        \"day_end\": \"23:00\",\n        \"occupancy_schedule\": {\n            \"weekday\": \"FullOccupancy\",\n            \"weekend\": \"FullOccupancy\"\n        }\n    }\n}"
+            },
+            {
+                "name": "override_range",
+                "doc": "If row has fixed_value => (val,val),\nelse if row has min_val & max_val => (min_val,max_val),\nelse keep current_range."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "random",
+            ".hvac_lookup"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\HVAC\\custom_hvac.py": {
+        "functions": [
+            {
+                "name": "add_HVAC_Ideal_to_all_zones",
+                "doc": "Adds an Ideal Loads Air System to every Zone in the IDF,\nalong with schedules & setpoints derived from hvac_lookup ranges\nand user_config_hvac overrides.\n\nSteps:\n  1) Gather building-level parameters from assign_hvac_ideal_parameters(...),\n     which returns a single dictionary 'hvac_params' (including final picks + ranges).\n     That dictionary is also stored in assigned_hvac_log[bldg_id][\"hvac_params\"].\n\n  2) Create or update the necessary schedules in the IDF for heating/cooling setpoints.\n  3) For each zone, create or update:\n     - ZONECONTROL:THERMOSTAT\n     - THERMOSTATSETPOINT:DUALSETPOINT\n     - ZONEHVAC:EQUIPMENTCONNECTIONS\n     - ZONEHVAC:EQUIPMENTLIST\n     - ZONEHVAC:IDEALLOADSAIRSYSTEM\n     Then store zone-level info in assigned_hvac_log[bldg_id][\"zones\"][zone_name].\n\nReturns:\n  None. (IDF is modified in-place; logging is stored in assigned_hvac_log if provided.)"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            ".assign_hvac_values"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\HVAC\\hvac_lookup.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\HVAC\\hvac_lookup2.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\HVAC\\hvac_overrides_from_excel.py": {
+        "functions": [
+            {
+                "name": "read_hvac_overrides_from_excel",
+                "doc": "Reads an Excel file with columns at least:\n  - calibration_stage\n  - scenario\n  - building_function\n  - residential_type\n  - non_residential_type\n  - age_range\n  - param_name\n  - min_val\n  - max_val\n  - fixed_value\n  - schedule_key\n  - schedule_value\n\nReturns a nested dict override_data such that:\n  override_data[cal_stage][scenario][bldg_func][subtype][age_range]\n    = {\n       \"param_overrides\": { param_name -> (min_val,max_val) },\n       \"schedule_details\": { key -> value, key2 -> value2, ... }\n      }\nFor each sub-block, we store both numeric param overrides and schedule details.\n\nIf a row has both param_name and schedule_key, it will apply both. Usually you separate them."
+            },
+            {
+                "name": "apply_hvac_overrides_to_lookup",
+                "doc": "For each nested path in override_data, update:\n  - param_overrides => param_name + \"_range\"\n  - schedule_details => key => value\n\nIf something doesn't exist in default_lookup, we create it."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\other\\add_ventilation.py": {
+        "functions": [
+            {
+                "name": "add_ventilation_to_idf",
+                "doc": "Adds infiltration + ventilation to the IDF based on building_row data,\nbut uses a single infiltration object and a single ventilation object\nthat each reference a ZoneList (e.g. \"ALL_ZONES\"), rather than one object per zone.\n\nIf system_type == \"D\", sets 'hrv_eff' on each zone's IdealLoads object."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "idf_objects.ventilation.assign_ventilation_values",
+            "idf_objects.ventilation.schedules",
+            "idf_objects.ventilation.calc_functions",
+            "idf_objects.ventilation.mappings"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\other\\zonelist.py": {
+        "functions": [
+            {
+                "name": "create_zonelist",
+                "doc": null
+            }
+        ],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\outputdef\\add_output_definitions.py": {
+        "functions": [
+            {
+                "name": "add_output_definitions",
+                "doc": ":param idf: EnergyPlus IDF object\n:param output_settings: dict with keys \"variables\", \"meters\", \"tables\", \"summary_reports\"\n:param assigned_output_log: optional dict for logging"
+            }
+        ],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\outputdef\\assign_output_settings.py": {
+        "functions": [
+            {
+                "name": "assign_output_settings",
+                "doc": "Returns a dictionary describing which outputs to create:\n  - variables (with freq)\n  - meters (with freq)\n  - tables\n  - summary_reports\n\nLogging approach:\n  If assigned_output_log is provided, store final picks there."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            ".output_lookup"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\outputdef\\output_lookup.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\postproc\\merge_results.py": {
+        "functions": [
+            {
+                "name": "merge_all_results",
+                "doc": "Merges multiple simulation CSV files into one wide CSV, skipping *_Meter.csv or *_sz.csv.\n\nParameters:\n- base_output_dir (str): Directory containing the CSV files to merge.\n- output_csv (str): Path to the output merged CSV file.\n- convert_to_daily (bool): If True, aggregates Hourly data to Daily.\n- daily_aggregator (str): Aggregation method for daily conversion ('mean', 'sum', etc.).\n- convert_to_monthly (bool): If True, aggregates Daily data to Monthly.\n- monthly_aggregator (str): Aggregation method for monthly conversion ('mean', 'sum', etc.).\n\nReturns:\n- None: Writes the merged data to the specified CSV file."
+            },
+            {
+                "name": "aggregate_series",
+                "doc": "Aggregate a pandas Series using one of the known aggregator functions."
+            },
+            {
+                "name": "correct_time",
+                "doc": "Handle '24:00:00' by converting it to '00:00:00' of the next day."
+            },
+            {
+                "name": "parse_dt",
+                "doc": "Parses various forms of Date/Time:\n  - Single piece (e.g. 'January', or '4'):\n      * If it is a month name => monthly data => datetime(2022, month_num, 1).\n      * If it is an integer 0-23 => interpret as hour => Jan 1, 2022, at that hour.\n  - Two pieces (e.g. '01/21 00:10:00', or '01/21 4'):\n      * If second part is recognized as time, parse with date. \n  - Otherwise => pd.NaT."
+            },
+            {
+                "name": "safe_dt",
+                "doc": null
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "os",
+            "re",
+            "pandas",
+            "numpy",
+            "datetime",
+            "calendar"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\setzone\\add_outdoor_air_and_zone_sizing_to_all_zones.py": {
+        "functions": [
+            {
+                "name": "add_outdoor_air_and_zone_sizing_to_all_zones",
+                "doc": "1) Creates/updates a SINGLE DESIGNSPECIFICATION:OUTDOORAIR (DSOA_Global) \n   and a SINGLE DESIGNSPECIFICATION:ZONEAIRDISTRIBUTION (DSZAD_Global)\n   for the entire building.\n\n2) Creates/updates a SINGLE SIZING:ZONE object that references a ZoneList\n   (instead of creating multiple SIZING:ZONE objects, one per zone).\n\n3) Optionally logs final picks in assigned_setzone_log.\n\nNB: With a single SIZING:ZONE referencing a ZoneList, all zones in that list\n    share the same supply-air conditions. If you need differences zone-by-zone,\n    revert to the original per-zone approach."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "geomeppy",
+            ".assign_zone_sizing_values",
+            ".define_global_design_specs"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\setzone\\assign_zone_sizing_values.py": {
+        "functions": [
+            {
+                "name": "assign_zone_sizing_params",
+                "doc": "Returns a dict of final zone sizing parameters \nby picking from the pre/post calibration range for the building function.\nstrategy: \n  - \"A\" => midpoint \n  - \"B\" => random uniform \n  - (others) => min"
+            },
+            {
+                "name": "pick_val",
+                "doc": null
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "random",
+            ".zone_sizing_lookup"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\setzone\\define_global_design_specs.py": {
+        "functions": [
+            {
+                "name": "define_global_design_specs",
+                "doc": "Creates/updates a single DESIGNSPECIFICATION:OUTDOORAIR (DSOA_Global)\nand a single DESIGNSPECIFICATION:ZONEAIRDISTRIBUTION (DSZAD_Global)\nfor the entire building."
+            }
+        ],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\setzone\\zone_sizing_lookup.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\shading\\shading.py": {
+        "functions": [
+            {
+                "name": "add_shading_to_idf",
+                "doc": "Reads shading data from the two DataFrames (df_bldg_shading and df_trees_shading),\nwhich must already be top-N objects in local coords.\n\nSteps:\n  1) Filter building-based shading objects for this building's ogc_fid\n  2) Filter tree-based shading objects for this building\n  3) Create a single \"TreeTransSchedule\" for all trees\n  4) Create building shading surfaces (opaque)\n  5) Create tree shading surfaces (partial transmittance)\n  6) Log assigned shading info (optional)"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "json",
+            "pandas",
+            ".shading_creator",
+            ".transmittance_schedules"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\shading\\shading_creator.py": {
+        "functions": [
+            {
+                "name": "create_shading_detailed",
+                "doc": "Creates polygon-based shading surfaces in the given IDF, from each row in df_shades.\nEach row must have:\n  - \"Name\"\n  - \"vertices_local\" => a list of [x, y, z] coords"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "ast"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\shading\\transmittance_schedules.py": {
+        "functions": [
+            {
+                "name": "create_tree_trans_schedule",
+                "doc": "Create a simple schedule that is 0.5 from June to Sept\nand 0.9 from Oct to May, as an example for tree leaf-on vs leaf-off."
+            }
+        ],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\structuring\\dhw_structuring.py": {
+        "functions": [
+            {
+                "name": "transform_dhw_log_to_structured",
+                "doc": "Reads the 'flat' DHW CSV with columns (ogc_fid, param_name, assigned_value).\nProduces a 'structured' CSV with columns:\n   ogc_fid, sub_key, eplus_object_type, eplus_object_name,\n   param_name, param_value, param_min, param_max\n\nKey logic:\n  - If param_name ends with \"_range\", parse min/max from assigned_value\n    and store them in memory.\n  - If param_name is the same as the range version minus \"_range\",\n    unify them in one row => param_value + param_min + param_max.\n  - If param_name includes '.obj_type' or '.Name', we store them\n    so we can fill eplus_object_type/eplus_object_name in final row."
+            },
+            {
+                "name": "main",
+                "doc": "Example CLI entry point:\n  - Reads 'D:/Documents/E_Plus_2030_py/output/assigned/assigned_dhw_params.csv'\n  - Transforms it, merges range fields, extracts E+ object references,\n  - Writes 'D:/Documents/E_Plus_2030_py/output/assigned/structured_dhw_params.csv'"
+            },
+            {
+                "name": "get_subdict",
+                "doc": null
+            },
+            {
+                "name": "try_float",
+                "doc": null
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas",
+            "ast",
+            "os"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\structuring\\fenestration_structuring.py": {
+        "functions": [
+            {
+                "name": "transform_fenez_log_to_structured_with_ranges",
+                "doc": "Reads the 'flat' fenestration/material CSV (with param_name & assigned_value),\nand outputs a 'structured' CSV that:\n\n  - Merges final assigned value + min/max range into one row per parameter.\n  - Does NOT skip params that have empty or None values.\n  - Always includes a row for any param that appears in the CSV, even if\n    there's no final value or no range.\n\nFinal columns in the output CSV:\n    ogc_fid, sub_key, eplus_object_type, eplus_object_name,\n    param_name, param_value, param_min, param_max\n\n- \"sub_key\" is something like \"windows_opq\" or \"exterior_wall_win\",\n  derived from e.g. \"fenez_exterior_wall_opq.Thickness\".\n- \"eplus_object_type\" and \"eplus_object_name\" come from lines like \n  \"fenez_exterior_wall_opq.obj_type\" and \"fenez_exterior_wall_opq.Name\".\n- \"param_name\" is the base parameter (like \"Thickness\"), or just \"wwr\",\n  or \"obj_type\" if you want to store them as param rows.\n- \"param_value\" is the final assigned numeric or string value.\n- \"param_min\" and \"param_max\" come from lines that end with \"_range\"."
+            },
+            {
+                "name": "get_subdict",
+                "doc": "Helper to retrieve or create the dictionary entry for (fid, s_key)."
+            },
+            {
+                "name": "try_float",
+                "doc": null
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas",
+            "ast"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\structuring\\flatten_assigned_vent.py": {
+        "functions": [
+            {
+                "name": "parse_assigned_value",
+                "doc": "Safely convert the string in 'assigned_value' into a Python dict,\ne.g. literal_eval(\"{'infiltration_base': 1.23}\")"
+            },
+            {
+                "name": "flatten_ventilation_data",
+                "doc": "Takes a DataFrame with columns [ogc_fid, param_name, assigned_value].\nSplits it into two DataFrames:\n  1) building-level (flattening 'building_params')\n  2) zone-level (flattening 'zones').\n\nThen writes them to CSV (out_build_csv, out_zone_csv).\n\n:param df_input: pd.DataFrame\n    Must contain columns => \"ogc_fid\", \"param_name\", \"assigned_value\"\n    where assigned_value is already a dict (not a raw string).\n:param out_build_csv: str\n    File path for building-level CSV output.\n:param out_zone_csv: str\n    File path for zone-level CSV output."
+            },
+            {
+                "name": "main",
+                "doc": "Example CLI entry point:\n  - Reads 'D:/Documents/E_Plus_2030_py/output/assigned/assigned_ventilation.csv'\n  - Parses 'assigned_value' into dict\n  - Writes building-level & zone-level CSVs"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas",
+            "ast",
+            "os"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\structuring\\flatten_hvac.py": {
+        "functions": [
+            {
+                "name": "parse_assigned_value",
+                "doc": "Safely convert the string in 'assigned_value' into a Python dict.\nUses ast.literal_eval to parse e.g.:\n  \"{'heating_day_setpoint': 20.28, 'cooling_day_setpoint': 24.55, ...}\"\ninto a real Python dictionary."
+            },
+            {
+                "name": "flatten_hvac_data",
+                "doc": "Takes a DataFrame with columns [ogc_fid, param_name, assigned_value].\nSplits it into two DataFrames:\n  1) building-level (where param_name == \"hvac_params\")\n  2) zone-level (where param_name == \"zones\").\n\nThen writes them to CSV (out_build_csv, out_zone_csv).\n\n:param df_input: pd.DataFrame\n    Must contain columns => \"ogc_fid\", \"param_name\", \"assigned_value\"\n    where assigned_value is a dict (not raw text).\n:param out_build_csv: str\n    File path for building-level CSV output.\n:param out_zone_csv: str\n    File path for zone-level CSV output."
+            },
+            {
+                "name": "main",
+                "doc": "Example CLI entry point:\n  - Reads 'D:/Documents/E_Plus_2030_py/output/assigned/assigned_hvac_params.csv'\n  - Parses 'assigned_value' into dict\n  - Writes building-level & zone-level CSVs"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas",
+            "ast",
+            "os"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\tempground\\add_ground_temperatures.py": {
+        "functions": [
+            {
+                "name": "add_ground_temperatures",
+                "doc": "1) Removes existing SITE:GROUNDTEMPERATURE:BUILDINGSURFACE objects\n2) Assigns new monthly temps from assign_ground_temperatures\n3) Optionally logs them into assigned_groundtemp_log if provided"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            ".assign_groundtemp_values"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\tempground\\assign_groundtemp_values.py": {
+        "functions": [
+            {
+                "name": "assign_ground_temperatures",
+                "doc": null
+            },
+            {
+                "name": "pick_val",
+                "doc": null
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "random",
+            ".groundtemp_lookup"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\tempground\\groundtemp_lookup.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\ventilation\\add_ventilation.py": {
+        "functions": [
+            {
+                "name": "add_ventilation_to_idf",
+                "doc": "Adds infiltration + ventilation to the IDF based on building_row data\n(using assign_ventilation_params_with_overrides). Creates infiltration\nand (optionally) ventilation objects in each zone. Also logs both\nbuilding-level and zone-level picks to assigned_vent_log.\n\nArgs:\n    idf: geomeppy IDF object\n    building_row: dict-like row containing e.g. \"ogc_fid\", \"building_function\", \"age_range\", \"scenario\", \"area\"\n    calibration_stage: str, e.g. \"pre_calibration\" or \"post_calibration\"\n    strategy: str, e.g. \"A\" => midpoint, \"B\" => random\n    random_seed: int or None\n    user_config_vent: list of user override dicts for ventilation\n    assigned_vent_log: dict to store final building-level & zone-level picks\n\nReturns:\n    None. (The IDF is modified in place; the picks are stored in assigned_vent_log if provided.)"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "idf_objects.ventilation.assign_ventilation_values",
+            "idf_objects.ventilation.schedules",
+            "idf_objects.ventilation.create_ventilation_systems",
+            "idf_objects.ventilation.calc_functions",
+            "idf_objects.ventilation.mappings"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\ventilation\\assign_ventilation_values.py": {
+        "functions": [
+            {
+                "name": "find_vent_overrides",
+                "doc": "Return a list of user_config rows that match all provided criteria:\n  - building_id\n  - building_function\n  - age_range\n  - scenario\n  - calibration_stage"
+            },
+            {
+                "name": "pick_val_with_range",
+                "doc": "rng_tuple = (min_val, max_val) or None.\nstrategy  = \"A\"=>midpoint, \"B\"=>random, \"C\"=>pick min, etc.\nlog_dict  => optional dictionary for storing final picks.\nparam_name=> e.g. \"infiltration_base\", \"fan_pressure\", etc.\n\nReturns the chosen numeric value.\nAlso logs (param_name + param_name_range) if log_dict is provided."
+            },
+            {
+                "name": "assign_ventilation_params_with_overrides",
+                "doc": "Returns a dict containing:\n    {\n      \"infiltration_base\": float,\n      \"infiltration_base_range\": (min, max),\n      \"year_factor\": float,\n      \"year_factor_range\": (min, max),\n      \"system_type\": str,\n      \"fan_pressure\": float,\n      \"fan_pressure_range\": (min, max),\n      \"f_ctrl\": float,\n      \"f_ctrl_range\": (min, max),\n      \"hrv_eff\": float,\n      \"hrv_eff_range\": (min, max),\n      \"infiltration_schedule_name\": str,\n      \"ventilation_schedule_name\": str,\n      \"flow_exponent\": default_flow_exponent\n    }\n\nSteps:\n  1) Look up default ranges from ventilation_lookup (scenario, calibration_stage).\n  2) Merge user overrides => modifies these ranges or sets fixed values.\n  3) Use 'strategy' to pick final numeric values from each range.\n  4) Return the final assigned dictionary, which includes both final picks & range info.\n  5) Optionally log them to assigned_vent_log if provided.\n\nThe infiltration_key for a residential building might be \"Corner House\", etc.\nFor non-residential, infiltration_key might be \"Office Function\", etc."
+            },
+            {
+                "name": "override_range",
+                "doc": "If row has 'fixed_value', convert it to (val, val).\nIf row has 'min_val' and 'max_val', return that tuple.\nOtherwise return current_range."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "random",
+            ".ventilation_lookup"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\ventilation\\calc_functions.py": {
+        "functions": [
+            {
+                "name": "calc_infiltration",
+                "doc": "Calculate infiltration in m3/s based on an 'infiltration_base' at 10 Pa.\n\nSteps:\n  1) Multiply infiltration_base by year_factor => qv10_lea_ref (represents\n     infiltration at 10 Pa for the building, e.g. in dm3/s\u00b7m2 or similar).\n  2) Convert qv10 => qv1 by applying exponent:\n        qv1 = qv10 * (1/10)^n\n     (n = flow_exponent, e.g. 0.67 per NTA 8800).\n  3) Multiply qv1_lea_ref_per_m2_h by total floor area => infiltration_m3/h.\n  4) Convert infiltration_m3/h => infiltration_m3/s by dividing by 3600.\n\nNTA 8800 basis:\n  - Table 11.2 prescribes n=0.67 for leak losses (infiltration).\n  - Section 11.2.5 references how infiltration is often reported at 10 Pa\n    and needs converting to 1 Pa. This code parallels that approach.\n\nReturns infiltration in m3/s."
+            },
+            {
+                "name": "calc_required_ventilation_flow",
+                "doc": "Calculate the required ventilation flow (m3/s).\n\nApproach:\n  - If residential: 0.9 dm3/s/m2 is used as base, then multiplied by\n    control factor (f_ctrl_val). A minimum of ~126 m3/h is enforced.\n    => 126 m3/h = 35 L/s, typical minimal design flow for dwellings.\n\n  - If non-residential: usage_key (office_area_based, childcare, retail, etc.)\n    references typical design flows (dm3/s/m2). Then multiplied by f_ctrl_val.\n\nNTA 8800 basis:\n  - In Section 11.2.2.5 or Table 11.8, typical air supply rates are given\n    for various functions. This code uses simplified example values.\n\nReturns flow in m3/s."
+            },
+            {
+                "name": "calc_fan_power",
+                "doc": "Compute fan power in W:\n  P_fan = (fan_pressure * flow_m3_s) / fan_efficiency\n\nNTA 8800 doesn't provide a direct formula for fan power in W in exactly\nthese terms, but this approach is standard fluid power:\n   Pressure (Pa) * Volumetric Flow (m3/s) = Power in J/s (Watts),\n   then / efficiency to account for fan energy losses.\n\nfan_pressure: Pa\nflow_m3_s: m3/s\nfan_efficiency: fraction (0.0 < eff <= 1.0)\nreturns: fan power in Watts"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "math"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\ventilation\\config_systems.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\ventilation\\create_ventilation_systems.py": {
+        "functions": [
+            {
+                "name": "create_ventilation_system",
+                "doc": "Creates two objects for the zone:\n  1) A ZONEINFILTRATION:DESIGNFLOWRATE object (always).\n  2) Depending on system_type:\n     - A/B/C => a ZONEVENTILATION:DESIGNFLOWRATE object\n     - D     => modifies an existing ZONEHVAC:IDEALLOADSAIRSYSTEM\n                (already added by add_HVAC_Ideal_to_all_zones, if used)\n\nReturns (infiltration_obj, vent_obj_or_ideal_obj)."
+            },
+            {
+                "name": "pick_val",
+                "doc": "rng is (min_val, max_val).\npick_strategy == 'midpoint' => return average\npick_strategy == 'random'   => return random.uniform(...)"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "random",
+            "idf_objects.ventilation.config_systems"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\ventilation\\mappings.py": {
+        "functions": [
+            {
+                "name": "safe_lower",
+                "doc": "Helper to safely lowercase a string."
+            },
+            {
+                "name": "map_age_range_to_year_key",
+                "doc": "Converts a building_row's age_range into one of the 7 keys used in \nventilation_lookup (e.g. \"< 1945\", \"1945 - 1964\", etc.).\n\nIf the input doesn't match exactly, we fallback to \"2015 and later\"."
+            },
+            {
+                "name": "map_infiltration_key",
+                "doc": "Returns a string key that matches the infiltration range in your\nventilation_lookup. We no longer rely on any perimeter logic.\n\n- If building_function == \"residential\", we use the \"residential_type\" field\n  (e.g. \"Corner House\", \"Apartment\", etc.). If not found, fallback \"other_res\".\n\n- If building_function == \"non_residential\", we use the \"non_residential_type\"\n  (e.g. \"Office Function\", \"Meeting Function\", etc.). If not found, fallback \"other_nonres\"."
+            },
+            {
+                "name": "map_usage_key",
+                "doc": "For calculating required ventilation flows in non-res buildings.\nIf the building is residential => return None.\nOtherwise, return a usage_key that is recognized by calc_required_ventilation_flow.\n\nHere, you can customize how each non_residential_type maps to a usage flow."
+            }
+        ],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\ventilation\\schedules.py": {
+        "functions": [
+            {
+                "name": "create_always_on_schedule",
+                "doc": "Creates a SCHEDULE:CONSTANT with a Fraction = 1.0\nfor infiltration or ventilation that runs 24/7."
+            },
+            {
+                "name": "create_day_night_schedule",
+                "doc": "Day/Night schedule that is 0.5 at night, 1.0 during day.\nExample: 06:00-22:00 => 1.0, else => 0.5"
+            },
+            {
+                "name": "create_workhours_schedule",
+                "doc": "Workhours schedule: \n  - 0.2 fraction from midnight to 09:00,\n  - 1.0 from 09:00 to 17:00,\n  - 0.2 from 17:00 to midnight,\n  - weekends/holidays => 0.2 all day"
+            },
+            {
+                "name": "create_schedule_from_pattern",
+                "doc": "Creates a SCHEDULE:COMPACT in the IDF from a single pattern of\n(start_hour, end_hour, fraction_value) tuples for ALL days.\n\n:param idf: geomeppy IDF instance\n:param sched_name: name of the schedule in E+\n:param pattern: list of (start_hour, end_hour, value), e.g. [(0,6,0.5), (6,22,1.0), (22,24,0.5)]\n:param schedule_type_limits: e.g. \"Fraction\" or \"OnOff\"\n:returns: the new or existing SCHEDULE:COMPACT object"
+            },
+            {
+                "name": "create_schedule_from_weekday_weekend_pattern",
+                "doc": "Creates a SCHEDULE:COMPACT with two sets of rules:\n- One for Weekdays\n- One for Saturday Sunday Holiday\n\n:param idf: geomeppy IDF instance\n:param sched_name: name of the schedule in E+\n:param weekday_pattern: list of (start_hr, end_hr, fraction) for M-F\n:param weekend_pattern: list of (start_hr, end_hr, fraction) for Sat/Sun/Holiday\n:param schedule_type_limits: e.g. \"Fraction\"\n:returns: new or existing SCHEDULE:COMPACT"
+            },
+            {
+                "name": "ensure_dynamic_schedule",
+                "doc": "A convenience function that:\n - if only weekday_pattern is provided, creates schedule from that pattern for all days;\n - if both weekday & weekend patterns provided, creates a weekday/weekend schedule.\n\n:param idf: geomeppy IDF\n:param sched_name: string\n:param weekday_pattern: list of (start_hr, end_hr, fraction)\n:param weekend_pattern: list of (start_hr, end_hr, fraction)\n:return: the schedule object"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "geomeppy"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\ventilation\\ventilation_lookup.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\ventilation\\ventilation_overrides_from_excel.py": {
+        "functions": [
+            {
+                "name": "read_ventilation_overrides_from_excel",
+                "doc": "Reads an Excel file with columns:\n    - calibration_stage\n    - main_key\n    - sub_key\n    - param_name\n    - min_val\n    - max_val\n    - fixed_value\n\nReturns a nested dict: override_data[stage][main_key][sub_key][param_name] = ...\n\nWhere the \"...\" can be:\n  - a tuple (min, max) if numeric\n  - a single string or numeric if 'fixed_value' is provided and is non-NaN\n    (we store it as (val, val) if numeric, or keep as a plain string if textual).\n\nThis can override infiltration ranges, year_factor ranges, OR new schedule info.\nFor schedule overrides, 'main_key' might be \"schedule_info\",\nsub_key might be e.g. \"residential\", param_name might be \"default_infiltration_schedule\",\nand fixed_value could be e.g. \"InfilResSched\".\n\nExample row:\n    calibration_stage = \"pre_calibration\"\n    main_key          = \"schedule_info\"\n    sub_key           = \"residential\"\n    param_name        = \"default_infiltration_schedule\"\n    min_val           = NaN\n    max_val           = NaN\n    fixed_value       = \"MyInfilResSched\"\n\nThe resulting override_data will have:\n    override_data[\"pre_calibration\"][\"schedule_info\"][\"residential\"][\"default_infiltration_schedule\"] = \"MyInfilResSched\""
+            },
+            {
+                "name": "apply_ventilation_overrides_to_lookup",
+                "doc": "Merges override_data into default_lookup (similar to ventilation_lookup).\n\noverride_data structure:\n  override_data[stage][main_key][sub_key][param_name] = final_value\n    (final_value can be a tuple (min,max), or a string for schedules)\n\nFor each stage in override_data:\n  - If stage doesn't exist in default_lookup, we create it.\n  - For each main_key in override_data => if it's a tuple or string, override\n    directly. If it's a dict => merge deeper.\n\nExample usage:\n  new_lookup = apply_ventilation_overrides_to_lookup(ventilation_lookup, override_data)"
+            },
+            {
+                "name": "is_number",
+                "doc": null
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas",
+            "copy",
+            "math"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\wshading\\assign_shading_values.py": {
+        "functions": [
+            {
+                "name": "pick_val_from_range",
+                "doc": "Helper function to pick a numeric value from (min_val, max_val).\n- If strategy=\"A\", picks the midpoint.\n- If strategy=\"B\", picks a random value in [min_val, max_val].\n- Otherwise, picks min_val."
+            },
+            {
+                "name": "pick_shading_params",
+                "doc": "1) Looks up default shading parameters from shading_lookup[shading_type_key].\n2) If user_config is provided, override or adjust some values if needed.\n3) Based on 'strategy', pick final numeric values (midpoint or random) from any ranges.\n4) Optionally log the final picks in assigned_shading_log.\n\nParameters\n----------\nwindow_id : str\n    An identifier for the window (optional, for logging).\nshading_type_key : str\n    The key in shading_lookup to use, e.g. \"my_external_louvers\".\nstrategy : str\n    \"A\" => pick midpoint from ranges; \"B\" => pick random.\n    Otherwise => pick min_val for everything.\nuser_config : dict or None\n    Optional. E.g. { \"my_external_louvers\": { \"slat_angle_deg_range\": (30, 60) } } \n    to override certain ranges for all windows or certain IDs.\nassigned_shading_log : dict or None\n    If provided, store final picks under assigned_shading_log[window_id].\n\nReturns\n-------\ndict\n    A dictionary of final shading parameters, e.g.:\n    {\n      \"blind_name\": \"MyExternalLouvers\",\n      \"slat_orientation\": \"Horizontal\",\n      \"slat_width\": 0.025,\n      ... \n    }"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "random",
+            ".shading_lookup"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\wshading\\shading_lookup.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\idf_objects\\wshading\\shading_overrides_from_excel.py": {
+        "functions": [
+            {
+                "name": "read_shading_overrides_excel",
+                "doc": "Reads an Excel file containing shading override rules.\nExample columns might be:\n    building_id\n    shading_type_key\n    slat_angle_deg_min\n    slat_angle_deg_max\n    ...\nReturns a list of dict rules, each describing a row from the sheet."
+            },
+            {
+                "name": "pick_shading_params_from_rules",
+                "doc": "Look through the list of override_rules (from read_shading_overrides_excel) \nto find a matching rule for this building_id and shading_type_key.\nReturns a dict of override fields or 'fallback' if none found.\n\nExample override dict might look like:\n    {\n      \"slat_angle_deg_range\": (30, 60),\n      ...\n    }"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\Lookups\\data_materials_non_residential.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\Lookups\\data_materials_residential.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\Lookups\\dhw_lookup.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\lookup_pys\\dhw_lookup_generated.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\lookup_pys\\envelop_nonres_lookup.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\lookup_pys\\envelop_res_lookup.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\lookup_pys\\epw_lookup_generated.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\lookup_pys\\geometry_lookup2.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\lookup_pys\\groundtemp_lookup_generated.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\lookup_pys\\hc_dhw_lookup.py": {
+        "functions": [
+            {
+                "name": "read_range_or_value",
+                "doc": "Checks if there's a single_value present.\nElse attempts to read (range_min, range_max).\nReturns one of:\n  - float (if single_value is present),\n  - tuple (val_min, val_max) if at least one is present,\n  - None if everything is blank."
+            },
+            {
+                "name": "create_dhw_lookup",
+                "doc": "Reads the specified Excel file, processes it to create a dhw_lookup dictionary,\nand writes out the dictionary to 'output_file_path'."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas",
+            "os"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\lookup_pys\\hc_envelop_lookup.py": {
+        "functions": [
+            {
+                "name": "create_envelop_lookup",
+                "doc": "Reads the specified Excel file (e.g. envelop_nonres5.xlsx or envelop_res5.xlsx),\nprocesses it to create a dictionary, and writes out the dictionary to 'output_file_path'.\nThe dictionary will have the variable name given by 'dict_name'."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas",
+            "os"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\lookup_pys\\hc_epw_lookup.py": {
+        "functions": [
+            {
+                "name": "create_epw_lookup",
+                "doc": "Reads an Excel file containing EPW data and produces a list of dictionaries,\neach describing an EPW file (with fields like file_path, year, lat, lon, etc.).\nWrites the resulting list to a Python file at 'output_file_path'."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas",
+            "os"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\lookup_pys\\hc_geometry_lookup.py": {
+        "functions": [
+            {
+                "name": "create_geometry_lookup",
+                "doc": "Reads an Excel file to build a geometry_lookup dictionary, then\nwrites it as a Python file to 'output_file_path'."
+            },
+            {
+                "name": "sort_dict",
+                "doc": null
+            },
+            {
+                "name": "serialize_dict",
+                "doc": null
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas",
+            "collections",
+            "os"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\lookup_pys\\hc_groundtemp_lookup.py": {
+        "functions": [
+            {
+                "name": "read_range",
+                "doc": "Reads temp_min, temp_max from the row.\nReturns:\n  - (val_min, val_max) if at least one is not blank,\n  - None if both are blank.\nIf only one is provided, uses the same value for both."
+            },
+            {
+                "name": "create_groundtemp_lookup",
+                "doc": "Reads the given Excel file (with 'scenario' and 'month' columns, plus 'temp_min'/'temp_max'),\nthen writes out a groundtemp_lookup dictionary to 'output_file_path'."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas",
+            "os"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\lookup_pys\\hc_lighting_lookup.py": {
+        "functions": [
+            {
+                "name": "read_range",
+                "doc": "Returns a tuple (val_min, val_max) if either is not blank;\nreturns None if both are blank."
+            },
+            {
+                "name": "create_lighting_lookup",
+                "doc": "Reads 'lighting_lookup.xlsx' (or specified file) to build a nested dictionary:\n    lighting_lookup[scenario][building_function][building_subtype] = {\n        \"LIGHTS_WM2_range\": (min, max),\n        \"PARASITIC_WM2_range\": (min, max),\n        \"tD_range\": (min, max),\n        \"tN_range\": (min, max),\n    }\nThen writes this dictionary to 'output_file_path'."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas",
+            "os"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\lookup_pys\\hc_schedules_lookup.py": {
+        "functions": [
+            {
+                "name": "create_elec_schedules",
+                "doc": "Reads an Excel file (e.g., 'elec_schedules.xlsx') containing building schedule data,\nand generates a Python file (e.g., 'schedules_lookup2.py') with a dictionary named\nSCHEDULE_DEFINITIONS. The structure is:\n\nSCHEDULE_DEFINITIONS = {\n    \"Office\": {\n        \"Large\": {\n            \"weekday\": [\n                (start_hour, end_hour, fraction),\n                ...\n            ],\n            \"weekend\": [...],\n            ...\n        },\n        ...\n    },\n    ...\n}"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas",
+            "os"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\lookup_pys\\hc_ventilation_lookup.py": {
+        "functions": [
+            {
+                "name": "read_range",
+                "doc": "Reads range_min, range_max from a row.\nReturns:\n  - (val_min, val_max) if at least one is not blank,\n  - None if both are blank.\nIf only one is present, returns (val, val)."
+            },
+            {
+                "name": "create_ventilation_lookup",
+                "doc": "Reads the specified Excel file, processes it to build a ventilation_lookup dictionary,\nand writes the dictionary to 'output_file_path'."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas",
+            "os"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\lookup_pys\\hvac_lookup.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\lookup_pys\\lighting_lookup.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\lookup_pys\\materials_lookup.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\lookup_pys\\ventilation_lookup.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\lookup_pys\\ventilation_lookup_generated.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\modification\\common_utils.py": {
+        "functions": [
+            {
+                "name": "load_assigned_csv",
+                "doc": "Loads a generic CSV file containing assigned parameters for a building or zone.\nFor example:\n  D:/Documents/E_Plus_2030_py/output/assigned/assigned_dhw_params.csv\n  D:/Documents/E_Plus_2030_py/output/assigned/assigned_hvac_building.csv\n  etc.\n\nReturns:\n  A Pandas DataFrame with the file contents."
+            },
+            {
+                "name": "filter_for_building",
+                "doc": "If 'df_zone' is provided, filters both dataframes by ogc_fid == building_id.\nIf building_id is None, returns df_main (and df_zone) unfiltered.\n\nThis is useful if you have a building-level CSV and a zone-level CSV\nand want to isolate data for a particular ogc_fid."
+            },
+            {
+                "name": "to_float_or_none",
+                "doc": "Attempts to convert x to float. If it fails (or is NaN), returns None."
+            },
+            {
+                "name": "pick_value_in_range",
+                "doc": "Picks a new value given:\n  - base_val: original numeric value (fallback if range is invalid)\n  - param_min, param_max: numeric range\n  - method: \n     \"random_uniform\" => uniform in [param_min, param_max]\n     \"scale_around_base\" => base_val * random(1 - scale_factor, 1 + scale_factor)\n     \"offset_half\" => base_val +/- up to 50% of half the total range\n  - scale_factor: used if method=\"scale_around_base\"\n\nReturns a float. If range invalid, returns base_val."
+            },
+            {
+                "name": "define_building_param_strategy",
+                "doc": "Loops over rows in df_main_sub to build {param_name -> new_value}.\nFor each row, we call pick_value_in_range(...) only if param_name is numeric.\n\nIf param_name is in STRING_PARAMS, we do NOT randomly pick numeric ranges.\nInstead, we keep the original value as str."
+            },
+            {
+                "name": "generate_multiple_param_sets",
+                "doc": "Calls define_building_param_strategy(...) multiple times to create \n'num_sets' scenario dicts, e.g. for random draws in [param_min, param_max].\n\nReturns: list of dicts => each dict is {param_name -> new_value}"
+            },
+            {
+                "name": "save_param_scenarios_to_csv",
+                "doc": "Writes each scenario's picks to CSV with columns:\n  [scenario_index, ogc_fid, param_name, assigned_value]\n\nThis is how we form the \"scenario_index\" concept for grouping later."
+            },
+            {
+                "name": "load_idf",
+                "doc": "Loads an existing IDF file from disk using Geomeppy (or Eppy, if desired).\nAdjust path as needed."
+            },
+            {
+                "name": "save_idf",
+                "doc": "Saves the modified IDF to out_path, creating directories as needed."
+            },
+            {
+                "name": "load_scenario_csv",
+                "doc": "Reads a CSV that presumably has columns:\n  - scenario_index\n  - ogc_fid\n  - param_name\n  - assigned_value\nor something similar.\n\nThe caller can then do: df.groupby(\"scenario_index\") to iterate over scenarios."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "os",
+            "random",
+            "pandas",
+            "geomeppy"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\modification\\dhw_functions.py": {
+        "functions": [
+            {
+                "name": "create_dhw_scenarios",
+                "doc": "Generates a scenario-level DataFrame from assigned_dhw_params.csv rows \nfor the given building. If param_name ends in \"_range\", we parse min/max.\nOtherwise it's a fixed value. Then for each scenario, we can randomly pick\nparam_value in [param_min, param_max] if picking_method=\"random_uniform\".\n\nColumns in the final DF:\n  [scenario_index, ogc_fid, param_name, param_value, param_min, param_max, picking_method]\n\nIf scenario_csv_out is given, writes the CSV. Otherwise returns the DF only."
+            },
+            {
+                "name": "parse_building_dhw_params",
+                "doc": "Helper to parse the building-level DHW params from assigned_dhw_params.csv.\n\nWe expect lines like:\n  param_name, assigned_value\n  param_name_range, (xx, yy)\n\nWe'll produce a list of dict e.g.:\n  [\n    {\n      \"param_name\": \"setpoint_c\",\n      \"param_value\": 58.0,\n      \"param_min\": 55.0,\n      \"param_max\": 60.0\n    },\n    ...\n  ]"
+            },
+            {
+                "name": "parse_tuple",
+                "doc": "If val is like \"(145.0, 145.0)\", parse to (145.0, 145.0). Otherwise None."
+            },
+            {
+                "name": "pick_value",
+                "doc": "If picking_method==\"random_uniform\" and p_min/p_max are numeric and p_min!=p_max,\npick random in [p_min, p_max]. Otherwise return base_val."
+            },
+            {
+                "name": "apply_dhw_params_to_idf",
+                "doc": "Takes a dictionary of DHW parameter picks, e.g.:\n  {\n    \"setpoint_c\": 58.9,\n    \"default_tank_volume_liters\": 277.5,\n    \"default_heater_capacity_w\": 4223.2,\n    \"sched_morning\": 0.62,\n    \"sched_peak\": 0.98,\n    \"sched_afternoon\": 0.20,\n    \"sched_evening\": 0.68,\n    \"heater_fuel_type\": \"Electricity\",\n    \"heater_eff\": 0.9,\n    ...\n  }\n\nThen:\n  1) Partially creates/updates a usage fraction schedule <suffix>_UseFraction\n     ( preserving existing time blocks if present ).\n  2) Partially creates/updates a setpoint schedule <suffix>_Setpoint \n     ( also preserving existing time blocks ).\n  3) Creates or updates a WATERHEATER:MIXED object <suffix>_WaterHeater\n     with the new volume, capacity, etc. \n     Ensures Ambient_Temperature_Indicator is set so you don't get the \n     \"missing required property\" error."
+            },
+            {
+                "name": "_create_or_update_dhw_schedules",
+                "doc": "Creates or partially updates two schedules:\n  1) <suffix>_UseFraction => usage fraction schedule\n     with typical time-of-day patterns (0.0 until 06:00, morning, peak, etc.)\n  2) <suffix>_Setpoint => constant setpoint (setpoint_c) all day\n\nIf the schedule doesn't exist, we create it from scratch. \nIf it does exist, we parse each \"Until: HH:MM, old_val\" line \nand only update the numeric portion, preserving time blocks.\n\nReturns (fraction_sched_name, setpoint_sched_name)."
+            },
+            {
+                "name": "_partially_update_fraction_schedule",
+                "doc": "Loops over existing \"Until: HH:MM, old_val\" lines in a fraction schedule, \nand overwrites the numeric portion based on time-of-day:\n\n   0 <= time < 6  => 0.0\n   6 <= time < 8  => morning_val\n   8 <= time <10  => peak_val\n   10<= time <17 => afternoon_val\n   17<= time <21 => evening_val\n   21<= time <=24 => morning_val\n\nIf the schedule has more or fewer time blocks, \neach block is updated according to where its 'Until: HH:MM' \nfits in these intervals."
+            },
+            {
+                "name": "_partially_update_setpoint_schedule",
+                "doc": "Loops over existing \"Until: HH:MM, old_val\" lines, \nsets all numeric portions to `setpoint_c`."
+            },
+            {
+                "name": "parse_schedule_until_line",
+                "doc": "Parses a single line like \"Until: 07:00, 15.0\".\nReturns (time_str, float_value).\nIf parsing fails, returns (None, None)."
+            },
+            {
+                "name": "_time_to_minutes",
+                "doc": "Converts \"HH:MM\" to integer minutes. \nE.g. \"06:00\" => 360, \"10:30\" => 630. \nReturns 9999 if parsing fails."
+            },
+            {
+                "name": "_pick_fraction_for_time",
+                "doc": "Returns the usage fraction based on intervals:\n  0 <= t < 360(6:00) => 0.0\n  360 <= t < 480(8:00) => morning_val\n  480 <= t < 600(10:00) => peak_val\n  600 <= t < 1020(17:00) => afternoon_val\n  1020<= t <1260(21:00) => evening_val\n  >=1260 => morning_val\nAdjust as you wish."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "os",
+            "random",
+            "pandas",
+            "eppy.modeleditor",
+            "random"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\modification\\elec_functions.py": {
+        "functions": [
+            {
+                "name": "create_elec_scenarios",
+                "doc": "Generates a scenario-level DataFrame from \"assigned_lighting.csv\" rows:\n  Each row has: ogc_fid, object_name, param_name, assigned_value, min_val, max_val\n\nIf picking_method==\"random_uniform\" and min_val < max_val, picks a random float in [min_val, max_val].\nOtherwise keeps assigned_value as is.\n\nFinal columns in df_scen:\n  scenario_index, ogc_fid, object_name, param_name, param_value,\n  param_min, param_max, picking_method\n\nIf scenario_csv_out is provided, we write it to that CSV.\n\nReturns:\n  pd.DataFrame: the scenario DataFrame"
+            },
+            {
+                "name": "pick_value",
+                "doc": "If picking_method==\"random_uniform\" and p_min/p_max are numeric and p_min< p_max,\npick a random float in [p_min, p_max].\nOtherwise keep base_val as is."
+            },
+            {
+                "name": "apply_building_level_elec",
+                "doc": "Interprets a dictionary of lighting/electrical parameters, e.g.:\n\n  param_dict = {\n    \"lights_wm2\": 19.2788535969,\n    \"parasitic_wm2\": 0.285,\n    \"lights_fraction_radiant\": 0.7,\n    \"lights_fraction_visible\": 0.2,\n    \"lights_fraction_replaceable\": 1.0,\n    \"equip_fraction_radiant\": 0.0,\n    \"equip_fraction_lost\": 1.0,\n    \"lights_schedule_name\": \"LightsSchedule\",      # <--- optional override\n    \"equip_schedule_name\": \"ParasiticSchedule\"     # <--- optional override\n  }\n\nThen we create or update:\n  - One LIGHTS object for the entire building (via `zonelist_name`).\n  - One ELECTRICEQUIPMENT object for parasitic loads.\n\nWe reference existing schedules (e.g. \"LightsSchedule\" or \"ParasiticSchedule\")\nfrom the base IDF (instead of \"AlwaysOn\")."
+            },
+            {
+                "name": "_create_or_update_lights_object",
+                "doc": "Creates/updates a LIGHTS object with 'Watts/Area' method,\nreferencing an existing schedule (lights_schedule_name)."
+            },
+            {
+                "name": "_create_or_update_equip_object",
+                "doc": "Creates/updates an ELECTRICEQUIPMENT object with 'Watts/Area' method,\nreferencing an existing schedule (equip_schedule_name)."
+            },
+            {
+                "name": "apply_object_level_elec",
+                "doc": "Reads a scenario DataFrame with columns:\n  [ogc_fid, object_name, param_name, param_value, param_min, param_max, ...]\nFor each object_name, we parse param_name=>param_value pairs\nand update or create the corresponding IDF object.\n\ne.g. assigned_lighting.csv might have:\n  ogc_fid, object_name, param_name, assigned_value, ...\n  4136730, LIGHTS, lights_wm2, 19.2788535969\n  4136730, ELECTRICEQUIPMENT, parasitic_wm2, 0.285\n  4136730, LIGHTS.Fraction_Radiant, lights_fraction_radiant, 0.7\n  ...\n\nSteps:\n  1) group by object_name\n  2) build a param_dict\n  3) update the IDF object accordingly"
+            },
+            {
+                "name": "_update_generic_lights_obj",
+                "doc": "Example for updating a LIGHTS object named `obj_name`.\nparam_dict might have \"lights_wm2\", \"lights_fraction_radiant\", etc."
+            },
+            {
+                "name": "_update_generic_equip_obj",
+                "doc": "Example for updating an ELECTRICEQUIPMENT object. param_dict might have:\n  \"parasitic_wm2\", \"equip_fraction_radiant\", \"equip_fraction_lost\", etc."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "os",
+            "random",
+            "pandas"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\modification\\fenez_functions2.py": {
+        "functions": [
+            {
+                "name": "apply_building_level_fenez",
+                "doc": "A high-level function to:\n  1) Generate new Materials & Constructions from fenestration data \n     (using update_construction_materials).\n  2) Assign those Constructions to surfaces (assign_constructions_to_surfaces).\n  3) Optionally call add_fenestration(...) to set WWR or create new windows.\n\nbuilding_row:\n  - A dict (or Series) with \"ogc_fid\", \"building_function\", \"age_range\", etc.\n\nuser_config_fenez:\n  - A merged fenestration dictionary for this building (like res_data or nonres_data).\n\nassigned_fenez_log:\n  - If provided, logs final picks (R-values, thickness, WWR, etc.).\n\nadd_windows:\n  - If True, calls add_fenestration(...) to create new windows or set WWR.\n\nuse_computed_wwr, include_doors_in_wwr:\n  - Passed to add_fenestration(...) for computing WWR from sub-element areas, etc.\n\nReturns:\n  construction_map : dict, mapping sub-element => construction name"
+            },
+            {
+                "name": "apply_object_level_fenez",
+                "doc": "Reads 'structured_fenez_params.csv' row by row. \nEach row might specify:\n   - ogc_fid\n   - sub_key (like \"top_opq\", \"exterior_wall_opq\", etc.)\n   - eplus_object_type (MATERIAL, MATERIAL:NOMASS, WINDOWMATERIAL:GLAZING, ...)\n   - eplus_object_name (the intended name to create or update)\n   - param_name (Thickness, Conductivity, R_value, U_value, roughness, etc.)\n   - param_value\n   - param_min, param_max\n\nThen we can group by (eplus_object_type, eplus_object_name) \nto create or update that object in the IDF, assigning fields accordingly.\n\nExample usage:\n   df_struct = pd.read_csv(\"structured_fenez_params.csv\")\n   apply_object_level_fenez(my_idf, df_struct)"
+            },
+            {
+                "name": "_match_field_name",
+                "doc": "A small helper to guess the correct IDF field name from param_name \nif there's a mismatch. If param_name exactly matches the IDF field, \nyou can skip this step. Otherwise, we do a dict-based approach \nfor typical window materials, etc."
+            },
+            {
+                "name": "create_fenez_scenarios",
+                "doc": "Generates a scenario-level DataFrame from a \"structured\" fenestration DataFrame.\n\nArguments:\n  df_struct_fenez: pd.DataFrame\n    Expected to contain columns like:\n      ['ogc_fid','sub_key','eplus_object_type','eplus_object_name',\n       'param_name','param_value','param_min','param_max']\n    Typically read from \"structured_fenez_params.csv\".\n\n  building_id: int (or str)\n    Which building's data to filter from df_struct_fenez (ogc_fid).\n\n  num_scenarios: int\n    How many scenario sets to generate.\n\n  picking_method: str\n    E.g. \"random_uniform\", \"fixed\", \"some_other_method\" ...\n    Used to decide how param_value is recalculated.\n\n  scenario_start_index: int\n    If you already have scenario indexes used up, you can start from another offset.\n\n  random_seed: int\n    Seed for reproducible random picks.\n\n  scenario_csv_out: str or None\n    If not None, write the final DataFrame to this path as CSV.\n\nReturns:\n  df_scenarios: pd.DataFrame\n    Columns:\n      scenario_index, ogc_fid, sub_key, eplus_object_type, eplus_object_name,\n      param_name, param_value, param_min, param_max, picking_method\n\n    This can be saved as \"scenario_params_fenez.csv\" or merged with other scenario param files.\n\nExample usage:\n  df_struct = pd.read_csv(\"output/assigned/structured_fenez_params.csv\")\n  df_scen = create_fenez_scenarios(\n      df_struct_fenez=df_struct,\n      building_id=4136730,\n      num_scenarios=3,\n      picking_method=\"random_uniform\",\n      scenario_csv_out=\"output/scenarios/scenario_params_fenez.csv\"\n  )\n  # => returns a DF and writes it to scenario_params_fenez.csv"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "random",
+            "pandas",
+            "idf_objects.fenez.materials",
+            "idf_objects.fenez.fenestration"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\modification\\hvac_functions.py": {
+        "functions": [
+            {
+                "name": "create_hvac_scenarios",
+                "doc": "Generates a scenario-level DataFrame for HVAC from two CSVs:\n  - df_building => assigned_hvac_building.csv\n  - df_zones    => assigned_hvac_zones.csv\n\nEach of these has columns like:\n  df_building: [ogc_fid, param_name, param_value] plus any param_name_range rows\n  df_zones:    [ogc_fid, zone_name, param_name, param_value]\n\nWe parse param_min / param_max from \"xxx_range\" lines for building-level, then\nproduce a \"long\" DataFrame with columns:\n  [scenario_index, ogc_fid, zone_name, param_name, param_value, param_min, param_max, picking_method]\n\nExample:\n  heating_day_setpoint = 10.64 (with range (10.0, 11.0))\n  => param_value might be a random pick in [10.0, 11.0] if picking_method==\"random_uniform\".\n\nFinally, we optionally save to scenario_csv_out (e.g. \"scenario_params_hvac.csv\").\n\nReturn:\n  df_scen (pd.DataFrame)"
+            },
+            {
+                "name": "parse_building_hvac_params",
+                "doc": "Helper to parse building-level HVAC parameters from assigned_hvac_building.csv\ninto a list of dict with:\n  [\n    {\n      \"param_name\": \"heating_day_setpoint\",\n      \"param_value\": 10.64,\n      \"param_min\": 10.0,\n      \"param_max\": 11.0\n    }, ...\n  ]\nIf we see \"heating_day_setpoint_range\" => store param_min/param_max in the dict\nfor \"heating_day_setpoint\", etc."
+            },
+            {
+                "name": "parse_zone_hvac_params",
+                "doc": "Helper for zone-level HVAC: typically no range columns, so param_min/param_max = None.\nReturns a list of dicts => \n  [\n    {\"zone_name\": \"Zone1\", \"param_name\": \"hvac_object_name\", \"param_value\": \"Zone1 Ideal Loads\"},\n    ...\n  ]"
+            },
+            {
+                "name": "parse_tuple",
+                "doc": "If val is like \"(10.0, 11.0)\", parse to (10.0, 11.0). Otherwise None."
+            },
+            {
+                "name": "pick_value",
+                "doc": "If picking_method==\"random_uniform\" and p_min/p_max are numeric,\npick randomly in [p_min, p_max]. Otherwise keep base_val as is."
+            },
+            {
+                "name": "apply_building_level_hvac",
+                "doc": "param_dict is a dictionary of building-level HVAC parameters, e.g.:\n  {\n    \"heating_day_setpoint\": 10.64,\n    \"heating_night_setpoint\": 15.02,\n    \"cooling_day_setpoint\": 25.6,\n    \"cooling_night_setpoint\": 26.44,\n    \"max_heating_supply_air_temp\": 52.36,\n    \"min_cooling_supply_air_temp\": 13.35,\n    ...\n  }\n\nThis function:\n  1) Updates \"ZONE HEATING SETPOINTS\" schedule (if day/night keys exist).\n  2) Updates \"ZONE COOLING SETPOINTS\" schedule (if day/night keys exist).\n  3) For each ZONEHVAC:IDEALLOADSAIRSYSTEM, sets supply air temps if present."
+            },
+            {
+                "name": "_set_ideal_loads_supply_temps_all_zones",
+                "doc": "Loops over all ZONEHVAC:IDEALLOADSAIRSYSTEM objects, sets:\n  Maximum_Heating_Supply_Air_Temperature = max_heating_temp\n  Minimum_Cooling_Supply_Air_Temperature = min_cooling_temp\nif provided."
+            },
+            {
+                "name": "parse_schedule_until_line",
+                "doc": "Parses a single line like \"Until: 07:00, 15.0\".\nReturns (time_str, float_value).\nIf parsing fails, returns (None, None)."
+            },
+            {
+                "name": "_modify_schedule_compact",
+                "doc": "Partially modifies an existing SCHEDULE:COMPACT by parsing each 'Until:' field,\npreserving its time range, but swapping out the numeric value for day_value or\nnight_value based on whether time < day_start, time < day_end, or beyond day_end.\n\nIf the schedule does not exist, we log a warning and skip.\n\nNOTE: This is a simplistic approach to day vs. night assignment:\n  - If the field's 'Until' time is < day_start => night_value\n  - Else if < day_end => day_value\n  - Else => night_value again\n\nThat way we preserve however many time blocks the schedule had\u2014only numeric values\nget replaced. If you want a different approach, adapt the logic below."
+            },
+            {
+                "name": "apply_zone_level_hvac",
+                "doc": "Accepts a DataFrame with columns [zone_name, param_name, param_value] \nfor each zone. E.g.:\n  zone_name=Zone1_FrontPerimeter, param_name=hvac_object_name, \n    param_value=Zone1_FrontPerimeter Ideal Loads\n  zone_name=Zone1_FrontPerimeter, param_name=heating_setpoint_schedule, \n    param_value=ZONE HEATING SETPOINTS\n  ...\n\nThen you can create or update the zone's HVAC objects accordingly."
+            },
+            {
+                "name": "find_or_create_object",
+                "doc": "Utility to find an existing object in IDF by type & name, or create a new one.\nE.g.: find_or_create_object(idf, \"ZONEHVAC:IDEALLOADSAIRSYSTEM\", \"Zone1_Core Ideal Loads\")"
+            },
+            {
+                "name": "time_to_minutes",
+                "doc": null
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "os",
+            "random",
+            "pandas",
+            "eppy.modeleditor"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\modification\\main_modifi.py": {
+        "functions": [
+            {
+                "name": "run_modification_workflow",
+                "doc": "Main orchestration function that:\n  - Loads assigned/structured CSV data for each system (HVAC, DHW, Vent, Elec, Fenez)\n  - Creates multiple scenario picks\n  - Applies them to a base IDF, generating scenario IDFs\n  - Optionally runs simulations, post-process, and validation."
+            },
+            {
+                "name": "_make_param_dict",
+                "doc": "Builds a dict {param_name: value} from a subset DataFrame, handling both\n'assigned_value' or 'param_value' columns in the scenario CSV.\n\nWe check which column is present. If neither is found, we raise an error."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "os",
+            "pandas",
+            "modification.common_utils",
+            "modification.hvac_functions",
+            "modification.dhw_functions",
+            "modification.elec_functions",
+            "modification.fenez_functions2",
+            "modification.vent_functions",
+            "modification.dhw_functions",
+            "modification.hvac_functions"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\modification\\vent_functions.py": {
+        "functions": [
+            {
+                "name": "create_vent_scenarios",
+                "doc": "Generate a scenario-level DataFrame that combines building-level vent parameters\n(from df_building) and zone-level vent parameters (from df_zones), including\nparam_min/param_max if present. Then optionally randomizes or adjusts them\nfor each scenario.\n\nArgs:\n  df_building (pd.DataFrame): building-level vent data, typically from\n    \"assigned_vent_building.csv\" with columns like:\n     - ogc_fid, param_name, param_value\n     - param_name might also have a \"_range\" companion row with min/max in parentheses\n  df_zones (pd.DataFrame): zone-level vent data from\n    \"assigned_vent_zones.csv\" with columns like:\n     - ogc_fid, zone_name, param_name, param_value\n  building_id: int or str, the building ID to filter on\n  num_scenarios: int, how many scenario sets to create\n  picking_method: str, e.g. \"random_uniform\", \"fixed\", etc.\n  random_seed: int, for reproducible random picks\n  scenario_csv_out: str or None, if not None we write final DataFrame to CSV\n\nReturns:\n  df_scen (pd.DataFrame): A \"long\" DataFrame with columns like:\n    [scenario_index, ogc_fid, zone_name, param_name, param_value,\n     param_min, param_max, picking_method, ...]\n  - zone_name may be empty/None for building-level params\n  - param_min/param_max extracted from e.g. infiltration_base_range\n  - param_value potentially randomized if picking_method == \"random_uniform\""
+            },
+            {
+                "name": "parse_building_vent_params",
+                "doc": "Helper to parse building-level vent parameters from\nassigned_vent_building.csv into a list of dicts with\n  [param_name, param_value, param_min, param_max]\n\n- If param_name == \"infiltration_base_range\" => store param_min/param_max from the tuple\n  matched with param_name=\"infiltration_base\".\n- Similarly for \"year_factor_range\", \"fan_pressure_range\", etc."
+            },
+            {
+                "name": "parse_zone_vent_params",
+                "doc": "Helper to parse zone-level vent params from assigned_vent_zones.csv\ninto a list of dicts with zone_name, param_name, param_value, param_min, param_max.\n\nTypically, assigned_vent_zones doesn't store param_min/param_max,\nso we might keep them as None. But if your code logs them, parse them similarly."
+            },
+            {
+                "name": "parse_tuple",
+                "doc": "If val is like \"(100.3, 100.4)\", parse to (100.3, 100.4). Otherwise None."
+            },
+            {
+                "name": "pick_value",
+                "doc": "Given a base_val (float or str), optional p_min/p_max, and a method,\nreturn a new value. Example:\n  - If picking_method == \"random_uniform\" and p_min/p_max are not None,\n    pick random in [p_min, p_max].\n  - Else keep base_val as is.\n\nAdjust as needed for more complex logic (like scale factors)."
+            },
+            {
+                "name": "apply_building_level_vent",
+                "doc": "Applies building-level infiltration/vent parameters (like infiltration_base,\ninfiltration_total_m3_s, schedules, etc.) to the IDF in a \"coarse\" manner.\n\nExample usage:\n    vent_params = {\n      \"infiltration_base\": 0.5,\n      \"ventilation_total_m3_s\": 0.01,\n      \"infiltration_schedule_name\": \"AlwaysOnSched\",\n      ...\n    }\n    apply_building_level_vent(my_idf, vent_params)"
+            },
+            {
+                "name": "apply_zone_level_vent",
+                "doc": "Applies zone-level infiltration/vent parameters to each zone. The DataFrame\nis expected to have columns:\n   [zone_name, param_name, param_value, ...]\nderived from scenario-based picks or from assigned_vent_zones.csv.\n\nEach zone might have infiltration_object_name, infiltration_flow_m3_s,\ninfiltration_schedule_name, ventilation_object_name, ventilation_flow_m3_s,\nventilation_schedule_name, etc.\n\nWe'll group by zone_name, create or update the infiltration/vent objects\nin IDF."
+            },
+            {
+                "name": "find_or_create_object",
+                "doc": "Utility to find an existing object in IDF by type & name, or create a new one.\ne.g. find_or_create_object(idf, \"ZONEINFILTRATION:DESIGNFLOWRATE\", \"Infil_Zone1\")"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "os",
+            "random",
+            "pandas"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\postproc\\merge_results.py": {
+        "functions": [
+            {
+                "name": "merge_all_results",
+                "doc": "Merges multiple simulation CSV files into one wide CSV, skipping *_Meter.csv or *_sz.csv.\n\nParameters:\n- base_output_dir (str): Directory containing the CSV files to merge.\n- output_csv (str): Path to the output merged CSV file.\n- convert_to_daily (bool): If True, aggregates Hourly data to Daily.\n- daily_aggregator (str): Aggregation method for daily conversion ('mean', 'sum', etc.).\n- convert_to_monthly (bool): If True, aggregates Daily data to Monthly.\n- monthly_aggregator (str): Aggregation method for monthly conversion ('mean', 'sum', etc.).\n\nReturns:\n- None: Writes the merged data to the specified CSV file."
+            },
+            {
+                "name": "aggregate_series",
+                "doc": "Aggregate a pandas Series using one of the known aggregator functions."
+            },
+            {
+                "name": "correct_time",
+                "doc": "Handle '24:00:00' by converting it to '00:00:00' of the next day."
+            },
+            {
+                "name": "parse_dt",
+                "doc": "Parses various forms of Date/Time:\n  - Single piece (e.g. 'January', or '4'):\n      * If it is a month name => monthly data => datetime(2022, month_num, 1).\n      * If it is an integer 0-23 => interpret as hour => Jan 1, 2022, at that hour.\n  - Two pieces (e.g. '01/21 00:10:00', or '01/21 4'):\n      * If second part is recognized as time, parse with date. \n  - Otherwise => pd.NaT."
+            },
+            {
+                "name": "safe_dt",
+                "doc": null
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "os",
+            "re",
+            "pandas",
+            "numpy",
+            "datetime",
+            "calendar"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\tempground\\groundtemp_lookup_generated.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\validation\\compare_sims_with_measured.py": {
+        "functions": [
+            {
+                "name": "load_csv_as_df",
+                "doc": "Loads real and simulated data from CSV into DataFrames.\nJust a simple utility function, used if needed."
+            },
+            {
+                "name": "align_data_for_variable",
+                "doc": "Returns aligned arrays of sim vs. obs for a given (real_building_id, sim_building_id, variable).\n- df_real and df_sim should be *already filtered* to the appropriate building + var\n  (i.e., df_real_sub, df_sim_sub).\n- This function melts them from wide to long format and merges on 'Date'.\n\nReturns: (sim_values_array, obs_values_array, merged_dataframe)"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\validation\\main_validation.py": {
+        "functions": [
+            {
+                "name": "run_validation_process",
+                "doc": "Runs a validation process based on a user config dict.\n\nExample config structure:\n{\n    \"real_data_csv\": \"path/to/real_data.csv\",\n    \"sim_data_csv\":  \"path/to/sim_data.csv\",\n    \"bldg_ranges\":   { \"0\": [0, 1, 2], \"1\": [1] },\n    \"variables_to_compare\": [\n        \"Electricity:Facility [J](Hourly)\",\n        \"Heating:EnergyTransfer [J](Hourly)\"\n    ],\n    \"threshold_cv_rmse\": 30.0,\n    \"skip_plots\": false,\n    \"output_csv\": \"validation_report.csv\"\n}"
+            },
+            {
+                "name": "bar_chart_metrics_for_triple",
+                "doc": "Create a bar chart of CV(RMSE) for each (RealBldg, SimBldg, Var).\nBars are green if pass, red if fail."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "csv",
+            "matplotlib.pyplot",
+            "validation.validate_results_custom"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\validation\\metrics.py": {
+        "functions": [
+            {
+                "name": "mean_bias_error",
+                "doc": "MBE = ( sum(obs_i - sim_i) / sum(obs_i) ) * 100"
+            },
+            {
+                "name": "cv_rmse",
+                "doc": "CV(RMSE) = ( RMSE / mean(obs) ) * 100"
+            },
+            {
+                "name": "nmbe",
+                "doc": "NMBE = 100 * ( sum(obs_i - sim_i) / (n * mean(obs)) )"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "numpy"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\validation\\validate_results_custom.py": {
+        "functions": [
+            {
+                "name": "validate_with_ranges",
+                "doc": "Compare real vs sim data for specified building mappings and variable names.\n\n:param real_data_path: Path to the CSV file with real data\n:param sim_data_path: Path to the CSV file with sim data\n:param bldg_ranges: dict mapping real_bldg (string) -> list of sim_bldgs. \n                   e.g. {\"0\": [0, 1, 2]}, or {\"4136730\": [\"4136730\"]}\n:param variables_to_compare: list of variable names (strings) to be validated.\n:param threshold_cv_rmse: pass/fail threshold for CV(RMSE) in percent\n:param skip_plots: if True, disable time-series and scatter plots\n:return: a dict of metrics keyed by (real_bldg, sim_bldg, variable_name)"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas",
+            "validation.compare_sims_with_measured",
+            "validation.metrics",
+            "validation.visualize"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\validation\\visualize.py": {
+        "functions": [
+            {
+                "name": "plot_time_series_comparison",
+                "doc": "Creates a simple line plot comparing sim vs. obs over time \n(e.g., 01-Jan, 02-Jan, etc.).\nmerged_df has columns: Date, Value_obs, Value_sim"
+            },
+            {
+                "name": "scatter_plot_comparison",
+                "doc": "Creates a scatter plot of Observed vs. Simulated for a quick correlation check."
+            },
+            {
+                "name": "bar_chart_metrics",
+                "doc": "Suppose metric_dict is e.g.:\n  {\n    (0, 'Cooling'): {'MBE': 2.3, 'CVRMSE': 18.5, 'NMBE': -0.4, 'Pass': True},\n    (0, 'Heating'): { ... },\n    (1, 'Cooling'): { ... },\n    ...\n  }\nWe'll create a bar chart of CV(RMSE) across all keys."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "matplotlib.pyplot",
+            "numpy"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\validation copy\\compare_sims_with_measured.py": {
+        "functions": [
+            {
+                "name": "load_csv_as_df",
+                "doc": "Loads real and simulated data from CSV into DataFrames."
+            },
+            {
+                "name": "align_data_for_variable",
+                "doc": "Returns aligned arrays of sim vs. obs for a given (real_building_id, sim_building_id, variable)."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\validation copy\\main_validation.py": {
+        "functions": [
+            {
+                "name": "run_validation_process",
+                "doc": "Runs a validation process based on a user config dict.\n\nExample config keys:\n{\n    \"real_data_csv\": \"...\",\n    \"sim_data_csv\": \"...\",\n    \"bldg_ranges\": {0: range(0, 5)},\n    \"threshold_cv_rmse\": 30.0,\n    \"skip_plots\": True,          # or False\n    \"output_csv\": \"validation_report.csv\"\n}"
+            },
+            {
+                "name": "bar_chart_metrics_for_triple",
+                "doc": "Create a bar chart of CV(RMSE) for each (RealBldg, SimBldg, Var).\nBars are green if pass, red if fail."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "csv",
+            "matplotlib.pyplot",
+            "validation.validate_results_custom"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\validation copy\\metrics.py": {
+        "functions": [
+            {
+                "name": "mean_bias_error",
+                "doc": "MBE = ( sum(obs_i - sim_i) / sum(obs_i) ) * 100"
+            },
+            {
+                "name": "cv_rmse",
+                "doc": "CV(RMSE) = ( RMSE / mean(obs) ) * 100"
+            },
+            {
+                "name": "nmbe",
+                "doc": "NMBE = 100 * ( sum(obs_i - sim_i) / (n * mean(obs)) )"
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "numpy"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\validation copy\\validate_results_custom.py": {
+        "functions": [
+            {
+                "name": "validate_with_ranges",
+                "doc": "Compare each real building with each sim building in the given range one-by-one,\ncomputing metrics (MBE, CV(RMSE), NMBE) for each pairing.\n\n:param skip_plots: If True, do NOT generate any figures (time-series or scatter)."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "pandas",
+            "validation.compare_sims_with_measured",
+            "validation.metrics",
+            "validation.visualize"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\validation copy\\visualize.py": {
+        "functions": [
+            {
+                "name": "plot_time_series_comparison",
+                "doc": "Creates a simple line plot comparing sim vs. obs over time \n(e.g., 01-Jan, 02-Jan, etc.).\nmerged_df has columns: Date, Value_obs, Value_sim"
+            },
+            {
+                "name": "scatter_plot_comparison",
+                "doc": "Creates a scatter plot of Observed vs. Simulated for a quick correlation check."
+            },
+            {
+                "name": "bar_chart_metrics",
+                "doc": "Suppose metric_dict is e.g.:\n  {\n    (0, 'Cooling'): {'MBE': 2.3, 'CVRMSE': 18.5, 'NMBE': -0.4, 'Pass': True},\n    (0, 'Heating'): { ... },\n    (1, 'Cooling'): { ... },\n    ...\n  }\nWe'll create a bar chart of CV(RMSE) across all keys."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "matplotlib.pyplot",
+            "numpy"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\ventilation\\ventilation_lookup_generated.py": {
+        "functions": [],
+        "classes": [],
+        "imports": []
+    },
+    "D:\\Documents\\E_Plus_2030_py\\ZZZz\\draft main.py": {
+        "functions": [
+            {
+                "name": "setup_logging",
+                "doc": "Initialize logging with a standard format."
+            },
+            {
+                "name": "main",
+                "doc": null
+            },
+            {
+                "name": "iterative_calibration_loop",
+                "doc": "A loop for calibration or scenario generation:\n  - Generate new param sets\n  - Create scenario IDFs\n  - Run simulations\n  - Validate\n  - Stop if thresholds met or max iterations reached"
+            },
+            {
+                "name": "run_sensitivity_workflow",
+                "doc": "Demonstrates how you'd orchestrate a sensitivity analysis.\nTypically, you define a param space, run many sims or use a surrogate,\nthen compute sensitivity indices (Sobol, Morris, etc.)."
+            },
+            {
+                "name": "run_surrogate_workflow",
+                "doc": "If the user wants to create/update a surrogate model from scenario data,\nyou gather training data (params + outputs) and fit a regressor (RF, XGBoost, etc.)."
+            },
+            {
+                "name": "run_optimization_workflow",
+                "doc": "Could be a GA, Bayesian, or other algorithm.\nPossibly uses a surrogate model for quick fitness evaluations,\nor calls the full E+ simulation for each candidate."
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "os",
+            "logging",
+            "pandas"
+        ]
+    },
+    "D:\\Documents\\E_Plus_2030_py\\__pycache__\\Untitled-1.py": {
+        "functions": [
+            {
+                "name": "merge_all_results",
+                "doc": "Merges multiple simulation CSV files into one wide CSV, skipping *_Meter.csv or *_sz.csv.\n\nIf convert_to_daily=True, it aggregates Hourly columns by day and merges with Daily columns.\nOtherwise, merges \"as is.\""
+            },
+            {
+                "name": "postprocess",
+                "doc": null
+            },
+            {
+                "name": "aggregate_series",
+                "doc": null
+            },
+            {
+                "name": "correct_time",
+                "doc": null
+            },
+            {
+                "name": "parse_dt",
+                "doc": null
+            }
+        ],
+        "classes": [],
+        "imports": [
+            "os",
+            "re",
+            "pandas",
+            "numpy",
+            "datetime",
+            "idf_objects.postproc.merge_results"
+        ]
+    }
+}

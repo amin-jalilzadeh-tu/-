@@ -8,82 +8,95 @@ def safe_lower(val):
 
 def map_age_range_to_year_key(age_range_str):
     """
-    Convert your main DataFrame's age_range
-    into the short keys used in your infiltration/vent lookup or NTA data.
+    Converts a building_row's age_range into one of the 7 keys used in 
+    ventilation_lookup (e.g. "< 1945", "1945 - 1964", etc.).
 
-    Now expanded to include:
-      - "1900-2000" => "1900-2000"
-      - "2000-2024" => "2000-2024"
-      - plus older ones like "<1970", "1970-1992", etc.
+    If the input doesn't match exactly, we fallback to "2015 and later".
     """
-    # You can expand as needed.
-    mapping = {
-        "pre-1970": "<1970",
-        "1970 - 1992": "1970-1992",
-        "1992 - 2005": "1992-2005",
-        "2005 - 2015": "2005-2015",
-        "2015 and later": ">2015",
-        "1900-2000": "1900-2000",
-        "2000-2024": "2000-2024"
+    valid_keys = {
+        "< 1945": "< 1945",
+        "1945 - 1964": "1945 - 1964",
+        "1965 - 1974": "1965 - 1974",
+        "1975 - 1991": "1975 - 1991",
+        "1992 - 2005": "1992 - 2005",
+        "2006 - 2014": "2006 - 2014",
+        "2015 and later": "2015 and later"
     }
-    return mapping.get(age_range_str, ">2015")  # fallback => >2015
+    return valid_keys.get(age_range_str, "2015 and later")
 
 def map_infiltration_key(building_row):
     """
-    Decide infiltration key from building function + sub-type fields.
-    Updated to handle e.g. 'two_and_a_half_story_house' for certain residential types,
-    or 'meeting_function' for certain non-res types, etc.
+    Returns a string key that matches the infiltration range in your
+    ventilation_lookup. We no longer rely on any perimeter logic.
 
-    If not recognized, fall back to a perimeter-based logic or default.
+    - If building_function == "residential", we use the "residential_type" field
+      (e.g. "Corner House", "Apartment", etc.). If not found, fallback "other_res".
+
+    - If building_function == "non_residential", we use the "non_residential_type"
+      (e.g. "Office Function", "Meeting Function", etc.). If not found, fallback "other_nonres".
     """
     bldg_func = safe_lower(building_row.get("building_function", "residential"))
     if bldg_func == "residential":
-        # 1) check if we have a recognized 'residential_type'
-        res_type = safe_lower(building_row.get("residential_type", ""))
-        if "two-and-a-half-story" in res_type:
-            return "two_and_a_half_story_house"
-        # Could add more if/elif logic for other residential_type strings:
-        # elif "row house" in res_type:
-        #     return "row_house"
-        #
-        # else fallback to perimeter-based approach as in original
-        perimeter = building_row.get("perimeter", 40)
-        if perimeter > 60:
-            return "A_detached"
-        else:
-            return "A_corner"
-
+        # Exact sub-type, e.g. "Corner House"
+        res_type = building_row.get("residential_type", "other_res")
+        # Match exactly what's in the lookup keys:
+        valid_res_types = {
+            "Corner House", 
+            "Apartment", 
+            "Terrace or Semi-detached House", 
+            "Detached House", 
+            "Two-and-a-half-story House"
+        }
+        if res_type not in valid_res_types:
+            return "other_res"
+        return res_type
     else:
-        # Non-res => check 'non_residential_type'
-        nonres_type = safe_lower(building_row.get("non_residential_type", ""))
-        if "meeting function" in nonres_type:
-            return "meeting_function"
-        # else fallback
-        return "office_multi_top"
+        # Non-res
+        nonres_type = building_row.get("non_residential_type", "other_nonres")
+        valid_nonres_types = {
+            "Meeting Function",
+            "Healthcare Function",
+            "Sport Function",
+            "Cell Function",
+            "Retail Function",
+            "Industrial Function",
+            "Accommodation Function",
+            "Office Function",
+            "Education Function",
+            "Other Use Function"
+        }
+        if nonres_type not in valid_nonres_types:
+            return "other_nonres"
+        return nonres_type
 
 def map_usage_key(building_row):
     """
-    For non-res ventilation usage flow reference. 
-    If building is residential => usage_key => None.
-    If it's e.g. 'meeting function' => 'office_area_based' (example).
+    For calculating required ventilation flows in non-res buildings.
+    If the building is residential => return None.
+    Otherwise, return a usage_key that is recognized by calc_required_ventilation_flow.
+
+    Here, you can customize how each non_residential_type maps to a usage flow.
     """
     bldg_func = safe_lower(building_row.get("building_function", "residential"))
     if bldg_func == "residential":
         return None
     else:
-        nonres_type = safe_lower(building_row.get("non_residential_type", ""))
-        if "meeting function" in nonres_type:
-            return "office_area_based"
-        else:
-            return "retail"
+        # Example usage mapping:
+        usage_map = {
+            "Meeting Function": "office_area_based",
+            "Healthcare Function": "office_area_based",
+            "Sport Function": "office_area_based",
+            "Cell Function": "office_area_based",
+            "Retail Function": "retail",
+            "Industrial Function": "retail",
+            "Accommodation Function": "office_area_based",
+            "Office Function": "office_area_based",
+            "Education Function": "office_area_based",
+            "Other Use Function": "retail"
+        }
+        nonres_type = building_row.get("non_residential_type", "Other Use Function")
+        return usage_map.get(nonres_type, "retail")
 
-def map_ventilation_system(building_row):
-    """
-    Decide system type (A, B, C, or D) from building row.
-    As an example: default 'C' for residential, 'D' for non-res.
-    """
-    bldg_func = safe_lower(building_row.get("building_function", "residential"))
-    if bldg_func == "residential":
-        return "C"  # default mechanical exhaust for res
-    else:
-        return "D"  # default balanced w/ HRV for non-res
+# We no longer need a 'map_ventilation_system' function, because system A/B/C/D
+# is now determined by the system_type_map in ventilation_lookup. 
+# That logic is handled in assign_ventilation_params_with_overrides (or a helper).

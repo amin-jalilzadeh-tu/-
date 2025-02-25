@@ -3,56 +3,52 @@
 def map_building_function_to_dhw_key(building_row):
     """
     Decide which DHW key from dhw_lookup to use, based on:
-
       - building_function: 'Residential' or 'Non-Residential'
-      - For Residential, we use 'area' to assign one of:
+      - For Residential, read the 'residential_type' field
+        directly. Return one of:
           "Corner House"
+          "Apartment"
           "Terrace or Semi-detached House"
           "Detached House"
           "Two-and-a-half-story House"
-          "Apartment"
-        (Feel free to adjust thresholds or logic as needed.)
+        If it doesn't match exactly, fallback to e.g. "Apartment".
       
-      - For Non-Residential, we read the non_residential_type and map directly to:
-          "Meeting Function"
-          "Healthcare Function"
-          "Sport Function"
-          "Cell Function"
-          "Retail Function"
-          "Industrial Function"
-          "Accommodation Function"
-          "Office Function"
-          "Education Function"
+      - For Non-Residential, read the 'non_residential_type'
+        field and map directly to:
+          "Meeting Function", "Healthcare Function", ...
           "Other Use Function" (fallback)
-
-    Returns the exact string that corresponds to the keys in your dhw_lookup.
     """
 
-    bldg_func = (building_row.get("building_function") or "Residential").lower()
-    bldg_area = building_row.get("area", 80)  # fallback if area not provided
-    
+    bldg_func = (building_row.get("building_function") or "").strip().lower()
+
     # ---------------------
-    # RESIDENTIAL LOGIC
+    # RESIDENTIAL
     # ---------------------
     if bldg_func == "residential":
-        # Example area-based classification
-        if bldg_area < 60:
-            return "Corner House"
-        elif bldg_area < 100:
-            return "Terrace or Semi-detached House"
-        elif bldg_area < 150:
-            return "Detached House"
-        elif bldg_area < 250:
-            return "Two-and-a-half-story House"
+        # Grab the explicit "residential_type" from the data
+        res_type = (building_row.get("residential_type") or "").strip()
+
+        # Our known valid residential types:
+        valid_res_types = {
+            "Corner House",
+            "Apartment",
+            "Terrace or Semi-detached House",
+            "Detached House",
+            "Two-and-a-half-story House"
+        }
+
+        # If the row's residential_type is valid, use it;
+        # otherwise fallback to "Apartment" (or your choice).
+        if res_type in valid_res_types:
+            return res_type
         else:
             return "Apartment"
 
     # ---------------------
-    # NON-RESIDENTIAL LOGIC
+    # NON-RESIDENTIAL
     # ---------------------
     else:
-        nrtype = building_row.get("non_residential_type", "")
-        # Map directly, or fallback to "Other Use Function"
+        nrtype = (building_row.get("non_residential_type") or "").strip()
         valid_nonres = {
             "Meeting Function":       "Meeting Function",
             "Healthcare Function":    "Healthcare Function",
@@ -65,4 +61,5 @@ def map_building_function_to_dhw_key(building_row):
             "Education Function":     "Education Function",
             "Other Use Function":     "Other Use Function"
         }
+
         return valid_nonres.get(nrtype, "Other Use Function")

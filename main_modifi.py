@@ -114,7 +114,7 @@ def run_modification_workflow(config):
     Example config structure:
     {
       "base_idf_path": "output/output_IDFs/building_0.idf",
-      "idd_path": "D:/EnergyPlus/Energy+.idd",
+      "idd_path": "EnergyPlus/Energy+.idd",
       "assigned_csv": {
         "hvac_building": "output/assigned/assigned_hvac_building.csv",
         "hvac_zones":    "output/assigned/assigned_hvac_zones.csv",
