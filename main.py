@@ -12,7 +12,8 @@ import logging
 import threading
 import queue
 import time
-from flask import Flask, request, Response
+from flask import Flask, request, Response, jsonify
+from splitter import split_combined_json  # import from splitter.py
 
 import pandas as pd
 
@@ -47,6 +48,27 @@ from cal.unified_calibration import run_unified_calibration
 # If these come from user_config_overrides, ensure correct import:
 # from user_config_overrides import apply_geometry_user_config, apply_shading_user_config
 
+
+###############################################################################
+# Deep Merge Helper Function
+###############################################################################
+def deep_merge_dicts(base, overrides):
+    """
+    Recursively deep-merge 'overrides' into 'base'.
+    Modifies 'base' in-place. Also returns the merged result.
+    """
+    for k, v in overrides.items():
+        if (
+            k in base 
+            and isinstance(base[k], dict) 
+            and isinstance(v, dict)
+        ):
+            deep_merge_dicts(base[k], v)
+        else:
+            base[k] = v
+    return base
+
+    
 
 ###############################################################################
 # Custom Logging: We'll create a special handler that sends logs to a queue
@@ -503,6 +525,25 @@ app = Flask(__name__)
 
 @app.route("/run-workflow", methods=["POST"])
 def run_workflow_api():
+    """
+    Endpoint that receives a single big JSON and splits it
+    into sub-JSON files in user_configs/ folder.
+    """
+    if not request.is_json:
+        return jsonify({"error": "Expected JSON payload"}), 400
+
+    # 1) Grab the posted JSON as a Python dict
+    posted_data = request.get_json()
+
+    # 2) Define where to write the sub-JSON files
+    user_configs_folder = os.path.join(os.getcwd(), "user_configs")
+
+    # 3) Call our splitter function
+    split_combined_json(posted_data, user_configs_folder)
+
+    # ... Optionally do more steps like deep-merge with existing main_config, etc. ...
+
+
     """
     Endpoint to start the entire workflow.  
     - Accepts optional JSON in the request body to override or augment main_config.  
