@@ -1,3 +1,4 @@
+#splitter.py 
 import os
 import json
 import logging
@@ -38,3 +39,23 @@ def split_combined_json(posted_data, output_folder):
             logger.info(f"[split_combined_json] Wrote: {out_path}")
         except Exception as e:
             logger.error(f"[split_combined_json] Error writing {out_path}: {e}")
+
+
+
+def deep_merge_dicts(base, overrides):
+    """
+    Recursively deep-merge 'overrides' into 'base'.
+    Modifies 'base' in-place. Also returns the merged result.
+    """
+    for k, v in overrides.items():
+        # If both base[k] and v are dict, recurse
+        if (
+            k in base 
+            and isinstance(base[k], dict) 
+            and isinstance(v, dict)
+        ):
+            deep_merge_dicts(base[k], v)
+        else:
+            # Otherwise, overwrite at this level
+            base[k] = v
+    return base

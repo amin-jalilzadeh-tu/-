@@ -1,10 +1,9 @@
-# Use an official Python runtime as a parent image
+# Dockerfile
 FROM python:3.9-slim
 
-# Set the working directory inside the container
 WORKDIR /usr/src/app
 
-# Install system dependencies
+# --- System packages we need ---
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     gcc \
@@ -14,27 +13,32 @@ RUN apt-get update && apt-get install -y \
     tcl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the requirements file and install Python dependencies
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+# (1) Copy the requirements files
+COPY requirements_base.txt .
+COPY requirements_dev.txt .
 
-# Define build arguments for EnergyPlus
-ARG ENERGYPLUS_VERSION="22.2.0"
-ARG ENERGYPLUS_SHA="c249759bad"
+# (2) Install base (large) deps
+RUN pip install --no-cache-dir -r requirements_base.txt
 
-# Install EnergyPlus from GitHub releases
-RUN wget "https://github.com/NREL/EnergyPlus/releases/download/v${ENERGYPLUS_VERSION}/EnergyPlus-${ENERGYPLUS_VERSION}-${ENERGYPLUS_SHA}-Linux-Ubuntu20.04-x86_64.tar.gz" && \
-    tar -xzvf "EnergyPlus-${ENERGYPLUS_VERSION}-${ENERGYPLUS_SHA}-Linux-Ubuntu20.04-x86_64.tar.gz" -C /usr/local/ && \
-    rm "EnergyPlus-${ENERGYPLUS_VERSION}-${ENERGYPLUS_SHA}-Linux-Ubuntu20.04-x86_64.tar.gz"
+# (3) Install dev (smaller) deps
+RUN pip install --no-cache-dir -r requirements_dev.txt
 
-ENV ENERGYPLUS_EXE_PATH="/usr/local/EnergyPlus-${ENERGYPLUS_VERSION}/energyplus"
-ENV ENERGYPLUS_VERSION=${ENERGYPLUS_VERSION}
+# (4) Download & Install EnergyPlus 22.2.0
+#     (Adjust link to exact version / tarball you want)
+RUN wget "https://github.com/NREL/EnergyPlus/releases/download/v22.2.0/EnergyPlus-22.2.0-c249759bad-Linux-Ubuntu20.04-x86_64.tar.gz" \
+    && tar -xzvf "EnergyPlus-22.2.0-c249759bad-Linux-Ubuntu20.04-x86_64.tar.gz" \
+    && rm "EnergyPlus-22.2.0-c249759bad-Linux-Ubuntu20.04-x86_64.tar.gz" \
+    # rename the extracted directory
+    && mv EnergyPlus-22.2.0-c249759bad-Linux-Ubuntu20.04-x86_64 EnergyPlus-22-2-0 \
+    # now create a symlink from /usr/local/EnergyPlus-22-2-0 -> /usr/src/app/EnergyPlus-22-2-0
+    && ln -s /usr/src/app/EnergyPlus-22-2-0 /usr/local/EnergyPlus-22-2-0 \
+    # create a symlink for the binary
+    && ln -s /usr/local/EnergyPlus-22-2-0/energyplus /usr/local/bin/energyplus
 
-# Copy the rest of the application code into the container
+
+# (5) Copy your entire project LAST (so changes to code won't break caching of the above steps)
 COPY . .
 
-# Expose port 8000 for your app (if using a web server)
+# (6) Expose port & default command
 EXPOSE 8000
-
-# Default command to run (batch-run your main script)
-CMD ["python", "main.py"]
+CMD ["gunicorn", "-b", "0.0.0.0:8000", "app:app", "--workers=1", "--timeout=600"]

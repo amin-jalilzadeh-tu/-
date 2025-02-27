@@ -1,11 +1,9 @@
 """
 main.py as an API server that:
-  - Provides a single endpoint (/run-workflow) which:
-    * Receives a combined JSON payload
-    * Splits it into sub-JSON files in user_configs/ folder
-    * (Optionally) deep merges main_config with existing main_config.json
-    * Spawns the entire E+ workflow in a background thread
-    * Streams logs to the client in real time
+  - Provides an endpoint /run-workflow (POST)
+  - Reads/merges optional user config JSON from request
+  - Runs your existing orchestration logic in a background thread
+  - Streams partial logs/updates back to the client
 """
 
 import os
@@ -15,13 +13,13 @@ import threading
 import queue
 import time
 from flask import Flask, request, Response, jsonify
+from splitter import split_combined_json, deep_merge_dicts  # import from splitter.py
 
 import pandas as pd
 
 # ------------------------------------------------------------------------
-# (1) Import from your own modules
+# (1) Import all your submodules exactly as before
 # ------------------------------------------------------------------------
-from splitter import split_combined_json, deep_merge_dicts  # <--- from splitter.py
 from database_handler import load_buildings_from_db
 from excel_overrides import (
     override_dhw_lookup_from_excel_file,
@@ -47,11 +45,36 @@ from cal.unified_surrogate import (
 )
 from cal.unified_calibration import run_unified_calibration
 
+# If these come from user_config_overrides, ensure correct import:
+# from user_config_overrides import apply_geometry_user_config, apply_shading_user_config
+
+
 ###############################################################################
-# Custom Logging: We'll create a special handler that sends logs into a queue
+# Deep Merge Helper Function
+###############################################################################
+def deep_merge_dicts(base, overrides):
+    """
+    Recursively deep-merge 'overrides' into 'base'.
+    Modifies 'base' in-place. Also returns the merged result.
+    """
+    for k, v in overrides.items():
+        if (
+            k in base 
+            and isinstance(base[k], dict) 
+            and isinstance(v, dict)
+        ):
+            deep_merge_dicts(base[k], v)
+        else:
+            base[k] = v
+    return base
+
+    
+
+###############################################################################
+# Custom Logging: We'll create a special handler that sends logs to a queue
 ###############################################################################
 class QueueLoggerHandler(logging.Handler):
-    """Custom logging handler that pushes logs into a queue."""
+    """Custom logging handler to push logs into a queue."""
     def __init__(self, log_queue):
         super().__init__()
         self.log_queue = log_queue
@@ -69,8 +92,8 @@ class QueueLoggerHandler(logging.Handler):
 ###############################################################################
 def setup_logging_for_queue(log_queue, log_level=logging.INFO):
     """
-    Configure the root logger to also send logs to an in-memory queue
-    so we can stream them out to the HTTP client.
+    Configure root logger to also send logs to an in-memory queue so we can
+    stream them out to the HTTP client.
     """
     logger = logging.getLogger()
     logger.setLevel(log_level)
@@ -79,14 +102,14 @@ def setup_logging_for_queue(log_queue, log_level=logging.INFO):
     for h in logger.handlers[:]:
         logger.removeHandler(h)
 
-    # 1) Console/logfile handlers as you wish
+    # Console/logfile handlers as you wish
     console_handler = logging.StreamHandler()
     console_handler.setLevel(log_level)
     console_fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
     console_handler.setFormatter(console_fmt)
     logger.addHandler(console_handler)
 
-    # 2) Our queue handler
+    # Our queue handler
     queue_handler = QueueLoggerHandler(log_queue)
     queue_handler.setLevel(log_level)
     queue_handler.setFormatter(console_fmt)
@@ -106,18 +129,20 @@ def load_json(filepath):
 
 
 ###############################################################################
-# 3) The Main Orchestration Workflow
+# 3) Orchestration Logic (previously main() ). Renamed to a function so we can
+#    call it from the Flask endpoint in a background thread.
 ###############################################################################
 def orchestrate_workflow(override_json=None):
     """
     The entire logic that was previously in main().
-    `override_json` can be any final overrides you want to merge with main_config.
+    `override_json` can be a dict to merge with main_config if provided by the user
+    via POST request (optional).
     """
     logger = logging.getLogger(__name__)
     logger.info("=== Starting orchestrate_workflow ===")
 
     # --------------------------------------------------------------------------
-    # A) Load the existing main_config.json from user_configs
+    # A) Load main_config.json
     # --------------------------------------------------------------------------
     current_dir = os.getcwd()
     user_configs_folder = os.path.join(current_dir, "user_configs")
@@ -125,34 +150,21 @@ def orchestrate_workflow(override_json=None):
 
     if not os.path.isfile(main_config_path):
         logger.error(f"[ERROR] Cannot find main_config.json at {main_config_path}")
-        return  # or raise an exception
+        return
 
-    main_config_file = load_json(main_config_path)
-    # main_config_file should look like {"main_config": {...}} if we splitted it using split_combined_json
-    main_config = main_config_file.get("main_config", {})
+    main_config = load_json(main_config_path)
 
-    # --------------------------------------------------------------------------
-    # B) Deep Merge override_json["main_config"] if provided
-    # --------------------------------------------------------------------------
-    if override_json and "main_config" in override_json:
-        # override_json itself might contain other top-level keys, but let's specifically
-        # deep-merge the "main_config" portion
-        logger.info("[INFO] Deep merging override_json['main_config'] into existing main_config ...")
-        from splitter import deep_merge_dicts  # or use the one already imported
-        deep_merge_dicts(main_config, override_json["main_config"])
-        # Re-save the updated main_config to disk
-        with open(main_config_path, "w") as f:
-            json.dump({"main_config": main_config}, f, indent=2)
-
-    # Now we have our final main_config in memory
-    logger.info("[INFO] Final main_config loaded & possibly merged.")
+    # If you want to merge any user POSTed config into main_config:
+    if override_json is not None:
+        # Shallow example: main_config.update(override_json)
+        # Or do a deeper merge, depending on your structure
+        logger.info("[INFO] Merging override_json into main_config ...")
+        main_config = {**main_config, **override_json}
+        # More advanced merges can be done if you have nested dicts, etc.
 
     # --------------------------------------------------------------------------
-    # C) Possibly override idf_creation config with environment variables
+    # B) Possibly override idf_creation config with environment variables
     # --------------------------------------------------------------------------
-    # NOTE: 'idf_creation.idf_config' is a module-level global in 'idf_creation.py'.
-    # This approach can be fragile if used by multiple threads or multiple calls.
-    # But we'll keep it for now.
     env_idd_path = os.environ.get("IDD_PATH")
     if env_idd_path:
         idf_creation.idf_config["iddfile"] = env_idd_path
@@ -166,22 +178,24 @@ def orchestrate_workflow(override_json=None):
         out_idf_dir = os.path.join(env_out_dir, "output_IDFs")
         idf_creation.idf_config["output_dir"] = out_idf_dir
 
-    # Merge the local config from main_config["idf_creation"]
+    # Also read user overrides from main_config["idf_creation"]
     idf_cfg = main_config.get("idf_creation", {})
-    if "iddfile" in idf_cfg:
-        idf_creation.idf_config["iddfile"] = idf_cfg["iddfile"]
-    if "idf_file_path" in idf_cfg:
-        idf_creation.idf_config["idf_file_path"] = idf_cfg["idf_file_path"]
-    if "output_idf_dir" in idf_cfg:
-        idf_creation.idf_config["output_dir"] = idf_cfg["output_idf_dir"]
+    custom_idd = idf_cfg.get("iddfile")
+    if custom_idd:
+        idf_creation.idf_config["iddfile"] = custom_idd
+    custom_base_idf = idf_cfg.get("idf_file_path")
+    if custom_base_idf:
+        idf_creation.idf_config["idf_file_path"] = custom_base_idf
+    custom_out_dir = idf_cfg.get("output_idf_dir")
+    if custom_out_dir:
+        idf_creation.idf_config["output_dir"] = custom_out_dir
 
-    # --------------------------------------------------------------------------
-    # D) Extract top-level fields from main_config
-    # --------------------------------------------------------------------------
-    paths_dict     = main_config.get("paths", {})
-    excel_flags    = main_config.get("excel_overrides", {})
-    user_flags     = main_config.get("user_config_overrides", {})
-    def_dicts      = main_config.get("default_dicts", {})
+    # Extract top-level fields from main_config
+    paths_dict = main_config.get("paths", {})
+    excel_flags = main_config.get("excel_overrides", {})
+    user_flags  = main_config.get("user_config_overrides", {})
+    def_dicts   = main_config.get("default_dicts", {})
+
     structuring_cfg  = main_config.get("structuring", {})
     modification_cfg = main_config.get("modification", {})
     validation_cfg   = main_config.get("validation", {})
@@ -212,143 +226,139 @@ def orchestrate_workflow(override_json=None):
     hvac_lookup      = def_dicts.get("hvac", {})
     vent_lookup      = def_dicts.get("vent", {})
 
-    # --------------------------------------------------------------------------
-    # E) Potentially override fenestration, DHW, EPW, etc. from Excel
-    # (if excel_overrides flags are set)
-    # --------------------------------------------------------------------------
-    from idf_objects.fenez.fenez_config_manager import build_fenez_config
+    # Excel overrides
+    override_fenez_excel = excel_flags.get("override_fenez_excel", False)
+    fenez_excel_path     = paths_dict.get("fenez_excel", "")
     updated_res_data, updated_nonres_data = build_fenez_config(
         base_res_data=base_res_data,
         base_nonres_data=base_nonres_data,
-        excel_path=paths_dict.get("fenez_excel", ""),
-        do_excel_override=excel_flags.get("override_fenez_excel", False),
+        excel_path=fenez_excel_path,
+        do_excel_override=override_fenez_excel,
         user_fenez_overrides=[]
     )
-
     if excel_flags.get("override_dhw_excel", False):
-        from excel_overrides import override_dhw_lookup_from_excel_file
         dhw_lookup = override_dhw_lookup_from_excel_file(
             dhw_excel_path=paths_dict.get("dhw_excel", ""),
             default_dhw_lookup=dhw_lookup,
             override_dhw_flag=True
         )
-
     if excel_flags.get("override_epw_excel", False):
-        from excel_overrides import override_epw_lookup_from_excel_file
         epw_lookup = override_epw_lookup_from_excel_file(
             epw_excel_path=paths_dict.get("epw_excel", ""),
             epw_lookup=epw_lookup,
             override_epw_flag=True
         )
-
     if excel_flags.get("override_lighting_excel", False):
-        from excel_overrides import override_lighting_lookup_from_excel_file
         lighting_lookup = override_lighting_lookup_from_excel_file(
             lighting_excel_path=paths_dict.get("lighting_excel", ""),
             lighting_lookup=lighting_lookup,
             override_lighting_flag=True
         )
-
     if excel_flags.get("override_hvac_excel", False):
-        from excel_overrides import override_hvac_lookup_from_excel_file
         hvac_lookup = override_hvac_lookup_from_excel_file(
             hvac_excel_path=paths_dict.get("hvac_excel", ""),
             hvac_lookup=hvac_lookup,
             override_hvac_flag=True
         )
-
     if excel_flags.get("override_vent_excel", False):
-        from excel_overrides import override_vent_lookup_from_excel_file
         vent_lookup = override_vent_lookup_from_excel_file(
             vent_excel_path=paths_dict.get("vent_excel", ""),
             vent_lookup=vent_lookup,
             override_vent_flag=True
         )
 
-    # --------------------------------------------------------------------------
-    # F) JSON overrides from user_configs/* if user_flags are set
-    #    e.g. fenestration.json, dhw.json, epw.json, lighting.json, hvac.json, vent.json, ...
-    # --------------------------------------------------------------------------
-    def safe_load_subjson(fname, key):
-        """
-        Loads user_configs/fname if it exists, returns data.get(key, None).
-        """
-        full_path = os.path.join(user_configs_folder, fname)
-        if os.path.isfile(full_path):
-            try:
-                data = load_json(full_path)
-                return data.get(key, None)
-            except Exception as e:
-                logger.error(f"[ERROR] loading {fname} => {e}")
-        return None
-
-    # Fenestration
-    user_fenez_data = []
+    # JSON overrides
+    user_fenez_overrides = []
     if user_flags.get("override_fenez_json", False):
-        fenez_data = safe_load_subjson("fenestration.json", "fenestration")
-        if fenez_data:
-            user_fenez_data = fenez_data
+        fenestration_json_path = os.path.join(user_configs_folder, "fenestration.json")
+        if os.path.isfile(fenestration_json_path):
+            try:
+                fen_data = load_json(fenestration_json_path)
+                user_fenez_overrides = fen_data.get("fenestration", [])
+            except Exception as e:
+                logger.error(f"[ERROR] loading fenestration.json => {e}")
+
     updated_res_data, updated_nonres_data = build_fenez_config(
         base_res_data=updated_res_data,
         base_nonres_data=updated_nonres_data,
-        excel_path="",  # no further Excel overrides
+        excel_path="",
         do_excel_override=False,
-        user_fenez_overrides=user_fenez_data
+        user_fenez_overrides=user_fenez_overrides
     )
 
-    # DHW
     user_config_dhw = None
     if user_flags.get("override_dhw_json", False):
-        user_config_dhw = safe_load_subjson("dhw.json", "dhw")
+        dhw_json_path = os.path.join(user_configs_folder, "dhw.json")
+        if os.path.isfile(dhw_json_path):
+            try:
+                dhw_data = load_json(dhw_json_path)
+                user_config_dhw = dhw_data.get("dhw", [])
+            except Exception as e:
+                logger.error(f"[ERROR] loading dhw.json => {e}")
 
-    # EPW
     user_config_epw = []
     if user_flags.get("override_epw_json", False):
-        epw_data = safe_load_subjson("epw.json", "epw")
-        if epw_data:
-            user_config_epw = epw_data
+        epw_json_path = os.path.join(user_configs_folder, "epw.json")
+        if os.path.isfile(epw_json_path):
+            epw_data = load_json(epw_json_path)
+            user_config_epw = epw_data.get("epw", [])
 
-    # Lighting
     user_config_lighting = None
     if user_flags.get("override_lighting_json", False):
-        user_config_lighting = safe_load_subjson("lighting.json", "lighting")
+        lighting_json_path = os.path.join(user_configs_folder, "lighting.json")
+        if os.path.isfile(lighting_json_path):
+            try:
+                lighting_data = load_json(lighting_json_path)
+                user_config_lighting = lighting_data.get("lighting", [])
+            except Exception as e:
+                logger.error(f"[ERROR] loading lighting.json => {e}")
 
-    # HVAC
     user_config_hvac = None
     if user_flags.get("override_hvac_json", False):
-        user_config_hvac = safe_load_subjson("hvac.json", "hvac")
+        hvac_json_path = os.path.join(user_configs_folder, "hvac.json")
+        if os.path.isfile(hvac_json_path):
+            hvac_data = load_json(hvac_json_path)
+            user_config_hvac = hvac_data.get("hvac", [])
 
-    # Vent
     user_config_vent = []
     if user_flags.get("override_vent_json", False):
-        vent_data = safe_load_subjson("vent.json", "vent")
-        if vent_data:
-            user_config_vent = vent_data
+        vent_json_path = os.path.join(user_configs_folder, "vent.json")
+        if os.path.isfile(vent_json_path):
+            vent_data = load_json(vent_json_path)
+            user_config_vent = vent_data.get("vent", [])
 
-    # Geometry
+    geometry_dict = {}
     geom_data = {}
     if user_flags.get("override_geometry_json", False):
-        geometry_loaded = safe_load_subjson("geometry.json", "geometry")
-        if geometry_loaded:
-            geom_data["geometry"] = geometry_loaded
+        geometry_json_path = os.path.join(user_configs_folder, "geometry.json")
+        if os.path.isfile(geometry_json_path):
+            try:
+                geom_data = load_json(geometry_json_path)
+                # from user_config_overrides import apply_geometry_user_config
+                # geometry_dict = apply_geometry_user_config({}, geom_data.get("geometry", []))
+            except Exception as e:
+                logger.error(f"[ERROR] loading geometry.json => {e}")
 
-    # Shading
-    shading_data = {}
+    shading_dict = {}
     if user_flags.get("override_shading_json", False):
-        shading_loaded = safe_load_subjson("shading.json", "shading")
-        if shading_loaded:
-            shading_data["shading"] = shading_loaded
+        shading_json_path = os.path.join(user_configs_folder, "shading.json")
+        if os.path.isfile(shading_json_path):
+            try:
+                shading_data = load_json(shading_json_path)
+                # from user_config_overrides import apply_shading_user_config
+                # shading_dict = apply_shading_user_config({}, shading_data.get("shading", []))
+            except Exception as e:
+                logger.error(f"[ERROR] loading shading.json => {e}")
 
     # --------------------------------------------------------------------------
-    # G) IDF Creation Step
+    # F) IDF Creation
     # --------------------------------------------------------------------------
     if perform_idf_creation:
         logger.info("[INFO] IDF creation is ENABLED.")
 
-        # (1) Get building DataFrame
-        df_buildings = pd.DataFrame()
+        # 1) Get building DataFrame
         if use_database:
-            logger.info("[INFO] Loading building data from DB.")
+            logger.info("[INFO] Loading building data from PostgreSQL using filters.")
             df_buildings = load_buildings_from_db(db_filter)
             if df_buildings.empty:
                 logger.warning("[WARN] No buildings returned from DB filters.")
@@ -357,10 +367,10 @@ def orchestrate_workflow(override_json=None):
             if os.path.isfile(bldg_data_path):
                 df_buildings = pd.read_csv(bldg_data_path)
             else:
-                logger.warning(f"[WARN] Building data CSV not found => {bldg_data_path}")
+                logger.warning(f"[WARN] Building data CSV not found at {bldg_data_path}.")
+                df_buildings = pd.DataFrame()
 
-        # (2) Create IDFs
-        from idf_creation import create_idfs_for_all_buildings
+        # 2) Create IDFs
         create_idfs_for_all_buildings(
             df_buildings=df_buildings,
             scenario=scenario,
@@ -385,15 +395,12 @@ def orchestrate_workflow(override_json=None):
         logger.info("[INFO] Skipping IDF creation.")
 
     # --------------------------------------------------------------------------
-    # H) Structuring Step
+    # G) Structuring Step
     # --------------------------------------------------------------------------
     if structuring_cfg.get("perform_structuring", False):
-        logger.info("[INFO] Performing structuring ...")
-
-        # Example fenestration struct
-        from idf_objects.structuring.fenestration_structuring import (
-            transform_fenez_log_to_structured_with_ranges
-        )
+        logger.info("[INFO] Performing log structuring ...")
+        # Example fenestration structuring
+        from idf_objects.structuring.fenestration_structuring import transform_fenez_log_to_structured_with_ranges
         fenez_conf = structuring_cfg.get("fenestration", {})
         fenez_in   = fenez_conf.get("csv_in",  "output/assigned/assigned_fenez_params.csv")
         fenez_out  = fenez_conf.get("csv_out", "output/assigned/structured_fenez_params.csv")
@@ -416,14 +423,11 @@ def orchestrate_workflow(override_json=None):
             df_hvac["assigned_value"] = df_hvac["assigned_value"].apply(parse_hvac)
             flatten_hvac_data(df_input=df_hvac, out_build_csv=hvac_bld, out_zone_csv=hvac_zone)
 
-        from idf_objects.structuring.flatten_assigned_vent import (
-            flatten_ventilation_data,
-            parse_assigned_value as parse_vent
-        )
+        from idf_objects.structuring.flatten_assigned_vent import flatten_ventilation_data, parse_assigned_value as parse_vent
         vent_conf = structuring_cfg.get("vent", {})
         vent_in   = vent_conf.get("csv_in", "output/assigned/assigned_ventilation.csv")
         vent_bld  = vent_conf.get("build_out", "output/assigned/assigned_vent_building.csv")
-        vent_zone = vent_conf.get("zone_out", "output/assigned/assigned_vent_zones.csv")
+        vent_zone = vent_conf.get("zone_out",  "output/assigned/assigned_vent_zones.csv")
         if os.path.isfile(vent_in):
             df_vent = pd.read_csv(vent_in)
             df_vent["assigned_value"] = df_vent["assigned_value"].apply(parse_vent)
@@ -432,7 +436,7 @@ def orchestrate_workflow(override_json=None):
         logger.info("[INFO] Skipping structuring.")
 
     # --------------------------------------------------------------------------
-    # I) Scenario Modification
+    # H) Scenario Modification
     # --------------------------------------------------------------------------
     if modification_cfg.get("perform_modification", False):
         logger.info("[INFO] Scenario modification is ENABLED.")
@@ -441,7 +445,7 @@ def orchestrate_workflow(override_json=None):
         logger.info("[INFO] Skipping scenario modification.")
 
     # --------------------------------------------------------------------------
-    # J) Global Validation
+    # I) Global Validation
     # --------------------------------------------------------------------------
     if validation_cfg.get("perform_validation", False):
         logger.info("[INFO] Global Validation is ENABLED.")
@@ -450,7 +454,7 @@ def orchestrate_workflow(override_json=None):
         logger.info("[INFO] Skipping global validation.")
 
     # --------------------------------------------------------------------------
-    # K) Sensitivity Analysis
+    # J) Sensitivity Analysis
     # --------------------------------------------------------------------------
     if sens_cfg.get("perform_sensitivity", False):
         logger.info("[INFO] Sensitivity Analysis is ENABLED.")
@@ -468,7 +472,7 @@ def orchestrate_workflow(override_json=None):
         logger.info("[INFO] Skipping sensitivity analysis.")
 
     # --------------------------------------------------------------------------
-    # L) Surrogate Modeling
+    # K) Surrogate Modeling
     # --------------------------------------------------------------------------
     if sur_cfg.get("perform_surrogate", False):
         logger.info("[INFO] Surrogate Modeling is ENABLED.")
@@ -503,7 +507,7 @@ def orchestrate_workflow(override_json=None):
         logger.info("[INFO] Skipping surrogate modeling.")
 
     # --------------------------------------------------------------------------
-    # M) Calibration
+    # L) Calibration
     # --------------------------------------------------------------------------
     if cal_cfg.get("perform_calibration", False):
         logger.info("[INFO] Calibration is ENABLED.")
@@ -522,56 +526,73 @@ app = Flask(__name__)
 @app.route("/run-workflow", methods=["POST"])
 def run_workflow_api():
     """
-    This single endpoint:
-      1) Receives a combined JSON in the request body.
-      2) Splits it into sub-JSON files in user_configs/ (via split_combined_json).
-      3) Deep merges 'main_config' from the request (if present) with existing user_configs/main_config.json
-      4) Spawns the orchestrate_workflow in a background thread
-      5) Streams logs back to the client in real time.
+    Endpoint that receives a single big JSON and splits it
+    into sub-JSON files in user_configs/ folder.
     """
     if not request.is_json:
         return jsonify({"error": "Expected JSON payload"}), 400
 
+    # 1) Grab the posted JSON as a Python dict
     posted_data = request.get_json()
+
+    # 2) Define where to write the sub-JSON files
     user_configs_folder = os.path.join(os.getcwd(), "user_configs")
 
-    # 1) Split the posted data into separate JSON files (dhw.json, epw.json, etc.)
+    # 3) Call our splitter function
     split_combined_json(posted_data, user_configs_folder)
 
-    # 2) We'll pass the entire posted_data as override_json to orchestrate_workflow.
-    #    The orchestrate_workflow function itself will do the deep merge of "main_config".
-    override_json = posted_data
+    # ... Optionally do more steps like deep-merge with existing main_config, etc. ...
 
-    # 3) Create a thread-safe queue for logs
+
+    """
+    Endpoint to start the entire workflow.  
+    - Accepts optional JSON in the request body to override or augment main_config.  
+    - Returns a streaming (chunked) HTTP response of log lines as they occur.
+    """
+    # (A) Parse JSON from request (optional)
+    override_json = None
+    if request.is_json:
+        override_json = request.get_json()
+
+    # (B) Create a thread-safe queue for logs
     log_queue = queue.Queue()
+
+    # (C) Setup logging to push all log messages into the queue
     setup_logging_for_queue(log_queue, log_level=logging.INFO)
 
-    # 4) Background function to run the workflow
+    # (D) Define a background function that runs the workflow
     def background_workflow():
         try:
             orchestrate_workflow(override_json=override_json)
         except Exception as e:
             logging.getLogger(__name__).exception(f"Workflow crashed: {e}")
         finally:
-            # Put a sentinel (None) to signal that logs are done
+            # Put a sentinel in the queue to signal we're done
             log_queue.put(None)
 
-    # 5) Start the background thread
+    # (E) Start the background thread
     t = threading.Thread(target=background_workflow, daemon=True)
     t.start()
 
-    # 6) Define a generator that yields log lines
+    # (F) Define a generator that yields log lines from the queue in real time
     def log_stream():
+        """
+        Continuously read from log_queue and yield lines to the client.
+        If we encounter `None`, it means the workflow is done.
+        """
         while True:
             msg = log_queue.get()
             if msg is None:
                 break
+            # Yield this log line + a newline so client sees separate lines
             yield msg + "\n"
+            # Optional: slow down the stream a little if desired
+            # time.sleep(0.5)
 
-    # 7) Return a streaming response
+    # (G) Return the response as a chunked stream
     return Response(log_stream(), mimetype='text/plain')
 
 
 if __name__ == "__main__":
-    # Run the Flask app on port 8000
+    # Run the Flask app on port 8000 (or whichever you exposed in Docker)
     app.run(host="0.0.0.0", port=8000, debug=True)
