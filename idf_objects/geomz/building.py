@@ -3,6 +3,8 @@
 from .assign_geometry_values import assign_geometry_values
 from .geometry import compute_dimensions_from_area_perimeter, create_building_base_polygon
 from .zoning import create_zones_with_perimeter_depth, link_surfaces
+import math
+import pandas as pd
 
 def create_building_with_roof_type(
     idf,
@@ -26,9 +28,40 @@ def create_building_with_roof_type(
     Now includes logic to link each new floor's Floor to the old floor's Ceiling.
     """
 
-    # 1) Figure out total building height & default per-floor height
-    gem_hoogte = building_row.get("gem_hoogte", None)
-    num_floors = building_row.get("gem_bouwlagen", 1)
+     # --------------------------------------------------------------------
+    # 1) Safely read gem_hoogte (float) and num_floors (int), with defaults
+    # --------------------------------------------------------------------
+    raw_hoogte = building_row.get("gem_hoogte", 3)  # default 3
+    if pd.isna(raw_hoogte) or raw_hoogte is None:
+        gem_hoogte = 3.0
+    else:
+        try:
+            gem_hoogte = float(raw_hoogte)
+        except ValueError:
+            # In case it's a weird string
+            gem_hoogte = 3.0
+
+    # Safely get num_floors as an int
+    raw_floors = building_row.get("gem_bouwlagen", 1)  # default 1
+    if pd.isna(raw_floors) or raw_floors is None:
+        num_floors = 1
+    else:
+        try:
+            # Round or floor/ceil as needed
+            num_floors = int(round(float(raw_floors)))
+        except ValueError:
+            # In case it's a weird string
+            num_floors = 1
+
+    # Guard against zero or negative floors
+    if num_floors < 1:
+        num_floors = 1
+
+
+
+
+
+
 
     if wall_height is None:
         if gem_hoogte is not None:

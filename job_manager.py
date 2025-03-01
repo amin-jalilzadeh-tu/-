@@ -24,7 +24,9 @@ import threading
 import time
 import enum
 from typing import Any, Dict, Optional, Union
+
 from orchestrator import WorkflowCanceled
+
 
 ###############################################################################
 # Global Job Store and Concurrency
@@ -58,10 +60,10 @@ class JobStatus(str, enum.Enum):
 # Each job dictionary in _jobs has keys:
 #   {
 #       "status": JobStatus,
-#       "config": dict,
-#       "logs": queue.Queue,           # For log streaming
+#       "config": dict,             # includes "job_id" and other user config
+#       "logs": queue.Queue,        # For log streaming
 #       "thread": threading.Thread or None,
-#       "result": Any,                # Store final result or summary
+#       "result": Any,              # Store final result or summary
 #       "cancel_event": threading.Event # Signals that we want to cancel
 #   }
 
@@ -79,6 +81,9 @@ def create_job(config: dict) -> str:
     """
     job_id = str(uuid.uuid4())
     with _jobs_lock:
+        # We also store job_id in the config so orchestrator can see it.
+        config["job_id"] = job_id
+
         _jobs[job_id] = {
             "status": JobStatus.CREATED,
             "config": config,
@@ -163,8 +168,6 @@ def cancel_job(job_id: str) -> bool:
             job["status"] = JobStatus.CANCELED
         elif status == JobStatus.RUNNING:
             # The thread should eventually notice the cancel_event
-            # and set status to CANCELED if it can shut down gracefully.
-            # Otherwise if it can't gracefully exit, it may finish as ERROR or FINISHED.
             pass
         else:
             # If CREATED and not yet enqueued, we'll just mark it canceled
@@ -206,25 +209,23 @@ def _start_job(job_id: str) -> None:
     job["thread"] = t
     t.start()
 
-# job_manager.py
 
 def _job_thread_runner(job_id: str) -> None:
+    """Worker function that runs in a separate thread for each job."""
     try:
         job = _jobs[job_id]
         cancel_event = job["cancel_event"]
 
-        # 1) Import your orchestrate_workflow function
+        # 1) Import orchestrate_workflow
         from orchestrator import orchestrate_workflow
 
-        # 2) Actually run your workflow
-        #    Pass the job's config plus the cancel_event if you want cancellation
+        # 2) Run the workflow, passing the entire job["config"] which has "job_id"
         orchestrate_workflow(job["config"], cancel_event=cancel_event)
 
         # If orchestrate_workflow finishes with no exception => FINISHED
         job["status"] = JobStatus.FINISHED
 
     except WorkflowCanceled:
-        # If you raised a custom WorkflowCanceled in orchestrate_workflow
         job["status"] = JobStatus.CANCELED
     except Exception as e:
         job["status"] = JobStatus.ERROR
@@ -233,7 +234,6 @@ def _job_thread_runner(job_id: str) -> None:
     finally:
         _signal_end_of_logs(job_id)
         _try_start_next_queued_job()
-
 
 
 def _try_start_next_queued_job():
@@ -260,8 +260,8 @@ def _try_start_next_queued_job():
 
 def _remove_queued_job(job_id: str):
     """
-    Remove a job from the waiting queue if it's in there. We'll do so by
-    rebuilding the queue except for that job_id.
+    Remove a job from the waiting queue if it's in there by rebuilding the queue 
+    without that job_id.
     """
     temp_list = []
     while not _waiting_jobs.empty():

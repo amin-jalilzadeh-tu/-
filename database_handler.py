@@ -1,127 +1,119 @@
+# database_handler.py
+
 import os
 import pandas as pd
 from sqlalchemy import create_engine, text
 
-def load_buildings_from_db(filter_criteria=None):
+def load_buildings_from_db(filter_criteria=None, filter_by=None):
     """
-    Connect to the PostgreSQL database (credentials from environment variables),
-    build a SQL query for building data, apply optional filters, and return a
-    pandas DataFrame.
+    Load buildings from DB using SQL 'DISTINCT ON (pand_id)' so that
+    each pand_id appears only once in the result.
 
-    filter_criteria (dict) may include:
-    ------------------------------------------------------
-    {
-      "postcodes": ["1011AB", "1053PJ", ...],   # list of multiple postcodes
-      "ids": [1001, 1002, 1003],               # list of ogc_fid
-      "pand_ids": ["XYZ123", "XYZ456"],        # list of pand_id if needed
-      "bbox_xy": [min_x, min_y, max_x, max_y], # bounding box in X/Y
-      "bbox_latlon": [min_lat, min_lon, max_lat, max_lon] # bounding box in lat/lon
-    }
-    ------------------------------------------------------
+    :param filter_criteria: dict containing filter values; e.g.
+        {
+          "meestvoorkomendepostcode": ["1011AB"],
+          "pand_id": ["0383100000001369"],
+          "pand_ids": ["XYZ123", "XYZ999"],
+          "bbox_xy": [minx, miny, maxx, maxy],
+          "bbox_latlon": [min_lat, min_lon, max_lat, max_lon]
+        }
 
-    For example:
-      "bbox_xy": [120000.0, 487000.0, 121000.0, 488000.0]
-      "bbox_latlon": [52.35, 4.85, 52.37, 4.92]
+    :param filter_by: str, one of:
+        "meestvoorkomendepostcode", "pand_id", "pand_ids",
+        "bbox_xy", or "bbox_latlon"
 
-    Returns
-    -------
-    pd.DataFrame
+    :return: A pandas DataFrame with unique pand_ids (using DISTINCT ON).
     """
 
     # 1) Read DB credentials from environment
     db_user = os.getenv("DB_USER", "postgres")
-    db_password = os.getenv("DB_PASSWORD", "mysecret")
-    db_host = os.getenv("DB_HOST", "localhost")
+    db_password = os.getenv("DB_PASSWORD", "mypassword")
+    db_host = os.getenv("DB_HOST", "db")
     db_port = os.getenv("DB_PORT", "5432")
     db_name = os.getenv("DB_NAME", "research")
 
-    # 2) Create connection string
+    # 2) Create the connection string
     connection_string = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
-    # 3) Base query: adjust schema/table and columns to match your DB
-    base_query = """
-    SELECT 
-        ogc_fid,
-        pand_id,
-        meestvoorkomendelabel,
-        gem_hoogte,
-        gem_bouwlagen,
-        b3_dak_type,
-        b3_opp_dak_plat,
-        b3_opp_dak_schuin,
-        x,
-        y,
-        lon,
-        lat,
-        postcode,
-        area,
-        perimeter,
-        height,
-        bouwjaar,
-        age_range,
-        average_wwr,
-        building_function,
-        residential_type,
-        non_residential_type,
-        north_side,
-        east_side,
-        south_side,
-        west_side,
-        building_orientation,
-        building_orientation_cardinal
-    FROM 
-        amin.buildings_1
-    """
+    # 3) Use DISTINCT ON (pand_id) to fetch only one row per pand_id
+    #    We'll pick the row with the *lowest* ogc_fid for each pand_id
+    #    by ordering on (pand_id, ogc_fid).
+    base_sql = """
+SELECT DISTINCT ON (b.pand_id)
+    b.ogc_fid,
+    b.pand_id,
+    b.meestvoorkomendelabel,
+    b.gem_hoogte,
+    b.gem_bouwlagen,
+    b.b3_dak_type,
+    b.b3_opp_dak_plat,
+    b.b3_opp_dak_schuin,
+    b.x,
+    b.y,
+    b.lon,
+    b.lat,
+    b.postcode,
+    b.area,
+    b.perimeter,
+    b.height,
+    b.bouwjaar,
+    b.age_range,
+    b.average_wwr,
+    b.building_function,
+    b.residential_type,
+    b.non_residential_type,
+    b.north_side,
+    b.east_side,
+    b.south_side,
+    b.west_side,
+    b.building_orientation,
+    b.building_orientation_cardinal
+FROM amin.buildings_1_deducted b
+"""
 
-    # 4) Prepare WHERE clauses and params for parameterized query
+    order_clause = "ORDER BY b.pand_id, b.ogc_fid"
+
     where_clauses = []
     params = {}
 
-    if filter_criteria is not None:
-        # Multiple or single postcodes
-        if "postcodes" in filter_criteria:
-            # Using "IN" or "ANY" for a list of possible postcodes
-            where_clauses.append("postcode = ANY(:postcodes_list)")
-            params["postcodes_list"] = filter_criteria["postcodes"]
+    # 4) Build WHERE clauses if filter_by is provided
+    if filter_criteria and filter_by:
+        if filter_by == "meestvoorkomendepostcode":
+            where_clauses.append("b.meestvoorkomendepostcode = ANY(:mpostcodes)")
+            params["mpostcodes"] = filter_criteria.get("meestvoorkomendepostcode", [])
 
-        # Building IDs (ogc_fid)
-        if "ids" in filter_criteria:
-            # "ANY" approach for integer array of ogc_fid
-            where_clauses.append("ogc_fid = ANY(:ids_list)")
-            params["ids_list"] = filter_criteria["ids"]
+        elif filter_by == "pand_id":
+            where_clauses.append("b.pand_id = ANY(:pid)")
+            params["pid"] = filter_criteria.get("pand_id", [])
 
-        # pand_ids (if your DB has separate ID references)
-        if "pand_ids" in filter_criteria:
-            # If these are strings, similarly
-            where_clauses.append("pand_id = ANY(:pand_ids_list)")
-            params["pand_ids_list"] = filter_criteria["pand_ids"]
+        elif filter_by == "pand_ids":
+            where_clauses.append("b.pand_id = ANY(:pids)")
+            params["pids"] = filter_criteria.get("pand_ids", [])
 
-        # Bounding box in X/Y
-        if "bbox_xy" in filter_criteria:
-            minx, miny, maxx, maxy = filter_criteria["bbox_xy"]
-            where_clauses.append("x BETWEEN :minx AND :maxx")
-            where_clauses.append("y BETWEEN :miny AND :maxy")
-            params["minx"] = minx
-            params["maxx"] = maxx
-            params["miny"] = miny
-            params["maxy"] = maxy
+        elif filter_by == "bbox_xy":
+            minx, miny, maxx, maxy = filter_criteria.get("bbox_xy", [0, 0, 0, 0])
+            where_clauses.append("b.x BETWEEN :minx AND :maxx AND b.y BETWEEN :miny AND :maxy")
+            params.update({"minx": minx, "maxx": maxx, "miny": miny, "maxy": maxy})
 
-        # Bounding box in Lat/Lon
-        if "bbox_latlon" in filter_criteria:
-            min_lat, min_lon, max_lat, max_lon = filter_criteria["bbox_latlon"]
-            where_clauses.append("lat BETWEEN :min_lat AND :max_lat")
-            where_clauses.append("lon BETWEEN :min_lon AND :max_lon")
-            params["min_lat"] = min_lat
-            params["max_lat"] = max_lat
-            params["min_lon"] = min_lon
-            params["max_lon"] = max_lon
+        elif filter_by == "bbox_latlon":
+            min_lat, min_lon, max_lat, max_lon = filter_criteria.get("bbox_latlon", [0, 0, 0, 0])
+            where_clauses.append("b.lat BETWEEN :min_lat AND :max_lat AND b.lon BETWEEN :min_lon AND :max_lon")
+            params.update({"min_lat": min_lat, "max_lat": max_lat, "min_lon": min_lon, "max_lon": max_lon})
 
-    # 5) Combine WHERE clauses
+    # 5) Build the final SQL string with WHERE (if needed) + ORDER BY
     if where_clauses:
-        base_query += "\nWHERE " + " AND ".join(where_clauses)
+        final_query_str = f"""
+{base_sql}
+WHERE {' AND '.join(where_clauses)}
+{order_clause}
+"""
+    else:
+        final_query_str = f"{base_sql}\n{order_clause}"
 
-    # 6) Execute query and return dataframe
+    # 6) Connect and fetch data into a DataFrame
     engine = create_engine(connection_string)
     with engine.connect() as conn:
-        df = pd.read_sql(text(base_query), conn, params=params)
+        df = pd.read_sql(text(final_query_str), conn, params=params)
+
+    # df now contains exactly one row per pand_id
     return df

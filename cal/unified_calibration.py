@@ -624,7 +624,7 @@ def run_unified_calibration(calibration_config: dict):
       "top_n_params": 10,
       "method": "ga",
       "use_surrogate": true,
-      "real_data_csv": "output/results/mock_merged_daily_mean.csv",
+      "real_data_csv": "data/mock_merged_daily_mean.csv",
       "surrogate_model_path": "heating_surrogate_model.joblib",
       "surrogate_columns_path": "heating_surrogate_columns.joblib",
       "calibrate_min_max": true,

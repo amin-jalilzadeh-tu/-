@@ -1,60 +1,8 @@
 """
 main_modifi.py
 
-Handles the generation of scenario-based IDFs for sensitivity, surrogate,
-calibration, or any parametric runs, then optionally runs E+ simulation,
-post-processing, and validation in a job-specific folder if provided.
-
-Usage:
-  - Typically invoked from your orchestrator (or command line) with a config dict:
-    {
-      "base_idf_path": "output_IDFs/building_0.idf",
-      "idd_path": "EnergyPlus/Energy+.idd",
-      "assigned_csv": {
-        "hvac_building": "output/assigned/assigned_hvac_building.csv",
-        "hvac_zones": "output/assigned/assigned_hvac_zones.csv",
-        "dhw": "output/assigned/assigned_dhw_params.csv",
-        "vent_build": "output/assigned/assigned_vent_building.csv",
-        "vent_zones": "output/assigned/assigned_vent_zones.csv",
-        "elec": "output/assigned/assigned_lighting.csv",
-        "fenez": "output/assigned/structured_fenez_params.csv"
-      },
-      "scenario_csv": {
-        "hvac": "output/scenarios/scenario_params_hvac.csv",
-        "dhw": "output/scenarios/scenario_params_dhw.csv",
-        "vent": "output/scenarios/scenario_params_vent.csv",
-        "elec": "output/scenarios/scenario_params_elec.csv",
-        "fenez": "output/scenarios/scenario_params_fenez.csv"
-      },
-      "output_idf_dir": "output/scenario_idfs",
-      "building_id": 4136730,
-      "num_scenarios": 5,
-      "picking_method": "random_uniform",
-      "picking_scale_factor": 0.5,
-
-      "run_simulations": true,
-      "simulation_config": {
-        "num_workers": 4,
-        "output_dir": "output/Sim_Results/Scenarios"
-      },
-      "perform_post_process": true,
-      "post_process_config": {
-        "output_csv_as_is": "output/results_scenarioes/merged_as_is_scenarios.csv",
-        "output_csv_daily_mean": "output/results_scenarioes/merged_daily_mean_scenarios.csv"
-      },
-      "perform_validation": true,
-      "validation_config": {
-        "real_data_csv": "data/mock_merged_daily_mean.csv",
-        "sim_data_csv": "output/results_scenarioes/merged_daily_mean_scenarios.csv",
-        "bldg_ranges": { "0": [0,1,2] },
-        "variables_to_compare": [...],
-        "threshold_cv_rmse": 30.0,
-        "skip_plots": true,
-        "output_csv": "scenario_validation_report.csv"
-      },
-
-      "job_output_dir": "/usr/src/app/output/xxxx-uuid"   # (Optional)
-    }
+Handles the generation of scenario-based IDFs for sensitivity, surrogate, 
+calibration, or any parametric runs, then optionally validation.
 """
 
 import os
@@ -160,26 +108,60 @@ def run_all_idfs_in_folder(
 
 def run_modification_workflow(config):
     """
-    Main function for scenario-based IDF creation + optional E+ simulation,
+    Main function for scenario-based IDF creation + optional E+ simulation, 
     post-processing, and validation.
 
-    Steps:
-      1) Resolve folder paths (scenario IDFs, results) based on config + optional job_output_dir.
-      2) Load assigned CSV data (HVAC, DHW, Vent, Elec, Fenez).
-      3) Filter for the chosen building.
-      4) Generate scenario param picks (random or otherwise).
-      5) For each scenario, load a fresh base IDF, apply picks, save scenario IDF.
-      6) (Optional) run E+ sims for these scenario IDFs, then post-process, then validate.
+    Example config structure:
+    {
+      "base_idf_path": "output/output_IDFs/building_0.idf",
+      "idd_path": "EnergyPlus/Energy+.idd",
+      "assigned_csv": {
+        "hvac_building": "output/assigned/assigned_hvac_building.csv",
+        "hvac_zones":    "output/assigned/assigned_hvac_zones.csv",
+        "dhw":           "output/assigned/assigned_dhw_params.csv",
+        "vent_build":    "output/assigned/assigned_vent_building.csv",
+        "vent_zones":    "output/assigned/assigned_vent_zones.csv",
+        "elec":          "output/assigned/assigned_lighting.csv",
+        "fenez":         "output/assigned/structured_fenez_params.csv"
+      },
+      "scenario_csv": {
+        "hvac":  "output/scenarios/scenario_params_hvac.csv",
+        "dhw":   "output/scenarios/scenario_params_dhw.csv",
+        "vent":  "output/scenarios/scenario_params_vent.csv",
+        "elec":  "output/scenarios/scenario_params_elec.csv",
+        "fenez": "output/scenarios/scenario_params_fenez.csv"
+      },
+      "output_idf_dir": "output/scenario_idfs",
+      "building_id": 4136730,
+      "num_scenarios": 5,
+      "picking_method": "random_uniform",
+      "picking_scale_factor": 0.5,
 
-    :param config: dict
-    :return: None
+      "run_simulations": true,
+      "simulation_config": {
+        "num_workers": 4,
+        "output_dir": "output/Sim_Results/Scenarios"
+      },
+      "perform_post_process": true,
+      "post_process_config": {
+        "output_csv_as_is": "output/results_scenarioes/merged_as_is_scenarios.csv",
+        "output_csv_daily_mean": "output/results_scenarioes/merged_daily_mean_scenarios.csv"
+      },
+      "perform_validation": true,
+      "validation_config": {
+        "real_data_csv": "data/mock_merged_daily_mean.csv",
+        "sim_data_csv": "output/results/merged_daily_mean_mocked.csv",
+        "bldg_ranges": { "0": [0, 1, 2, 3, 4] },
+        "threshold_cv_rmse": 30.0,
+        "skip_plots": false,
+        "output_csv": "scenario_validation_report.csv"
+      }
+    }
     """
     logger = logging.getLogger(__name__)
     logger.info("[MODIFICATION] Starting scenario-based workflow...")
 
-    # -----------------------------------------------------------------------
-    # 1) Extract config parts & resolve paths
-    # -----------------------------------------------------------------------
+    # 1) Extract config parts
     base_idf_path   = config["base_idf_path"]
     idd_path        = config["idd_path"]
     assigned_csvs   = config["assigned_csv"]
@@ -188,11 +170,8 @@ def run_modification_workflow(config):
     num_scenarios   = config["num_scenarios"]
     picking_method  = config["picking_method"]
     scale_factor    = config.get("picking_scale_factor", 1.0)
+    output_idf_dir  = config["output_idf_dir"]
 
-    # The user might specify something like "output/scenario_idfs" or just "scenario_idfs".
-    scenario_idf_dir = config.get("output_idf_dir", "output/scenario_idfs")
-
-    # Also we have simulation, post-processing, and validation flags:
     run_sims        = config.get("run_simulations", False)
     sim_cfg         = config.get("simulation_config", {})
     do_postproc     = config.get("perform_post_process", False)
@@ -200,17 +179,9 @@ def run_modification_workflow(config):
     do_validation   = config.get("perform_validation", False)
     validation_cfg  = config.get("validation_config", {})
 
-    # If "job_output_dir" is provided, make scenario_idf_dir relative to it (if it's not absolute).
-    job_output_dir = config.get("job_output_dir")  # optional
-    if job_output_dir and not os.path.isabs(scenario_idf_dir):
-        scenario_idf_dir = os.path.join(job_output_dir, scenario_idf_dir)
-    os.makedirs(scenario_idf_dir, exist_ok=True)
+    os.makedirs(output_idf_dir, exist_ok=True)
 
-    logger.info(f"[MODIFICATION] Scenario IDFs will be placed in: {scenario_idf_dir}")
-
-    # -----------------------------------------------------------------------
     # 2) Load assigned CSV data
-    # -----------------------------------------------------------------------
     # HVAC
     df_hvac_bld = None
     df_hvac_zn  = None
@@ -238,9 +209,7 @@ def run_modification_workflow(config):
     # Fenestration
     df_fenez = load_assigned_csv(assigned_csvs["fenez"]) if "fenez" in assigned_csvs else None
 
-    # -----------------------------------------------------------------------
-    # 3) Filter data for this building
-    # -----------------------------------------------------------------------
+    # 3) Filter for this building
     def filter_for_building(df):
         if df is not None and not df.empty:
             return df[df["ogc_fid"] == building_id].copy()
@@ -254,13 +223,10 @@ def run_modification_workflow(config):
     df_elec_sub     = filter_for_building(df_elec)
     df_fenez_sub    = filter_for_building(df_fenez)
 
-    # -----------------------------------------------------------------------
-    # 4) Generate scenario picks (random or otherwise)
-    # -----------------------------------------------------------------------
+    # 4) Generate scenario picks
     # HVAC
     if not df_hvac_bld_sub.empty:
         if not df_hvac_zn_sub.empty:
-            # multi-step scenario creation for building & zone
             create_hvac_scenarios(
                 df_building=df_hvac_bld_sub,
                 df_zones=df_hvac_zn_sub,
@@ -281,6 +247,7 @@ def run_modification_workflow(config):
 
     # DHW
     if not df_dhw_sub.empty:
+        from modification.dhw_functions import create_dhw_scenarios
         create_dhw_scenarios(
             df_dhw_input=df_dhw_sub,
             building_id=building_id,
@@ -324,9 +291,7 @@ def run_modification_workflow(config):
             scenario_csv_out=scenario_csvs["fenez"]
         )
 
-    # -----------------------------------------------------------------------
     # 5) Load scenario CSV => group by scenario_index
-    # -----------------------------------------------------------------------
     def safe_load_scenario(csv_path):
         if os.path.isfile(csv_path):
             return load_scenario_csv(csv_path)
@@ -344,9 +309,7 @@ def run_modification_workflow(config):
     elec_groups  = df_elec_scen.groupby("scenario_index")  if not df_elec_scen.empty  else None
     fenez_groups = df_fenez_scen.groupby("scenario_index") if not df_fenez_scen.empty else None
 
-    # -----------------------------------------------------------------------
     # 6) For each scenario, load base IDF, apply parameters, save new IDF
-    # -----------------------------------------------------------------------
     for i in range(num_scenarios):
         logger.info(f"[MODIFICATION] => Creating scenario #{i} for building {building_id}")
 
@@ -371,50 +334,42 @@ def run_modification_workflow(config):
         # Load base IDF
         idf = load_idf(base_idf_path, idd_path)
 
-        # Apply HVAC
+        # HVAC
         apply_building_level_hvac(idf, hvac_params)
         apply_zone_level_hvac(idf, hvac_zone_df)
 
-        # Apply DHW
+        # DHW
         apply_dhw_params_to_idf(idf, dhw_params, suffix=f"Scenario_{i}")
 
-        # Apply Vent
+        # Vent
         if not vent_bld_df.empty or not vent_zone_df.empty:
             apply_building_level_vent(idf, vent_params)
             apply_zone_level_vent(idf, vent_zone_df)
 
-        # Apply Elec => building-level or object-level
+        # Elec => building-level
         if not elec_df.empty:
             apply_building_level_elec(idf, elec_params, zonelist_name="ALL_ZONES")
-            # or use apply_object_level_elec(idf, elec_df) if you prefer
+            # or apply_object_level_elec(idf, elec_df)
 
-        # Apply Fenestration => object-level
+        # Fenez => object-level
         apply_object_level_fenez(idf, fenez_df)
 
         # Save scenario IDF
         scenario_idf_name = f"building_{building_id}_scenario_{i}.idf"
-        scenario_idf_path = os.path.join(scenario_idf_dir, scenario_idf_name)
+        scenario_idf_path = os.path.join(output_idf_dir, scenario_idf_name)
         save_idf(idf, scenario_idf_path)
         logger.info(f"[MODIFICATION] Saved scenario IDF => {scenario_idf_path}")
 
     logger.info("[MODIFICATION] All scenario IDFs generated successfully.")
 
-    # -----------------------------------------------------------------------
     # 7) (Optional) Simulations
-    # -----------------------------------------------------------------------
     if run_sims:
         logger.info("[MODIFICATION] Running E+ simulations for all scenario IDFs.")
         base_sim_dir = sim_cfg.get("output_dir", "output/Sim_Results/Scenarios")
-
-        # if job_output_dir is given, we can make the sim results go inside it, too:
-        if job_output_dir and not os.path.isabs(base_sim_dir):
-            base_sim_dir = os.path.join(job_output_dir, base_sim_dir)
-        os.makedirs(base_sim_dir, exist_ok=True)
-
         num_workers  = sim_cfg.get("num_workers", 4)
 
         run_all_idfs_in_folder(
-            folder_path=scenario_idf_dir,
+            folder_path=output_idf_dir,
             iddfile=idd_path,
             base_output_dir=base_sim_dir,
             default_lat=52.15,
@@ -423,37 +378,23 @@ def run_modification_workflow(config):
             num_workers=num_workers
         )
 
-    # -----------------------------------------------------------------------
     # 8) (Optional) Post-processing
-    # -----------------------------------------------------------------------
     if do_postproc:
         logger.info("[MODIFICATION] Performing post-processing merges.")
-
         base_sim_dir = sim_cfg.get("output_dir", "output/Sim_Results/Scenarios")
-        if job_output_dir and not os.path.isabs(base_sim_dir):
-            base_sim_dir = os.path.join(job_output_dir, base_sim_dir)
 
         output_csv_as_is = postproc_cfg.get("output_csv_as_is", "")
-        output_csv_daily_mean = postproc_cfg.get("output_csv_daily_mean", "")
-
-        # Build full paths inside job_output_dir if they are relative
         if output_csv_as_is:
-            if job_output_dir and not os.path.isabs(output_csv_as_is):
-                output_csv_as_is = os.path.join(job_output_dir, output_csv_as_is)
             os.makedirs(os.path.dirname(output_csv_as_is), exist_ok=True)
-
             merge_all_results(
                 base_output_dir=base_sim_dir,
                 output_csv=output_csv_as_is,
                 convert_to_daily=False,
                 convert_to_monthly=False
             )
-
+        output_csv_daily_mean = postproc_cfg.get("output_csv_daily_mean", "")
         if output_csv_daily_mean:
-            if job_output_dir and not os.path.isabs(output_csv_daily_mean):
-                output_csv_daily_mean = os.path.join(job_output_dir, output_csv_daily_mean)
             os.makedirs(os.path.dirname(output_csv_daily_mean), exist_ok=True)
-
             merge_all_results(
                 base_output_dir=base_sim_dir,
                 output_csv=output_csv_daily_mean,
@@ -464,20 +405,9 @@ def run_modification_workflow(config):
 
         logger.info("[MODIFICATION] Post-processing step complete.")
 
-    # -----------------------------------------------------------------------
     # 9) (Optional) Validation
-    # -----------------------------------------------------------------------
     if do_validation:
         logger.info("[MODIFICATION] Performing scenario validation with config => %s", validation_cfg)
-
-        # If the validation config references CSV paths that might be relative,
-        # you could also adjust them to be inside job_output_dir here if desired.
-        # e.g.:
-        # real_csv = validation_cfg.get("real_data_csv", "")
-        # if job_output_dir and not os.path.isabs(real_csv):
-        #     real_csv = os.path.join(job_output_dir, real_csv)
-        # validation_cfg["real_data_csv"] = real_csv
-
         run_validation_process(validation_cfg)
         logger.info("[MODIFICATION] Validation step complete.")
 

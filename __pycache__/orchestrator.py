@@ -205,15 +205,9 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
         idf_creation.idf_config["iddfile"] = idf_cfg["iddfile"]
     if "idf_file_path" in idf_cfg:
         idf_creation.idf_config["idf_file_path"] = idf_cfg["idf_file_path"]
-        # in orchestrator.py
     if "output_idf_dir" in idf_cfg:
-        # combine them
-        subfolder = idf_cfg["output_idf_dir"]  # e.g. "output_IDFs"
-        full_dir = os.path.join(job_output_dir, subfolder)
-        idf_creation.idf_config["output_dir"] = full_dir
-    else:
-        idf_creation.idf_config["output_dir"] = os.path.join(job_output_dir, "output_IDFs")
-
+        # caution: might override job-based approach
+        idf_creation.idf_config["output_dir"] = idf_cfg["output_idf_dir"]
 
     # -------------------------------------------------------------------------
     # 6) Setup default dictionaries
@@ -364,26 +358,13 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
         df_buildings = pd.DataFrame()
         if use_database:
             logger.info("[INFO] Loading building data from DB.")
-            filter_by = main_config.get("filter_by")
-            if not filter_by:
-                raise ValueError("[ERROR] 'filter_by' must be specified in main_config when 'use_database' is True.")
-            
-            df_buildings = load_buildings_from_db(db_filter, filter_by)
-
-            # [NEW CODE TO SAVE CSV] -------------------------------------------
-            extracted_csv_path = os.path.join(job_output_dir, "extracted_buildings.csv")
-            df_buildings.to_csv(extracted_csv_path, index=False)
-            logger.info(f"[INFO] Saved extracted buildings to {extracted_csv_path}")
-            # --
-
-
+            df_buildings = load_buildings_from_db(db_filter)
         else:
             bldg_data_path = paths_dict.get("building_data", "")
             if os.path.isfile(bldg_data_path):
                 df_buildings = pd.read_csv(bldg_data_path)
             else:
                 logger.warning(f"[WARN] building_data CSV not found => {bldg_data_path}")
-
 
         # b) Create IDFs & run sims in job folder
         create_idfs_for_all_buildings(
@@ -517,20 +498,22 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
     if modification_cfg.get("perform_modification", False):
         logger.info("[INFO] Scenario modification is ENABLED.")
 
+        # We can override certain paths in modification_cfg["modify_config"] so
+        # scenario IDFs/results stay inside <job_output_dir>
         mod_cfg = modification_cfg["modify_config"]
 
-        # 1) Ensure scenario IDFs go to <job_output_dir>/scenario_idfs
+        # scenario IDFs => /.../scenario_idfs
         scenario_idf_dir = os.path.join(job_output_dir, "scenario_idfs")
         os.makedirs(scenario_idf_dir, exist_ok=True)
         mod_cfg["output_idf_dir"] = scenario_idf_dir
 
-        # 2) Ensure scenario sims => <job_output_dir>/Sim_Results/Scenarios
+        # scenario sims => /.../Sim_Results/Scenarios
         if "simulation_config" in mod_cfg:
             sim_out = os.path.join(job_output_dir, "Sim_Results", "Scenarios")
             os.makedirs(sim_out, exist_ok=True)
             mod_cfg["simulation_config"]["output_dir"] = sim_out
 
-        # 3) Post-process => <job_output_dir>/results_scenarioes
+        # post-process => /.../results_scenarioes/...
         if "post_process_config" in mod_cfg:
             ppcfg = mod_cfg["post_process_config"]
             as_is_csv = os.path.join(job_output_dir, "results_scenarioes", "merged_as_is_scenarios.csv")
@@ -540,26 +523,20 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
             ppcfg["output_csv_as_is"] = as_is_csv
             ppcfg["output_csv_daily_mean"] = daily_csv
 
-        # 4) Fix assigned_csv paths
+        # Fix assigned_csv paths
         assigned_csv_dict = mod_cfg.get("assigned_csv", {})
         for key, rel_path in assigned_csv_dict.items():
             assigned_csv_dict[key] = os.path.join(job_output_dir, rel_path)
 
-        # 5) Fix scenario_csv paths
+        # Fix scenario_csv paths
         scenario_csv_dict = mod_cfg.get("scenario_csv", {})
         for key, rel_path in scenario_csv_dict.items():
             scenario_csv_dict[key] = os.path.join(job_output_dir, rel_path)
 
-        # 6) Fix base_idf_path if not absolute
-        base_idf_path = mod_cfg.get("base_idf_path")
-        if base_idf_path and not os.path.isabs(base_idf_path):
-            mod_cfg["base_idf_path"] = os.path.join(job_output_dir, base_idf_path)
-
-        # Finally, run the scenario workflow
+        # Now run the scenario workflow
         run_modification_workflow(mod_cfg)
     else:
         logger.info("[INFO] Skipping scenario modification.")
-
 
     # -------------------------------------------------------------------------
     # 12) Helper to handle patching CSVs that are "relative" but not "data/".

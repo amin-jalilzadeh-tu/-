@@ -1,16 +1,17 @@
 """
 idf_creation.py
 
-Handles the creation of EnergyPlus IDF files for a list of buildings,
+Handles the creation of EnergyPlus IDF files for a list of buildings, 
 plus optional simulation runs and post-processing.
 
 Key functionalities:
-  1) create_idf_for_building(...) builds a single IDF using geomeppy,
+  1) create_idf_for_building(...) builds a single IDF using geomeppy, 
      applying geometry, fenestration, HVAC, etc.
   2) create_idfs_for_all_buildings(...) loops over multiple buildings,
      then optionally runs simulations and merges results in one or more ways.
 
-Updated to allow writing logs/results inside a specific job folder via logs_base_dir.
+Updated to allow multiple post-processing steps from the "outputs" array in
+main_config["idf_creation"]["post_process_config"]["outputs"].
 """
 
 import os
@@ -20,7 +21,7 @@ import pandas as pd
 # geomeppy for IDF manipulation
 from geomeppy import IDF
 
-# --- Import your custom submodules ---
+# --- Import your custom submodules (paths shown as examples) ---
 from idf_objects.geomz.building import create_building_with_roof_type
 from idf_objects.fenez.fenestration import add_fenestration
 from idf_objects.fenez.materials import (
@@ -41,14 +42,15 @@ from idf_objects.outputdef.add_output_definitions import add_output_definitions
 from postproc.merge_results import merge_all_results
 from epw.run_epw_sims import simulate_all
 
+
 ###############################################################################
 # Global Default IDF Config
-# (Override these via environment variables or main_config if needed.)
+# You can override these in main.py or from main_config.json
 ###############################################################################
 idf_config = {
-    "iddfile": "EnergyPlus/Energy+.idd",         # Default path to the IDD file
-    "idf_file_path": "EnergyPlus/Minimal.idf",   # Default path to a minimal base IDF
-    "output_dir": "output/output_IDFs"           # Default folder to save generated IDFs
+    "iddfile": "EnergyPlus/Energy+.idd",       # Default path to the IDD file
+    "idf_file_path": "EnergyPlus/Minimal.idf",            # Default path to a minimal base IDF
+    "output_dir": "output/output_IDFs"            # Default folder to save generated IDFs
 }
 
 
@@ -69,8 +71,8 @@ def create_idf_for_building(
     user_config_dhw=None,
     assigned_dhw_log=None,
     # Fenestration
-    res_data=None,
-    nonres_data=None,
+    res_data=None,        # final residential fenestration dict
+    nonres_data=None,     # final non-res fenestration dict
     assigned_fenez_log=None,
     # HVAC
     user_config_hvac=None,
@@ -88,6 +90,61 @@ def create_idf_for_building(
     """
     Build an IDF for a single building, applying geometry, fenestration, lighting,
     HVAC, ventilation, zone sizing, ground temps, and user overrides.
+
+    Parameters
+    ----------
+    building_row : Series or dict
+        Row from df_buildings containing building attributes (area, perimeter, orientation, etc.)
+    building_index : int
+        Index of the building in df_buildings.
+    scenario : str
+        Scenario label, e.g. "scenario1".
+    calibration_stage : str
+        Calibration stage identifier, e.g. "pre_calibration", "post_calibration".
+    strategy : str
+        Strategy for picking param values, e.g. "B" => random uniform.
+    random_seed : int
+        Random seed to ensure reproducibility in parameter picking.
+    user_config_geom : list or dict
+        Optional geometry overrides loaded from geometry.json if override_geometry_json is True.
+    assigned_geom_log : dict
+        Dictionary to store assigned geometry parameters for logging.
+    user_config_lighting : list or dict
+        Optional lighting overrides from JSON.
+    assigned_lighting_log : dict
+        Dictionary to store assigned lighting parameters for logging.
+    user_config_dhw : list or dict
+        Optional DHW overrides from JSON.
+    assigned_dhw_log : dict
+        Dictionary to store assigned DHW parameters for logging.
+    res_data : dict
+        Final dictionary of residential fenestration data after merges.
+    nonres_data : dict
+        Final dictionary of non-res fenestration data after merges.
+    assigned_fenez_log : dict
+        Dictionary to store assigned fenestration parameters for logging.
+    user_config_hvac : list or dict
+        Optional HVAC overrides from JSON.
+    assigned_hvac_log : dict
+        Dictionary to store assigned HVAC parameters for logging.
+    user_config_vent : list or dict
+        Optional ventilation overrides from JSON.
+    assigned_vent_log : dict
+        Dictionary to store assigned vent parameters for logging.
+    assigned_setzone_log : dict
+        Dictionary to store assigned zone sizing parameters.
+    assigned_groundtemp_log : dict
+        Dictionary to store assigned ground temp parameters.
+    output_definitions : dict
+        Contains desired_variables, desired_meters, override frequencies, etc.
+        e.g. {
+          "desired_variables": [...],
+          "desired_meters": [...],
+          "override_variable_frequency": "Hourly",
+          "override_meter_frequency": "Hourly",
+          "include_tables": True,
+          "include_summary": True
+        }
 
     Returns
     -------
@@ -107,6 +164,7 @@ def create_idf_for_building(
         building_obj.North_Axis = orientation
 
     # 3) Create geometry
+    # Initialize log dict if needed
     if assigned_geom_log is not None and building_row.get("ogc_fid") not in assigned_geom_log:
         assigned_geom_log[building_row.get("ogc_fid")] = {}
 
@@ -137,12 +195,12 @@ def create_idf_for_building(
         calibration_stage=calibration_stage,
         strategy=strategy,
         random_seed=random_seed,
-        user_config_fenez=None,  # not used directly
+        user_config_fenez=None,  # (not used directly here)
         assigned_fenez_log=assigned_fenez_log
     )
     assign_constructions_to_surfaces(idf, construction_map)
 
-    # Create zone list for convenience
+    # Create zone list
     create_zonelist(idf, zonelist_name="ALL_ZONES")
 
     # 5) Fenestration
@@ -224,6 +282,7 @@ def create_idf_for_building(
     )
 
     # 12) Output definitions
+    #    If no custom output_definitions provided, define some defaults here
     if output_definitions is None:
         output_definitions = {
             "desired_variables": ["Facility Total Electric Demand Power", "Zone Air Temperature"],
@@ -233,6 +292,7 @@ def create_idf_for_building(
             "include_tables": True,
             "include_summary": True
         }
+
     out_settings = assign_output_settings(
         desired_variables=output_definitions.get("desired_variables", []),
         desired_meters=output_definitions.get("desired_meters", []),
@@ -274,16 +334,42 @@ def create_idfs_for_all_buildings(
     run_simulations=True,
     simulate_config=None,
     post_process=True,
-    post_process_config=None,
-    # NEW: Where to store logs and results
-    logs_base_dir=None
+    post_process_config=None
 ):
     """
-    Loops over df_buildings, calls create_idf_for_building for each building,
+    Loops over df_buildings, calls create_idf_for_building for each building, 
     optionally runs E+ simulations in parallel, and merges results if post_process=True.
 
-    If logs_base_dir is provided, all assigned_*.csv and merged results go under that folder
-    (e.g. logs_base_dir/assigned, logs_base_dir/Sim_Results, etc.).
+    Parameters
+    ----------
+    df_buildings : pd.DataFrame
+        Must contain columns like 'area', 'perimeter', 'orientation', 'ogc_fid', etc.
+    scenario : str
+    calibration_stage : str
+    strategy : str
+        e.g. "A" => midpoint, "B" => random uniform
+    random_seed : int
+    user_config_* : dict or list
+        JSON overrides for geometry, lighting, DHW, etc.
+    res_data, nonres_data : dict
+        Fenestration dictionaries after merges of Excel + JSON overrides
+    user_config_epw : list or dict
+        If you're overriding EPW weather files from JSON or Excel
+    output_definitions : dict
+        Desired E+ variables/meters/frequencies to output
+    run_simulations : bool
+        Whether to run E+ simulations right after IDF creation
+    simulate_config : dict
+        e.g. {"num_workers": 4, "ep_force_overwrite": True, ...}
+    post_process : bool
+        Whether to do result merging after simulation
+    post_process_config : dict
+        Contains details for the merging, e.g. multiple daily/monthly passes
+
+    Returns
+    -------
+    df_buildings : pd.DataFrame
+        The input DataFrame with an additional column "idf_name" for the IDF filename.
     """
     logger = logging.getLogger(__name__)
 
@@ -339,37 +425,34 @@ def create_idfs_for_all_buildings(
         # Store the final IDF filename in df_buildings
         df_buildings.loc[idx, "idf_name"] = os.path.basename(idf_path)
 
-    # C) If we’re told to run simulations
+    # C) If requested, run simulations
     if run_simulations:
         logger.info("[create_idfs_for_all_buildings] => Running simulations ...")
-        if simulate_config is None:
-            simulate_config = {}
-
-        # Decide on a base_output_dir for sim results
-        if logs_base_dir:
-            sim_output_dir = os.path.join(logs_base_dir, "Sim_Results")
-        else:
-            sim_output_dir = simulate_config.get("base_output_dir", "output/Sim_Results")
-
         idf_directory = idf_config["output_dir"]
         iddfile       = idf_config["iddfile"]
 
+        if simulate_config is None:
+            simulate_config = {}
+
+        # Example parallel sim
         simulate_all(
             df_buildings=df_buildings,
             idf_directory=idf_directory,
             iddfile=iddfile,
-            base_output_dir=sim_output_dir,
-            user_config_epw=user_config_epw,
+            base_output_dir=simulate_config.get("base_output_dir", "output/Sim_Results"),
+            user_config_epw=user_config_epw,  # pass user epw overrides
             assigned_epw_log=assigned_epw_log,
             num_workers=simulate_config.get("num_workers", 4)
-            # ep_force_overwrite=simulate_config.get("ep_force_overwrite", False)
+            ,
+           # ep_force_overwrite=simulate_config.get("ep_force_overwrite", False)
         )
 
-    # D) Post-processing
+    # D) If requested, post-process results and write assigned CSV logs
     if post_process:
         logger.info("[create_idfs_for_all_buildings] => Post-processing results & writing logs ...")
 
         if post_process_config is None:
+            # Minimal fallback if not provided
             post_process_config = {
                 "base_output_dir": "output/Sim_Results",
                 "outputs": [
@@ -382,10 +465,6 @@ def create_idfs_for_all_buildings(
                 ]
             }
 
-        # If logs_base_dir is set, we override base_output_dir
-        if logs_base_dir:
-            post_process_config["base_output_dir"] = os.path.join(logs_base_dir, "Sim_Results")
-
         base_output_dir = post_process_config.get("base_output_dir", "output/Sim_Results")
         multiple_outputs = post_process_config.get("outputs", [])
 
@@ -394,38 +473,24 @@ def create_idfs_for_all_buildings(
             convert_daily = proc_item.get("convert_to_daily", False)
             convert_monthly = proc_item.get("convert_to_monthly", False)
             aggregator = proc_item.get("aggregator", "mean")  # daily aggregator
-            out_csv = proc_item.get("output_csv", "output/results/merged_default.csv")
+            output_csv = proc_item.get("output_csv", "output/results/merged_default.csv")
 
-            # If logs_base_dir is set and the out_csv is still something like "output/results/..."
-            # We can relocate it under logs_base_dir, e.g. logs_base_dir/results
-            # Let's do a check:
-            if logs_base_dir and "output/" in out_csv:
-                # redirect to logs_base_dir
-                # e.g. logs_base_dir/results/merged_default.csv
-                # you can pick your subfolder naming
-                rel_filename = out_csv.split("output/")[-1]  # e.g. results/merged_default.csv
-                out_csv = os.path.join(logs_base_dir, rel_filename)
-
-            # Make sure directory exists
-            os.makedirs(os.path.dirname(out_csv), exist_ok=True)
-
-            # Now merge the results
             merge_all_results(
                 base_output_dir=base_output_dir,
-                output_csv=out_csv,
+                output_csv=output_csv,
                 convert_to_daily=convert_daily,
                 daily_aggregator=aggregator,
                 convert_to_monthly=convert_monthly
             )
 
         # Write CSV logs for assigned parameters
-        _write_geometry_csv(assigned_geom_log, logs_base_dir)
-        _write_lighting_csv(assigned_lighting_log, logs_base_dir)
-        _write_fenestration_csv(assigned_fenez_log, logs_base_dir)
-        _write_dhw_csv(assigned_dhw_log, logs_base_dir)
-        _write_hvac_csv(assigned_hvac_log, logs_base_dir)
-        _write_vent_csv(assigned_vent_log, logs_base_dir)
-        # (If needed, also EPW or groundtemp logs, do similarly)
+        _write_geometry_csv(assigned_geom_log)
+        _write_lighting_csv(assigned_lighting_log)
+        _write_fenestration_csv(assigned_fenez_log)
+        _write_dhw_csv(assigned_dhw_log)
+        _write_hvac_csv(assigned_hvac_log)
+        _write_vent_csv(assigned_vent_log)
+        # (If needed, also EPW or groundtemp logs)
 
         logger.info("[create_idfs_for_all_buildings] => Done post-processing.")
 
@@ -434,20 +499,8 @@ def create_idfs_for_all_buildings(
 
 ###############################################################################
 # Internal Helper Functions to Write Assigned Logs
-# -- Now accept logs_base_dir so we can place them in job_output_dir
 ###############################################################################
-def _make_assigned_path(filename, logs_base_dir):
-    """Helper to build the path for assigned_*.csv, given logs_base_dir."""
-    if logs_base_dir:
-        assigned_dir = os.path.join(logs_base_dir, "assigned")
-    else:
-        assigned_dir = "output/assigned"
-
-    os.makedirs(assigned_dir, exist_ok=True)
-    return os.path.join(assigned_dir, filename)
-
-
-def _write_geometry_csv(assigned_geom_log, logs_base_dir):
+def _write_geometry_csv(assigned_geom_log):
     rows = []
     for bldg_id, param_dict in assigned_geom_log.items():
         for param_name, param_val in param_dict.items():
@@ -456,14 +509,13 @@ def _write_geometry_csv(assigned_geom_log, logs_base_dir):
                 "param_name": param_name,
                 "assigned_value": param_val
             })
-    if not rows:
-        return
     df = pd.DataFrame(rows)
-    out_path = _make_assigned_path("assigned_geometry.csv", logs_base_dir)
+    os.makedirs("output/assigned", exist_ok=True)
+    out_path = "output/assigned/assigned_geometry.csv"
     df.to_csv(out_path, index=False)
 
 
-def _write_lighting_csv(assigned_lighting_log, logs_base_dir):
+def _write_lighting_csv(assigned_lighting_log):
     rows = []
     for bldg_id, param_dict in assigned_lighting_log.items():
         for param_name, subdict in param_dict.items():
@@ -479,14 +531,13 @@ def _write_lighting_csv(assigned_lighting_log, logs_base_dir):
                 "min_val": min_v,
                 "max_val": max_v
             })
-    if not rows:
-        return
     df = pd.DataFrame(rows)
-    out_path = _make_assigned_path("assigned_lighting.csv", logs_base_dir)
+    os.makedirs("output/assigned", exist_ok=True)
+    out_path = "output/assigned/assigned_lighting.csv"
     df.to_csv(out_path, index=False)
 
 
-def _write_fenestration_csv(assigned_fenez_log, logs_base_dir):
+def _write_fenestration_csv(assigned_fenez_log):
     rows = []
     for bldg_id, param_dict in assigned_fenez_log.items():
         for key, val in param_dict.items():
@@ -495,14 +546,13 @@ def _write_fenestration_csv(assigned_fenez_log, logs_base_dir):
                 "param_name": key,
                 "assigned_value": val
             })
-    if not rows:
-        return
     df = pd.DataFrame(rows)
-    out_path = _make_assigned_path("assigned_fenez_params.csv", logs_base_dir)
+    os.makedirs("output/assigned", exist_ok=True)
+    out_path = "output/assigned/assigned_fenez_params.csv"
     df.to_csv(out_path, index=False)
 
 
-def _write_dhw_csv(assigned_dhw_log, logs_base_dir):
+def _write_dhw_csv(assigned_dhw_log):
     rows = []
     for bldg_id, param_dict in assigned_dhw_log.items():
         for param_name, param_val in param_dict.items():
@@ -511,14 +561,13 @@ def _write_dhw_csv(assigned_dhw_log, logs_base_dir):
                 "param_name": param_name,
                 "assigned_value": param_val
             })
-    if not rows:
-        return
     df = pd.DataFrame(rows)
-    out_path = _make_assigned_path("assigned_dhw_params.csv", logs_base_dir)
+    os.makedirs("output/assigned", exist_ok=True)
+    out_path = "output/assigned/assigned_dhw_params.csv"
     df.to_csv(out_path, index=False)
 
 
-def _write_hvac_csv(assigned_hvac_log, logs_base_dir):
+def _write_hvac_csv(assigned_hvac_log):
     rows = []
     for bldg_id, param_dict in assigned_hvac_log.items():
         for param_name, param_val in param_dict.items():
@@ -527,14 +576,13 @@ def _write_hvac_csv(assigned_hvac_log, logs_base_dir):
                 "param_name": param_name,
                 "assigned_value": param_val
             })
-    if not rows:
-        return
     df = pd.DataFrame(rows)
-    out_path = _make_assigned_path("assigned_hvac_params.csv", logs_base_dir)
+    os.makedirs("output/assigned", exist_ok=True)
+    out_path = "output/assigned/assigned_hvac_params.csv"
     df.to_csv(out_path, index=False)
 
 
-def _write_vent_csv(assigned_vent_log, logs_base_dir):
+def _write_vent_csv(assigned_vent_log):
     rows = []
     for bldg_id, param_dict in assigned_vent_log.items():
         for param_name, param_val in param_dict.items():
@@ -543,8 +591,7 @@ def _write_vent_csv(assigned_vent_log, logs_base_dir):
                 "param_name": param_name,
                 "assigned_value": param_val
             })
-    if not rows:
-        return
     df = pd.DataFrame(rows)
-    out_path = _make_assigned_path("assigned_ventilation.csv", logs_base_dir)
+    os.makedirs("output/assigned", exist_ok=True)
+    out_path = "output/assigned/assigned_ventilation.csv"
     df.to_csv(out_path, index=False)

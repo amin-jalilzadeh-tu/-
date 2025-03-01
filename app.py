@@ -9,6 +9,8 @@ Endpoints:
        creates a new job with a unique job_id,
        splits the JSON into separate files (e.g., main_config.json, fenestration.json, etc.)
        in user_configs/<job_id>.
+       Also creates an output subfolder output/<job_id>.
+       Stores these paths in the job config.
 
   2) POST /jobs/<job_id>/start
      - Enqueues the job for execution (runs orchestrate_workflow in a background thread).
@@ -22,14 +24,9 @@ Endpoints:
   5) GET /jobs/<job_id>/status
      - Returns the current status: CREATED, QUEUED, RUNNING, FINISHED, ERROR, or CANCELED.
 
-  6) GET /jobs/<job_id>/results (Optional)
-     - Example endpoint to retrieve or reference final simulation results.
-
-Usage Flow:
-  - Client POSTs the combined JSON to /jobs -> gets {"job_id":"<uuid>"}.
-  - Then POST /jobs/<uuid>/start to run it.
-  - Optionally GET /jobs/<uuid>/logs to see progress, or /jobs/<uuid>/status to poll.
-  - Results can be retrieved once the job is FINISHED.
+  6) GET /jobs/<job_id>/results
+     - Example endpoint to list or fetch final simulation results in output/<job_id>,
+       or you can adapt to zip & return them. 
 """
 
 import logging
@@ -69,9 +66,10 @@ def create_job_endpoint():
     
     Steps performed:
       - Generate a new job_id (status=CREATED).
-      - Create a subfolder for this job: user_configs/<job_id>.
-      - Split the posted JSON into main_config.json, dhw.json, etc. in that subfolder.
-      - Store the subfolder path (and optionally the original posted data) in the job's config.
+      - Create a subfolder for user_configs/<job_id> for the input config files.
+      - Create a subfolder for output/<job_id> for the simulation results.
+      - Split the posted JSON into multiple config files (e.g., main_config.json).
+      - Store these paths in the job's config.
     
     Returns:
       JSON response: { "job_id": "<unique-uuid>" }
@@ -83,7 +81,8 @@ def create_job_endpoint():
     posted_data = request.get_json()
 
     # 2) Create a job with an initially empty config
-    job_id = create_job(config={})
+    job_id = create_job(config={})  
+    # Note: create_job() sets job["config"]["job_id"] = job_id internally.
 
     # 3) Create a subfolder for user_configs/<job_id>
     #    This ensures concurrency-friendly isolation (no overwriting each other's files).
@@ -91,19 +90,23 @@ def create_job_endpoint():
     job_subfolder = os.path.join(base_user_configs, job_id)
     os.makedirs(job_subfolder, exist_ok=True)
 
-    # 4) Split the combined JSON into multiple files, each named <top_key>.json
-    #    e.g. main_config.json, fenestration.json, etc.
+    # 4) Create a corresponding output folder for this job's results: output/<job_id>
+    base_output = os.path.join(os.getcwd(), "output")
+    job_output_folder = os.path.join(base_output, job_id)
+    os.makedirs(job_output_folder, exist_ok=True)
+
+    # 5) Split the combined JSON into multiple files, each named <top_key>.json
     split_combined_json(posted_data, job_subfolder)
 
-    # 5) Update the job's config to store:
-    #    - The subfolder path (so orchestrator knows where to read main_config.json).
-    #    - Possibly the entire posted_data for reference if you want it later.
+    # 6) Update the job config with the subfolder paths
     new_config = {
+        # job_id is already stored, but you can re-store it if you want:
+        "job_id": job_id,
         "job_subfolder": job_subfolder,
+        "output_subfolder": job_output_folder,
         "posted_data": posted_data
     }
 
-    # 6) Store this config in the job dictionary
     job = get_job(job_id)
     if job:
         job["config"] = new_config
@@ -212,24 +215,32 @@ def get_job_status_endpoint(job_id):
 
 
 ###############################################################################
-# 6) OPTIONAL: GET /jobs/<job_id>/results
+# 6) GET /jobs/<job_id>/results
 ###############################################################################
 @app.route("/jobs/<job_id>/results", methods=["GET"])
 def get_job_results(job_id):
     """
     (Placeholder endpoint)
-    If your orchestrator writes final CSV or other files to e.g. output/Sim_Results/<job_id>,
-    you can retrieve or list them here.
-
-    Example:
-      1) Confirm the folder exists
-      2) Possibly zip and return a download link or direct file
+    If your orchestrator or IDF creation writes final outputs to 
+    output/<job_id> (or some subfolder), you can retrieve or list them here.
+    
+    Example usage:
+      - Check existence of job config to get "output_subfolder".
+      - Possibly zip the folder or return direct file.
     """
-    results_dir = f"output/Sim_Results/{job_id}"
-    if not os.path.exists(results_dir):
-        return jsonify({"error": "No results found for that job"}), 404
+    job = get_job(job_id)
+    if not job:
+        return jsonify({"error": "No such job"}), 404
 
-    return jsonify({"message": f"Results directory is {results_dir}. (Implement your own download logic)"})
+    cfg = job["config"]
+    out_dir = cfg.get("output_subfolder")
+    if not out_dir or not os.path.exists(out_dir):
+        return jsonify({"error": f"No results found for job {job_id}"}), 404
+
+    # For now, just respond with a simple message:
+    return jsonify({
+        "message": f"Results directory is: {out_dir} (Implement your own listing or zip download)."
+    }), 200
 
 
 ###############################################################################

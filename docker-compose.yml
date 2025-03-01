@@ -9,7 +9,7 @@ services:
     environment:
       # If you rely on environment vars in .env
       # or override them here:
-      DB_HOST: db
+      DB_HOST: leda.geodan.nl
       ENERGYPLUS_VERSION: "22.2.0"
     volumes:
       - ./data:/usr/src/app/data

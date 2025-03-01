@@ -1,0 +1,1531 @@
+File: D:\Documents\E_Plus_2030_py\output\01198160-9c47-47f3-90ad-10fa9f9b7567\assigned\assigned_hvac_building.csv
+============================================================
+ogc_fid,param_name,param_value
+1,heating_day_setpoint,19.778853596915766
+1,heating_day_setpoint_range,"(18.5, 20.5)"
+1,heating_night_setpoint,15.025010755222667
+1,heating_night_setpoint_range,"(15.0, 16.0)"
+1,cooling_day_setpoint,25.6
+1,cooling_day_setpoint_range,"(25.6, 25.6)"
+1,cooling_night_setpoint,26.446421476297644
+1,cooling_night_setpoint_range,"(26.0, 28.0)"
+1,max_heating_supply_air_temp,52.364712141640126
+1,max_heating_supply_air_temp_range,"(45.0, 55.0)"
+1,min_cooling_supply_air_temp,13.353398974845822
+1,min_cooling_supply_air_temp_range,"(12.0, 14.0)"
+1,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}"
+2,heating_day_setpoint,19.778853596915766
+2,heating_day_setpoint_range,"(18.5, 20.5)"
+2,heating_night_setpoint,15.025010755222667
+2,heating_night_setpoint_range,"(15.0, 16.0)"
+2,cooling_day_setpoint,25.6
+2,cooling_day_setpoint_range,"(25.6, 25.6)"
+2,cooling_night_setpoint,26.446421476297644
+2,cooling_night_setpoint_range,"(26.0, 28.0)"
+2,max_heating_supply_air_temp,52.364712141640126
+2,max_heating_supply_air_temp_range,"(45.0, 55.0)"
+2,min_cooling_supply_air_temp,13.353398974845822
+2,min_cooling_supply_air_temp_range,"(12.0, 14.0)"
+2,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}"
+3,heating_day_setpoint,19.778853596915766
+3,heating_day_setpoint_range,"(18.5, 20.5)"
+3,heating_night_setpoint,15.025010755222667
+3,heating_night_setpoint_range,"(15.0, 16.0)"
+3,cooling_day_setpoint,25.6
+3,cooling_day_setpoint_range,"(25.6, 25.6)"
+3,cooling_night_setpoint,26.446421476297644
+3,cooling_night_setpoint_range,"(26.0, 28.0)"
+3,max_heating_supply_air_temp,52.364712141640126
+3,max_heating_supply_air_temp_range,"(45.0, 55.0)"
+3,min_cooling_supply_air_temp,13.353398974845822
+3,min_cooling_supply_air_temp_range,"(12.0, 14.0)"
+3,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}"
+4,heating_day_setpoint,19.778853596915766
+4,heating_day_setpoint_range,"(18.5, 20.5)"
+4,heating_night_setpoint,15.025010755222667
+4,heating_night_setpoint_range,"(15.0, 16.0)"
+4,cooling_day_setpoint,25.6
+4,cooling_day_setpoint_range,"(25.6, 25.6)"
+4,cooling_night_setpoint,26.446421476297644
+4,cooling_night_setpoint_range,"(26.0, 28.0)"
+4,max_heating_supply_air_temp,52.364712141640126
+4,max_heating_supply_air_temp_range,"(45.0, 55.0)"
+4,min_cooling_supply_air_temp,13.353398974845822
+4,min_cooling_supply_air_temp_range,"(12.0, 14.0)"
+4,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}"
+5,heating_day_setpoint,19.778853596915766
+5,heating_day_setpoint_range,"(18.5, 20.5)"
+5,heating_night_setpoint,15.025010755222667
+5,heating_night_setpoint_range,"(15.0, 16.0)"
+5,cooling_day_setpoint,25.6
+5,cooling_day_setpoint_range,"(25.6, 25.6)"
+5,cooling_night_setpoint,26.446421476297644
+5,cooling_night_setpoint_range,"(26.0, 28.0)"
+5,max_heating_supply_air_temp,52.364712141640126
+5,max_heating_supply_air_temp_range,"(45.0, 55.0)"
+5,min_cooling_supply_air_temp,13.353398974845822
+5,min_cooling_supply_air_temp_range,"(12.0, 14.0)"
+5,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}"
+6,heating_day_setpoint,19.778853596915766
+6,heating_day_setpoint_range,"(18.5, 20.5)"
+6,heating_night_setpoint,15.025010755222667
+6,heating_night_setpoint_range,"(15.0, 16.0)"
+6,cooling_day_setpoint,25.6
+6,cooling_day_setpoint_range,"(25.6, 25.6)"
+6,cooling_night_setpoint,26.446421476297644
+6,cooling_night_setpoint_range,"(26.0, 28.0)"
+6,max_heating_supply_air_temp,52.364712141640126
+6,max_heating_supply_air_temp_range,"(45.0, 55.0)"
+6,min_cooling_supply_air_temp,13.353398974845822
+6,min_cooling_supply_air_temp_range,"(12.0, 14.0)"
+6,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}"
+7,heating_day_setpoint,19.778853596915766
+7,heating_day_setpoint_range,"(18.5, 20.5)"
+7,heating_night_setpoint,15.025010755222667
+7,heating_night_setpoint_range,"(15.0, 16.0)"
+7,cooling_day_setpoint,25.6
+7,cooling_day_setpoint_range,"(25.6, 25.6)"
+7,cooling_night_setpoint,26.446421476297644
+7,cooling_night_setpoint_range,"(26.0, 28.0)"
+7,max_heating_supply_air_temp,52.364712141640126
+7,max_heating_supply_air_temp_range,"(45.0, 55.0)"
+7,min_cooling_supply_air_temp,13.353398974845822
+7,min_cooling_supply_air_temp_range,"(12.0, 14.0)"
+7,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}"
+8,heating_day_setpoint,19.778853596915766
+8,heating_day_setpoint_range,"(18.5, 20.5)"
+8,heating_night_setpoint,15.025010755222667
+8,heating_night_setpoint_range,"(15.0, 16.0)"
+8,cooling_day_setpoint,25.6
+8,cooling_day_setpoint_range,"(25.6, 25.6)"
+8,cooling_night_setpoint,26.446421476297644
+8,cooling_night_setpoint_range,"(26.0, 28.0)"
+8,max_heating_supply_air_temp,52.364712141640126
+8,max_heating_supply_air_temp_range,"(45.0, 55.0)"
+8,min_cooling_supply_air_temp,13.353398974845822
+8,min_cooling_supply_air_temp_range,"(12.0, 14.0)"
+8,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}"
+9,heating_day_setpoint,19.778853596915766
+9,heating_day_setpoint_range,"(18.5, 20.5)"
+9,heating_night_setpoint,15.025010755222667
+9,heating_night_setpoint_range,"(15.0, 16.0)"
+9,cooling_day_setpoint,25.6
+9,cooling_day_setpoint_range,"(25.6, 25.6)"
+9,cooling_night_setpoint,26.446421476297644
+9,cooling_night_setpoint_range,"(26.0, 28.0)"
+9,max_heating_supply_air_temp,52.364712141640126
+9,max_heating_supply_air_temp_range,"(45.0, 55.0)"
+9,min_cooling_supply_air_temp,13.353398974845822
+9,min_cooling_supply_air_temp_range,"(12.0, 14.0)"
+9,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}"
+10,heating_day_setpoint,19.778853596915766
+10,heating_day_setpoint_range,"(18.5, 20.5)"
+10,heating_night_setpoint,15.025010755222667
+10,heating_night_setpoint_range,"(15.0, 16.0)"
+10,cooling_day_setpoint,25.6
+10,cooling_day_setpoint_range,"(25.6, 25.6)"
+10,cooling_night_setpoint,26.446421476297644
+10,cooling_night_setpoint_range,"(26.0, 28.0)"
+10,max_heating_supply_air_temp,52.364712141640126
+10,max_heating_supply_air_temp_range,"(45.0, 55.0)"
+10,min_cooling_supply_air_temp,13.353398974845822
+10,min_cooling_supply_air_temp_range,"(12.0, 14.0)"
+10,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}"
+11,heating_day_setpoint,19.778853596915766
+11,heating_day_setpoint_range,"(18.5, 20.5)"
+11,heating_night_setpoint,15.025010755222667
+11,heating_night_setpoint_range,"(15.0, 16.0)"
+11,cooling_day_setpoint,25.6
+11,cooling_day_setpoint_range,"(25.6, 25.6)"
+11,cooling_night_setpoint,26.446421476297644
+11,cooling_night_setpoint_range,"(26.0, 28.0)"
+11,max_heating_supply_air_temp,52.364712141640126
+11,max_heating_supply_air_temp_range,"(45.0, 55.0)"
+11,min_cooling_supply_air_temp,13.353398974845822
+11,min_cooling_supply_air_temp_range,"(12.0, 14.0)"
+11,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}"
+12,heating_day_setpoint,19.778853596915766
+12,heating_day_setpoint_range,"(18.5, 20.5)"
+12,heating_night_setpoint,15.025010755222667
+12,heating_night_setpoint_range,"(15.0, 16.0)"
+12,cooling_day_setpoint,25.6
+12,cooling_day_setpoint_range,"(25.6, 25.6)"
+12,cooling_night_setpoint,26.446421476297644
+12,cooling_night_setpoint_range,"(26.0, 28.0)"
+12,max_heating_supply_air_temp,52.364712141640126
+12,max_heating_supply_air_temp_range,"(45.0, 55.0)"
+12,min_cooling_supply_air_temp,13.353398974845822
+12,min_cooling_supply_air_temp_range,"(12.0, 14.0)"
+12,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}"
+13,heating_day_setpoint,19.278853596915766
+13,heating_day_setpoint_range,"(18.0, 20.0)"
+13,heating_night_setpoint,15.025010755222667
+13,heating_night_setpoint_range,"(15.0, 16.0)"
+13,cooling_day_setpoint,25.6
+13,cooling_day_setpoint_range,"(25.6, 25.6)"
+13,cooling_night_setpoint,26.446421476297644
+13,cooling_night_setpoint_range,"(26.0, 28.0)"
+13,max_heating_supply_air_temp,52.364712141640126
+13,max_heating_supply_air_temp_range,"(45.0, 55.0)"
+13,min_cooling_supply_air_temp,13.353398974845822
+13,min_cooling_supply_air_temp_range,"(12.0, 14.0)"
+13,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}"
+14,heating_day_setpoint,19.278853596915766
+14,heating_day_setpoint_range,"(18.0, 20.0)"
+14,heating_night_setpoint,15.025010755222667
+14,heating_night_setpoint_range,"(15.0, 16.0)"
+14,cooling_day_setpoint,25.6
+14,cooling_day_setpoint_range,"(25.6, 25.6)"
+14,cooling_night_setpoint,26.446421476297644
+14,cooling_night_setpoint_range,"(26.0, 28.0)"
+14,max_heating_supply_air_temp,52.364712141640126
+14,max_heating_supply_air_temp_range,"(45.0, 55.0)"
+14,min_cooling_supply_air_temp,13.353398974845822
+14,min_cooling_supply_air_temp_range,"(12.0, 14.0)"
+14,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}"
+15,heating_day_setpoint,19.278853596915766
+15,heating_day_setpoint_range,"(18.0, 20.0)"
+15,heating_night_setpoint,15.025010755222667
+15,heating_night_setpoint_range,"(15.0, 16.0)"
+15,cooling_day_setpoint,25.6
+15,cooling_day_setpoint_range,"(25.6, 25.6)"
+15,cooling_night_setpoint,26.446421476297644
+15,cooling_night_setpoint_range,"(26.0, 28.0)"
+15,max_heating_supply_air_temp,52.364712141640126
+15,max_heating_supply_air_temp_range,"(45.0, 55.0)"
+15,min_cooling_supply_air_temp,13.353398974845822
+15,min_cooling_supply_air_temp_range,"(12.0, 14.0)"
+15,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}"
+16,heating_day_setpoint,19.278853596915766
+16,heating_day_setpoint_range,"(18.0, 20.0)"
+16,heating_night_setpoint,15.025010755222667
+16,heating_night_setpoint_range,"(15.0, 16.0)"
+16,cooling_day_setpoint,25.6
+16,cooling_day_setpoint_range,"(25.6, 25.6)"
+16,cooling_night_setpoint,26.446421476297644
+16,cooling_night_setpoint_range,"(26.0, 28.0)"
+16,max_heating_supply_air_temp,52.364712141640126
+16,max_heating_supply_air_temp_range,"(45.0, 55.0)"
+16,min_cooling_supply_air_temp,13.353398974845822
+16,min_cooling_supply_air_temp_range,"(12.0, 14.0)"
+16,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}"
+17,heating_day_setpoint,19.278853596915766
+17,heating_day_setpoint_range,"(18.0, 20.0)"
+17,heating_night_setpoint,15.025010755222667
+17,heating_night_setpoint_range,"(15.0, 16.0)"
+17,cooling_day_setpoint,25.6
+17,cooling_day_setpoint_range,"(25.6, 25.6)"
+17,cooling_night_setpoint,26.446421476297644
+17,cooling_night_setpoint_range,"(26.0, 28.0)"
+17,max_heating_supply_air_temp,52.364712141640126
+17,max_heating_supply_air_temp_range,"(45.0, 55.0)"
+17,min_cooling_supply_air_temp,13.353398974845822
+17,min_cooling_supply_air_temp_range,"(12.0, 14.0)"
+17,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}"
+18,heating_day_setpoint,19.278853596915766
+18,heating_day_setpoint_range,"(18.0, 20.0)"
+18,heating_night_setpoint,15.025010755222667
+18,heating_night_setpoint_range,"(15.0, 16.0)"
+18,cooling_day_setpoint,25.6
+18,cooling_day_setpoint_range,"(25.6, 25.6)"
+18,cooling_night_setpoint,26.446421476297644
+18,cooling_night_setpoint_range,"(26.0, 28.0)"
+18,max_heating_supply_air_temp,52.364712141640126
+18,max_heating_supply_air_temp_range,"(45.0, 55.0)"
+18,min_cooling_supply_air_temp,13.353398974845822
+18,min_cooling_supply_air_temp_range,"(12.0, 14.0)"
+18,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}"
+19,heating_day_setpoint,19.278853596915766
+19,heating_day_setpoint_range,"(18.0, 20.0)"
+19,heating_night_setpoint,15.025010755222667
+19,heating_night_setpoint_range,"(15.0, 16.0)"
+19,cooling_day_setpoint,25.6
+19,cooling_day_setpoint_range,"(25.6, 25.6)"
+19,cooling_night_setpoint,26.446421476297644
+19,cooling_night_setpoint_range,"(26.0, 28.0)"
+19,max_heating_supply_air_temp,52.364712141640126
+19,max_heating_supply_air_temp_range,"(45.0, 55.0)"
+19,min_cooling_supply_air_temp,13.353398974845822
+19,min_cooling_supply_air_temp_range,"(12.0, 14.0)"
+19,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}"
+20,heating_day_setpoint,19.278853596915766
+20,heating_day_setpoint_range,"(18.0, 20.0)"
+20,heating_night_setpoint,15.025010755222667
+20,heating_night_setpoint_range,"(15.0, 16.0)"
+20,cooling_day_setpoint,25.6
+20,cooling_day_setpoint_range,"(25.6, 25.6)"
+20,cooling_night_setpoint,26.446421476297644
+20,cooling_night_setpoint_range,"(26.0, 28.0)"
+20,max_heating_supply_air_temp,52.364712141640126
+20,max_heating_supply_air_temp_range,"(45.0, 55.0)"
+20,min_cooling_supply_air_temp,13.353398974845822
+20,min_cooling_supply_air_temp_range,"(12.0, 14.0)"
+20,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}"
+21,heating_day_setpoint,19.278853596915766
+21,heating_day_setpoint_range,"(18.0, 20.0)"
+21,heating_night_setpoint,15.025010755222667
+21,heating_night_setpoint_range,"(15.0, 16.0)"
+21,cooling_day_setpoint,25.6
+21,cooling_day_setpoint_range,"(25.6, 25.6)"
+21,cooling_night_setpoint,26.446421476297644
+21,cooling_night_setpoint_range,"(26.0, 28.0)"
+21,max_heating_supply_air_temp,52.364712141640126
+21,max_heating_supply_air_temp_range,"(45.0, 55.0)"
+21,min_cooling_supply_air_temp,13.353398974845822
+21,min_cooling_supply_air_temp_range,"(12.0, 14.0)"
+21,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}"
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\output\01198160-9c47-47f3-90ad-10fa9f9b7567\assigned\assigned_hvac_params.csv
+============================================================
+ogc_fid,param_name,assigned_value
+1,hvac_params,"{'heating_day_setpoint': 19.778853596915766, 'heating_day_setpoint_range': (18.5, 20.5), 'heating_night_setpoint': 15.025010755222667, 'heating_night_setpoint_range': (15.0, 16.0), 'cooling_day_setpoint': 25.6, 'cooling_day_setpoint_range': (25.6, 25.6), 'cooling_night_setpoint': 26.446421476297644, 'cooling_night_setpoint_range': (26.0, 28.0), 'max_heating_supply_air_temp': 52.364712141640126, 'max_heating_supply_air_temp_range': (45.0, 55.0), 'min_cooling_supply_air_temp': 13.353398974845822, 'min_cooling_supply_air_temp_range': (12.0, 14.0), 'schedule_details': {'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}}"
+1,zones,"{'Zone1': {'hvac_object_name': 'Zone1 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone1 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1 SETPOINTS'}}"
+2,hvac_params,"{'heating_day_setpoint': 19.778853596915766, 'heating_day_setpoint_range': (18.5, 20.5), 'heating_night_setpoint': 15.025010755222667, 'heating_night_setpoint_range': (15.0, 16.0), 'cooling_day_setpoint': 25.6, 'cooling_day_setpoint_range': (25.6, 25.6), 'cooling_night_setpoint': 26.446421476297644, 'cooling_night_setpoint_range': (26.0, 28.0), 'max_heating_supply_air_temp': 52.364712141640126, 'max_heating_supply_air_temp_range': (45.0, 55.0), 'min_cooling_supply_air_temp': 13.353398974845822, 'min_cooling_supply_air_temp_range': (12.0, 14.0), 'schedule_details': {'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}}"
+2,zones,"{'Zone1': {'hvac_object_name': 'Zone1 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone1 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1 SETPOINTS'}, 'Zone2': {'hvac_object_name': 'Zone2 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone2 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2 SETPOINTS'}}"
+3,hvac_params,"{'heating_day_setpoint': 19.778853596915766, 'heating_day_setpoint_range': (18.5, 20.5), 'heating_night_setpoint': 15.025010755222667, 'heating_night_setpoint_range': (15.0, 16.0), 'cooling_day_setpoint': 25.6, 'cooling_day_setpoint_range': (25.6, 25.6), 'cooling_night_setpoint': 26.446421476297644, 'cooling_night_setpoint_range': (26.0, 28.0), 'max_heating_supply_air_temp': 52.364712141640126, 'max_heating_supply_air_temp_range': (45.0, 55.0), 'min_cooling_supply_air_temp': 13.353398974845822, 'min_cooling_supply_air_temp_range': (12.0, 14.0), 'schedule_details': {'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}}"
+3,zones,"{'Zone1': {'hvac_object_name': 'Zone1 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone1 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1 SETPOINTS'}, 'Zone2': {'hvac_object_name': 'Zone2 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone2 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2 SETPOINTS'}}"
+4,hvac_params,"{'heating_day_setpoint': 19.778853596915766, 'heating_day_setpoint_range': (18.5, 20.5), 'heating_night_setpoint': 15.025010755222667, 'heating_night_setpoint_range': (15.0, 16.0), 'cooling_day_setpoint': 25.6, 'cooling_day_setpoint_range': (25.6, 25.6), 'cooling_night_setpoint': 26.446421476297644, 'cooling_night_setpoint_range': (26.0, 28.0), 'max_heating_supply_air_temp': 52.364712141640126, 'max_heating_supply_air_temp_range': (45.0, 55.0), 'min_cooling_supply_air_temp': 13.353398974845822, 'min_cooling_supply_air_temp_range': (12.0, 14.0), 'schedule_details': {'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}}"
+4,zones,"{'Zone1': {'hvac_object_name': 'Zone1 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone1 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1 SETPOINTS'}, 'Zone2': {'hvac_object_name': 'Zone2 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone2 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2 SETPOINTS'}}"
+5,hvac_params,"{'heating_day_setpoint': 19.778853596915766, 'heating_day_setpoint_range': (18.5, 20.5), 'heating_night_setpoint': 15.025010755222667, 'heating_night_setpoint_range': (15.0, 16.0), 'cooling_day_setpoint': 25.6, 'cooling_day_setpoint_range': (25.6, 25.6), 'cooling_night_setpoint': 26.446421476297644, 'cooling_night_setpoint_range': (26.0, 28.0), 'max_heating_supply_air_temp': 52.364712141640126, 'max_heating_supply_air_temp_range': (45.0, 55.0), 'min_cooling_supply_air_temp': 13.353398974845822, 'min_cooling_supply_air_temp_range': (12.0, 14.0), 'schedule_details': {'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}}"
+5,zones,"{'Zone1': {'hvac_object_name': 'Zone1 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone1 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1 SETPOINTS'}, 'Zone2': {'hvac_object_name': 'Zone2 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone2 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2 SETPOINTS'}}"
+6,hvac_params,"{'heating_day_setpoint': 19.778853596915766, 'heating_day_setpoint_range': (18.5, 20.5), 'heating_night_setpoint': 15.025010755222667, 'heating_night_setpoint_range': (15.0, 16.0), 'cooling_day_setpoint': 25.6, 'cooling_day_setpoint_range': (25.6, 25.6), 'cooling_night_setpoint': 26.446421476297644, 'cooling_night_setpoint_range': (26.0, 28.0), 'max_heating_supply_air_temp': 52.364712141640126, 'max_heating_supply_air_temp_range': (45.0, 55.0), 'min_cooling_supply_air_temp': 13.353398974845822, 'min_cooling_supply_air_temp_range': (12.0, 14.0), 'schedule_details': {'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}}"
+6,zones,"{'Zone1': {'hvac_object_name': 'Zone1 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone1 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1 SETPOINTS'}, 'Zone2': {'hvac_object_name': 'Zone2 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone2 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2 SETPOINTS'}}"
+7,hvac_params,"{'heating_day_setpoint': 19.778853596915766, 'heating_day_setpoint_range': (18.5, 20.5), 'heating_night_setpoint': 15.025010755222667, 'heating_night_setpoint_range': (15.0, 16.0), 'cooling_day_setpoint': 25.6, 'cooling_day_setpoint_range': (25.6, 25.6), 'cooling_night_setpoint': 26.446421476297644, 'cooling_night_setpoint_range': (26.0, 28.0), 'max_heating_supply_air_temp': 52.364712141640126, 'max_heating_supply_air_temp_range': (45.0, 55.0), 'min_cooling_supply_air_temp': 13.353398974845822, 'min_cooling_supply_air_temp_range': (12.0, 14.0), 'schedule_details': {'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}}"
+7,zones,"{'Zone1': {'hvac_object_name': 'Zone1 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone1 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1 SETPOINTS'}, 'Zone2': {'hvac_object_name': 'Zone2 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone2 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2 SETPOINTS'}}"
+8,hvac_params,"{'heating_day_setpoint': 19.778853596915766, 'heating_day_setpoint_range': (18.5, 20.5), 'heating_night_setpoint': 15.025010755222667, 'heating_night_setpoint_range': (15.0, 16.0), 'cooling_day_setpoint': 25.6, 'cooling_day_setpoint_range': (25.6, 25.6), 'cooling_night_setpoint': 26.446421476297644, 'cooling_night_setpoint_range': (26.0, 28.0), 'max_heating_supply_air_temp': 52.364712141640126, 'max_heating_supply_air_temp_range': (45.0, 55.0), 'min_cooling_supply_air_temp': 13.353398974845822, 'min_cooling_supply_air_temp_range': (12.0, 14.0), 'schedule_details': {'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}}"
+8,zones,"{'Zone1': {'hvac_object_name': 'Zone1 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone1 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1 SETPOINTS'}}"
+9,hvac_params,"{'heating_day_setpoint': 19.778853596915766, 'heating_day_setpoint_range': (18.5, 20.5), 'heating_night_setpoint': 15.025010755222667, 'heating_night_setpoint_range': (15.0, 16.0), 'cooling_day_setpoint': 25.6, 'cooling_day_setpoint_range': (25.6, 25.6), 'cooling_night_setpoint': 26.446421476297644, 'cooling_night_setpoint_range': (26.0, 28.0), 'max_heating_supply_air_temp': 52.364712141640126, 'max_heating_supply_air_temp_range': (45.0, 55.0), 'min_cooling_supply_air_temp': 13.353398974845822, 'min_cooling_supply_air_temp_range': (12.0, 14.0), 'schedule_details': {'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}}"
+9,zones,"{'Zone1': {'hvac_object_name': 'Zone1 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone1 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1 SETPOINTS'}, 'Zone2': {'hvac_object_name': 'Zone2 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone2 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2 SETPOINTS'}}"
+10,hvac_params,"{'heating_day_setpoint': 19.778853596915766, 'heating_day_setpoint_range': (18.5, 20.5), 'heating_night_setpoint': 15.025010755222667, 'heating_night_setpoint_range': (15.0, 16.0), 'cooling_day_setpoint': 25.6, 'cooling_day_setpoint_range': (25.6, 25.6), 'cooling_night_setpoint': 26.446421476297644, 'cooling_night_setpoint_range': (26.0, 28.0), 'max_heating_supply_air_temp': 52.364712141640126, 'max_heating_supply_air_temp_range': (45.0, 55.0), 'min_cooling_supply_air_temp': 13.353398974845822, 'min_cooling_supply_air_temp_range': (12.0, 14.0), 'schedule_details': {'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}}"
+10,zones,"{'Zone1': {'hvac_object_name': 'Zone1 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone1 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1 SETPOINTS'}, 'Zone2': {'hvac_object_name': 'Zone2 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone2 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2 SETPOINTS'}}"
+11,hvac_params,"{'heating_day_setpoint': 19.778853596915766, 'heating_day_setpoint_range': (18.5, 20.5), 'heating_night_setpoint': 15.025010755222667, 'heating_night_setpoint_range': (15.0, 16.0), 'cooling_day_setpoint': 25.6, 'cooling_day_setpoint_range': (25.6, 25.6), 'cooling_night_setpoint': 26.446421476297644, 'cooling_night_setpoint_range': (26.0, 28.0), 'max_heating_supply_air_temp': 52.364712141640126, 'max_heating_supply_air_temp_range': (45.0, 55.0), 'min_cooling_supply_air_temp': 13.353398974845822, 'min_cooling_supply_air_temp_range': (12.0, 14.0), 'schedule_details': {'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}}"
+11,zones,"{'Zone1': {'hvac_object_name': 'Zone1 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone1 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1 SETPOINTS'}, 'Zone2': {'hvac_object_name': 'Zone2 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone2 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2 SETPOINTS'}}"
+12,hvac_params,"{'heating_day_setpoint': 19.778853596915766, 'heating_day_setpoint_range': (18.5, 20.5), 'heating_night_setpoint': 15.025010755222667, 'heating_night_setpoint_range': (15.0, 16.0), 'cooling_day_setpoint': 25.6, 'cooling_day_setpoint_range': (25.6, 25.6), 'cooling_night_setpoint': 26.446421476297644, 'cooling_night_setpoint_range': (26.0, 28.0), 'max_heating_supply_air_temp': 52.364712141640126, 'max_heating_supply_air_temp_range': (45.0, 55.0), 'min_cooling_supply_air_temp': 13.353398974845822, 'min_cooling_supply_air_temp_range': (12.0, 14.0), 'schedule_details': {'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}}"
+12,zones,"{'Zone1': {'hvac_object_name': 'Zone1 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone1 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1 SETPOINTS'}, 'Zone2': {'hvac_object_name': 'Zone2 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone2 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2 SETPOINTS'}}"
+13,hvac_params,"{'heating_day_setpoint': 19.278853596915766, 'heating_day_setpoint_range': (18.0, 20.0), 'heating_night_setpoint': 15.025010755222667, 'heating_night_setpoint_range': (15.0, 16.0), 'cooling_day_setpoint': 25.6, 'cooling_day_setpoint_range': (25.6, 25.6), 'cooling_night_setpoint': 26.446421476297644, 'cooling_night_setpoint_range': (26.0, 28.0), 'max_heating_supply_air_temp': 52.364712141640126, 'max_heating_supply_air_temp_range': (45.0, 55.0), 'min_cooling_supply_air_temp': 13.353398974845822, 'min_cooling_supply_air_temp_range': (12.0, 14.0), 'schedule_details': {'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}}"
+13,zones,"{'Zone1': {'hvac_object_name': 'Zone1 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone1 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1 SETPOINTS'}, 'Zone2': {'hvac_object_name': 'Zone2 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone2 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2 SETPOINTS'}}"
+14,hvac_params,"{'heating_day_setpoint': 19.278853596915766, 'heating_day_setpoint_range': (18.0, 20.0), 'heating_night_setpoint': 15.025010755222667, 'heating_night_setpoint_range': (15.0, 16.0), 'cooling_day_setpoint': 25.6, 'cooling_day_setpoint_range': (25.6, 25.6), 'cooling_night_setpoint': 26.446421476297644, 'cooling_night_setpoint_range': (26.0, 28.0), 'max_heating_supply_air_temp': 52.364712141640126, 'max_heating_supply_air_temp_range': (45.0, 55.0), 'min_cooling_supply_air_temp': 13.353398974845822, 'min_cooling_supply_air_temp_range': (12.0, 14.0), 'schedule_details': {'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}}"
+14,zones,"{'Zone1': {'hvac_object_name': 'Zone1 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone1 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1 SETPOINTS'}, 'Zone2': {'hvac_object_name': 'Zone2 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone2 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2 SETPOINTS'}}"
+15,hvac_params,"{'heating_day_setpoint': 19.278853596915766, 'heating_day_setpoint_range': (18.0, 20.0), 'heating_night_setpoint': 15.025010755222667, 'heating_night_setpoint_range': (15.0, 16.0), 'cooling_day_setpoint': 25.6, 'cooling_day_setpoint_range': (25.6, 25.6), 'cooling_night_setpoint': 26.446421476297644, 'cooling_night_setpoint_range': (26.0, 28.0), 'max_heating_supply_air_temp': 52.364712141640126, 'max_heating_supply_air_temp_range': (45.0, 55.0), 'min_cooling_supply_air_temp': 13.353398974845822, 'min_cooling_supply_air_temp_range': (12.0, 14.0), 'schedule_details': {'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}}"
+15,zones,"{'Zone1': {'hvac_object_name': 'Zone1 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone1 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1 SETPOINTS'}, 'Zone2': {'hvac_object_name': 'Zone2 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone2 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2 SETPOINTS'}}"
+16,hvac_params,"{'heating_day_setpoint': 19.278853596915766, 'heating_day_setpoint_range': (18.0, 20.0), 'heating_night_setpoint': 15.025010755222667, 'heating_night_setpoint_range': (15.0, 16.0), 'cooling_day_setpoint': 25.6, 'cooling_day_setpoint_range': (25.6, 25.6), 'cooling_night_setpoint': 26.446421476297644, 'cooling_night_setpoint_range': (26.0, 28.0), 'max_heating_supply_air_temp': 52.364712141640126, 'max_heating_supply_air_temp_range': (45.0, 55.0), 'min_cooling_supply_air_temp': 13.353398974845822, 'min_cooling_supply_air_temp_range': (12.0, 14.0), 'schedule_details': {'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}}"
+16,zones,"{'Zone1': {'hvac_object_name': 'Zone1 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone1 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1 SETPOINTS'}, 'Zone2': {'hvac_object_name': 'Zone2 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone2 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2 SETPOINTS'}}"
+17,hvac_params,"{'heating_day_setpoint': 19.278853596915766, 'heating_day_setpoint_range': (18.0, 20.0), 'heating_night_setpoint': 15.025010755222667, 'heating_night_setpoint_range': (15.0, 16.0), 'cooling_day_setpoint': 25.6, 'cooling_day_setpoint_range': (25.6, 25.6), 'cooling_night_setpoint': 26.446421476297644, 'cooling_night_setpoint_range': (26.0, 28.0), 'max_heating_supply_air_temp': 52.364712141640126, 'max_heating_supply_air_temp_range': (45.0, 55.0), 'min_cooling_supply_air_temp': 13.353398974845822, 'min_cooling_supply_air_temp_range': (12.0, 14.0), 'schedule_details': {'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}}"
+17,zones,"{'Zone1': {'hvac_object_name': 'Zone1 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone1 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1 SETPOINTS'}, 'Zone2': {'hvac_object_name': 'Zone2 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone2 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2 SETPOINTS'}}"
+18,hvac_params,"{'heating_day_setpoint': 19.278853596915766, 'heating_day_setpoint_range': (18.0, 20.0), 'heating_night_setpoint': 15.025010755222667, 'heating_night_setpoint_range': (15.0, 16.0), 'cooling_day_setpoint': 25.6, 'cooling_day_setpoint_range': (25.6, 25.6), 'cooling_night_setpoint': 26.446421476297644, 'cooling_night_setpoint_range': (26.0, 28.0), 'max_heating_supply_air_temp': 52.364712141640126, 'max_heating_supply_air_temp_range': (45.0, 55.0), 'min_cooling_supply_air_temp': 13.353398974845822, 'min_cooling_supply_air_temp_range': (12.0, 14.0), 'schedule_details': {'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}}"
+18,zones,"{'Zone1': {'hvac_object_name': 'Zone1 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone1 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1 SETPOINTS'}, 'Zone2': {'hvac_object_name': 'Zone2 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone2 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2 SETPOINTS'}}"
+19,hvac_params,"{'heating_day_setpoint': 19.278853596915766, 'heating_day_setpoint_range': (18.0, 20.0), 'heating_night_setpoint': 15.025010755222667, 'heating_night_setpoint_range': (15.0, 16.0), 'cooling_day_setpoint': 25.6, 'cooling_day_setpoint_range': (25.6, 25.6), 'cooling_night_setpoint': 26.446421476297644, 'cooling_night_setpoint_range': (26.0, 28.0), 'max_heating_supply_air_temp': 52.364712141640126, 'max_heating_supply_air_temp_range': (45.0, 55.0), 'min_cooling_supply_air_temp': 13.353398974845822, 'min_cooling_supply_air_temp_range': (12.0, 14.0), 'schedule_details': {'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}}"
+19,zones,"{'Zone1': {'hvac_object_name': 'Zone1 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone1 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1 SETPOINTS'}, 'Zone2': {'hvac_object_name': 'Zone2 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone2 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2 SETPOINTS'}}"
+20,hvac_params,"{'heating_day_setpoint': 19.278853596915766, 'heating_day_setpoint_range': (18.0, 20.0), 'heating_night_setpoint': 15.025010755222667, 'heating_night_setpoint_range': (15.0, 16.0), 'cooling_day_setpoint': 25.6, 'cooling_day_setpoint_range': (25.6, 25.6), 'cooling_night_setpoint': 26.446421476297644, 'cooling_night_setpoint_range': (26.0, 28.0), 'max_heating_supply_air_temp': 52.364712141640126, 'max_heating_supply_air_temp_range': (45.0, 55.0), 'min_cooling_supply_air_temp': 13.353398974845822, 'min_cooling_supply_air_temp_range': (12.0, 14.0), 'schedule_details': {'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}}"
+20,zones,"{'Zone1': {'hvac_object_name': 'Zone1 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone1 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1 SETPOINTS'}, 'Zone2': {'hvac_object_name': 'Zone2 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone2 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2 SETPOINTS'}}"
+21,hvac_params,"{'heating_day_setpoint': 19.278853596915766, 'heating_day_setpoint_range': (18.0, 20.0), 'heating_night_setpoint': 15.025010755222667, 'heating_night_setpoint_range': (15.0, 16.0), 'cooling_day_setpoint': 25.6, 'cooling_day_setpoint_range': (25.6, 25.6), 'cooling_night_setpoint': 26.446421476297644, 'cooling_night_setpoint_range': (26.0, 28.0), 'max_heating_supply_air_temp': 52.364712141640126, 'max_heating_supply_air_temp_range': (45.0, 55.0), 'min_cooling_supply_air_temp': 13.353398974845822, 'min_cooling_supply_air_temp_range': (12.0, 14.0), 'schedule_details': {'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}}"
+21,zones,"{'Zone1': {'hvac_object_name': 'Zone1 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone1 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1 SETPOINTS'}, 'Zone2': {'hvac_object_name': 'Zone2 Ideal Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'heating_setpoint_schedule': 'ZONE HEATING SETPOINTS', 'cooling_setpoint_schedule': 'ZONE COOLING SETPOINTS', 'thermostat_name': 'Zone2 CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2 SETPOINTS'}}"
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\output\01198160-9c47-47f3-90ad-10fa9f9b7567\assigned\assigned_hvac_zones.csv
+============================================================
+ogc_fid,zone_name,param_name,param_value
+1,Zone1,hvac_object_name,Zone1 Ideal Loads
+1,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+1,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+1,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+1,Zone1,thermostat_name,Zone1 CONTROLS
+1,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
+2,Zone1,hvac_object_name,Zone1 Ideal Loads
+2,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+2,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+2,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+2,Zone1,thermostat_name,Zone1 CONTROLS
+2,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
+2,Zone2,hvac_object_name,Zone2 Ideal Loads
+2,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+2,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+2,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+2,Zone2,thermostat_name,Zone2 CONTROLS
+2,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS
+3,Zone1,hvac_object_name,Zone1 Ideal Loads
+3,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+3,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+3,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+3,Zone1,thermostat_name,Zone1 CONTROLS
+3,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
+3,Zone2,hvac_object_name,Zone2 Ideal Loads
+3,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+3,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+3,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+3,Zone2,thermostat_name,Zone2 CONTROLS
+3,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS
+4,Zone1,hvac_object_name,Zone1 Ideal Loads
+4,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4,Zone1,thermostat_name,Zone1 CONTROLS
+4,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
+4,Zone2,hvac_object_name,Zone2 Ideal Loads
+4,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+4,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+4,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+4,Zone2,thermostat_name,Zone2 CONTROLS
+4,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS
+5,Zone1,hvac_object_name,Zone1 Ideal Loads
+5,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+5,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+5,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+5,Zone1,thermostat_name,Zone1 CONTROLS
+5,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
+5,Zone2,hvac_object_name,Zone2 Ideal Loads
+5,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+5,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+5,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+5,Zone2,thermostat_name,Zone2 CONTROLS
+5,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS
+6,Zone1,hvac_object_name,Zone1 Ideal Loads
+6,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+6,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+6,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+6,Zone1,thermostat_name,Zone1 CONTROLS
+6,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
+6,Zone2,hvac_object_name,Zone2 Ideal Loads
+6,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+6,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+6,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+6,Zone2,thermostat_name,Zone2 CONTROLS
+6,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS
+7,Zone1,hvac_object_name,Zone1 Ideal Loads
+7,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+7,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+7,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+7,Zone1,thermostat_name,Zone1 CONTROLS
+7,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
+7,Zone2,hvac_object_name,Zone2 Ideal Loads
+7,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+7,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+7,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+7,Zone2,thermostat_name,Zone2 CONTROLS
+7,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS
+8,Zone1,hvac_object_name,Zone1 Ideal Loads
+8,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+8,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+8,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+8,Zone1,thermostat_name,Zone1 CONTROLS
+8,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
+9,Zone1,hvac_object_name,Zone1 Ideal Loads
+9,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+9,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+9,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+9,Zone1,thermostat_name,Zone1 CONTROLS
+9,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
+9,Zone2,hvac_object_name,Zone2 Ideal Loads
+9,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+9,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+9,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+9,Zone2,thermostat_name,Zone2 CONTROLS
+9,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS
+10,Zone1,hvac_object_name,Zone1 Ideal Loads
+10,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+10,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+10,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+10,Zone1,thermostat_name,Zone1 CONTROLS
+10,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
+10,Zone2,hvac_object_name,Zone2 Ideal Loads
+10,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+10,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+10,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+10,Zone2,thermostat_name,Zone2 CONTROLS
+10,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS
+11,Zone1,hvac_object_name,Zone1 Ideal Loads
+11,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+11,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+11,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+11,Zone1,thermostat_name,Zone1 CONTROLS
+11,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
+11,Zone2,hvac_object_name,Zone2 Ideal Loads
+11,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+11,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+11,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+11,Zone2,thermostat_name,Zone2 CONTROLS
+11,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS
+12,Zone1,hvac_object_name,Zone1 Ideal Loads
+12,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+12,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+12,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+12,Zone1,thermostat_name,Zone1 CONTROLS
+12,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
+12,Zone2,hvac_object_name,Zone2 Ideal Loads
+12,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+12,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+12,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+12,Zone2,thermostat_name,Zone2 CONTROLS
+12,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS
+13,Zone1,hvac_object_name,Zone1 Ideal Loads
+13,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+13,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+13,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+13,Zone1,thermostat_name,Zone1 CONTROLS
+13,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
+13,Zone2,hvac_object_name,Zone2 Ideal Loads
+13,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+13,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+13,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+13,Zone2,thermostat_name,Zone2 CONTROLS
+13,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS
+14,Zone1,hvac_object_name,Zone1 Ideal Loads
+14,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+14,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+14,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+14,Zone1,thermostat_name,Zone1 CONTROLS
+14,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
+14,Zone2,hvac_object_name,Zone2 Ideal Loads
+14,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+14,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+14,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+14,Zone2,thermostat_name,Zone2 CONTROLS
+14,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS
+15,Zone1,hvac_object_name,Zone1 Ideal Loads
+15,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+15,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+15,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+15,Zone1,thermostat_name,Zone1 CONTROLS
+15,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
+15,Zone2,hvac_object_name,Zone2 Ideal Loads
+15,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+15,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+15,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+15,Zone2,thermostat_name,Zone2 CONTROLS
+15,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS
+16,Zone1,hvac_object_name,Zone1 Ideal Loads
+16,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+16,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+16,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+16,Zone1,thermostat_name,Zone1 CONTROLS
+16,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
+16,Zone2,hvac_object_name,Zone2 Ideal Loads
+16,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+16,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+16,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+16,Zone2,thermostat_name,Zone2 CONTROLS
+16,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS
+17,Zone1,hvac_object_name,Zone1 Ideal Loads
+17,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+17,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+17,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+17,Zone1,thermostat_name,Zone1 CONTROLS
+17,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
+17,Zone2,hvac_object_name,Zone2 Ideal Loads
+17,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+17,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+17,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+17,Zone2,thermostat_name,Zone2 CONTROLS
+17,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS
+18,Zone1,hvac_object_name,Zone1 Ideal Loads
+18,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+18,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+18,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+18,Zone1,thermostat_name,Zone1 CONTROLS
+18,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
+18,Zone2,hvac_object_name,Zone2 Ideal Loads
+18,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+18,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+18,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+18,Zone2,thermostat_name,Zone2 CONTROLS
+18,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS
+19,Zone1,hvac_object_name,Zone1 Ideal Loads
+19,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+19,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+19,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+19,Zone1,thermostat_name,Zone1 CONTROLS
+19,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
+19,Zone2,hvac_object_name,Zone2 Ideal Loads
+19,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+19,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+19,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+19,Zone2,thermostat_name,Zone2 CONTROLS
+19,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS
+20,Zone1,hvac_object_name,Zone1 Ideal Loads
+20,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+20,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+20,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+20,Zone1,thermostat_name,Zone1 CONTROLS
+20,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
+20,Zone2,hvac_object_name,Zone2 Ideal Loads
+20,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+20,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+20,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+20,Zone2,thermostat_name,Zone2 CONTROLS
+20,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS
+21,Zone1,hvac_object_name,Zone1 Ideal Loads
+21,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+21,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+21,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+21,Zone1,thermostat_name,Zone1 CONTROLS
+21,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS
+21,Zone2,hvac_object_name,Zone2 Ideal Loads
+21,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM
+21,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS
+21,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS
+21,Zone2,thermostat_name,Zone2 CONTROLS
+21,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\output\01198160-9c47-47f3-90ad-10fa9f9b7567\assigned\assigned_vent_building.csv
+============================================================
+ogc_fid,param_name,param_value
+1,infiltration_base,1.3278853596915767
+1,infiltration_base_range,"(1.2, 1.4)"
+1,year_factor,1.8050021510445333
+1,year_factor_range,"(1.8, 2.0)"
+1,fan_pressure,0.0
+1,fan_pressure_range,"(0.0, 0.0)"
+1,f_ctrl,0.5223210738148822
+1,f_ctrl_range,"(0.5, 0.6)"
+1,hrv_eff,0.0
+1,hrv_eff_range,"(0.0, 0.0)"
+1,infiltration_schedule_name,AlwaysOnSched
+1,ventilation_schedule_name,VentSched_DayNight
+1,system_type,B
+1,flow_exponent,0.67
+1,infiltration_total_m3_s,0.008682916822640227
+1,ventilation_total_m3_s,0.035
+2,infiltration_base,1.1278853596915768
+2,infiltration_base_range,"(1.0, 1.2)"
+2,year_factor,1.8050021510445333
+2,year_factor_range,"(1.8, 2.0)"
+2,fan_pressure,0.0
+2,fan_pressure_range,"(0.0, 0.0)"
+2,f_ctrl,0.8223210738148823
+2,f_ctrl_range,"(0.8, 0.9)"
+2,hrv_eff,0.0
+2,hrv_eff_range,"(0.0, 0.0)"
+2,infiltration_schedule_name,AlwaysOnSched
+2,ventilation_schedule_name,VentSched_DayNight
+2,system_type,C
+2,flow_exponent,0.67
+2,infiltration_total_m3_s,0.005077962306975149
+2,ventilation_total_m3_s,0.035
+3,infiltration_base,1.1278853596915768
+3,infiltration_base_range,"(1.0, 1.2)"
+3,year_factor,1.8050021510445333
+3,year_factor_range,"(1.8, 2.0)"
+3,fan_pressure,0.0
+3,fan_pressure_range,"(0.0, 0.0)"
+3,f_ctrl,0.8223210738148823
+3,f_ctrl_range,"(0.8, 0.9)"
+3,hrv_eff,0.0
+3,hrv_eff_range,"(0.0, 0.0)"
+3,infiltration_schedule_name,AlwaysOnSched
+3,ventilation_schedule_name,VentSched_DayNight
+3,system_type,C
+3,flow_exponent,0.67
+3,infiltration_total_m3_s,0.005077962306975149
+3,ventilation_total_m3_s,0.035
+4,infiltration_base,1.1278853596915768
+4,infiltration_base_range,"(1.0, 1.2)"
+4,year_factor,1.8050021510445333
+4,year_factor_range,"(1.8, 2.0)"
+4,fan_pressure,0.0
+4,fan_pressure_range,"(0.0, 0.0)"
+4,f_ctrl,0.8223210738148823
+4,f_ctrl_range,"(0.8, 0.9)"
+4,hrv_eff,0.0
+4,hrv_eff_range,"(0.0, 0.0)"
+4,infiltration_schedule_name,AlwaysOnSched
+4,ventilation_schedule_name,VentSched_DayNight
+4,system_type,C
+4,flow_exponent,0.67
+4,infiltration_total_m3_s,0.005077962306975149
+4,ventilation_total_m3_s,0.035
+5,infiltration_base,1.1278853596915768
+5,infiltration_base_range,"(1.0, 1.2)"
+5,year_factor,1.8050021510445333
+5,year_factor_range,"(1.8, 2.0)"
+5,fan_pressure,0.0
+5,fan_pressure_range,"(0.0, 0.0)"
+5,f_ctrl,0.8223210738148823
+5,f_ctrl_range,"(0.8, 0.9)"
+5,hrv_eff,0.0
+5,hrv_eff_range,"(0.0, 0.0)"
+5,infiltration_schedule_name,AlwaysOnSched
+5,ventilation_schedule_name,VentSched_DayNight
+5,system_type,C
+5,flow_exponent,0.67
+5,infiltration_total_m3_s,0.005077962306975149
+5,ventilation_total_m3_s,0.035
+6,infiltration_base,1.1278853596915768
+6,infiltration_base_range,"(1.0, 1.2)"
+6,year_factor,1.8050021510445333
+6,year_factor_range,"(1.8, 2.0)"
+6,fan_pressure,0.0
+6,fan_pressure_range,"(0.0, 0.0)"
+6,f_ctrl,0.8223210738148823
+6,f_ctrl_range,"(0.8, 0.9)"
+6,hrv_eff,0.0
+6,hrv_eff_range,"(0.0, 0.0)"
+6,infiltration_schedule_name,AlwaysOnSched
+6,ventilation_schedule_name,VentSched_DayNight
+6,system_type,C
+6,flow_exponent,0.67
+6,infiltration_total_m3_s,0.004957058442523359
+6,ventilation_total_m3_s,0.035
+7,infiltration_base,1.1278853596915768
+7,infiltration_base_range,"(1.0, 1.2)"
+7,year_factor,1.8050021510445333
+7,year_factor_range,"(1.8, 2.0)"
+7,fan_pressure,0.0
+7,fan_pressure_range,"(0.0, 0.0)"
+7,f_ctrl,0.8223210738148823
+7,f_ctrl_range,"(0.8, 0.9)"
+7,hrv_eff,0.0
+7,hrv_eff_range,"(0.0, 0.0)"
+7,infiltration_schedule_name,AlwaysOnSched
+7,ventilation_schedule_name,VentSched_DayNight
+7,system_type,C
+7,flow_exponent,0.67
+7,infiltration_total_m3_s,0.005077962306975149
+7,ventilation_total_m3_s,0.035
+8,infiltration_base,1.1278853596915768
+8,infiltration_base_range,"(1.0, 1.2)"
+8,year_factor,1.8050021510445333
+8,year_factor_range,"(1.8, 2.0)"
+8,fan_pressure,0.0
+8,fan_pressure_range,"(0.0, 0.0)"
+8,f_ctrl,0.8223210738148823
+8,f_ctrl_range,"(0.8, 0.9)"
+8,hrv_eff,0.0
+8,hrv_eff_range,"(0.0, 0.0)"
+8,infiltration_schedule_name,AlwaysOnSched
+8,ventilation_schedule_name,VentSched_DayNight
+8,system_type,C
+8,flow_exponent,0.67
+8,infiltration_total_m3_s,0.007254231867107356
+8,ventilation_total_m3_s,0.04440533798600364
+9,infiltration_base,1.1278853596915768
+9,infiltration_base_range,"(1.0, 1.2)"
+9,year_factor,1.8050021510445333
+9,year_factor_range,"(1.8, 2.0)"
+9,fan_pressure,0.0
+9,fan_pressure_range,"(0.0, 0.0)"
+9,f_ctrl,0.8223210738148823
+9,f_ctrl_range,"(0.8, 0.9)"
+9,hrv_eff,0.0
+9,hrv_eff_range,"(0.0, 0.0)"
+9,infiltration_schedule_name,AlwaysOnSched
+9,ventilation_schedule_name,VentSched_DayNight
+9,system_type,C
+9,flow_exponent,0.67
+9,infiltration_total_m3_s,0.005077962306975149
+9,ventilation_total_m3_s,0.035
+10,infiltration_base,1.1278853596915768
+10,infiltration_base_range,"(1.0, 1.2)"
+10,year_factor,1.8050021510445333
+10,year_factor_range,"(1.8, 2.0)"
+10,fan_pressure,0.0
+10,fan_pressure_range,"(0.0, 0.0)"
+10,f_ctrl,0.8223210738148823
+10,f_ctrl_range,"(0.8, 0.9)"
+10,hrv_eff,0.0
+10,hrv_eff_range,"(0.0, 0.0)"
+10,infiltration_schedule_name,AlwaysOnSched
+10,ventilation_schedule_name,VentSched_DayNight
+10,system_type,C
+10,flow_exponent,0.67
+10,infiltration_total_m3_s,0.005077962306975149
+10,ventilation_total_m3_s,0.035
+11,infiltration_base,1.1278853596915768
+11,infiltration_base_range,"(1.0, 1.2)"
+11,year_factor,1.8050021510445333
+11,year_factor_range,"(1.8, 2.0)"
+11,fan_pressure,0.0
+11,fan_pressure_range,"(0.0, 0.0)"
+11,f_ctrl,0.8223210738148823
+11,f_ctrl_range,"(0.8, 0.9)"
+11,hrv_eff,0.0
+11,hrv_eff_range,"(0.0, 0.0)"
+11,infiltration_schedule_name,AlwaysOnSched
+11,ventilation_schedule_name,VentSched_DayNight
+11,system_type,C
+11,flow_exponent,0.67
+11,infiltration_total_m3_s,0.004957058442523359
+11,ventilation_total_m3_s,0.035
+12,infiltration_base,1.3278853596915767
+12,infiltration_base_range,"(1.2, 1.4)"
+12,year_factor,1.8050021510445333
+12,year_factor_range,"(1.8, 2.0)"
+12,fan_pressure,0.0
+12,fan_pressure_range,"(0.0, 0.0)"
+12,f_ctrl,0.5223210738148822
+12,f_ctrl_range,"(0.5, 0.6)"
+12,hrv_eff,0.0
+12,hrv_eff_range,"(0.0, 0.0)"
+12,infiltration_schedule_name,AlwaysOnSched
+12,ventilation_schedule_name,VentSched_DayNight
+12,system_type,B
+12,flow_exponent,0.67
+12,infiltration_total_m3_s,0.006263087544199509
+12,ventilation_total_m3_s,0.035
+13,infiltration_base,1.1278853596915768
+13,infiltration_base_range,"(1.0, 1.2)"
+13,year_factor,2.0075032265668002
+13,year_factor_range,"(2.0, 2.3)"
+13,fan_pressure,0.0
+13,fan_pressure_range,"(0.0, 0.0)"
+13,f_ctrl,0.5223210738148822
+13,f_ctrl_range,"(0.5, 0.6)"
+13,hrv_eff,0.0
+13,hrv_eff_range,"(0.0, 0.0)"
+13,infiltration_schedule_name,AlwaysOnSched
+13,ventilation_schedule_name,VentSched_DayNight
+13,system_type,B
+13,flow_exponent,0.67
+13,infiltration_total_m3_s,0.006588928436841133
+13,ventilation_total_m3_s,0.035
+14,infiltration_base,1.1278853596915768
+14,infiltration_base_range,"(1.0, 1.2)"
+14,year_factor,2.0075032265668002
+14,year_factor_range,"(2.0, 2.3)"
+14,fan_pressure,0.0
+14,fan_pressure_range,"(0.0, 0.0)"
+14,f_ctrl,0.5223210738148822
+14,f_ctrl_range,"(0.5, 0.6)"
+14,hrv_eff,0.0
+14,hrv_eff_range,"(0.0, 0.0)"
+14,infiltration_schedule_name,AlwaysOnSched
+14,ventilation_schedule_name,VentSched_DayNight
+14,system_type,B
+14,flow_exponent,0.67
+14,infiltration_total_m3_s,0.006319992582276189
+14,ventilation_total_m3_s,0.035
+15,infiltration_base,1.1278853596915768
+15,infiltration_base_range,"(1.0, 1.2)"
+15,year_factor,2.0075032265668002
+15,year_factor_range,"(2.0, 2.3)"
+15,fan_pressure,0.0
+15,fan_pressure_range,"(0.0, 0.0)"
+15,f_ctrl,0.5223210738148822
+15,f_ctrl_range,"(0.5, 0.6)"
+15,hrv_eff,0.0
+15,hrv_eff_range,"(0.0, 0.0)"
+15,infiltration_schedule_name,AlwaysOnSched
+15,ventilation_schedule_name,VentSched_DayNight
+15,system_type,B
+15,flow_exponent,0.67
+15,infiltration_total_m3_s,0.006319992582276189
+15,ventilation_total_m3_s,0.035
+16,infiltration_base,1.1278853596915768
+16,infiltration_base_range,"(1.0, 1.2)"
+16,year_factor,2.0075032265668002
+16,year_factor_range,"(2.0, 2.3)"
+16,fan_pressure,0.0
+16,fan_pressure_range,"(0.0, 0.0)"
+16,f_ctrl,0.5223210738148822
+16,f_ctrl_range,"(0.5, 0.6)"
+16,hrv_eff,0.0
+16,hrv_eff_range,"(0.0, 0.0)"
+16,infiltration_schedule_name,AlwaysOnSched
+16,ventilation_schedule_name,VentSched_DayNight
+16,system_type,B
+16,flow_exponent,0.67
+16,infiltration_total_m3_s,0.006319992582276189
+16,ventilation_total_m3_s,0.035
+17,infiltration_base,1.1278853596915768
+17,infiltration_base_range,"(1.0, 1.2)"
+17,year_factor,2.0075032265668002
+17,year_factor_range,"(2.0, 2.3)"
+17,fan_pressure,0.0
+17,fan_pressure_range,"(0.0, 0.0)"
+17,f_ctrl,0.5223210738148822
+17,f_ctrl_range,"(0.5, 0.6)"
+17,hrv_eff,0.0
+17,hrv_eff_range,"(0.0, 0.0)"
+17,infiltration_schedule_name,AlwaysOnSched
+17,ventilation_schedule_name,VentSched_DayNight
+17,system_type,B
+17,flow_exponent,0.67
+17,infiltration_total_m3_s,0.006588928436841133
+17,ventilation_total_m3_s,0.035
+18,infiltration_base,1.1278853596915768
+18,infiltration_base_range,"(1.0, 1.2)"
+18,year_factor,2.0075032265668002
+18,year_factor_range,"(2.0, 2.3)"
+18,fan_pressure,0.0
+18,fan_pressure_range,"(0.0, 0.0)"
+18,f_ctrl,0.5223210738148822
+18,f_ctrl_range,"(0.5, 0.6)"
+18,hrv_eff,0.0
+18,hrv_eff_range,"(0.0, 0.0)"
+18,infiltration_schedule_name,AlwaysOnSched
+18,ventilation_schedule_name,VentSched_DayNight
+18,system_type,B
+18,flow_exponent,0.67
+18,infiltration_total_m3_s,0.0060510567277112445
+18,ventilation_total_m3_s,0.035
+19,infiltration_base,1.1278853596915768
+19,infiltration_base_range,"(1.0, 1.2)"
+19,year_factor,2.0075032265668002
+19,year_factor_range,"(2.0, 2.3)"
+19,fan_pressure,0.0
+19,fan_pressure_range,"(0.0, 0.0)"
+19,f_ctrl,0.5223210738148822
+19,f_ctrl_range,"(0.5, 0.6)"
+19,hrv_eff,0.0
+19,hrv_eff_range,"(0.0, 0.0)"
+19,infiltration_schedule_name,AlwaysOnSched
+19,ventilation_schedule_name,VentSched_DayNight
+19,system_type,B
+19,flow_exponent,0.67
+19,infiltration_total_m3_s,0.006588928436841133
+19,ventilation_total_m3_s,0.035
+20,infiltration_base,1.1278853596915768
+20,infiltration_base_range,"(1.0, 1.2)"
+20,year_factor,2.0075032265668002
+20,year_factor_range,"(2.0, 2.3)"
+20,fan_pressure,0.0
+20,fan_pressure_range,"(0.0, 0.0)"
+20,f_ctrl,0.5223210738148822
+20,f_ctrl_range,"(0.5, 0.6)"
+20,hrv_eff,0.0
+20,hrv_eff_range,"(0.0, 0.0)"
+20,infiltration_schedule_name,AlwaysOnSched
+20,ventilation_schedule_name,VentSched_DayNight
+20,system_type,B
+20,flow_exponent,0.67
+20,infiltration_total_m3_s,0.006319992582276189
+20,ventilation_total_m3_s,0.035
+21,infiltration_base,1.1278853596915768
+21,infiltration_base_range,"(1.0, 1.2)"
+21,year_factor,2.0075032265668002
+21,year_factor_range,"(2.0, 2.3)"
+21,fan_pressure,0.0
+21,fan_pressure_range,"(0.0, 0.0)"
+21,f_ctrl,0.5223210738148822
+21,f_ctrl_range,"(0.5, 0.6)"
+21,hrv_eff,0.0
+21,hrv_eff_range,"(0.0, 0.0)"
+21,infiltration_schedule_name,AlwaysOnSched
+21,ventilation_schedule_name,VentSched_DayNight
+21,system_type,B
+21,flow_exponent,0.67
+21,infiltration_total_m3_s,0.00645446050955866
+21,ventilation_total_m3_s,0.035
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\output\01198160-9c47-47f3-90ad-10fa9f9b7567\assigned\assigned_vent_zones.csv
+============================================================
+ogc_fid,zone_name,param_name,param_value
+1,Zone1,infiltration_object_name,Infil_residential_B_Zone1
+1,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+1,Zone1,infiltration_flow_m3_s,0.008682916822640227
+1,Zone1,infiltration_schedule_name,AlwaysOnSched
+1,Zone1,ventilation_object_name,Vent_residential_B_Zone1
+1,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+1,Zone1,ventilation_flow_m3_s,0.035
+1,Zone1,ventilation_schedule_name,VentSched_DayNight
+2,Zone1,infiltration_object_name,Infil_residential_C_Zone1
+2,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+2,Zone1,infiltration_flow_m3_s,0.0025389811534875747
+2,Zone1,infiltration_schedule_name,AlwaysOnSched
+2,Zone1,ventilation_object_name,Vent_residential_C_Zone1
+2,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+2,Zone1,ventilation_flow_m3_s,0.0175
+2,Zone1,ventilation_schedule_name,VentSched_DayNight
+2,Zone2,infiltration_object_name,Infil_residential_C_Zone2
+2,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+2,Zone2,infiltration_flow_m3_s,0.0025389811534875747
+2,Zone2,infiltration_schedule_name,AlwaysOnSched
+2,Zone2,ventilation_object_name,Vent_residential_C_Zone2
+2,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+2,Zone2,ventilation_flow_m3_s,0.0175
+2,Zone2,ventilation_schedule_name,VentSched_DayNight
+3,Zone1,infiltration_object_name,Infil_residential_C_Zone1
+3,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+3,Zone1,infiltration_flow_m3_s,0.0025389811534875747
+3,Zone1,infiltration_schedule_name,AlwaysOnSched
+3,Zone1,ventilation_object_name,Vent_residential_C_Zone1
+3,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+3,Zone1,ventilation_flow_m3_s,0.0175
+3,Zone1,ventilation_schedule_name,VentSched_DayNight
+3,Zone2,infiltration_object_name,Infil_residential_C_Zone2
+3,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+3,Zone2,infiltration_flow_m3_s,0.0025389811534875747
+3,Zone2,infiltration_schedule_name,AlwaysOnSched
+3,Zone2,ventilation_object_name,Vent_residential_C_Zone2
+3,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+3,Zone2,ventilation_flow_m3_s,0.0175
+3,Zone2,ventilation_schedule_name,VentSched_DayNight
+4,Zone1,infiltration_object_name,Infil_residential_C_Zone1
+4,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+4,Zone1,infiltration_flow_m3_s,0.0025389811534875747
+4,Zone1,infiltration_schedule_name,AlwaysOnSched
+4,Zone1,ventilation_object_name,Vent_residential_C_Zone1
+4,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+4,Zone1,ventilation_flow_m3_s,0.0175
+4,Zone1,ventilation_schedule_name,VentSched_DayNight
+4,Zone2,infiltration_object_name,Infil_residential_C_Zone2
+4,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+4,Zone2,infiltration_flow_m3_s,0.0025389811534875747
+4,Zone2,infiltration_schedule_name,AlwaysOnSched
+4,Zone2,ventilation_object_name,Vent_residential_C_Zone2
+4,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+4,Zone2,ventilation_flow_m3_s,0.0175
+4,Zone2,ventilation_schedule_name,VentSched_DayNight
+5,Zone1,infiltration_object_name,Infil_residential_C_Zone1
+5,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+5,Zone1,infiltration_flow_m3_s,0.0025389811534875747
+5,Zone1,infiltration_schedule_name,AlwaysOnSched
+5,Zone1,ventilation_object_name,Vent_residential_C_Zone1
+5,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+5,Zone1,ventilation_flow_m3_s,0.0175
+5,Zone1,ventilation_schedule_name,VentSched_DayNight
+5,Zone2,infiltration_object_name,Infil_residential_C_Zone2
+5,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+5,Zone2,infiltration_flow_m3_s,0.0025389811534875747
+5,Zone2,infiltration_schedule_name,AlwaysOnSched
+5,Zone2,ventilation_object_name,Vent_residential_C_Zone2
+5,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+5,Zone2,ventilation_flow_m3_s,0.0175
+5,Zone2,ventilation_schedule_name,VentSched_DayNight
+6,Zone1,infiltration_object_name,Infil_residential_C_Zone1
+6,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+6,Zone1,infiltration_flow_m3_s,0.0024785292212616797
+6,Zone1,infiltration_schedule_name,AlwaysOnSched
+6,Zone1,ventilation_object_name,Vent_residential_C_Zone1
+6,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+6,Zone1,ventilation_flow_m3_s,0.0175
+6,Zone1,ventilation_schedule_name,VentSched_DayNight
+6,Zone2,infiltration_object_name,Infil_residential_C_Zone2
+6,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+6,Zone2,infiltration_flow_m3_s,0.0024785292212616797
+6,Zone2,infiltration_schedule_name,AlwaysOnSched
+6,Zone2,ventilation_object_name,Vent_residential_C_Zone2
+6,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+6,Zone2,ventilation_flow_m3_s,0.0175
+6,Zone2,ventilation_schedule_name,VentSched_DayNight
+7,Zone1,infiltration_object_name,Infil_residential_C_Zone1
+7,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+7,Zone1,infiltration_flow_m3_s,0.0025389811534875747
+7,Zone1,infiltration_schedule_name,AlwaysOnSched
+7,Zone1,ventilation_object_name,Vent_residential_C_Zone1
+7,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+7,Zone1,ventilation_flow_m3_s,0.0175
+7,Zone1,ventilation_schedule_name,VentSched_DayNight
+7,Zone2,infiltration_object_name,Infil_residential_C_Zone2
+7,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+7,Zone2,infiltration_flow_m3_s,0.0025389811534875747
+7,Zone2,infiltration_schedule_name,AlwaysOnSched
+7,Zone2,ventilation_object_name,Vent_residential_C_Zone2
+7,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+7,Zone2,ventilation_flow_m3_s,0.0175
+7,Zone2,ventilation_schedule_name,VentSched_DayNight
+8,Zone1,infiltration_object_name,Infil_residential_C_Zone1
+8,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+8,Zone1,infiltration_flow_m3_s,0.007254231867107356
+8,Zone1,infiltration_schedule_name,AlwaysOnSched
+8,Zone1,ventilation_object_name,Vent_residential_C_Zone1
+8,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+8,Zone1,ventilation_flow_m3_s,0.04440533798600364
+8,Zone1,ventilation_schedule_name,VentSched_DayNight
+9,Zone1,infiltration_object_name,Infil_residential_C_Zone1
+9,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+9,Zone1,infiltration_flow_m3_s,0.0025389811534875747
+9,Zone1,infiltration_schedule_name,AlwaysOnSched
+9,Zone1,ventilation_object_name,Vent_residential_C_Zone1
+9,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+9,Zone1,ventilation_flow_m3_s,0.0175
+9,Zone1,ventilation_schedule_name,VentSched_DayNight
+9,Zone2,infiltration_object_name,Infil_residential_C_Zone2
+9,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+9,Zone2,infiltration_flow_m3_s,0.0025389811534875747
+9,Zone2,infiltration_schedule_name,AlwaysOnSched
+9,Zone2,ventilation_object_name,Vent_residential_C_Zone2
+9,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+9,Zone2,ventilation_flow_m3_s,0.0175
+9,Zone2,ventilation_schedule_name,VentSched_DayNight
+10,Zone1,infiltration_object_name,Infil_residential_C_Zone1
+10,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+10,Zone1,infiltration_flow_m3_s,0.0025389811534875747
+10,Zone1,infiltration_schedule_name,AlwaysOnSched
+10,Zone1,ventilation_object_name,Vent_residential_C_Zone1
+10,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+10,Zone1,ventilation_flow_m3_s,0.0175
+10,Zone1,ventilation_schedule_name,VentSched_DayNight
+10,Zone2,infiltration_object_name,Infil_residential_C_Zone2
+10,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+10,Zone2,infiltration_flow_m3_s,0.0025389811534875747
+10,Zone2,infiltration_schedule_name,AlwaysOnSched
+10,Zone2,ventilation_object_name,Vent_residential_C_Zone2
+10,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+10,Zone2,ventilation_flow_m3_s,0.0175
+10,Zone2,ventilation_schedule_name,VentSched_DayNight
+11,Zone1,infiltration_object_name,Infil_residential_C_Zone1
+11,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+11,Zone1,infiltration_flow_m3_s,0.0024785292212616797
+11,Zone1,infiltration_schedule_name,AlwaysOnSched
+11,Zone1,ventilation_object_name,Vent_residential_C_Zone1
+11,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+11,Zone1,ventilation_flow_m3_s,0.0175
+11,Zone1,ventilation_schedule_name,VentSched_DayNight
+11,Zone2,infiltration_object_name,Infil_residential_C_Zone2
+11,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+11,Zone2,infiltration_flow_m3_s,0.0024785292212616797
+11,Zone2,infiltration_schedule_name,AlwaysOnSched
+11,Zone2,ventilation_object_name,Vent_residential_C_Zone2
+11,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+11,Zone2,ventilation_flow_m3_s,0.0175
+11,Zone2,ventilation_schedule_name,VentSched_DayNight
+12,Zone1,infiltration_object_name,Infil_residential_B_Zone1
+12,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+12,Zone1,infiltration_flow_m3_s,0.0031315437720997544
+12,Zone1,infiltration_schedule_name,AlwaysOnSched
+12,Zone1,ventilation_object_name,Vent_residential_B_Zone1
+12,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+12,Zone1,ventilation_flow_m3_s,0.0175
+12,Zone1,ventilation_schedule_name,VentSched_DayNight
+12,Zone2,infiltration_object_name,Infil_residential_B_Zone2
+12,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+12,Zone2,infiltration_flow_m3_s,0.0031315437720997544
+12,Zone2,infiltration_schedule_name,AlwaysOnSched
+12,Zone2,ventilation_object_name,Vent_residential_B_Zone2
+12,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+12,Zone2,ventilation_flow_m3_s,0.0175
+12,Zone2,ventilation_schedule_name,VentSched_DayNight
+13,Zone1,infiltration_object_name,Infil_residential_B_Zone1
+13,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+13,Zone1,infiltration_flow_m3_s,0.0032944642184205663
+13,Zone1,infiltration_schedule_name,AlwaysOnSched
+13,Zone1,ventilation_object_name,Vent_residential_B_Zone1
+13,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+13,Zone1,ventilation_flow_m3_s,0.0175
+13,Zone1,ventilation_schedule_name,VentSched_DayNight
+13,Zone2,infiltration_object_name,Infil_residential_B_Zone2
+13,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+13,Zone2,infiltration_flow_m3_s,0.0032944642184205663
+13,Zone2,infiltration_schedule_name,AlwaysOnSched
+13,Zone2,ventilation_object_name,Vent_residential_B_Zone2
+13,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+13,Zone2,ventilation_flow_m3_s,0.0175
+13,Zone2,ventilation_schedule_name,VentSched_DayNight
+14,Zone1,infiltration_object_name,Infil_residential_B_Zone1
+14,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+14,Zone1,infiltration_flow_m3_s,0.0031599962911380945
+14,Zone1,infiltration_schedule_name,AlwaysOnSched
+14,Zone1,ventilation_object_name,Vent_residential_B_Zone1
+14,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+14,Zone1,ventilation_flow_m3_s,0.0175
+14,Zone1,ventilation_schedule_name,VentSched_DayNight
+14,Zone2,infiltration_object_name,Infil_residential_B_Zone2
+14,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+14,Zone2,infiltration_flow_m3_s,0.0031599962911380945
+14,Zone2,infiltration_schedule_name,AlwaysOnSched
+14,Zone2,ventilation_object_name,Vent_residential_B_Zone2
+14,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+14,Zone2,ventilation_flow_m3_s,0.0175
+14,Zone2,ventilation_schedule_name,VentSched_DayNight
+15,Zone1,infiltration_object_name,Infil_residential_B_Zone1
+15,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+15,Zone1,infiltration_flow_m3_s,0.0031599962911380945
+15,Zone1,infiltration_schedule_name,AlwaysOnSched
+15,Zone1,ventilation_object_name,Vent_residential_B_Zone1
+15,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+15,Zone1,ventilation_flow_m3_s,0.0175
+15,Zone1,ventilation_schedule_name,VentSched_DayNight
+15,Zone2,infiltration_object_name,Infil_residential_B_Zone2
+15,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+15,Zone2,infiltration_flow_m3_s,0.0031599962911380945
+15,Zone2,infiltration_schedule_name,AlwaysOnSched
+15,Zone2,ventilation_object_name,Vent_residential_B_Zone2
+15,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+15,Zone2,ventilation_flow_m3_s,0.0175
+15,Zone2,ventilation_schedule_name,VentSched_DayNight
+16,Zone1,infiltration_object_name,Infil_residential_B_Zone1
+16,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+16,Zone1,infiltration_flow_m3_s,0.0031599962911380945
+16,Zone1,infiltration_schedule_name,AlwaysOnSched
+16,Zone1,ventilation_object_name,Vent_residential_B_Zone1
+16,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+16,Zone1,ventilation_flow_m3_s,0.0175
+16,Zone1,ventilation_schedule_name,VentSched_DayNight
+16,Zone2,infiltration_object_name,Infil_residential_B_Zone2
+16,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+16,Zone2,infiltration_flow_m3_s,0.0031599962911380945
+16,Zone2,infiltration_schedule_name,AlwaysOnSched
+16,Zone2,ventilation_object_name,Vent_residential_B_Zone2
+16,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+16,Zone2,ventilation_flow_m3_s,0.0175
+16,Zone2,ventilation_schedule_name,VentSched_DayNight
+17,Zone1,infiltration_object_name,Infil_residential_B_Zone1
+17,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+17,Zone1,infiltration_flow_m3_s,0.0032944642184205663
+17,Zone1,infiltration_schedule_name,AlwaysOnSched
+17,Zone1,ventilation_object_name,Vent_residential_B_Zone1
+17,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+17,Zone1,ventilation_flow_m3_s,0.0175
+17,Zone1,ventilation_schedule_name,VentSched_DayNight
+17,Zone2,infiltration_object_name,Infil_residential_B_Zone2
+17,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+17,Zone2,infiltration_flow_m3_s,0.0032944642184205663
+17,Zone2,infiltration_schedule_name,AlwaysOnSched
+17,Zone2,ventilation_object_name,Vent_residential_B_Zone2
+17,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+17,Zone2,ventilation_flow_m3_s,0.0175
+17,Zone2,ventilation_schedule_name,VentSched_DayNight
+18,Zone1,infiltration_object_name,Infil_residential_B_Zone1
+18,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+18,Zone1,infiltration_flow_m3_s,0.0030255283638556223
+18,Zone1,infiltration_schedule_name,AlwaysOnSched
+18,Zone1,ventilation_object_name,Vent_residential_B_Zone1
+18,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+18,Zone1,ventilation_flow_m3_s,0.0175
+18,Zone1,ventilation_schedule_name,VentSched_DayNight
+18,Zone2,infiltration_object_name,Infil_residential_B_Zone2
+18,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+18,Zone2,infiltration_flow_m3_s,0.0030255283638556223
+18,Zone2,infiltration_schedule_name,AlwaysOnSched
+18,Zone2,ventilation_object_name,Vent_residential_B_Zone2
+18,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+18,Zone2,ventilation_flow_m3_s,0.0175
+18,Zone2,ventilation_schedule_name,VentSched_DayNight
+19,Zone1,infiltration_object_name,Infil_residential_B_Zone1
+19,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+19,Zone1,infiltration_flow_m3_s,0.0032944642184205663
+19,Zone1,infiltration_schedule_name,AlwaysOnSched
+19,Zone1,ventilation_object_name,Vent_residential_B_Zone1
+19,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+19,Zone1,ventilation_flow_m3_s,0.0175
+19,Zone1,ventilation_schedule_name,VentSched_DayNight
+19,Zone2,infiltration_object_name,Infil_residential_B_Zone2
+19,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+19,Zone2,infiltration_flow_m3_s,0.0032944642184205663
+19,Zone2,infiltration_schedule_name,AlwaysOnSched
+19,Zone2,ventilation_object_name,Vent_residential_B_Zone2
+19,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+19,Zone2,ventilation_flow_m3_s,0.0175
+19,Zone2,ventilation_schedule_name,VentSched_DayNight
+20,Zone1,infiltration_object_name,Infil_residential_B_Zone1
+20,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+20,Zone1,infiltration_flow_m3_s,0.0031599962911380945
+20,Zone1,infiltration_schedule_name,AlwaysOnSched
+20,Zone1,ventilation_object_name,Vent_residential_B_Zone1
+20,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+20,Zone1,ventilation_flow_m3_s,0.0175
+20,Zone1,ventilation_schedule_name,VentSched_DayNight
+20,Zone2,infiltration_object_name,Infil_residential_B_Zone2
+20,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+20,Zone2,infiltration_flow_m3_s,0.0031599962911380945
+20,Zone2,infiltration_schedule_name,AlwaysOnSched
+20,Zone2,ventilation_object_name,Vent_residential_B_Zone2
+20,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+20,Zone2,ventilation_flow_m3_s,0.0175
+20,Zone2,ventilation_schedule_name,VentSched_DayNight
+21,Zone1,infiltration_object_name,Infil_residential_B_Zone1
+21,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+21,Zone1,infiltration_flow_m3_s,0.00322723025477933
+21,Zone1,infiltration_schedule_name,AlwaysOnSched
+21,Zone1,ventilation_object_name,Vent_residential_B_Zone1
+21,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+21,Zone1,ventilation_flow_m3_s,0.0175
+21,Zone1,ventilation_schedule_name,VentSched_DayNight
+21,Zone2,infiltration_object_name,Infil_residential_B_Zone2
+21,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE
+21,Zone2,infiltration_flow_m3_s,0.00322723025477933
+21,Zone2,infiltration_schedule_name,AlwaysOnSched
+21,Zone2,ventilation_object_name,Vent_residential_B_Zone2
+21,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE
+21,Zone2,ventilation_flow_m3_s,0.0175
+21,Zone2,ventilation_schedule_name,VentSched_DayNight
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\output\01198160-9c47-47f3-90ad-10fa9f9b7567\assigned\assigned_ventilation.csv
+============================================================
+ogc_fid,param_name,assigned_value
+1,building_params,"{'infiltration_base': 1.3278853596915767, 'infiltration_base_range': (1.2, 1.4), 'year_factor': 1.8050021510445333, 'year_factor_range': (1.8, 2.0), 'fan_pressure': 0.0, 'fan_pressure_range': (0.0, 0.0), 'f_ctrl': 0.5223210738148822, 'f_ctrl_range': (0.5, 0.6), 'hrv_eff': 0.0, 'hrv_eff_range': (0.0, 0.0), 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_schedule_name': 'VentSched_DayNight', 'system_type': 'B', 'flow_exponent': 0.67, 'infiltration_total_m3_s': 0.008682916822640227, 'ventilation_total_m3_s': 0.035}"
+1,zones,"{'Zone1': {'infiltration_object_name': 'Infil_residential_B_Zone1', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.008682916822640227, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_B_Zone1', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.035, 'ventilation_schedule_name': 'VentSched_DayNight'}}"
+2,building_params,"{'infiltration_base': 1.1278853596915768, 'infiltration_base_range': (1.0, 1.2), 'year_factor': 1.8050021510445333, 'year_factor_range': (1.8, 2.0), 'fan_pressure': 0.0, 'fan_pressure_range': (0.0, 0.0), 'f_ctrl': 0.8223210738148823, 'f_ctrl_range': (0.8, 0.9), 'hrv_eff': 0.0, 'hrv_eff_range': (0.0, 0.0), 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_schedule_name': 'VentSched_DayNight', 'system_type': 'C', 'flow_exponent': 0.67, 'infiltration_total_m3_s': 0.005077962306975149, 'ventilation_total_m3_s': 0.035}"
+2,zones,"{'Zone1': {'infiltration_object_name': 'Infil_residential_C_Zone1', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0025389811534875747, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_C_Zone1', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}, 'Zone2': {'infiltration_object_name': 'Infil_residential_C_Zone2', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0025389811534875747, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_C_Zone2', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}}"
+3,building_params,"{'infiltration_base': 1.1278853596915768, 'infiltration_base_range': (1.0, 1.2), 'year_factor': 1.8050021510445333, 'year_factor_range': (1.8, 2.0), 'fan_pressure': 0.0, 'fan_pressure_range': (0.0, 0.0), 'f_ctrl': 0.8223210738148823, 'f_ctrl_range': (0.8, 0.9), 'hrv_eff': 0.0, 'hrv_eff_range': (0.0, 0.0), 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_schedule_name': 'VentSched_DayNight', 'system_type': 'C', 'flow_exponent': 0.67, 'infiltration_total_m3_s': 0.005077962306975149, 'ventilation_total_m3_s': 0.035}"
+3,zones,"{'Zone1': {'infiltration_object_name': 'Infil_residential_C_Zone1', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0025389811534875747, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_C_Zone1', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}, 'Zone2': {'infiltration_object_name': 'Infil_residential_C_Zone2', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0025389811534875747, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_C_Zone2', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}}"
+4,building_params,"{'infiltration_base': 1.1278853596915768, 'infiltration_base_range': (1.0, 1.2), 'year_factor': 1.8050021510445333, 'year_factor_range': (1.8, 2.0), 'fan_pressure': 0.0, 'fan_pressure_range': (0.0, 0.0), 'f_ctrl': 0.8223210738148823, 'f_ctrl_range': (0.8, 0.9), 'hrv_eff': 0.0, 'hrv_eff_range': (0.0, 0.0), 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_schedule_name': 'VentSched_DayNight', 'system_type': 'C', 'flow_exponent': 0.67, 'infiltration_total_m3_s': 0.005077962306975149, 'ventilation_total_m3_s': 0.035}"
+4,zones,"{'Zone1': {'infiltration_object_name': 'Infil_residential_C_Zone1', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0025389811534875747, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_C_Zone1', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}, 'Zone2': {'infiltration_object_name': 'Infil_residential_C_Zone2', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0025389811534875747, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_C_Zone2', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}}"
+5,building_params,"{'infiltration_base': 1.1278853596915768, 'infiltration_base_range': (1.0, 1.2), 'year_factor': 1.8050021510445333, 'year_factor_range': (1.8, 2.0), 'fan_pressure': 0.0, 'fan_pressure_range': (0.0, 0.0), 'f_ctrl': 0.8223210738148823, 'f_ctrl_range': (0.8, 0.9), 'hrv_eff': 0.0, 'hrv_eff_range': (0.0, 0.0), 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_schedule_name': 'VentSched_DayNight', 'system_type': 'C', 'flow_exponent': 0.67, 'infiltration_total_m3_s': 0.005077962306975149, 'ventilation_total_m3_s': 0.035}"
+5,zones,"{'Zone1': {'infiltration_object_name': 'Infil_residential_C_Zone1', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0025389811534875747, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_C_Zone1', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}, 'Zone2': {'infiltration_object_name': 'Infil_residential_C_Zone2', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0025389811534875747, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_C_Zone2', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}}"
+6,building_params,"{'infiltration_base': 1.1278853596915768, 'infiltration_base_range': (1.0, 1.2), 'year_factor': 1.8050021510445333, 'year_factor_range': (1.8, 2.0), 'fan_pressure': 0.0, 'fan_pressure_range': (0.0, 0.0), 'f_ctrl': 0.8223210738148823, 'f_ctrl_range': (0.8, 0.9), 'hrv_eff': 0.0, 'hrv_eff_range': (0.0, 0.0), 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_schedule_name': 'VentSched_DayNight', 'system_type': 'C', 'flow_exponent': 0.67, 'infiltration_total_m3_s': 0.004957058442523359, 'ventilation_total_m3_s': 0.035}"
+6,zones,"{'Zone1': {'infiltration_object_name': 'Infil_residential_C_Zone1', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0024785292212616797, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_C_Zone1', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}, 'Zone2': {'infiltration_object_name': 'Infil_residential_C_Zone2', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0024785292212616797, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_C_Zone2', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}}"
+7,building_params,"{'infiltration_base': 1.1278853596915768, 'infiltration_base_range': (1.0, 1.2), 'year_factor': 1.8050021510445333, 'year_factor_range': (1.8, 2.0), 'fan_pressure': 0.0, 'fan_pressure_range': (0.0, 0.0), 'f_ctrl': 0.8223210738148823, 'f_ctrl_range': (0.8, 0.9), 'hrv_eff': 0.0, 'hrv_eff_range': (0.0, 0.0), 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_schedule_name': 'VentSched_DayNight', 'system_type': 'C', 'flow_exponent': 0.67, 'infiltration_total_m3_s': 0.005077962306975149, 'ventilation_total_m3_s': 0.035}"
+7,zones,"{'Zone1': {'infiltration_object_name': 'Infil_residential_C_Zone1', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0025389811534875747, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_C_Zone1', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}, 'Zone2': {'infiltration_object_name': 'Infil_residential_C_Zone2', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0025389811534875747, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_C_Zone2', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}}"
+8,building_params,"{'infiltration_base': 1.1278853596915768, 'infiltration_base_range': (1.0, 1.2), 'year_factor': 1.8050021510445333, 'year_factor_range': (1.8, 2.0), 'fan_pressure': 0.0, 'fan_pressure_range': (0.0, 0.0), 'f_ctrl': 0.8223210738148823, 'f_ctrl_range': (0.8, 0.9), 'hrv_eff': 0.0, 'hrv_eff_range': (0.0, 0.0), 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_schedule_name': 'VentSched_DayNight', 'system_type': 'C', 'flow_exponent': 0.67, 'infiltration_total_m3_s': 0.007254231867107356, 'ventilation_total_m3_s': 0.04440533798600364}"
+8,zones,"{'Zone1': {'infiltration_object_name': 'Infil_residential_C_Zone1', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.007254231867107356, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_C_Zone1', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.04440533798600364, 'ventilation_schedule_name': 'VentSched_DayNight'}}"
+9,building_params,"{'infiltration_base': 1.1278853596915768, 'infiltration_base_range': (1.0, 1.2), 'year_factor': 1.8050021510445333, 'year_factor_range': (1.8, 2.0), 'fan_pressure': 0.0, 'fan_pressure_range': (0.0, 0.0), 'f_ctrl': 0.8223210738148823, 'f_ctrl_range': (0.8, 0.9), 'hrv_eff': 0.0, 'hrv_eff_range': (0.0, 0.0), 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_schedule_name': 'VentSched_DayNight', 'system_type': 'C', 'flow_exponent': 0.67, 'infiltration_total_m3_s': 0.005077962306975149, 'ventilation_total_m3_s': 0.035}"
+9,zones,"{'Zone1': {'infiltration_object_name': 'Infil_residential_C_Zone1', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0025389811534875747, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_C_Zone1', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}, 'Zone2': {'infiltration_object_name': 'Infil_residential_C_Zone2', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0025389811534875747, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_C_Zone2', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}}"
+10,building_params,"{'infiltration_base': 1.1278853596915768, 'infiltration_base_range': (1.0, 1.2), 'year_factor': 1.8050021510445333, 'year_factor_range': (1.8, 2.0), 'fan_pressure': 0.0, 'fan_pressure_range': (0.0, 0.0), 'f_ctrl': 0.8223210738148823, 'f_ctrl_range': (0.8, 0.9), 'hrv_eff': 0.0, 'hrv_eff_range': (0.0, 0.0), 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_schedule_name': 'VentSched_DayNight', 'system_type': 'C', 'flow_exponent': 0.67, 'infiltration_total_m3_s': 0.005077962306975149, 'ventilation_total_m3_s': 0.035}"
+10,zones,"{'Zone1': {'infiltration_object_name': 'Infil_residential_C_Zone1', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0025389811534875747, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_C_Zone1', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}, 'Zone2': {'infiltration_object_name': 'Infil_residential_C_Zone2', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0025389811534875747, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_C_Zone2', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}}"
+11,building_params,"{'infiltration_base': 1.1278853596915768, 'infiltration_base_range': (1.0, 1.2), 'year_factor': 1.8050021510445333, 'year_factor_range': (1.8, 2.0), 'fan_pressure': 0.0, 'fan_pressure_range': (0.0, 0.0), 'f_ctrl': 0.8223210738148823, 'f_ctrl_range': (0.8, 0.9), 'hrv_eff': 0.0, 'hrv_eff_range': (0.0, 0.0), 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_schedule_name': 'VentSched_DayNight', 'system_type': 'C', 'flow_exponent': 0.67, 'infiltration_total_m3_s': 0.004957058442523359, 'ventilation_total_m3_s': 0.035}"
+11,zones,"{'Zone1': {'infiltration_object_name': 'Infil_residential_C_Zone1', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0024785292212616797, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_C_Zone1', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}, 'Zone2': {'infiltration_object_name': 'Infil_residential_C_Zone2', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0024785292212616797, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_C_Zone2', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}}"
+12,building_params,"{'infiltration_base': 1.3278853596915767, 'infiltration_base_range': (1.2, 1.4), 'year_factor': 1.8050021510445333, 'year_factor_range': (1.8, 2.0), 'fan_pressure': 0.0, 'fan_pressure_range': (0.0, 0.0), 'f_ctrl': 0.5223210738148822, 'f_ctrl_range': (0.5, 0.6), 'hrv_eff': 0.0, 'hrv_eff_range': (0.0, 0.0), 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_schedule_name': 'VentSched_DayNight', 'system_type': 'B', 'flow_exponent': 0.67, 'infiltration_total_m3_s': 0.006263087544199509, 'ventilation_total_m3_s': 0.035}"
+12,zones,"{'Zone1': {'infiltration_object_name': 'Infil_residential_B_Zone1', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0031315437720997544, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_B_Zone1', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}, 'Zone2': {'infiltration_object_name': 'Infil_residential_B_Zone2', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0031315437720997544, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_B_Zone2', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}}"
+13,building_params,"{'infiltration_base': 1.1278853596915768, 'infiltration_base_range': (1.0, 1.2), 'year_factor': 2.0075032265668002, 'year_factor_range': (2.0, 2.3), 'fan_pressure': 0.0, 'fan_pressure_range': (0.0, 0.0), 'f_ctrl': 0.5223210738148822, 'f_ctrl_range': (0.5, 0.6), 'hrv_eff': 0.0, 'hrv_eff_range': (0.0, 0.0), 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_schedule_name': 'VentSched_DayNight', 'system_type': 'B', 'flow_exponent': 0.67, 'infiltration_total_m3_s': 0.006588928436841133, 'ventilation_total_m3_s': 0.035}"
+13,zones,"{'Zone1': {'infiltration_object_name': 'Infil_residential_B_Zone1', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0032944642184205663, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_B_Zone1', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}, 'Zone2': {'infiltration_object_name': 'Infil_residential_B_Zone2', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0032944642184205663, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_B_Zone2', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}}"
+14,building_params,"{'infiltration_base': 1.1278853596915768, 'infiltration_base_range': (1.0, 1.2), 'year_factor': 2.0075032265668002, 'year_factor_range': (2.0, 2.3), 'fan_pressure': 0.0, 'fan_pressure_range': (0.0, 0.0), 'f_ctrl': 0.5223210738148822, 'f_ctrl_range': (0.5, 0.6), 'hrv_eff': 0.0, 'hrv_eff_range': (0.0, 0.0), 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_schedule_name': 'VentSched_DayNight', 'system_type': 'B', 'flow_exponent': 0.67, 'infiltration_total_m3_s': 0.006319992582276189, 'ventilation_total_m3_s': 0.035}"
+14,zones,"{'Zone1': {'infiltration_object_name': 'Infil_residential_B_Zone1', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0031599962911380945, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_B_Zone1', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}, 'Zone2': {'infiltration_object_name': 'Infil_residential_B_Zone2', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0031599962911380945, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_B_Zone2', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}}"
+15,building_params,"{'infiltration_base': 1.1278853596915768, 'infiltration_base_range': (1.0, 1.2), 'year_factor': 2.0075032265668002, 'year_factor_range': (2.0, 2.3), 'fan_pressure': 0.0, 'fan_pressure_range': (0.0, 0.0), 'f_ctrl': 0.5223210738148822, 'f_ctrl_range': (0.5, 0.6), 'hrv_eff': 0.0, 'hrv_eff_range': (0.0, 0.0), 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_schedule_name': 'VentSched_DayNight', 'system_type': 'B', 'flow_exponent': 0.67, 'infiltration_total_m3_s': 0.006319992582276189, 'ventilation_total_m3_s': 0.035}"
+15,zones,"{'Zone1': {'infiltration_object_name': 'Infil_residential_B_Zone1', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0031599962911380945, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_B_Zone1', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}, 'Zone2': {'infiltration_object_name': 'Infil_residential_B_Zone2', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0031599962911380945, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_B_Zone2', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}}"
+16,building_params,"{'infiltration_base': 1.1278853596915768, 'infiltration_base_range': (1.0, 1.2), 'year_factor': 2.0075032265668002, 'year_factor_range': (2.0, 2.3), 'fan_pressure': 0.0, 'fan_pressure_range': (0.0, 0.0), 'f_ctrl': 0.5223210738148822, 'f_ctrl_range': (0.5, 0.6), 'hrv_eff': 0.0, 'hrv_eff_range': (0.0, 0.0), 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_schedule_name': 'VentSched_DayNight', 'system_type': 'B', 'flow_exponent': 0.67, 'infiltration_total_m3_s': 0.006319992582276189, 'ventilation_total_m3_s': 0.035}"
+16,zones,"{'Zone1': {'infiltration_object_name': 'Infil_residential_B_Zone1', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0031599962911380945, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_B_Zone1', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}, 'Zone2': {'infiltration_object_name': 'Infil_residential_B_Zone2', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0031599962911380945, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_B_Zone2', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}}"
+17,building_params,"{'infiltration_base': 1.1278853596915768, 'infiltration_base_range': (1.0, 1.2), 'year_factor': 2.0075032265668002, 'year_factor_range': (2.0, 2.3), 'fan_pressure': 0.0, 'fan_pressure_range': (0.0, 0.0), 'f_ctrl': 0.5223210738148822, 'f_ctrl_range': (0.5, 0.6), 'hrv_eff': 0.0, 'hrv_eff_range': (0.0, 0.0), 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_schedule_name': 'VentSched_DayNight', 'system_type': 'B', 'flow_exponent': 0.67, 'infiltration_total_m3_s': 0.006588928436841133, 'ventilation_total_m3_s': 0.035}"
+17,zones,"{'Zone1': {'infiltration_object_name': 'Infil_residential_B_Zone1', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0032944642184205663, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_B_Zone1', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}, 'Zone2': {'infiltration_object_name': 'Infil_residential_B_Zone2', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0032944642184205663, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_B_Zone2', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}}"
+18,building_params,"{'infiltration_base': 1.1278853596915768, 'infiltration_base_range': (1.0, 1.2), 'year_factor': 2.0075032265668002, 'year_factor_range': (2.0, 2.3), 'fan_pressure': 0.0, 'fan_pressure_range': (0.0, 0.0), 'f_ctrl': 0.5223210738148822, 'f_ctrl_range': (0.5, 0.6), 'hrv_eff': 0.0, 'hrv_eff_range': (0.0, 0.0), 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_schedule_name': 'VentSched_DayNight', 'system_type': 'B', 'flow_exponent': 0.67, 'infiltration_total_m3_s': 0.0060510567277112445, 'ventilation_total_m3_s': 0.035}"
+18,zones,"{'Zone1': {'infiltration_object_name': 'Infil_residential_B_Zone1', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0030255283638556223, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_B_Zone1', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}, 'Zone2': {'infiltration_object_name': 'Infil_residential_B_Zone2', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0030255283638556223, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_B_Zone2', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}}"
+19,building_params,"{'infiltration_base': 1.1278853596915768, 'infiltration_base_range': (1.0, 1.2), 'year_factor': 2.0075032265668002, 'year_factor_range': (2.0, 2.3), 'fan_pressure': 0.0, 'fan_pressure_range': (0.0, 0.0), 'f_ctrl': 0.5223210738148822, 'f_ctrl_range': (0.5, 0.6), 'hrv_eff': 0.0, 'hrv_eff_range': (0.0, 0.0), 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_schedule_name': 'VentSched_DayNight', 'system_type': 'B', 'flow_exponent': 0.67, 'infiltration_total_m3_s': 0.006588928436841133, 'ventilation_total_m3_s': 0.035}"
+19,zones,"{'Zone1': {'infiltration_object_name': 'Infil_residential_B_Zone1', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0032944642184205663, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_B_Zone1', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}, 'Zone2': {'infiltration_object_name': 'Infil_residential_B_Zone2', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0032944642184205663, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_B_Zone2', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}}"
+20,building_params,"{'infiltration_base': 1.1278853596915768, 'infiltration_base_range': (1.0, 1.2), 'year_factor': 2.0075032265668002, 'year_factor_range': (2.0, 2.3), 'fan_pressure': 0.0, 'fan_pressure_range': (0.0, 0.0), 'f_ctrl': 0.5223210738148822, 'f_ctrl_range': (0.5, 0.6), 'hrv_eff': 0.0, 'hrv_eff_range': (0.0, 0.0), 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_schedule_name': 'VentSched_DayNight', 'system_type': 'B', 'flow_exponent': 0.67, 'infiltration_total_m3_s': 0.006319992582276189, 'ventilation_total_m3_s': 0.035}"
+20,zones,"{'Zone1': {'infiltration_object_name': 'Infil_residential_B_Zone1', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0031599962911380945, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_B_Zone1', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}, 'Zone2': {'infiltration_object_name': 'Infil_residential_B_Zone2', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.0031599962911380945, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_B_Zone2', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}}"
+21,building_params,"{'infiltration_base': 1.1278853596915768, 'infiltration_base_range': (1.0, 1.2), 'year_factor': 2.0075032265668002, 'year_factor_range': (2.0, 2.3), 'fan_pressure': 0.0, 'fan_pressure_range': (0.0, 0.0), 'f_ctrl': 0.5223210738148822, 'f_ctrl_range': (0.5, 0.6), 'hrv_eff': 0.0, 'hrv_eff_range': (0.0, 0.0), 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_schedule_name': 'VentSched_DayNight', 'system_type': 'B', 'flow_exponent': 0.67, 'infiltration_total_m3_s': 0.00645446050955866, 'ventilation_total_m3_s': 0.035}"
+21,zones,"{'Zone1': {'infiltration_object_name': 'Infil_residential_B_Zone1', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.00322723025477933, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_B_Zone1', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}, 'Zone2': {'infiltration_object_name': 'Infil_residential_B_Zone2', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s': 0.00322723025477933, 'infiltration_schedule_name': 'AlwaysOnSched', 'ventilation_object_name': 'Vent_residential_B_Zone2', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s': 0.0175, 'ventilation_schedule_name': 'VentSched_DayNight'}}"
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\output\01198160-9c47-47f3-90ad-10fa9f9b7567\scenarios\scenario_params_hvac.csv
+============================================================
+scenario_index,ogc_fid,zone_name,param_name,param_value,param_min,param_max,picking_method
+0,14,,heating_day_setpoint,19.278853596915766,18.0,20.0,random_uniform
+0,14,,heating_night_setpoint,15.025010755222667,15.0,16.0,random_uniform
+0,14,,cooling_day_setpoint,25.6,25.6,25.6,random_uniform
+0,14,,cooling_night_setpoint,26.446421476297644,26.0,28.0,random_uniform
+0,14,,max_heating_supply_air_temp,52.364712141640126,45.0,55.0,random_uniform
+0,14,,min_cooling_supply_air_temp,13.353398974845822,12.0,14.0,random_uniform
+0,14,,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}",,,random_uniform
+0,14,Zone1,hvac_object_name,Zone1 Ideal Loads,,,random_uniform
+0,14,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM,,,random_uniform
+0,14,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS,,,random_uniform
+0,14,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS,,,random_uniform
+0,14,Zone1,thermostat_name,Zone1 CONTROLS,,,random_uniform
+0,14,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS,,,random_uniform
+0,14,Zone2,hvac_object_name,Zone2 Ideal Loads,,,random_uniform
+0,14,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM,,,random_uniform
+0,14,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS,,,random_uniform
+0,14,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS,,,random_uniform
+0,14,Zone2,thermostat_name,Zone2 CONTROLS,,,random_uniform
+0,14,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS,,,random_uniform
+1,14,,heating_day_setpoint,19.78435913540969,18.0,20.0,random_uniform
+1,14,,heating_night_setpoint,15.086938832629416,15.0,16.0,random_uniform
+1,14,,cooling_day_setpoint,25.6,25.6,25.6,random_uniform
+1,14,,cooling_night_setpoint,26.05959443887614,26.0,28.0,random_uniform
+1,14,,max_heating_supply_air_temp,47.18637974803603,45.0,55.0,random_uniform
+1,14,,min_cooling_supply_air_temp,13.010710576206725,12.0,14.0,random_uniform
+1,14,,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}",,,random_uniform
+1,14,Zone1,hvac_object_name,Zone1 Ideal Loads,,,random_uniform
+1,14,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM,,,random_uniform
+1,14,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS,,,random_uniform
+1,14,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS,,,random_uniform
+1,14,Zone1,thermostat_name,Zone1 CONTROLS,,,random_uniform
+1,14,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS,,,random_uniform
+1,14,Zone2,hvac_object_name,Zone2 Ideal Loads,,,random_uniform
+1,14,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM,,,random_uniform
+1,14,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS,,,random_uniform
+1,14,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS,,,random_uniform
+1,14,Zone2,thermostat_name,Zone2 CONTROLS,,,random_uniform
+1,14,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS,,,random_uniform
+2,14,,heating_day_setpoint,18.053071939367726,18.0,20.0,random_uniform
+2,14,,heating_night_setpoint,15.198837650686649,15.0,16.0,random_uniform
+2,14,,cooling_day_setpoint,25.6,25.6,25.6,random_uniform
+2,14,,cooling_night_setpoint,27.089882961206435,26.0,28.0,random_uniform
+2,14,,max_heating_supply_air_temp,47.204406220406966,45.0,55.0,random_uniform
+2,14,,min_cooling_supply_air_temp,13.178531367751818,12.0,14.0,random_uniform
+2,14,,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}",,,random_uniform
+2,14,Zone1,hvac_object_name,Zone1 Ideal Loads,,,random_uniform
+2,14,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM,,,random_uniform
+2,14,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS,,,random_uniform
+2,14,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS,,,random_uniform
+2,14,Zone1,thermostat_name,Zone1 CONTROLS,,,random_uniform
+2,14,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS,,,random_uniform
+2,14,Zone2,hvac_object_name,Zone2 Ideal Loads,,,random_uniform
+2,14,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM,,,random_uniform
+2,14,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS,,,random_uniform
+2,14,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS,,,random_uniform
+2,14,Zone2,thermostat_name,Zone2 CONTROLS,,,random_uniform
+2,14,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS,,,random_uniform
+3,14,,heating_day_setpoint,19.618860913355654,18.0,20.0,random_uniform
+3,14,,heating_night_setpoint,15.006498759678061,15.0,16.0,random_uniform
+3,14,,cooling_day_setpoint,25.6,25.6,25.6,random_uniform
+3,14,,cooling_night_setpoint,27.396278789976453,26.0,28.0,random_uniform
+3,14,,max_heating_supply_air_temp,48.40250516517992,45.0,55.0,random_uniform
+3,14,,min_cooling_supply_air_temp,12.310958999623564,12.0,14.0,random_uniform
+3,14,,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}",,,random_uniform
+3,14,Zone1,hvac_object_name,Zone1 Ideal Loads,,,random_uniform
+3,14,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM,,,random_uniform
+3,14,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS,,,random_uniform
+3,14,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS,,,random_uniform
+3,14,Zone1,thermostat_name,Zone1 CONTROLS,,,random_uniform
+3,14,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS,,,random_uniform
+3,14,Zone2,hvac_object_name,Zone2 Ideal Loads,,,random_uniform
+3,14,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM,,,random_uniform
+3,14,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS,,,random_uniform
+3,14,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS,,,random_uniform
+3,14,Zone2,thermostat_name,Zone2 CONTROLS,,,random_uniform
+3,14,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS,,,random_uniform
+4,14,,heating_day_setpoint,19.91442614441356,18.0,20.0,random_uniform
+4,14,,heating_night_setpoint,15.336594545112627,15.0,16.0,random_uniform
+4,14,,cooling_day_setpoint,25.6,25.6,25.6,random_uniform
+4,14,,cooling_night_setpoint,26.19343275366693,26.0,28.0,random_uniform
+4,14,,max_heating_supply_air_temp,53.4749436634746,45.0,55.0,random_uniform
+4,14,,min_cooling_supply_air_temp,13.207452062733783,12.0,14.0,random_uniform
+4,14,,schedule_details,"{'day_start': '07:00', 'day_end': '23:00', 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'FullOccupancy'}}",,,random_uniform
+4,14,Zone1,hvac_object_name,Zone1 Ideal Loads,,,random_uniform
+4,14,Zone1,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM,,,random_uniform
+4,14,Zone1,heating_setpoint_schedule,ZONE HEATING SETPOINTS,,,random_uniform
+4,14,Zone1,cooling_setpoint_schedule,ZONE COOLING SETPOINTS,,,random_uniform
+4,14,Zone1,thermostat_name,Zone1 CONTROLS,,,random_uniform
+4,14,Zone1,thermostat_dualsetpoint_name,Zone1 SETPOINTS,,,random_uniform
+4,14,Zone2,hvac_object_name,Zone2 Ideal Loads,,,random_uniform
+4,14,Zone2,hvac_object_type,ZONEHVAC:IDEALLOADSAIRSYSTEM,,,random_uniform
+4,14,Zone2,heating_setpoint_schedule,ZONE HEATING SETPOINTS,,,random_uniform
+4,14,Zone2,cooling_setpoint_schedule,ZONE COOLING SETPOINTS,,,random_uniform
+4,14,Zone2,thermostat_name,Zone2 CONTROLS,,,random_uniform
+4,14,Zone2,thermostat_dualsetpoint_name,Zone2 SETPOINTS,,,random_uniform
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\output\01198160-9c47-47f3-90ad-10fa9f9b7567\scenarios\scenario_params_vent.csv
+============================================================
+scenario_index,ogc_fid,zone_name,param_name,param_value,param_min,param_max,picking_method
+0,14,,infiltration_base,1.1278853596915768,1.0,1.2,random_uniform
+0,14,,year_factor,2.0075032265668002,2.0,2.3,random_uniform
+0,14,,fan_pressure,0.0,0.0,0.0,random_uniform
+0,14,,f_ctrl,0.5223210738148822,0.5,0.6,random_uniform
+0,14,,hrv_eff,0.0,0.0,0.0,random_uniform
+0,14,,infiltration_schedule_name,AlwaysOnSched,,,random_uniform
+0,14,,ventilation_schedule_name,VentSched_DayNight,,,random_uniform
+0,14,,system_type,B,,,random_uniform
+0,14,,flow_exponent,0.67,,,random_uniform
+0,14,,infiltration_total_m3_s,0.006319992582276189,,,random_uniform
+0,14,,ventilation_total_m3_s,0.035,,,random_uniform
+0,14,Zone1,infiltration_object_name,Infil_residential_B_Zone1,,,random_uniform
+0,14,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE,,,random_uniform
+0,14,Zone1,infiltration_flow_m3_s,0.0031599962911380945,,,random_uniform
+0,14,Zone1,infiltration_schedule_name,AlwaysOnSched,,,random_uniform
+0,14,Zone1,ventilation_object_name,Vent_residential_B_Zone1,,,random_uniform
+0,14,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE,,,random_uniform
+0,14,Zone1,ventilation_flow_m3_s,0.0175,,,random_uniform
+0,14,Zone1,ventilation_schedule_name,VentSched_DayNight,,,random_uniform
+0,14,Zone2,infiltration_object_name,Infil_residential_B_Zone2,,,random_uniform
+0,14,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE,,,random_uniform
+0,14,Zone2,infiltration_flow_m3_s,0.0031599962911380945,,,random_uniform
+0,14,Zone2,infiltration_schedule_name,AlwaysOnSched,,,random_uniform
+0,14,Zone2,ventilation_object_name,Vent_residential_B_Zone2,,,random_uniform
+0,14,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE,,,random_uniform
+0,14,Zone2,ventilation_flow_m3_s,0.0175,,,random_uniform
+0,14,Zone2,ventilation_schedule_name,VentSched_DayNight,,,random_uniform
+1,14,,infiltration_base,1.1353398974845823,1.0,1.2,random_uniform
+1,14,,year_factor,2.2676538703114533,2.0,2.3,random_uniform
+1,14,,fan_pressure,0.0,0.0,0.0,random_uniform
+1,14,,f_ctrl,0.542192181968527,0.5,0.6,random_uniform
+1,14,,hrv_eff,0.0,0.0,0.0,random_uniform
+1,14,,infiltration_schedule_name,AlwaysOnSched,,,random_uniform
+1,14,,ventilation_schedule_name,VentSched_DayNight,,,random_uniform
+1,14,,system_type,B,,,random_uniform
+1,14,,flow_exponent,0.67,,,random_uniform
+1,14,,infiltration_total_m3_s,0.006319992582276189,,,random_uniform
+1,14,,ventilation_total_m3_s,0.035,,,random_uniform
+1,14,Zone1,infiltration_object_name,Infil_residential_B_Zone1,,,random_uniform
+1,14,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE,,,random_uniform
+1,14,Zone1,infiltration_flow_m3_s,0.0031599962911380945,,,random_uniform
+1,14,Zone1,infiltration_schedule_name,AlwaysOnSched,,,random_uniform
+1,14,Zone1,ventilation_object_name,Vent_residential_B_Zone1,,,random_uniform
+1,14,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE,,,random_uniform
+1,14,Zone1,ventilation_flow_m3_s,0.0175,,,random_uniform
+1,14,Zone1,ventilation_schedule_name,VentSched_DayNight,,,random_uniform
+1,14,Zone2,infiltration_object_name,Infil_residential_B_Zone2,,,random_uniform
+1,14,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE,,,random_uniform
+1,14,Zone2,infiltration_flow_m3_s,0.0031599962911380945,,,random_uniform
+1,14,Zone2,infiltration_schedule_name,AlwaysOnSched,,,random_uniform
+1,14,Zone2,ventilation_object_name,Vent_residential_B_Zone2,,,random_uniform
+1,14,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE,,,random_uniform
+1,14,Zone2,ventilation_flow_m3_s,0.0175,,,random_uniform
+1,14,Zone2,ventilation_schedule_name,VentSched_DayNight,,,random_uniform
+2,14,,infiltration_base,1.0437275949607208,1.0,1.2,random_uniform
+2,14,,year_factor,2.1516065864310088,2.0,2.3,random_uniform
+2,14,,fan_pressure,0.0,0.0,0.0,random_uniform
+2,14,,f_ctrl,0.5198837650686648,0.5,0.6,random_uniform
+2,14,,hrv_eff,0.0,0.0,0.0,random_uniform
+2,14,,infiltration_schedule_name,AlwaysOnSched,,,random_uniform
+2,14,,ventilation_schedule_name,VentSched_DayNight,,,random_uniform
+2,14,,system_type,B,,,random_uniform
+2,14,,flow_exponent,0.67,,,random_uniform
+2,14,,infiltration_total_m3_s,0.006319992582276189,,,random_uniform
+2,14,,ventilation_total_m3_s,0.035,,,random_uniform
+2,14,Zone1,infiltration_object_name,Infil_residential_B_Zone1,,,random_uniform
+2,14,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE,,,random_uniform
+2,14,Zone1,infiltration_flow_m3_s,0.0031599962911380945,,,random_uniform
+2,14,Zone1,infiltration_schedule_name,AlwaysOnSched,,,random_uniform
+2,14,Zone1,ventilation_object_name,Vent_residential_B_Zone1,,,random_uniform
+2,14,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE,,,random_uniform
+2,14,Zone1,ventilation_flow_m3_s,0.0175,,,random_uniform
+2,14,Zone1,ventilation_schedule_name,VentSched_DayNight,,,random_uniform
+2,14,Zone2,infiltration_object_name,Infil_residential_B_Zone2,,,random_uniform
+2,14,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE,,,random_uniform
+2,14,Zone2,infiltration_flow_m3_s,0.0031599962911380945,,,random_uniform
+2,14,Zone2,infiltration_schedule_name,AlwaysOnSched,,,random_uniform
+2,14,Zone2,ventilation_object_name,Vent_residential_B_Zone2,,,random_uniform
+2,14,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE,,,random_uniform
+2,14,Zone2,ventilation_flow_m3_s,0.0175,,,random_uniform
+2,14,Zone2,ventilation_schedule_name,VentSched_DayNight,,,random_uniform
+3,14,,infiltration_base,1.1089882961206432,1.0,1.2,random_uniform
+3,14,,year_factor,2.066132186612209,2.0,2.3,random_uniform
+3,14,,fan_pressure,0.0,0.0,0.0,random_uniform
+3,14,,f_ctrl,0.5809430456677827,0.5,0.6,random_uniform
+3,14,,hrv_eff,0.0,0.0,0.0,random_uniform
+3,14,,infiltration_schedule_name,AlwaysOnSched,,,random_uniform
+3,14,,ventilation_schedule_name,VentSched_DayNight,,,random_uniform
+3,14,,system_type,B,,,random_uniform
+3,14,,flow_exponent,0.67,,,random_uniform
+3,14,,infiltration_total_m3_s,0.006319992582276189,,,random_uniform
+3,14,,ventilation_total_m3_s,0.035,,,random_uniform
+3,14,Zone1,infiltration_object_name,Infil_residential_B_Zone1,,,random_uniform
+3,14,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE,,,random_uniform
+3,14,Zone1,infiltration_flow_m3_s,0.0031599962911380945,,,random_uniform
+3,14,Zone1,infiltration_schedule_name,AlwaysOnSched,,,random_uniform
+3,14,Zone1,ventilation_object_name,Vent_residential_B_Zone1,,,random_uniform
+3,14,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE,,,random_uniform
+3,14,Zone1,ventilation_flow_m3_s,0.0175,,,random_uniform
+3,14,Zone1,ventilation_schedule_name,VentSched_DayNight,,,random_uniform
+3,14,Zone2,infiltration_object_name,Infil_residential_B_Zone2,,,random_uniform
+3,14,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE,,,random_uniform
+3,14,Zone2,infiltration_flow_m3_s,0.0031599962911380945,,,random_uniform
+3,14,Zone2,infiltration_schedule_name,AlwaysOnSched,,,random_uniform
+3,14,Zone2,ventilation_object_name,Vent_residential_B_Zone2,,,random_uniform
+3,14,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE,,,random_uniform
+3,14,Zone2,ventilation_flow_m3_s,0.0175,,,random_uniform
+3,14,Zone2,ventilation_schedule_name,VentSched_DayNight,,,random_uniform
+4,14,,infiltration_base,1.1611638503665616,1.0,1.2,random_uniform
+4,14,,year_factor,2.209441818496468,2.0,2.3,random_uniform
+4,14,,fan_pressure,0.0,0.0,0.0,random_uniform
+4,14,,f_ctrl,0.5155479499811781,0.5,0.6,random_uniform
+4,14,,hrv_eff,0.0,0.0,0.0,random_uniform
+4,14,,infiltration_schedule_name,AlwaysOnSched,,,random_uniform
+4,14,,ventilation_schedule_name,VentSched_DayNight,,,random_uniform
+4,14,,system_type,B,,,random_uniform
+4,14,,flow_exponent,0.67,,,random_uniform
+4,14,,infiltration_total_m3_s,0.006319992582276189,,,random_uniform
+4,14,,ventilation_total_m3_s,0.035,,,random_uniform
+4,14,Zone1,infiltration_object_name,Infil_residential_B_Zone1,,,random_uniform
+4,14,Zone1,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE,,,random_uniform
+4,14,Zone1,infiltration_flow_m3_s,0.0031599962911380945,,,random_uniform
+4,14,Zone1,infiltration_schedule_name,AlwaysOnSched,,,random_uniform
+4,14,Zone1,ventilation_object_name,Vent_residential_B_Zone1,,,random_uniform
+4,14,Zone1,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE,,,random_uniform
+4,14,Zone1,ventilation_flow_m3_s,0.0175,,,random_uniform
+4,14,Zone1,ventilation_schedule_name,VentSched_DayNight,,,random_uniform
+4,14,Zone2,infiltration_object_name,Infil_residential_B_Zone2,,,random_uniform
+4,14,Zone2,infiltration_object_type,ZONEINFILTRATION:DESIGNFLOWRATE,,,random_uniform
+4,14,Zone2,infiltration_flow_m3_s,0.0031599962911380945,,,random_uniform
+4,14,Zone2,infiltration_schedule_name,AlwaysOnSched,,,random_uniform
+4,14,Zone2,ventilation_object_name,Vent_residential_B_Zone2,,,random_uniform
+4,14,Zone2,ventilation_object_type,ZONEVENTILATION:DESIGNFLOWRATE,,,random_uniform
+4,14,Zone2,ventilation_flow_m3_s,0.0175,,,random_uniform
+4,14,Zone2,ventilation_schedule_name,VentSched_DayNight,,,random_uniform
+
+------------------------------------------------------------
+
