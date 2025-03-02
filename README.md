@@ -90,4 +90,74 @@ This repository automates the entire process of creating, running, and post-proc
 
 ---
 
+## Required `.env` File
+
+To use database features and/or email-sending capabilities, you need to create a `.env` file in the project root, containing entries like:
+
+```bash
+# Example .env
+
+# Core paths
+IDD_PATH=/usr/local/EnergyPlus-22.2.0/Energy+.idd
+BASE_IDF_PATH=/usr/src/app/data/Minimal.idf
+EPWFILE=/usr/src/app/data/weather/2020.epw
+OUTPUT_DIR=/usr/src/app/output
+
+# Postgres DB
+DB_NAME=research
+DB_USER=postgres
+DB_PASSWORD=yourPassword
+DB_HOST=someDatabaseHost
+DB_PORT=5432
+
+# EnergyPlus version
+ENERGYPLUS_VERSION=22.2.0
+
+# SMTP (for sending emails)
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=465
+SMTP_USERNAME=yourEmail@gmail.com
+SMTP_PASSWORD=yourEmailPassword
+MAIL_SENDER=yourEmail@gmail.com
+```
+
+Adjust values for your database credentials and/or SMTP server details.
+
+---
+
+## Example: Calling the API
+
+Here’s a sample PowerShell script you can use to create and start a simulation job on `localhost:8000` (Docker default):
+
+```powershell
+# 1) Read combined.json as a single string
+$postData = Get-Content -Raw .\combined.json
+
+# 2) Create the job
+Write-Host "Creating job..."
+$createResponse = Invoke-RestMethod `
+    -Method POST `
+    -Uri "http://localhost:8000/jobs" `
+    -Headers @{ "Content-Type" = "application/json" } `
+    -Body $postData
+
+# 3) Extract the job_id
+$jobId = $createResponse.job_id
+Write-Host "Created job with ID:" $jobId
+
+# 4) Start the job
+Write-Host "Starting job..."
+$startResponse = Invoke-RestMethod `
+    -Method POST `
+    -Uri "http://localhost:8000/jobs/$jobId/start"
+Write-Host ($startResponse | ConvertTo-Json)
+
+# 5) Stream logs in real time using curl.exe
+Write-Host "Streaming logs..."
+curl.exe http://localhost:8000/jobs/$jobId/logs
+```
+
+---
+
 **In short, this repo unifies geometry creation, param assignment, scenario-based runs, calibration, and validation into a cohesive energy-modeling pipeline—backed by a REST API for managing large batches of EnergyPlus simulations.**
+```
