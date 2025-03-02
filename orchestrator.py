@@ -68,9 +68,7 @@ from cal.unified_calibration import run_unified_calibration
 # Zip & email
 from zip_and_mail import zip_user_output, send_results_email
 
-
 from cleanup_old_jobs import cleanup_old_results
-
 
 
 class WorkflowCanceled(Exception):
@@ -182,6 +180,7 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
     output_definitions   = idf_cfg.get("output_definitions", {})
     use_database         = main_config.get("use_database", False)
     db_filter            = main_config.get("db_filter", {})
+    filter_by            = main_config.get("filter_by")  # if using DB
 
     # -------------------------------------------------------------------------
     # 5) Possibly override idf_creation.idf_config from env, then force IDFs
@@ -205,15 +204,13 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
         idf_creation.idf_config["iddfile"] = idf_cfg["iddfile"]
     if "idf_file_path" in idf_cfg:
         idf_creation.idf_config["idf_file_path"] = idf_cfg["idf_file_path"]
-        # in orchestrator.py
+
     if "output_idf_dir" in idf_cfg:
-        # combine them
         subfolder = idf_cfg["output_idf_dir"]  # e.g. "output_IDFs"
         full_dir = os.path.join(job_output_dir, subfolder)
         idf_creation.idf_config["output_dir"] = full_dir
     else:
         idf_creation.idf_config["output_dir"] = os.path.join(job_output_dir, "output_IDFs")
-
 
     # -------------------------------------------------------------------------
     # 6) Setup default dictionaries
@@ -231,7 +228,6 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
     # -------------------------------------------------------------------------
     check_canceled()
 
-    # a) Fenestration from Excel
     updated_res_data, updated_nonres_data = build_fenez_config(
         base_res_data=base_res_data,
         base_nonres_data=base_nonres_data,
@@ -240,35 +236,34 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
         user_fenez_overrides=[]
     )
 
-    # b) DHW from Excel
     if excel_flags.get("override_dhw_excel", False):
         dhw_lookup = override_dhw_lookup_from_excel_file(
             dhw_excel_path=paths_dict.get("dhw_excel", ""),
             default_dhw_lookup=dhw_lookup,
             override_dhw_flag=True
         )
-    # c) EPW from Excel
+
     if excel_flags.get("override_epw_excel", False):
         epw_lookup = override_epw_lookup_from_excel_file(
             epw_excel_path=paths_dict.get("epw_excel", ""),
             epw_lookup=epw_lookup,
             override_epw_flag=True
         )
-    # d) Lighting
+
     if excel_flags.get("override_lighting_excel", False):
         lighting_lookup = override_lighting_lookup_from_excel_file(
             lighting_excel_path=paths_dict.get("lighting_excel", ""),
             lighting_lookup=lighting_lookup,
             override_lighting_flag=True
         )
-    # e) HVAC
+
     if excel_flags.get("override_hvac_excel", False):
         hvac_lookup = override_hvac_lookup_from_excel_file(
             hvac_excel_path=paths_dict.get("hvac_excel", ""),
             hvac_lookup=hvac_lookup,
             override_hvac_flag=True
         )
-    # f) Vent
+
     if excel_flags.get("override_vent_excel", False):
         vent_lookup = override_vent_lookup_from_excel_file(
             vent_excel_path=paths_dict.get("vent_excel", ""),
@@ -288,8 +283,8 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
         full_path = os.path.join(user_configs_folder, fname)
         if os.path.isfile(full_path):
             try:
-                with open(full_path, "r") as f:
-                    data = json.load(f)
+                with open(full_path, "r") as ff:
+                    data = json.load(ff)
                 return data.get(key)
             except Exception as e:
                 logger.error(f"[ERROR] loading {fname} => {e}")
@@ -357,25 +352,22 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
     # 9) IDF creation
     # -------------------------------------------------------------------------
     check_canceled()
+    df_buildings = pd.DataFrame()
+
     if perform_idf_creation:
         logger.info("[INFO] IDF creation is ENABLED.")
 
         # a) Load building data
-        df_buildings = pd.DataFrame()
         if use_database:
             logger.info("[INFO] Loading building data from DB.")
-            filter_by = main_config.get("filter_by")
             if not filter_by:
-                raise ValueError("[ERROR] 'filter_by' must be specified in main_config when 'use_database' is True.")
-            
+                raise ValueError("[ERROR] 'filter_by' must be specified when 'use_database' is True.")
             df_buildings = load_buildings_from_db(db_filter, filter_by)
 
-            # [NEW CODE TO SAVE CSV] -------------------------------------------
+            # Optionally save the raw DB buildings
             extracted_csv_path = os.path.join(job_output_dir, "extracted_buildings.csv")
             df_buildings.to_csv(extracted_csv_path, index=False)
             logger.info(f"[INFO] Saved extracted buildings to {extracted_csv_path}")
-            # --
-
 
         else:
             bldg_data_path = paths_dict.get("building_data", "")
@@ -384,9 +376,8 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
             else:
                 logger.warning(f"[WARN] building_data CSV not found => {bldg_data_path}")
 
-
-        # b) Create IDFs & run sims in job folder
-        create_idfs_for_all_buildings(
+        # b) Create IDFs & (optionally) run sims in job folder
+        df_buildings = create_idfs_for_all_buildings(
             df_buildings=df_buildings,
             scenario=scenario,
             calibration_stage=calibration_stage,
@@ -405,8 +396,14 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
             simulate_config=simulate_config,
             post_process=post_process,
             post_process_config=post_process_config,
-            logs_base_dir=job_output_dir  # so assigned logs go to <job_output_dir>/assigned
+            logs_base_dir=job_output_dir
         )
+
+        # === Store the mapping (ogc_fid -> idf_name) so we can look it up later ===
+        idf_map_csv = os.path.join(job_output_dir, "extracted_idf_buildings.csv")
+        df_buildings.to_csv(idf_map_csv, index=False)
+        logger.info(f"[INFO] Wrote building -> IDF map to {idf_map_csv}")
+
     else:
         logger.info("[INFO] Skipping IDF creation.")
 
@@ -417,9 +414,7 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
     if structuring_cfg.get("perform_structuring", False):
         logger.info("[INFO] Performing structuring ...")
 
-        #
         # Example: Fenestration
-        #
         from idf_objects.structuring.fenestration_structuring import transform_fenez_log_to_structured_with_ranges
         fenez_conf = structuring_cfg.get("fenestration", {})
         fenez_in   = fenez_conf.get("csv_in",  "assigned/assigned_fenez_params.csv")
@@ -435,9 +430,7 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
         else:
             logger.warning(f"[STRUCTURING] Fenestration input CSV not found => {fenez_in}")
 
-        #
         # Example: DHW
-        #
         from idf_objects.structuring.dhw_structuring import transform_dhw_log_to_structured
         dhw_conf = structuring_cfg.get("dhw", {})
         dhw_in   = dhw_conf.get("csv_in",  "assigned/assigned_dhw_params.csv")
@@ -453,9 +446,7 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
         else:
             logger.warning(f"[STRUCTURING] DHW input CSV not found => {dhw_in}")
 
-        #
         # Example: HVAC flatten
-        #
         from idf_objects.structuring.flatten_hvac import flatten_hvac_data, parse_assigned_value as parse_hvac
         hvac_conf = structuring_cfg.get("hvac", {})
         hvac_in   = hvac_conf.get("csv_in",  "assigned/assigned_hvac_params.csv")
@@ -480,9 +471,7 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
         else:
             logger.warning(f"[STRUCTURING] HVAC input CSV not found => {hvac_in}")
 
-        #
         # Example: Vent flatten
-        #
         from idf_objects.structuring.flatten_assigned_vent import flatten_ventilation_data, parse_assigned_value as parse_vent
         vent_conf = structuring_cfg.get("vent", {})
         vent_in   = vent_conf.get("csv_in", "assigned/assigned_ventilation.csv")
@@ -550,10 +539,37 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
         for key, rel_path in scenario_csv_dict.items():
             scenario_csv_dict[key] = os.path.join(job_output_dir, rel_path)
 
-        # 6) Fix base_idf_path if not absolute
-        base_idf_path = mod_cfg.get("base_idf_path")
-        if base_idf_path and not os.path.isabs(base_idf_path):
-            mod_cfg["base_idf_path"] = os.path.join(job_output_dir, base_idf_path)
+        # ----------------------------------------------------------------------
+        # NEW LOGIC: pick the base_idf_path from building_id automatically
+        # ----------------------------------------------------------------------
+        # The user sets "building_id" in the config, e.g. 20233330
+        building_id = mod_cfg["building_id"]
+
+        # We need the CSV that was saved right after create_idfs_for_all_buildings(...)
+        idf_map_csv = os.path.join(job_output_dir, "extracted_idf_buildings.csv")
+        if not os.path.isfile(idf_map_csv):
+            raise FileNotFoundError(
+                f"Cannot find building->IDF map CSV at {idf_map_csv}. "
+                f"Did you skip 'perform_idf_creation'?"
+            )
+
+        # Read the mapping: each row has "ogc_fid" and "idf_name"
+        df_idf_map = pd.read_csv(idf_map_csv)
+        row_match = df_idf_map.loc[df_idf_map["ogc_fid"] == building_id]
+
+        if row_match.empty:
+            raise ValueError(
+                f"No building found for building_id={building_id} in {idf_map_csv}"
+            )
+
+        # e.g. "building_0.idf", "building_16.idf", "building_16_ba62d0.idf", etc.
+        idf_filename = row_match.iloc[0]["idf_name"]
+
+        # Build the full path to that IDF in output_IDFs
+        base_idf_path = os.path.join(job_output_dir, "output_IDFs", idf_filename)
+        mod_cfg["base_idf_path"] = base_idf_path
+        logger.info(f"[INFO] Auto-selected base IDF => {base_idf_path}")
+        # ----------------------------------------------------------------------
 
         # Finally, run the scenario workflow
         run_modification_workflow(mod_cfg)
@@ -581,12 +597,15 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
     # -------------------------------------------------------------------------
     # 13) Global Validation
     # -------------------------------------------------------------------------
+        # (A) Validation - BASE
+    # -------------------------------------------------------------------------
     check_canceled()
-    if validation_cfg.get("perform_validation", False):
-        logger.info("[INFO] Global Validation is ENABLED.")
-        val_conf = validation_cfg["config"]
+    base_validation_cfg = main_config.get("validation_base", {})
+    if base_validation_cfg.get("perform_validation", False):
+        logger.info("[INFO] BASE Validation is ENABLED.")
+        val_conf = base_validation_cfg["config"]
 
-        # If there's a sim_data_csv or real_data_csv, ensure it's absolute or data/
+        # Patch relative paths
         sim_csv = val_conf.get("sim_data_csv")
         if sim_csv:
             val_conf["sim_data_csv"] = patch_if_relative(sim_csv)
@@ -599,9 +618,37 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
         if out_csv:
             val_conf["output_csv"] = patch_if_relative(out_csv)
 
+        # Now run the validation
         run_validation_process(val_conf)
     else:
-        logger.info("[INFO] Skipping global validation.")
+        logger.info("[INFO] Skipping BASE validation or not requested.")
+
+    # (B) Validation - SCENARIOS
+    # -------------------------------------------------------------------------
+    check_canceled()
+    scenario_validation_cfg = main_config.get("validation_scenarios", {})
+    if scenario_validation_cfg.get("perform_validation", False):
+        logger.info("[INFO] SCENARIO Validation is ENABLED.")
+        val_conf = scenario_validation_cfg["config"]
+
+        # Patch relative paths
+        sim_csv = val_conf.get("sim_data_csv")
+        if sim_csv:
+            val_conf["sim_data_csv"] = patch_if_relative(sim_csv)
+
+        real_csv = val_conf.get("real_data_csv")
+        if real_csv:
+            val_conf["real_data_csv"] = patch_if_relative(real_csv)
+
+        out_csv = val_conf.get("output_csv")
+        if out_csv:
+            val_conf["output_csv"] = patch_if_relative(out_csv)
+
+        # Now run the validation
+        run_validation_process(val_conf)
+    else:
+        logger.info("[INFO] Skipping SCENARIO validation or not requested.")
+
 
     # -------------------------------------------------------------------------
     # 14) Sensitivity Analysis
@@ -683,7 +730,6 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
     if cal_cfg.get("perform_calibration", False):
         logger.info("[INFO] Calibration is ENABLED.")
 
-        # Patch scenario_folder, real_data_csv, surrogate_model_path, etc.
         scen_folder = cal_cfg.get("scenario_folder", "")
         cal_cfg["scenario_folder"] = patch_if_relative(scen_folder)
 
@@ -696,11 +742,9 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
         sur_cols_path = cal_cfg.get("surrogate_columns_path", "")
         cal_cfg["surrogate_columns_path"] = patch_if_relative(sur_cols_path)
 
-        # e.g. output_history_csv
         hist_csv = cal_cfg.get("output_history_csv", "")
         cal_cfg["output_history_csv"] = patch_if_relative(hist_csv)
 
-        # best_params_folder, etc.
         best_params_folder = cal_cfg.get("best_params_folder", "")
         cal_cfg["best_params_folder"] = patch_if_relative(best_params_folder)
 
@@ -742,8 +786,4 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
     except Exception as e:
         logger.error(f"[CLEANUP ERROR] => {e}")
 
-
-
     logger.info("=== End of orchestrate_workflow ===")
-
-
