@@ -1,0 +1,2217 @@
+Folder: D:\Alliander\power-grid-model-benchmark
+
+  File: generate_fictional_dataset.py
+  --- File Contents Start ---
+# SPDX-FileCopyrightText: Contributors to the Power Grid Model project <powergridmodel@lfenergy.org>
+#
+# SPDX-License-Identifier: MPL-2.0
+
+import numpy as np
+import pandas as pd
+import pandapower as pp
+import power_grid_model as pgm
+from pandapower.timeseries.data_sources.frame_data import DFData
+from jinja2 import Environment, FileSystemLoader
+from pathlib import Path
+
+FILE_DIR = Path(__file__).parent
+DATA_DIR = FILE_DIR / "data"
+TEMPLATE_PATH = FILE_DIR / "dss_template.dss"
+
+JINJA_ENV = Environment(loader=FileSystemLoader(FILE_DIR))
+
+# standard u rated
+u_rated = 10e3
+frequency = 50.0
+
+# source
+source_sk = 1e20
+source_rx = 0.1
+source_01 = 1.0
+source_u_ref = 1.05
+source_node = 0
+
+# opendss monitor
+opendss_monitor_mode = 32  # 0 for voltage, +32 for magnitude only
+
+# cable parameter per km
+# 630Al XLPE 10 kV with neutral conductor
+cable_type = "630Al"
+cable_param = {
+    "r1": 0.063,
+    "x1": 0.103,
+    "c1": 0.4e-6,
+    "r0": 0.156,
+    "x0": 0.1,
+    "c0": 0.66e-6,
+    "tan1": 0.0,
+    "tan0": 0.0,
+    "i_n": 1e3,
+}
+cable_param_pp = {
+    "c_nf_per_km": cable_param["c1"] * 1e9,
+    "r_ohm_per_km": cable_param["r1"],
+    "x_ohm_per_km": cable_param["x1"],
+    "g_us_per_km": cable_param["tan1"] * cable_param["c1"] * 2 * np.pi * frequency * 1e6,
+    "c0_nf_per_km": cable_param["c0"] * 1e9,
+    "r0_ohm_per_km": cable_param["r0"],
+    "x0_ohm_per_km": cable_param["x0"],
+    "g0_us_per_km": cable_param["tan0"] * cable_param["c0"] * 2 * np.pi * frequency * 1e6,
+    "max_i_ka": cable_param["i_n"] * 1e-3,
+}
+
+
+def generate_fictional_grid(
+    n_feeder: int,
+    n_node_per_feeder: int,
+    cable_length_km_min: float,
+    cable_length_km_max: float,
+    load_p_w_max: float,
+    load_p_w_min: float,
+    pf: float,
+    n_step: int,
+    load_scaling_min: float,
+    load_scaling_max: float,
+    seed=0,
+):
+    dss_dict = {"frequency": frequency, "basekv": u_rated * 1e-3}
+
+    DATA_DIR.mkdir(exist_ok=True)
+
+    np.random.seed(seed)
+
+    n_node = n_feeder * n_node_per_feeder + 1
+    pp_net = pp.create_empty_network(f_hz=frequency)
+    pgm_dataset = dict()
+
+    # node
+    # pgm
+    pgm_dataset["node"] = pgm.initialize_array("input", "node", n_node)
+    pgm_dataset["node"]["id"] = np.arange(n_node, dtype=np.int32)
+    pgm_dataset["node"]["u_rated"] = u_rated
+    # pp
+    pp.create_buses(
+        pp_net, nr_buses=n_node, vn_kv=pgm_dataset["node"]["u_rated"] * 1e-3, index=pgm_dataset["node"]["id"]
+    )
+
+    # line
+    n_line = n_node - 1
+    to_node_feeder = np.arange(1, n_node_per_feeder + 1, dtype=np.int32)
+    to_node_feeder = to_node_feeder.reshape(1, -1) + np.arange(0, n_feeder).reshape(-1, 1) * n_node_per_feeder
+    to_node = to_node_feeder.ravel()
+    from_node_feeder = np.arange(1, n_node_per_feeder, dtype=np.int32)
+    from_node_feeder = from_node_feeder.reshape(1, -1) + np.arange(0, n_feeder).reshape(-1, 1) * n_node_per_feeder
+    from_node_feeder = np.concatenate((np.zeros(shape=(n_feeder, 1), dtype=np.int32), from_node_feeder), axis=1)
+    from_node = from_node_feeder.ravel()
+    length = np.random.uniform(low=cable_length_km_min, high=cable_length_km_max, size=n_line)
+    # pgm
+    pgm_dataset["line"] = pgm.initialize_array("input", "line", n_line)
+    pgm_dataset["line"]["id"] = np.arange(n_node, n_node + n_line, dtype=np.int32)
+    pgm_dataset["line"]["from_node"] = from_node
+    pgm_dataset["line"]["to_node"] = to_node
+    pgm_dataset["line"]["from_status"] = 1
+    pgm_dataset["line"]["to_status"] = 1
+    for attr_name, attr in cable_param.items():
+        if attr_name in ["i_n", "tan1", "tan0"]:
+            pgm_dataset["line"][attr_name] = attr
+        else:
+            pgm_dataset["line"][attr_name] = attr * length
+    # pp
+    pp.create_std_type(pp_net, cable_param_pp, name="630Al", element="line")
+    pp.create_lines_from_parameters(
+        pp_net,
+        from_buses=from_node,
+        to_buses=to_node,
+        length_km=length,
+        index=pgm_dataset["line"]["id"] - n_node,
+        **cable_param_pp,
+    )
+    # dss
+    dss_dict["Line"] = {
+        line["id"]: {
+            "Phases": 3,
+            "Bus1": line["from_node"],
+            "Bus2": line["to_node"],
+            "LineCode": cable_type,
+            "Length": line_length,
+            "Units": "km",
+        }
+        for line, line_length in zip(pgm_dataset["line"], length)
+    }
+
+    # add asym load
+    n_load = n_node - 1
+    # pgm
+    pgm_dataset["asym_load"] = pgm.initialize_array("input", "asym_load", n_load)
+    pgm_dataset["asym_load"]["id"] = np.arange(n_node + n_line, n_node + n_line + n_load, dtype=np.int32)
+    pgm_dataset["asym_load"]["node"] = pgm_dataset["node"]["id"][1:]
+    pgm_dataset["asym_load"]["status"] = 1
+    pgm_dataset["asym_load"]["type"] = pgm.LoadGenType.const_power
+    pgm_dataset["asym_load"]["p_specified"] = np.random.uniform(
+        low=load_p_w_min / 3.0, high=load_p_w_max / 3.0, size=(n_load, 3)
+    )
+    pgm_dataset["asym_load"]["q_specified"] = pgm_dataset["asym_load"]["p_specified"] * np.sqrt(1 - pf**2) / pf
+    # pp
+    asym_load_df = pd.DataFrame(
+        {
+            "name": [None] * n_load,
+            "bus": pgm_dataset["asym_load"]["node"],
+            "p_a_mw": pgm_dataset["asym_load"]["p_specified"][:, 0] * 1e-6,
+            "p_b_mw": pgm_dataset["asym_load"]["p_specified"][:, 1] * 1e-6,
+            "p_c_mw": pgm_dataset["asym_load"]["p_specified"][:, 2] * 1e-6,
+            "q_a_mvar": pgm_dataset["asym_load"]["q_specified"][:, 0] * 1e-6,
+            "q_b_mvar": pgm_dataset["asym_load"]["q_specified"][:, 1] * 1e-6,
+            "q_c_mvar": pgm_dataset["asym_load"]["q_specified"][:, 2] * 1e-6,
+            "sn_mva": np.full(shape=(n_load,), fill_value=np.nan, dtype=np.float64),
+            "scaling": np.full(shape=(n_load,), fill_value=1.0, dtype=np.float64),
+            "in_service": np.full(shape=(n_load,), fill_value=True, dtype=np.bool_),
+            "type": np.full(shape=(n_load,), fill_value="wye", dtype=np.object_),
+        },
+        index=pgm_dataset["asym_load"]["id"] - n_line - n_node,
+    )
+    pp_net.asymmetric_load = asym_load_df
+    # dss
+    dss_dict["Load"] = {
+        f"{load['id']}_{phase + 1}": {
+            "Bus1": f"{load['node']}.{phase + 1}",
+            "Phases": 1,
+            "Conn": "wye",
+            "Model": 1,
+            "Kv": u_rated / np.sqrt(3) * 1e-3,
+            "Kw": load["p_specified"][phase] * 1e-3,
+            "kvar": load["q_specified"][phase] * 1e-3,
+            "Vmaxpu": 2.0,
+            "Vminpu": 0.1,
+            "Daily": f"LoadShape_{load['id']}_{phase + 1}",
+        }
+        for load in pgm_dataset["asym_load"]
+        for phase in range(3)
+    }
+
+    # source
+    # pgm
+    source_id = n_node + n_line + n_load
+    pgm_dataset["source"] = pgm.initialize_array("input", "source", 1)
+    pgm_dataset["source"]["id"] = source_id
+    pgm_dataset["source"]["node"] = source_node
+    pgm_dataset["source"]["status"] = 1
+    pgm_dataset["source"]["u_ref"] = source_u_ref
+    pgm_dataset["source"]["sk"] = source_sk
+    pgm_dataset["source"]["rx_ratio"] = source_rx
+    pgm_dataset["source"]["z01_ratio"] = source_01
+    # pp
+    pp.create_ext_grid(
+        pp_net,
+        bus=0,
+        vm_pu=source_u_ref,
+        va_degree=0.0,
+        index=0,
+        s_sc_max_mva=source_sk * 1e-6,
+        rx_max=source_rx,
+        r0x0_max=source_rx,
+        x0x_max=source_01,
+    )
+    # dss
+    dss_dict["source_name"] = source_id
+    dss_dict["source_dict"] = {
+        "Bus1": source_node,
+        "basekv": u_rated * 1e-3,
+        "pu": source_u_ref,
+        "MVAsc3": source_sk * 1e-6,
+        "MVAsc1": source_sk * 1e-6 * 3.0 / (2.0 + source_01),
+        "x1r1": 1.0 / source_rx,
+        "x0r0": 1.0 / source_rx,
+    }
+
+    # generate time series
+    np.random.seed(seed)
+
+    # pgm
+    n_load = pgm_dataset["asym_load"].size
+    scaling = np.random.uniform(low=load_scaling_min, high=load_scaling_max, size=(n_step, n_load, 3))
+    asym_load_profile = {
+        "p_specified": pgm_dataset["asym_load"]["p_specified"].reshape(1, -1, 3) * scaling,
+        "q_specified": pgm_dataset["asym_load"]["q_specified"].reshape(1, -1, 3) * scaling,
+    }
+
+    # pp
+    pp_dataset = {}
+    for x, y in zip(["p", "q"], ["mw", "mvar"]):
+        for i, p in enumerate(["a", "b", "c"]):
+            name = f"{x}_{p}_{y}"
+            pp_dataset[name] = DFData(
+                pd.DataFrame(
+                    asym_load_profile[f"{x}_specified"][..., i] * 1e-6,
+                    index=np.arange(n_step),
+                    columns=pp_net.asymmetric_load.index,
+                )
+            )
+
+    # dss
+    dss_dict["LoadShape"] = {
+        f"LoadShape_{load['id']}_{phase + 1}": {
+            "Npts": n_step,
+            "Interval": 1.0,
+            "Mult": "(" + " ".join(map(str, scale[:, phase])) + ")",
+        }
+        for load, scale in zip(pgm_dataset["asym_load"], np.transpose(scaling, (1, 0, 2)))
+        for phase in range(3)
+    }
+    # monitor
+    dss_dict["Monitor"] = {
+        f"VSensor_{source_node}": {"Element": "Vsource.Source", "Terminal": 1, "Mode": opendss_monitor_mode}
+    }
+    for load in pgm_dataset["asym_load"]:
+        for phase in range(3):
+            dss_dict["Monitor"][f"VSensor_{load['node']}_{phase + 1}"] = {
+                "Element": f"Load.{load['id']}_{phase + 1}",
+                "Terminal": 1,
+                "Mode": opendss_monitor_mode,
+            }
+
+    # generate dss
+    # jinja expects a string, representing a relative path with forward slashes
+    template_path_str = str(TEMPLATE_PATH.relative_to(FILE_DIR)).replace("\\", "/")
+    template = JINJA_ENV.get_template(template_path_str)
+    output = template.render(dss_dict)
+    output_path = DATA_DIR / "fictional_grid.dss"
+
+    with (output_path).open(mode="w", encoding="utf-8") as output_file:
+        output_file.write(output)
+
+    # return values
+    return {
+        "pgm_dataset": pgm_dataset,
+        "pp_net": pp_net,
+        "pgm_update_dataset": {"asym_load": asym_load_profile},
+        "pp_time_series_dataset": pp_dataset,
+        "dss_file": output_path,
+    }
+
+
+def generate_fictional_grid_pgm_tpf(
+    n_feeder: int,
+    n_node_per_feeder: int,
+    cable_length_km_min: float,
+    cable_length_km_max: float,
+    load_p_w_max: float,
+    load_p_w_min: float,
+    pf: float,
+    n_step: int,
+    load_scaling_min: float,
+    load_scaling_max: float,
+    seed=0,
+):
+    rng = np.random.default_rng(seed)
+
+    n_node = n_feeder * n_node_per_feeder + 1
+    pgm_dataset = dict()
+    tpf_grid_nodes = pd.DataFrame()
+    tpf_grid_lines = pd.DataFrame()
+
+    # node
+    # pgm
+    pgm_dataset["node"] = pgm.initialize_array("input", "node", n_node)
+    pgm_dataset["node"]["id"] = np.arange(n_node, dtype=np.int32)
+    pgm_dataset["node"]["u_rated"] = u_rated
+    # tpf
+    tpf_grid_nodes["NODES"] = np.arange(1, n_node + 1, dtype=np.int32)
+    tpf_grid_nodes["Tb"] = np.zeros_like(pgm_dataset["node"]["id"])
+    tpf_grid_nodes["Tb"][0] = 1
+    tpf_grid_nodes["PD"] = np.zeros_like(pgm_dataset["node"]["id"])
+    tpf_grid_nodes["QD"] = np.zeros_like(pgm_dataset["node"]["id"])
+    tpf_grid_nodes["Pct"] = np.ones_like(pgm_dataset["node"]["id"])
+    tpf_grid_nodes["Ict"] = np.zeros_like(pgm_dataset["node"]["id"])
+    tpf_grid_nodes["Zct"] = np.zeros_like(pgm_dataset["node"]["id"])
+
+    # line
+    n_line = n_node - 1
+    to_node_feeder = np.arange(1, n_node_per_feeder + 1, dtype=np.int32)
+    to_node_feeder = to_node_feeder.reshape(1, -1) + np.arange(0, n_feeder).reshape(-1, 1) * n_node_per_feeder
+    to_node = to_node_feeder.ravel()
+    from_node_feeder = np.arange(1, n_node_per_feeder, dtype=np.int32)
+    from_node_feeder = from_node_feeder.reshape(1, -1) + np.arange(0, n_feeder).reshape(-1, 1) * n_node_per_feeder
+    from_node_feeder = np.concatenate((np.zeros(shape=(n_feeder, 1), dtype=np.int32), from_node_feeder), axis=1)
+    from_node = from_node_feeder.ravel()
+    length = rng.uniform(low=cable_length_km_min, high=cable_length_km_max, size=n_line)
+    # pgm
+    pgm_dataset["line"] = pgm.initialize_array("input", "line", n_line)
+    pgm_dataset["line"]["id"] = np.arange(n_node, n_node + n_line, dtype=np.int32)
+    pgm_dataset["line"]["from_node"] = from_node
+    pgm_dataset["line"]["to_node"] = to_node
+    pgm_dataset["line"]["from_status"] = 1
+    pgm_dataset["line"]["to_status"] = 1
+    for attr_name, attr in cable_param.items():
+        if attr_name in ["i_n", "tan1", "tan0"]:
+            pgm_dataset["line"][attr_name] = attr
+        else:
+            pgm_dataset["line"][attr_name] = attr * length
+    # tpf
+    tpf_grid_lines["FROM"] = from_node + np.ones_like(from_node)
+    tpf_grid_lines["TO"] = to_node + np.ones_like(to_node)
+    tpf_grid_lines["R"] = pgm_dataset["line"]["r1"]
+    tpf_grid_lines["X"] = pgm_dataset["line"]["x1"]
+    tpf_grid_lines["B"] = np.zeros_like(to_node)
+    tpf_grid_lines["STATUS"] = np.ones_like(to_node)
+    tpf_grid_lines["TAP"] = np.ones_like(to_node)
+
+    # add load
+    n_load = n_node - 1
+    # pgm
+    pgm_dataset["sym_load"] = pgm.initialize_array("input", "sym_load", n_load)
+    pgm_dataset["sym_load"]["id"] = np.arange(n_node + n_line, n_node + n_line + n_load, dtype=np.int32)
+    pgm_dataset["sym_load"]["node"] = pgm_dataset["node"]["id"][1:]
+    pgm_dataset["sym_load"]["status"] = 1
+    pgm_dataset["sym_load"]["type"] = pgm.LoadGenType.const_power
+    pgm_dataset["sym_load"]["p_specified"] = rng.uniform(low=load_p_w_min / 3.0, high=load_p_w_max / 3.0, size=n_load)
+    pgm_dataset["sym_load"]["q_specified"] = pgm_dataset["sym_load"]["p_specified"] * np.sqrt(1 - pf**2) / pf
+    # tpf
+    tpf_grid_nodes["PD"][1:] = pgm_dataset["sym_load"]["p_specified"]
+    tpf_grid_nodes["QD"][1:] = pgm_dataset["sym_load"]["q_specified"]
+
+    # source
+    # pgm
+    source_id = n_node + n_line + n_load
+    pgm_dataset["source"] = pgm.initialize_array("input", "source", 1)
+    pgm_dataset["source"]["id"] = source_id
+    pgm_dataset["source"]["node"] = source_node
+    pgm_dataset["source"]["status"] = 1
+    pgm_dataset["source"]["u_ref"] = source_u_ref
+    pgm_dataset["source"]["sk"] = source_sk
+    pgm_dataset["source"]["rx_ratio"] = source_rx
+    pgm_dataset["source"]["z01_ratio"] = source_01
+    # tpf
+
+    # generate time series
+    rng = np.random.default_rng(seed)
+
+    # pgm
+    n_load = pgm_dataset["sym_load"].size
+    scaling = rng.uniform(low=load_scaling_min, high=load_scaling_max, size=(n_step, n_load))
+    sym_load_profile = pgm.initialize_array("update", "sym_load", (n_step, n_load))
+    sym_load_profile["id"] = pgm_dataset["sym_load"]["id"].reshape(1, -1)
+    sym_load_profile["p_specified"] = pgm_dataset["sym_load"]["p_specified"].reshape(1, -1) * scaling
+    sym_load_profile["q_specified"] = pgm_dataset["sym_load"]["q_specified"].reshape(1, -1) * scaling
+    # tpf - in kW
+    tpf_time_series_p = sym_load_profile["p_specified"] * 0.001
+    tpf_time_series_q = sym_load_profile["q_specified"] * 0.001
+
+    return {
+        "pgm_dataset": pgm_dataset,
+        "pgm_update_dataset": {"sym_load": sym_load_profile},
+        "tpf_grid_nodes": tpf_grid_nodes,
+        "tpf_grid_lines": tpf_grid_lines,
+        "tpf_time_series_p": tpf_time_series_p,
+        "tpf_time_series_q": tpf_time_series_q,
+    }
+
+  --- File Contents End ---
+
+  File: PGM-TPF.ipynb
+  --- File Contents Start ---
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Introduction\n",
+    "\n",
+    "This notebook presents a benchmark between Power Grid Model and the Tensor Power Flow. N.B., the performance gain of TPF is made purely out of the data formulation, no advantage of Intel MKL or CUDA is taken."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import warnings\n",
+    "from time import time\n",
+    "from tqdm import tqdm\n",
+    "\n",
+    "import numpy as np\n",
+    "import power_grid_model as pgm\n",
+    "from generate_fictional_dataset import generate_fictional_grid_pgm_tpf\n",
+    "from plotter import BenchmarkPlotter\n",
+    "from power_grid_model.validation import errors_to_string, validate_batch_data, validate_input_data\n",
+    "from tensorpowerflow import GridTensor\n",
+    "\n",
+    "warnings.filterwarnings(\"ignore\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Configurations for grids: PGM method dictionary for exact methods\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pgm_method_dict = {\n",
+    "    \"iterative_current\": \"PGM Iterative Current\",\n",
+    "    \"newton_raphson\": \"PGM Newton-Raphson\",\n",
+    "}"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Benchmark experiment function: "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def experiment(n_feeder=20, n_node_per_feeder=50, n_step=1000, log=False):\n",
+    "    def log_print(*args):\n",
+    "        if log:\n",
+    "            print(*args)\n",
+    "\n",
+    "    # fictional grid parameters\n",
+    "    cable_length_km_min = 0.8\n",
+    "    cable_length_km_max = 1.2\n",
+    "    load_p_w_min = 0.4e6 * 0.8\n",
+    "    load_p_w_max = 0.4e6 * 1.2\n",
+    "    pf = 0.95\n",
+    "\n",
+    "    load_scaling_min = 0.5\n",
+    "    load_scaling_max = 1.5\n",
+    "\n",
+    "    # gen grid data\n",
+    "    fictional_dataset = generate_fictional_grid_pgm_tpf(\n",
+    "        n_node_per_feeder=n_node_per_feeder,\n",
+    "        n_feeder=n_feeder,\n",
+    "        cable_length_km_min=cable_length_km_min,\n",
+    "        cable_length_km_max=cable_length_km_max,\n",
+    "        load_p_w_max=load_p_w_max,\n",
+    "        load_p_w_min=load_p_w_min,\n",
+    "        pf=pf,\n",
+    "        n_step=n_step,\n",
+    "        load_scaling_min=load_scaling_min,\n",
+    "        load_scaling_max=load_scaling_max,\n",
+    "    )\n",
+    "    # unpack data\n",
+    "    pgm_dataset = fictional_dataset[\"pgm_dataset\"]\n",
+    "    pgm_update_dataset = fictional_dataset[\"pgm_update_dataset\"]\n",
+    "    tpf_node_data = fictional_dataset[\"tpf_grid_nodes\"]\n",
+    "    tpf_line_data = fictional_dataset[\"tpf_grid_lines\"]\n",
+    "    tpf_time_series_p = fictional_dataset[\"tpf_time_series_p\"]\n",
+    "    tpf_time_series_q = fictional_dataset[\"tpf_time_series_q\"]\n",
+    "\n",
+    "    # validate data\n",
+    "    log_print(errors_to_string(validate_input_data(pgm_dataset)))\n",
+    "    log_print(errors_to_string(validate_batch_data(pgm_dataset, pgm_update_dataset)))\n",
+    "\n",
+    "    res_pgm = []\n",
+    "    # create grids, run pf's and time them\n",
+    "    # pgm - all 4 methods\n",
+    "    pgm_methods = [\"iterative_current\", \"newton_raphson\"]\n",
+    "    for method in pgm_methods:\n",
+    "        pgm_start_time = time()\n",
+    "        model_instance = pgm.PowerGridModel(pgm_dataset)\n",
+    "        start = time()\n",
+    "        _ = model_instance.calculate_power_flow(\n",
+    "            symmetric=True,\n",
+    "            calculation_method=method,\n",
+    "            update_data=pgm_update_dataset,\n",
+    "            output_component_types=[\"node\", \"line\"],\n",
+    "            max_iterations=10000,\n",
+    "        )\n",
+    "        end = time()\n",
+    "        pgm_end_time = time()\n",
+    "        res_pgm.append(end - start)\n",
+    "        log_print(f\"{pgm_method_dict[method]}: {end - start}\")\n",
+    "        log_print(f\"Total time{pgm_method_dict[method]}: {pgm_end_time - pgm_start_time}\")\n",
+    "\n",
+    "    # tpf\n",
+    "    tpf_time_start = time()\n",
+    "    tpf_instance = GridTensor(\n",
+    "        node_file_path=\"\",\n",
+    "        lines_file_path=\"\",\n",
+    "        from_file=False,\n",
+    "        nodes_frame=tpf_node_data,\n",
+    "        lines_frame=tpf_line_data,\n",
+    "        gpu_mode=False,\n",
+    "    )\n",
+    "    tpf_time_end = time()\n",
+    "\n",
+    "    tpf_functions = [\"run_pf_tensor\"]\n",
+    "    res_tpf = []\n",
+    "    for function_name in tpf_functions:\n",
+    "        start = time()\n",
+    "        _ = getattr(tpf_instance, function_name)(active_power=tpf_time_series_p, reactive_power=tpf_time_series_q)\n",
+    "        end = time()\n",
+    "        res_tpf.append(end - start)\n",
+    "        log_print(f\"TensorPowerFlow.{function_name}: {end - start}\")\n",
+    "\n",
+    "    log_print(f\"TensorPowerFlow instancing: {tpf_time_end - tpf_time_start}\")\n",
+    "\n",
+    "    return {\"entry pgm\": pgm_methods, \"result pgm\": res_pgm, \"entry tpf\": tpf_functions, \"result tpf\": res_tpf}"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now run the different experiment configurations."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "exp_options = [[20, 1], [20, 5], [20, 10], [20, 25], [40, 25], [40, 50]]\n",
+    "for n in tqdm([10, 100, 1000, 10000], desc=\"Overall Progress\"):\n",
+    "    plotter = BenchmarkPlotter(n_steps=n)\n",
+    "    for option in tqdm(exp_options, desc=f\"Processing n={n}\"):\n",
+    "        res = experiment(option[0], option[1], n)\n",
+    "        plotter.add(res, option[0] * option[1])\n",
+    "    plotter.plot()"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.12.0"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
+
+  --- File Contents End ---
+
+  File: plotter.py
+  --- File Contents Start ---
+# SPDX-FileCopyrightText: Contributors to the Power Grid Model project <powergridmodel@lfenergy.org>
+#
+# SPDX-License-Identifier: MPL-2.0
+
+from matplotlib import pyplot as plt
+
+
+class BenchmarkPlotter:
+    def __init__(self, n_steps=1000):
+        self.data_pgm_ic = []
+        self.data_pgm_nr = []
+        self.data_tpf_tf = []
+        self.n_nodes = []
+        self.n_steps = n_steps
+
+    def add(self, res, n_nodes):
+        res_pgm = res["result pgm"]
+        res_tpf = res["result tpf"]
+        self.data_pgm_ic.append(res_pgm[0])
+        self.data_pgm_nr.append(res_pgm[1])
+        self.data_tpf_tf.append(res_tpf[0])
+        self.n_nodes.append(n_nodes)
+
+    def plot(self, log_scale=False):
+        plt.figure(figsize=(8, 5))
+        _, ax = plt.subplots()
+        data_lists = [
+            self.data_pgm_ic,
+            self.data_pgm_nr,
+            self.data_tpf_tf,
+        ]
+        labels = ["pgm ic", "pgm nr", "tpf"]
+        styles = ["--", "--", "--", "--", "-"]
+        for data_list, label, style in zip(data_lists, labels, styles):
+            if log_scale:
+                ax.semilogy(self.n_nodes, data_list, label=label, linestyle=style)
+            else:
+                ax.plot(self.n_nodes, data_list, label=label, linestyle=style)
+
+        ax.set_title(f"PGM vs TPF {self.n_steps} steps")
+        ax.set_xlabel("Number of Nodes")
+        ax.set_ylabel("Execution Time (s)")
+
+        ax.legend()
+        # plt.savefig(f"data/benchmark_{self.n_steps}.pdf")
+        plt.show()
+
+  --- File Contents End ---
+
+  File: Power Grid Model Benchmark.ipynb
+  --- File Contents Start ---
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "cd7b594e",
+   "metadata": {},
+   "source": [
+    "# Introduction\n",
+    "\n",
+    "This notebook presents a benchmark comparison between `power-grid-model`, \n",
+    "[`pandapower`](http://www.pandapower.org/), and [`OpenDSS`](https://www.epri.com/pages/sa/opendss).\n",
+    "It runs several calculations, measures the calculation time, and compares the results.\n",
+    "\n",
+    "## Test Network\n",
+    "\n",
+    "The test network is fictionally generated using pre-defined random criteria. It is a radial network as follows:\n",
+    "\n",
+    "```\n",
+    "\n",
+    "source --- source_node ---| ---line--- node ---line--- node ...   (n_node_per_feeder)\n",
+    "                          |              |              |\n",
+    "                          |            load            load ...\n",
+    "                          |\n",
+    "                          | ---line--- ...\n",
+    "                          | .\n",
+    "                          | .\n",
+    "                          | .\n",
+    "                          | (n_feeder)\n",
+    "\n",
+    "```\n",
+    "\n",
+    "There is a node which is connected to a source (external network). From the source node there are `n_feeder` feeders. For each feeder there are `n_node_per_feeder` nodes, lines, and asymmetric loads. There are in total `n_feeder * n_node_per_feeder + 1` nodes in the network.\n",
+    "\n",
+    "\n",
+    "## Calculation\n",
+    "\n",
+    "The notebook runs a power flow calculation with the same input data in `power-grid-model`, `pandapower`, and `OpenDSS`. It runs the following calculations:\n",
+    "\n",
+    "* Single calculation with solver initialization.\n",
+    "* Single calculation without solver initialization (using pre-cached internal matrices).\n",
+    "* Time-series calculation\n",
+    "* N-1 calculation (not for `OpenDSS`)\n",
+    "\n",
+    "The calculation is run symmetrically (not for `OpenDSS`) and asymmetrically. Both `power-grid-model` and `pandapower` supports asymmetric loads in symmetric calculations: the three-phase load is aggregated into one symmetric load. In `OpenDSS` we only run asymmetric calculations \n",
+    "\n",
+    "We use the Newton-Raphson method for `power-grid-model` and `pandapower`. In addition, we also use the iterative current and linear method in `power-grid-model` to see how much performance you can gain in exchange for accuracy. For `OpenDSS` the default fix point method is used.\n",
+    "\n",
+    "## Results Comparison\n",
+    "\n",
+    "The following results are compared between `power-grid-model`, `pandapower`, and `OpenDSS`:\n",
+    "\n",
+    "* Per unit voltage of nodes (buses). For asymmetric calculation, it compares the value per phase.\n",
+    "* Loading of the lines. (not for `OpenDSS`)\n",
+    "\n",
+    "It only compares the results of the Newton-Raphson in `pandapower` and `power-grid-model`, as well as the fix point method in `OpenDSS`, since the linear method of `power-grid-model` will produce a less accurate result.\n",
+    "\n",
+    "## Performance Benchmark\n",
+    "\n",
+    "The CPU time is measured for the **calculation part** of the program. The data preparation and model initialization is not measured. Furthermore, the single calculation is benchmarked with and without solver initialization. The former needs to execute connectivity check and initialize internal matrices (for example node admittance matrix). The latter uses the pre-cached connectivity and internal matrices."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f9268706",
+   "metadata": {},
+   "source": [
+    "# Preparation\n",
+    "\n",
+    "## Import Libraries\n",
+    "\n",
+    "We import neede libraries here. The fictional network generation and time-series profile generation is in a different Python file\n",
+    "[generate_fictional_dataset.py](./generate_fictional_dataset.py)."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "0267ac98",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import time\n",
+    "from pathlib import Path\n",
+    "from copy import deepcopy\n",
+    "import numba\n",
+    "\n",
+    "import numpy as np\n",
+    "import pandapower as pp\n",
+    "import pandas as pd\n",
+    "import power_grid_model as pgm\n",
+    "\n",
+    "from generate_fictional_dataset import generate_fictional_grid\n",
+    "\n",
+    "from dss import DSS as dss_engine\n",
+    "\n",
+    "import warnings\n",
+    "warnings.filterwarnings('ignore')\n",
+    "\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "99bb7abf",
+   "metadata": {},
+   "source": [
+    "## Prepare Tables\n",
+    "\n",
+    "The performance comparison table and result deviation table is initialized below."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "34db0eaa",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# summary\n",
+    "summary_df = pd.DataFrame(\n",
+    "    np.full(shape=(8, 6), dtype=np.float64, fill_value=np.inf),\n",
+    "    columns=['PGM Linear Impedance', 'PGM Linear Current' ,'PGM Newton-Raphson', 'PGM Iterative Current', 'PandaPower Newton-Raphson', 'OpenDSS Fix Point'],\n",
+    "    index=[\n",
+    "        'Symmetric calculation with solver initialization',\n",
+    "        'Symmetric calculation without solver initialization',\n",
+    "        'Asymmetric calculation with solver initialization',\n",
+    "        'Asymmetric calculation without solver initialization',\n",
+    "        'Time series symmetric calculation',\n",
+    "        'Time series asymmetric calculation',\n",
+    "        'N-1 symmetric calculation',\n",
+    "        'N-1 asymmetric calculation',\n",
+    "    ]\n",
+    ")\n",
+    "\n",
+    "comparison_df = pd.DataFrame(\n",
+    "    np.full(shape=(6, 3), dtype=np.float64, fill_value=np.nan),\n",
+    "    columns=['Deviation Voltage (p.u.)', 'Deviation Loading (p.u.)', 'Deviation Voltage (p.u.) OpenDSS'],\n",
+    "    index=[\n",
+    "        'Symmetric calculation',\n",
+    "        'Asymmetric calculation',\n",
+    "        'Time series symmetric calculation',\n",
+    "        'Time series asymmetric calculation',\n",
+    "        'N-1 symmetric calculation',\n",
+    "        'N-1 asymmetric calculation',\n",
+    "    ]\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "fd10cde7",
+   "metadata": {},
+   "source": [
+    "## Simulation Parameters\n",
+    "\n",
+    "The simulation parameters, for example, the total number of feeders `n_feeder`, are defined below."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "ece0138d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# fictional grid parameters\n",
+    "\n",
+    "n_node_per_feeder = 10\n",
+    "n_feeder = 100\n",
+    "\n",
+    "cable_length_km_min = 0.8\n",
+    "cable_length_km_max = 1.2\n",
+    "load_p_w_max = 0.4e6 * 0.8\n",
+    "load_p_w_min = 0.4e6 * 1.2\n",
+    "pf = 0.95\n",
+    "\n",
+    "load_scaling_min = 0.5\n",
+    "load_scaling_max = 1.5\n",
+    "n_step = 1000\n",
+    "\n",
+    "\n",
+    "use_lightsim2grid = True"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "19a1b1f3",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# override small network\n",
+    "\n",
+    "# n_node_per_feeder = 3\n",
+    "# n_feeder = 2\n",
+    "# n_step = 10\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "8301d2a0",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# derived values\n",
+    "\n",
+    "n_node = n_node_per_feeder * n_feeder + 1\n",
+    "n_line = n_node_per_feeder * n_feeder\n",
+    "n_load = n_node_per_feeder * n_feeder"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "aab0f11d",
+   "metadata": {},
+   "source": [
+    "## Pre-cache Library\n",
+    "\n",
+    "To make a fair comparison, we run one small network so that `pandapower` can cache their dependent libraries into the memory.\n",
+    "\n",
+    "* For `pandapower` the `numba` functions are JIT compiled and cached in the memory."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "cc656c47",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fictional_dataset = generate_fictional_grid(\n",
+    "    n_node_per_feeder=3,\n",
+    "    n_feeder=2,\n",
+    "    cable_length_km_min=cable_length_km_min,\n",
+    "    cable_length_km_max=cable_length_km_max,\n",
+    "    load_p_w_max=load_p_w_max,\n",
+    "    load_p_w_min=load_p_w_min,\n",
+    "    pf=pf,\n",
+    "    n_step=n_step,\n",
+    "    load_scaling_min=load_scaling_min,\n",
+    "    load_scaling_max=load_scaling_max,\n",
+    ")\n",
+    "\n",
+    "pp.runpp(fictional_dataset['pp_net'], algorithm='nr', calculate_voltage_angles=True, distributed_slack=True, \n",
+    "         lightsim2grid=use_lightsim2grid)\n",
+    "pgm_model = pgm.PowerGridModel(fictional_dataset['pgm_dataset'])\n",
+    "pgm_result = pgm_model.calculate_power_flow()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9a0e5684",
+   "metadata": {},
+   "source": [
+    "# Generate Dataset\n",
+    "\n",
+    "First generate the fictional datasets."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "7909cdd9",
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "fictional_dataset = generate_fictional_grid(\n",
+    "    n_node_per_feeder=n_node_per_feeder,\n",
+    "    n_feeder=n_feeder,\n",
+    "    cable_length_km_min=cable_length_km_min,\n",
+    "    cable_length_km_max=cable_length_km_max,\n",
+    "    load_p_w_max=load_p_w_max,\n",
+    "    load_p_w_min=load_p_w_min,\n",
+    "    pf=pf,\n",
+    "    n_step=n_step,\n",
+    "    load_scaling_min=load_scaling_min,\n",
+    "    load_scaling_max=load_scaling_max,\n",
+    ")\n",
+    "\n",
+    "pp_net = deepcopy(fictional_dataset[\"pp_net\"])\n",
+    "pgm_dataset = fictional_dataset[\"pgm_dataset\"]\n",
+    "pgm_update_dataset = fictional_dataset[\"pgm_update_dataset\"]\n",
+    "pp_time_series_dataset = fictional_dataset[\"pp_time_series_dataset\"]\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "5251e4b0",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# initialize DSS\n",
+    "\n",
+    "dss_engine.ClearAll()\n",
+    "dss_engine.Text.Command = f\"compile {fictional_dataset['dss_file']}\"\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f604c5a4",
+   "metadata": {},
+   "source": [
+    "# Benchmark Function"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "2540d408",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def benchmark_pgm_power_flow(symmetric: bool, calculation_type: str, update_data=None, with_intialization: bool = False):\n",
+    "    method_dict = {\n",
+    "        'linear': 'PGM Linear Impedance',\n",
+    "        'linear_current': 'PGM Linear Current',\n",
+    "        'iterative_current': 'PGM Iterative Current',\n",
+    "        'newton_raphson': 'PGM Newton-Raphson'\n",
+    "    }\n",
+    "    for method in ['linear', 'linear_current', 'iterative_current', 'newton_raphson']:\n",
+    "        model_instance = pgm.PowerGridModel(pgm_dataset)\n",
+    "        # cache internal state if we do not benchmark solver intialization\n",
+    "        if not with_intialization:\n",
+    "            model_instance.calculate_power_flow(symmetric=symmetric, calculation_method=method)\n",
+    "        start = time.time()\n",
+    "        pgm_result = model_instance.calculate_power_flow(\n",
+    "            symmetric=symmetric, \n",
+    "            calculation_method=method, \n",
+    "            update_data=update_data, \n",
+    "            output_component_types={'node': [\"u_pu\"], 'line': [\"loading\"]})\n",
+    "        end = time.time()\n",
+    "        summary_df.loc[calculation_type, method_dict[method]] = end - start\n",
+    "    return pgm_result"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9ca1e1b7",
+   "metadata": {},
+   "source": [
+    "# Single Calculation\n",
+    "\n",
+    "We begin with a single power flow calculation."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "681b407b",
+   "metadata": {},
+   "source": [
+    "## Symmetric"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "eb823e12",
+   "metadata": {},
+   "source": [
+    "### power-grid-model"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "612d3384",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "benchmark_pgm_power_flow(symmetric=True, calculation_type='Symmetric calculation with solver initialization', with_intialization=True)\n",
+    "pgm_result = benchmark_pgm_power_flow(symmetric=True, calculation_type='Symmetric calculation without solver initialization', with_intialization=False)\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "8d60c97d",
+   "metadata": {},
+   "source": [
+    "### Newton-Raphson Method of pandapower"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "75a86adc",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# first calculation with solver initialization\n",
+    "start = time.time()\n",
+    "pp.runpp(pp_net, algorithm='nr', calculate_voltage_angles=True, distributed_slack=True, lightsim2grid=use_lightsim2grid)\n",
+    "end = time.time()\n",
+    "summary_df.loc['Symmetric calculation with solver initialization', 'PandaPower Newton-Raphson'] = end - start\n",
+    "\n",
+    "# second calculation with existing solver\n",
+    "start = time.time()\n",
+    "pp.runpp(pp_net, algorithm='nr', calculate_voltage_angles=True, distributed_slack=True, lightsim2grid=use_lightsim2grid)\n",
+    "end = time.time()\n",
+    "summary_df.loc['Symmetric calculation without solver initialization', 'PandaPower Newton-Raphson'] = end - start"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "0d6c3b2a",
+   "metadata": {},
+   "source": [
+    "### Calculate Deviation for Newton-Raphson Method"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "f532a8ed",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "comparison_df.loc['Symmetric calculation', 'Deviation Voltage (p.u.)'] = \\\n",
+    "    np.abs(pp_net.res_bus['vm_pu'] - pgm_result['node']['u_pu']).max()\n",
+    "comparison_df.loc['Symmetric calculation', 'Deviation Loading (p.u.)'] = \\\n",
+    "    np.abs(pp_net.res_line['loading_percent'] * 1e-2 - pgm_result['line']['loading']).max()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4e07f6c0",
+   "metadata": {},
+   "source": [
+    "## Asymmetric"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "711d1a46",
+   "metadata": {},
+   "source": [
+    "### power-grid-model"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "id": "c76f1366",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "benchmark_pgm_power_flow(symmetric=False, calculation_type='Asymmetric calculation with solver initialization', with_intialization=True)\n",
+    "pgm_result = benchmark_pgm_power_flow(symmetric=False, calculation_type='Asymmetric calculation without solver initialization', with_intialization=False)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "df97fecd",
+   "metadata": {},
+   "source": [
+    "### Newton-Raphson Method of pandapower"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "id": "5357e649",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# first calculation with solver initialization\n",
+    "start = time.time()\n",
+    "pp.runpp_3ph(pp_net, algorithm='nr', calculate_voltage_angles=True, distributed_slack=True, lightsim2grid=use_lightsim2grid)\n",
+    "end = time.time()\n",
+    "summary_df.loc['Asymmetric calculation with solver initialization', 'PandaPower Newton-Raphson'] = end - start\n",
+    "\n",
+    "# second calculation with existing solver\n",
+    "start = time.time()\n",
+    "pp.runpp_3ph(pp_net, algorithm='nr', calculate_voltage_angles=True, distributed_slack=True, lightsim2grid=use_lightsim2grid)\n",
+    "end = time.time()\n",
+    "summary_df.loc['Asymmetric calculation without solver initialization', 'PandaPower Newton-Raphson'] = end - start\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "d9a1f260",
+   "metadata": {},
+   "source": [
+    "### Fix Point Method of OpenDSS"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "id": "44b41b82",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# first calculation with solver initialization\n",
+    "start = time.time()\n",
+    "dss_engine.Text.Command = \"set mode=snapshot\"\n",
+    "dss_engine.Text.Command = \"set controlmode=static\"\n",
+    "dss_engine.ActiveCircuit.Solution.Solve()\n",
+    "end = time.time()\n",
+    "summary_df.loc['Asymmetric calculation with solver initialization', 'OpenDSS Fix Point'] = end - start\n",
+    "\n",
+    "# second calculation with existing solver\n",
+    "start = time.time()\n",
+    "dss_engine.ActiveCircuit.Solution.Solve()\n",
+    "end = time.time()\n",
+    "summary_df.loc['Asymmetric calculation without solver initialization', 'OpenDSS Fix Point'] = end - start\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "95846622",
+   "metadata": {},
+   "source": [
+    "### Calculate Deviation for Newton-Raphson Method"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "id": "840e9f29",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "comparison_df.loc['Asymmetric calculation', 'Deviation Voltage (p.u.)'] = \\\n",
+    "    np.abs(pp_net.res_bus_3ph[['vm_a_pu', 'vm_b_pu', 'vm_c_pu']].to_numpy() - pgm_result['node']['u_pu']).max()\n",
+    "comparison_df.loc['Asymmetric calculation', 'Deviation Loading (p.u.)'] = \\\n",
+    "    np.abs(pp_net.res_line_3ph['loading_percent'] * 1e-2 - pgm_result['line']['loading']).max()\n",
+    "comparison_df.loc['Asymmetric calculation', 'Deviation Voltage (p.u.) OpenDSS'] = \\\n",
+    "    np.abs(dss_engine.ActiveCircuit.AllBusVmagPu.reshape(-1, 3) - pgm_result['node']['u_pu']).max()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "bd10ecd4",
+   "metadata": {},
+   "source": [
+    "# Time Series Calculation\n",
+    "\n",
+    "We execute a time-series power flow with `n_step` timestamps. \n",
+    "\n",
+    "## Preparation\n",
+    "\n",
+    "The load profile is randomly generated by the function `generate_time_series`. It produces the relevant input format for both libraries."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "id": "ab571db2",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "\n",
+    "time_steps = np.arange(n_step)\n",
+    "\n",
+    "for x, y in zip(['p', 'q'], ['mw', 'mvar']):\n",
+    "    for p in ['a', 'b', 'c']:\n",
+    "        name = f'{x}_{p}_{y}'\n",
+    "        pp.control.ConstControl(\n",
+    "            pp_net,\n",
+    "            element='asymmetric_load',\n",
+    "            element_index=pp_net.asymmetric_load.index,\n",
+    "            variable=name,\n",
+    "            data_source=pp_time_series_dataset[name],\n",
+    "            profile_name=pp_net.asymmetric_load.index\n",
+    "        )\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "c0c68b83",
+   "metadata": {},
+   "source": [
+    "## Symmetric"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5d2f8fd3",
+   "metadata": {},
+   "source": [
+    "### power-grid-model"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "id": "bae29ebf",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pgm_result = benchmark_pgm_power_flow(symmetric=True, calculation_type='Time series symmetric calculation', update_data=pgm_update_dataset)\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "09030805",
+   "metadata": {},
+   "source": [
+    "### Newton-Raphson Method of pandapower"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 19,
+   "id": "b943bdee",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pp.timeseries.OutputWriter(\n",
+    "    pp_net,\n",
+    "    log_variables=[\n",
+    "        ('res_bus', 'vm_pu'),\n",
+    "        ('res_line', 'loading_percent'),\n",
+    "    ]\n",
+    ")\n",
+    "\n",
+    "start = time.time()\n",
+    "pp.timeseries.run_timeseries(\n",
+    "    pp_net, run=pp.runpp, time_steps=time_steps,\n",
+    "    calculate_voltage_angles=True, distributed_slack=True, lightsim2grid=use_lightsim2grid,\n",
+    "    verbose=False\n",
+    ")\n",
+    "end = time.time()\n",
+    "summary_df.loc['Time series symmetric calculation', 'PandaPower Newton-Raphson'] = end - start"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "13e0b644",
+   "metadata": {},
+   "source": [
+    "### Calculate Deviation for Newton-Raphson Method"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 20,
+   "id": "75977fb6",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pp_u_pu = pp_net.output_writer.iloc[0, 0].output['res_bus.vm_pu'].to_numpy()\n",
+    "comparison_df.loc['Time series symmetric calculation', 'Deviation Voltage (p.u.)'] = \\\n",
+    "    np.abs(pp_u_pu - pgm_result['node']['u_pu']).max()\n",
+    "pp_loading = pp_net.output_writer.iloc[0, 0].output['res_line.loading_percent'].to_numpy() * 1e-2\n",
+    "comparison_df.loc['Time series symmetric calculation', 'Deviation Loading (p.u.)'] = \\\n",
+    "    np.abs(pp_loading - pgm_result['line']['loading']).max()\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b9bff694",
+   "metadata": {},
+   "source": [
+    "## Asymmetric"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "219efc5c",
+   "metadata": {},
+   "source": [
+    "### power-grid-model"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 21,
+   "id": "4735161f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pgm_result = benchmark_pgm_power_flow(symmetric=False, calculation_type='Time series asymmetric calculation', update_data=pgm_update_dataset)\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "35320697",
+   "metadata": {},
+   "source": [
+    "### Newton-Raphson Method of pandapower"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 22,
+   "id": "d1b2d792",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "del pp_net.output_writer\n",
+    "ow = pp.timeseries.OutputWriter(pp_net)\n",
+    "ow.log_variable('res_bus_3ph', 'vm_a_pu', index=pp_net.bus.index)\n",
+    "ow.log_variable('res_bus_3ph', 'vm_b_pu', index=pp_net.bus.index)\n",
+    "ow.log_variable('res_bus_3ph', 'vm_c_pu', index=pp_net.bus.index)\n",
+    "ow.log_variable('res_line_3ph', 'loading_percent', index=pp_net.line.index)\n",
+    "\n",
+    "# run\n",
+    "start = time.time()\n",
+    "pp.timeseries.run_timeseries(\n",
+    "    pp_net,\n",
+    "    run=pp.runpp_3ph,\n",
+    "    time_steps=time_steps,\n",
+    "    calculate_voltage_angles=True,\n",
+    "    distributed_slack=True, \n",
+    "    lightsim2grid=use_lightsim2grid,\n",
+    "    verbose=False\n",
+    ")\n",
+    "end = time.time()\n",
+    "summary_df.loc['Time series asymmetric calculation', 'PandaPower Newton-Raphson'] = end - start"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "03feb9a2",
+   "metadata": {},
+   "source": [
+    "### Fix Point Method of OpenDSS"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 23,
+   "id": "589779e3",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# first calculation with solver initialization\n",
+    "start = time.time()\n",
+    "dss_engine.Text.Command = \"set mode=Daily\"\n",
+    "dss_engine.Text.Command = \"set Stepsize=3600s\"\n",
+    "dss_engine.Text.Command = f\"set Number={n_step}\"\n",
+    "dss_engine.Text.Command = \"set controlmode=static\"\n",
+    "dss_engine.ActiveCircuit.Solution.Solve()\n",
+    "end = time.time()\n",
+    "summary_df.loc['Time series asymmetric calculation', 'OpenDSS Fix Point'] = end - start\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 24,
+   "id": "dd8c7169",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# get results\n",
+    "all_results = []\n",
+    "\n",
+    "# source\n",
+    "flag = dss_engine.ActiveCircuit.Monitors.First\n",
+    "assert flag != 0\n",
+    "all_results += [dss_engine.ActiveCircuit.Monitors.Channel(1), dss_engine.ActiveCircuit.Monitors.Channel(2), dss_engine.ActiveCircuit.Monitors.Channel(3)]\n",
+    "\n",
+    "# others\n",
+    "flag = dss_engine.ActiveCircuit.Monitors.Next\n",
+    "while flag != 0:\n",
+    "    all_results.append(dss_engine.ActiveCircuit.Monitors.Channel(1))\n",
+    "    flag = dss_engine.ActiveCircuit.Monitors.Next\n",
+    "\n",
+    "dss_voltage = np.stack(all_results, axis=1)\n",
+    "dss_voltage = dss_voltage.reshape(n_step, -1, 3)\n",
+    "dss_voltage /= 10e3 / np.sqrt(3)\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "28d06b1a",
+   "metadata": {},
+   "source": [
+    "### Calculate Deviation for Newton-Raphson Method"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 25,
+   "id": "1a7f075f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pp_u_pu = []\n",
+    "for p in ['a', 'b', 'c']:\n",
+    "    pp_u_pu.append(pp_net.output_writer.iloc[0, 0].output[f'res_bus_3ph.vm_{p}_pu'].to_numpy())\n",
+    "pp_u_pu = np.stack(pp_u_pu, axis=-1)\n",
+    "comparison_df.loc['Time series asymmetric calculation', 'Deviation Voltage (p.u.)'] = \\\n",
+    "    np.abs(pp_u_pu - pgm_result['node']['u_pu']).max()\n",
+    "\n",
+    "pp_loading = pp_net.output_writer.iloc[0, 0].output[r'res_line_3ph.loading_percent'].to_numpy() * 1e-2\n",
+    "comparison_df.loc['Time series asymmetric calculation', 'Deviation Loading (p.u.)'] = \\\n",
+    "    np.abs(pp_loading - pgm_result['line']['loading']).max()\n",
+    "\n",
+    "comparison_df.loc['Time series asymmetric calculation', 'Deviation Voltage (p.u.) OpenDSS'] = \\\n",
+    "    np.abs(dss_voltage - pgm_result['node']['u_pu']).max()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5b259f80",
+   "metadata": {},
+   "source": [
+    "# N-1 Scenario Calculation\n",
+    "\n",
+    "We execute a N-1 scenario calculation. There are `n_line` scenarios. In each scenario one line will be disabled. Since the original network is radial, part of the network will be unenergized due to the switch-off of a line.\n",
+    "\n",
+    "## Preparation\n",
+    "\n",
+    "The N-1 scenario input is generated for `power-grid-model`. Since `pandapower` does not have a built-in N-1 scenario calculation, we execute the power flow per scenario in a loop."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 26,
+   "id": "3bbe4faa",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# re-generate dataset\n",
+    "\n",
+    "pp_net = deepcopy(fictional_dataset[\"pp_net\"])\n",
+    "pgm_dataset = fictional_dataset[\"pgm_dataset\"]\n",
+    "\n",
+    "# update dataset for power grid model\n",
+    "# disable one line per batch\n",
+    "pgm_line_profile = {\n",
+    "    \"id\": pgm_dataset[\"line\"][\"id\"].reshape(-1, 1).copy(),\n",
+    "    \"from_status\": np.zeros((n_line, 1), dtype=np.int8),\n",
+    "    \"to_status\": np.zeros((n_line, 1), dtype=np.int8),\n",
+    "}\n",
+    "pgm_update_dataset = {\"line\": pgm_line_profile}"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "7e7890a5",
+   "metadata": {},
+   "source": [
+    "## Symmetric"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "36a9bf89",
+   "metadata": {},
+   "source": [
+    "### power-grid-model"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 27,
+   "id": "ab0c5fc2",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pgm_result = benchmark_pgm_power_flow(symmetric=True, calculation_type='N-1 symmetric calculation', update_data=pgm_update_dataset)\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "e9044a03",
+   "metadata": {},
+   "source": [
+    "### Newton-Raphson Method of pandapower"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 28,
+   "id": "d1a08656",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# prepare pandapower result dataset\n",
+    "pp_u_pu = np.empty(shape=(n_line, n_node), dtype=np.float64)\n",
+    "pp_loading = np.empty(shape=(n_line, n_line), dtype=np.float64)\n",
+    "\n",
+    "start = time.time()\n",
+    "# loop to calcualte pandapower N-1\n",
+    "for i in pp_net.line.index:\n",
+    "    # set one line out of service\n",
+    "    pp_net.line.loc[i, 'in_service'] = False\n",
+    "    pp.runpp(pp_net, algorithm='nr', calculate_voltage_angles=True, distributed_slack=True, lightsim2grid=use_lightsim2grid)\n",
+    "    # restore that line\n",
+    "    pp_net.line.loc[i, 'in_service'] = True\n",
+    "    # get result\n",
+    "    pp_u_pu[i, :] = pp_net.res_bus['vm_pu']\n",
+    "    pp_loading[i, :] = pp_net.res_line['loading_percent'] * 1e-2\n",
+    "end = time.time()\n",
+    "summary_df.loc['N-1 symmetric calculation', 'PandaPower Newton-Raphson'] = end - start\n",
+    "\n",
+    "# set nan to 0.0 to make a meaningful comparison\n",
+    "pp_u_pu[np.isnan(pp_u_pu)] = 0.0\n",
+    "pp_loading[np.isnan(pp_loading)] = 0.0"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "59d1eb45",
+   "metadata": {},
+   "source": [
+    "### Calculate Deviation for Newton-Raphson Method"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 29,
+   "id": "040c08a0",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "comparison_df.loc['N-1 symmetric calculation', 'Deviation Voltage (p.u.)'] = \\\n",
+    "    np.abs(pp_u_pu - pgm_result['node']['u_pu']).max()\n",
+    "comparison_df.loc['N-1 symmetric calculation', 'Deviation Loading (p.u.)'] = \\\n",
+    "    np.abs(pp_loading - pgm_result['line']['loading']).max()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "e88d7a46",
+   "metadata": {},
+   "source": [
+    "## Asymmetric"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "162236d4",
+   "metadata": {},
+   "source": [
+    "### power-grid-model"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 30,
+   "id": "c0e18e41",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pgm_result = benchmark_pgm_power_flow(symmetric=False, calculation_type='N-1 asymmetric calculation', update_data=pgm_update_dataset)\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "cf3913e3",
+   "metadata": {},
+   "source": [
+    "### Newton-Raphson Method of pandapower"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 31,
+   "id": "65ecfde0",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "%%capture\n",
+    "\n",
+    "# prepare pandapower result dataset\n",
+    "pp_u_pu = np.empty(shape=(n_line, n_node, 3), dtype=np.float64)\n",
+    "pp_loading = np.empty(shape=(n_line, n_line), dtype=np.float64)\n",
+    "\n",
+    "start = time.time()\n",
+    "# loop to calcualte pandapower N-1\n",
+    "for i in pp_net.line.index:\n",
+    "    # set one line out of service\n",
+    "    pp_net.line.loc[i, 'in_service'] = False\n",
+    "    pp.runpp_3ph(pp_net, algorithm='nr', calculate_voltage_angles=True, distributed_slack=True, lightsim2grid=use_lightsim2grid)\n",
+    "    # restore that line\n",
+    "    pp_net.line.loc[i, 'in_service'] = True\n",
+    "    # get result\n",
+    "    pp_u_pu[i, ...] = pp_net.res_bus_3ph[['vm_a_pu', 'vm_b_pu', 'vm_c_pu']]\n",
+    "    pp_loading[i, :] = pp_net.res_line_3ph['loading_percent'] * 1e-2\n",
+    "end = time.time()\n",
+    "summary_df.loc['N-1 asymmetric calculation', 'PandaPower Newton-Raphson'] = end - start\n",
+    "\n",
+    "# set nan to 0.0 to make a meaningful comparison\n",
+    "pp_u_pu[np.isnan(pp_u_pu)] = 0.0\n",
+    "pp_loading[np.isnan(pp_loading)] = 0.0"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "6be215a8",
+   "metadata": {},
+   "source": [
+    "### Calculate Deviation for Newton-Raphson Method"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 32,
+   "id": "11accf7c",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "comparison_df.loc['N-1 asymmetric calculation', 'Deviation Voltage (p.u.)'] = \\\n",
+    "    np.abs(pp_u_pu - pgm_result['node']['u_pu']).max()\n",
+    "comparison_df.loc['N-1 asymmetric calculation', 'Deviation Loading (p.u.)'] = \\\n",
+    "    np.abs(pp_loading - pgm_result['line']['loading']).max()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "ff983dfb",
+   "metadata": {},
+   "source": [
+    "# Summary"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "1438d2af",
+   "metadata": {},
+   "source": [
+    "## Deviation of Results\n",
+    "\n",
+    "Below is the table of deviation between the results from `power-grid-model`, `pandapower`, and `OpenDSS`. It matches to the order of `1e-6`. Note there are no comparisons for `OpenDSS` for symmetric calculations."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 33,
+   "id": "300e650a",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Deviation Voltage (p.u.)</th>\n",
+       "      <th>Deviation Loading (p.u.)</th>\n",
+       "      <th>Deviation Voltage (p.u.) OpenDSS</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>Symmetric calculation</th>\n",
+       "      <td>1.623590e-12</td>\n",
+       "      <td>5.166423e-13</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Asymmetric calculation</th>\n",
+       "      <td>5.796954e-10</td>\n",
+       "      <td>8.192067e-09</td>\n",
+       "      <td>5.401338e-09</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Time series symmetric calculation</th>\n",
+       "      <td>1.783462e-12</td>\n",
+       "      <td>1.300737e-12</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Time series asymmetric calculation</th>\n",
+       "      <td>5.894751e-10</td>\n",
+       "      <td>3.375877e-09</td>\n",
+       "      <td>4.059398e-06</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>N-1 symmetric calculation</th>\n",
+       "      <td>1.634692e-12</td>\n",
+       "      <td>6.065148e-13</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>N-1 asymmetric calculation</th>\n",
+       "      <td>5.797138e-10</td>\n",
+       "      <td>8.192209e-09</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "                                    Deviation Voltage (p.u.)  \\\n",
+       "Symmetric calculation                           1.623590e-12   \n",
+       "Asymmetric calculation                          5.796954e-10   \n",
+       "Time series symmetric calculation               1.783462e-12   \n",
+       "Time series asymmetric calculation              5.894751e-10   \n",
+       "N-1 symmetric calculation                       1.634692e-12   \n",
+       "N-1 asymmetric calculation                      5.797138e-10   \n",
+       "\n",
+       "                                    Deviation Loading (p.u.)  \\\n",
+       "Symmetric calculation                           5.166423e-13   \n",
+       "Asymmetric calculation                          8.192067e-09   \n",
+       "Time series symmetric calculation               1.300737e-12   \n",
+       "Time series asymmetric calculation              3.375877e-09   \n",
+       "N-1 symmetric calculation                       6.065148e-13   \n",
+       "N-1 asymmetric calculation                      8.192209e-09   \n",
+       "\n",
+       "                                    Deviation Voltage (p.u.) OpenDSS  \n",
+       "Symmetric calculation                                            NaN  \n",
+       "Asymmetric calculation                                  5.401338e-09  \n",
+       "Time series symmetric calculation                                NaN  \n",
+       "Time series asymmetric calculation                      4.059398e-06  \n",
+       "N-1 symmetric calculation                                        NaN  \n",
+       "N-1 asymmetric calculation                                       NaN  "
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "display(comparison_df)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "88cff8be",
+   "metadata": {},
+   "source": [
+    "## Performance Comparison\n",
+    "\n",
+    "Below is the table of the measured time of all calculations. Note there are no comparisons for `OpenDSS` for symmetric calculations."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 34,
+   "id": "4f897355",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>PGM Linear Impedance</th>\n",
+       "      <th>PGM Linear Current</th>\n",
+       "      <th>PGM Newton-Raphson</th>\n",
+       "      <th>PGM Iterative Current</th>\n",
+       "      <th>PandaPower Newton-Raphson</th>\n",
+       "      <th>OpenDSS Fix Point</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>Symmetric calculation with solver initialization</th>\n",
+       "      <td>0.000717</td>\n",
+       "      <td>0.000749</td>\n",
+       "      <td>0.000904</td>\n",
+       "      <td>0.000791</td>\n",
+       "      <td>0.014986</td>\n",
+       "      <td>inf</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Symmetric calculation without solver initialization</th>\n",
+       "      <td>0.000328</td>\n",
+       "      <td>0.000303</td>\n",
+       "      <td>0.000523</td>\n",
+       "      <td>0.000395</td>\n",
+       "      <td>0.010504</td>\n",
+       "      <td>inf</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Asymmetric calculation with solver initialization</th>\n",
+       "      <td>0.001284</td>\n",
+       "      <td>0.001346</td>\n",
+       "      <td>0.003015</td>\n",
+       "      <td>0.001526</td>\n",
+       "      <td>0.555134</td>\n",
+       "      <td>0.013189</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Asymmetric calculation without solver initialization</th>\n",
+       "      <td>0.000661</td>\n",
+       "      <td>0.000643</td>\n",
+       "      <td>0.002576</td>\n",
+       "      <td>0.000863</td>\n",
+       "      <td>0.193532</td>\n",
+       "      <td>0.001212</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Time series symmetric calculation</th>\n",
+       "      <td>0.183968</td>\n",
+       "      <td>0.190497</td>\n",
+       "      <td>0.412976</td>\n",
+       "      <td>0.285305</td>\n",
+       "      <td>10.640187</td>\n",
+       "      <td>inf</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Time series asymmetric calculation</th>\n",
+       "      <td>0.517016</td>\n",
+       "      <td>0.541973</td>\n",
+       "      <td>2.189432</td>\n",
+       "      <td>0.820635</td>\n",
+       "      <td>302.166336</td>\n",
+       "      <td>1.984364</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>N-1 symmetric calculation</th>\n",
+       "      <td>0.457338</td>\n",
+       "      <td>0.468602</td>\n",
+       "      <td>0.686643</td>\n",
+       "      <td>0.558129</td>\n",
+       "      <td>8.957743</td>\n",
+       "      <td>inf</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>N-1 asymmetric calculation</th>\n",
+       "      <td>0.873055</td>\n",
+       "      <td>0.894584</td>\n",
+       "      <td>2.517569</td>\n",
+       "      <td>1.165730</td>\n",
+       "      <td>245.709500</td>\n",
+       "      <td>inf</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "                                                    PGM Linear Impedance  \\\n",
+       "Symmetric calculation with solver initialization                0.000717   \n",
+       "Symmetric calculation without solver initializa...              0.000328   \n",
+       "Asymmetric calculation with solver initialization               0.001284   \n",
+       "Asymmetric calculation without solver initializ...              0.000661   \n",
+       "Time series symmetric calculation                               0.183968   \n",
+       "Time series asymmetric calculation                              0.517016   \n",
+       "N-1 symmetric calculation                                       0.457338   \n",
+       "N-1 asymmetric calculation                                      0.873055   \n",
+       "\n",
+       "                                                    PGM Linear Current  \\\n",
+       "Symmetric calculation with solver initialization              0.000749   \n",
+       "Symmetric calculation without solver initializa...            0.000303   \n",
+       "Asymmetric calculation with solver initialization             0.001346   \n",
+       "Asymmetric calculation without solver initializ...            0.000643   \n",
+       "Time series symmetric calculation                             0.190497   \n",
+       "Time series asymmetric calculation                            0.541973   \n",
+       "N-1 symmetric calculation                                     0.468602   \n",
+       "N-1 asymmetric calculation                                    0.894584   \n",
+       "\n",
+       "                                                    PGM Newton-Raphson  \\\n",
+       "Symmetric calculation with solver initialization              0.000904   \n",
+       "Symmetric calculation without solver initializa...            0.000523   \n",
+       "Asymmetric calculation with solver initialization             0.003015   \n",
+       "Asymmetric calculation without solver initializ...            0.002576   \n",
+       "Time series symmetric calculation                             0.412976   \n",
+       "Time series asymmetric calculation                            2.189432   \n",
+       "N-1 symmetric calculation                                     0.686643   \n",
+       "N-1 asymmetric calculation                                    2.517569   \n",
+       "\n",
+       "                                                    PGM Iterative Current  \\\n",
+       "Symmetric calculation with solver initialization                 0.000791   \n",
+       "Symmetric calculation without solver initializa...               0.000395   \n",
+       "Asymmetric calculation with solver initialization                0.001526   \n",
+       "Asymmetric calculation without solver initializ...               0.000863   \n",
+       "Time series symmetric calculation                                0.285305   \n",
+       "Time series asymmetric calculation                               0.820635   \n",
+       "N-1 symmetric calculation                                        0.558129   \n",
+       "N-1 asymmetric calculation                                       1.165730   \n",
+       "\n",
+       "                                                    PandaPower Newton-Raphson  \\\n",
+       "Symmetric calculation with solver initialization                     0.014986   \n",
+       "Symmetric calculation without solver initializa...                   0.010504   \n",
+       "Asymmetric calculation with solver initialization                    0.555134   \n",
+       "Asymmetric calculation without solver initializ...                   0.193532   \n",
+       "Time series symmetric calculation                                   10.640187   \n",
+       "Time series asymmetric calculation                                 302.166336   \n",
+       "N-1 symmetric calculation                                            8.957743   \n",
+       "N-1 asymmetric calculation                                         245.709500   \n",
+       "\n",
+       "                                                    OpenDSS Fix Point  \n",
+       "Symmetric calculation with solver initialization                  inf  \n",
+       "Symmetric calculation without solver initializa...                inf  \n",
+       "Asymmetric calculation with solver initialization            0.013189  \n",
+       "Asymmetric calculation without solver initializ...           0.001212  \n",
+       "Time series symmetric calculation                                 inf  \n",
+       "Time series asymmetric calculation                           1.984364  \n",
+       "N-1 symmetric calculation                                         inf  \n",
+       "N-1 asymmetric calculation                                        inf  "
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "display(summary_df)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 35,
+   "id": "6c921324",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<style type=\"text/css\">\n",
+       "</style>\n",
+       "<table id=\"T_a8382\">\n",
+       "  <thead>\n",
+       "    <tr>\n",
+       "      <th class=\"blank level0\" >&nbsp;</th>\n",
+       "      <th id=\"T_a8382_level0_col0\" class=\"col_heading level0 col0\" >PGM Linear Impedance</th>\n",
+       "      <th id=\"T_a8382_level0_col1\" class=\"col_heading level0 col1\" >PGM Linear Current</th>\n",
+       "      <th id=\"T_a8382_level0_col2\" class=\"col_heading level0 col2\" >PGM Newton-Raphson</th>\n",
+       "      <th id=\"T_a8382_level0_col3\" class=\"col_heading level0 col3\" >PGM Iterative Current</th>\n",
+       "      <th id=\"T_a8382_level0_col4\" class=\"col_heading level0 col4\" >PandaPower Newton-Raphson</th>\n",
+       "      <th id=\"T_a8382_level0_col5\" class=\"col_heading level0 col5\" >OpenDSS Fix Point</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th id=\"T_a8382_level0_row0\" class=\"row_heading level0 row0\" >Symmetric calculation with solver initialization</th>\n",
+       "      <td id=\"T_a8382_row0_col0\" class=\"data row0 col0\" >20.90x</td>\n",
+       "      <td id=\"T_a8382_row0_col1\" class=\"data row0 col1\" >20.00x</td>\n",
+       "      <td id=\"T_a8382_row0_col2\" class=\"data row0 col2\" >16.57x</td>\n",
+       "      <td id=\"T_a8382_row0_col3\" class=\"data row0 col3\" >18.94x</td>\n",
+       "      <td id=\"T_a8382_row0_col4\" class=\"data row0 col4\" >1.00x</td>\n",
+       "      <td id=\"T_a8382_row0_col5\" class=\"data row0 col5\" >0.00x</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_a8382_level0_row1\" class=\"row_heading level0 row1\" >Symmetric calculation without solver initialization</th>\n",
+       "      <td id=\"T_a8382_row1_col0\" class=\"data row1 col0\" >32.00x</td>\n",
+       "      <td id=\"T_a8382_row1_col1\" class=\"data row1 col1\" >34.72x</td>\n",
+       "      <td id=\"T_a8382_row1_col2\" class=\"data row1 col2\" >20.08x</td>\n",
+       "      <td id=\"T_a8382_row1_col3\" class=\"data row1 col3\" >26.59x</td>\n",
+       "      <td id=\"T_a8382_row1_col4\" class=\"data row1 col4\" >1.00x</td>\n",
+       "      <td id=\"T_a8382_row1_col5\" class=\"data row1 col5\" >0.00x</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_a8382_level0_row2\" class=\"row_heading level0 row2\" >Asymmetric calculation with solver initialization</th>\n",
+       "      <td id=\"T_a8382_row2_col0\" class=\"data row2 col0\" >432.39x</td>\n",
+       "      <td id=\"T_a8382_row2_col1\" class=\"data row2 col1\" >412.47x</td>\n",
+       "      <td id=\"T_a8382_row2_col2\" class=\"data row2 col2\" >184.12x</td>\n",
+       "      <td id=\"T_a8382_row2_col3\" class=\"data row2 col3\" >363.76x</td>\n",
+       "      <td id=\"T_a8382_row2_col4\" class=\"data row2 col4\" >1.00x</td>\n",
+       "      <td id=\"T_a8382_row2_col5\" class=\"data row2 col5\" >42.09x</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_a8382_level0_row3\" class=\"row_heading level0 row3\" >Asymmetric calculation without solver initialization</th>\n",
+       "      <td id=\"T_a8382_row3_col0\" class=\"data row3 col0\" >292.62x</td>\n",
+       "      <td id=\"T_a8382_row3_col1\" class=\"data row3 col1\" >300.87x</td>\n",
+       "      <td id=\"T_a8382_row3_col2\" class=\"data row3 col2\" >75.13x</td>\n",
+       "      <td id=\"T_a8382_row3_col3\" class=\"data row3 col3\" >224.30x</td>\n",
+       "      <td id=\"T_a8382_row3_col4\" class=\"data row3 col4\" >1.00x</td>\n",
+       "      <td id=\"T_a8382_row3_col5\" class=\"data row3 col5\" >159.63x</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_a8382_level0_row4\" class=\"row_heading level0 row4\" >Time series symmetric calculation</th>\n",
+       "      <td id=\"T_a8382_row4_col0\" class=\"data row4 col0\" >57.84x</td>\n",
+       "      <td id=\"T_a8382_row4_col1\" class=\"data row4 col1\" >55.85x</td>\n",
+       "      <td id=\"T_a8382_row4_col2\" class=\"data row4 col2\" >25.76x</td>\n",
+       "      <td id=\"T_a8382_row4_col3\" class=\"data row4 col3\" >37.29x</td>\n",
+       "      <td id=\"T_a8382_row4_col4\" class=\"data row4 col4\" >1.00x</td>\n",
+       "      <td id=\"T_a8382_row4_col5\" class=\"data row4 col5\" >0.00x</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_a8382_level0_row5\" class=\"row_heading level0 row5\" >Time series asymmetric calculation</th>\n",
+       "      <td id=\"T_a8382_row5_col0\" class=\"data row5 col0\" >584.44x</td>\n",
+       "      <td id=\"T_a8382_row5_col1\" class=\"data row5 col1\" >557.53x</td>\n",
+       "      <td id=\"T_a8382_row5_col2\" class=\"data row5 col2\" >138.01x</td>\n",
+       "      <td id=\"T_a8382_row5_col3\" class=\"data row5 col3\" >368.21x</td>\n",
+       "      <td id=\"T_a8382_row5_col4\" class=\"data row5 col4\" >1.00x</td>\n",
+       "      <td id=\"T_a8382_row5_col5\" class=\"data row5 col5\" >152.27x</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_a8382_level0_row6\" class=\"row_heading level0 row6\" >N-1 symmetric calculation</th>\n",
+       "      <td id=\"T_a8382_row6_col0\" class=\"data row6 col0\" >19.59x</td>\n",
+       "      <td id=\"T_a8382_row6_col1\" class=\"data row6 col1\" >19.12x</td>\n",
+       "      <td id=\"T_a8382_row6_col2\" class=\"data row6 col2\" >13.05x</td>\n",
+       "      <td id=\"T_a8382_row6_col3\" class=\"data row6 col3\" >16.05x</td>\n",
+       "      <td id=\"T_a8382_row6_col4\" class=\"data row6 col4\" >1.00x</td>\n",
+       "      <td id=\"T_a8382_row6_col5\" class=\"data row6 col5\" >0.00x</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_a8382_level0_row7\" class=\"row_heading level0 row7\" >N-1 asymmetric calculation</th>\n",
+       "      <td id=\"T_a8382_row7_col0\" class=\"data row7 col0\" >281.44x</td>\n",
+       "      <td id=\"T_a8382_row7_col1\" class=\"data row7 col1\" >274.66x</td>\n",
+       "      <td id=\"T_a8382_row7_col2\" class=\"data row7 col2\" >97.60x</td>\n",
+       "      <td id=\"T_a8382_row7_col3\" class=\"data row7 col3\" >210.78x</td>\n",
+       "      <td id=\"T_a8382_row7_col4\" class=\"data row7 col4\" >1.00x</td>\n",
+       "      <td id=\"T_a8382_row7_col5\" class=\"data row7 col5\" >0.00x</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n"
+      ],
+      "text/plain": [
+       "<pandas.io.formats.style.Styler at 0x7f08f066ca70>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "relative_df = summary_df.div(summary_df['PandaPower Newton-Raphson'], axis=0)\n",
+    "speedup_df = 1 / relative_df\n",
+    "display(speedup_df.style.format(\"{:0.2f}x\"))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "37444b58",
+   "metadata": {},
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ddc61ec0",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.12.3"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
+
+  --- File Contents End ---
+
+================================================================================
+
+Folder: D:\Alliander\power-grid-model-benchmark\.git
+
+================================================================================
+
+Folder: D:\Alliander\power-grid-model-benchmark\.git\hooks
+
+================================================================================
+
+Folder: D:\Alliander\power-grid-model-benchmark\.git\info
+
+================================================================================
+
+Folder: D:\Alliander\power-grid-model-benchmark\.git\logs
+
+================================================================================
+
+Folder: D:\Alliander\power-grid-model-benchmark\.git\logs\refs
+
+================================================================================
+
+Folder: D:\Alliander\power-grid-model-benchmark\.git\logs\refs\heads
+
+================================================================================
+
+Folder: D:\Alliander\power-grid-model-benchmark\.git\logs\refs\remotes
+
+================================================================================
+
+Folder: D:\Alliander\power-grid-model-benchmark\.git\logs\refs\remotes\origin
+
+================================================================================
+
+Folder: D:\Alliander\power-grid-model-benchmark\.git\objects
+
+================================================================================
+
+Folder: D:\Alliander\power-grid-model-benchmark\.git\objects\info
+
+================================================================================
+
+Folder: D:\Alliander\power-grid-model-benchmark\.git\objects\pack
+
+================================================================================
+
+Folder: D:\Alliander\power-grid-model-benchmark\.git\refs
+
+================================================================================
+
+Folder: D:\Alliander\power-grid-model-benchmark\.git\refs\heads
+
+================================================================================
+
+Folder: D:\Alliander\power-grid-model-benchmark\.git\refs\remotes
+
+================================================================================
+
+Folder: D:\Alliander\power-grid-model-benchmark\.git\refs\remotes\origin
+
+================================================================================
+
+Folder: D:\Alliander\power-grid-model-benchmark\.git\refs\tags
+
+================================================================================
+
+Folder: D:\Alliander\power-grid-model-benchmark\.github
+
+================================================================================
+
+Folder: D:\Alliander\power-grid-model-benchmark\.github\workflows
+
+================================================================================
+
+Folder: D:\Alliander\power-grid-model-benchmark\LICENSES
+
+================================================================================
+

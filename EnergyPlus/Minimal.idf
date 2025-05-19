@@ -108,6 +108,12 @@ GlobalGeometryRules,
     CounterClockWise,         !- Vertex Entry Direction
     Relative;                 !- Coordinate System
 
+
+
+Output:SQLite,
+  SimpleAndTabular;       !- Option Type
+
+
 Output:VariableDictionary,
     Regular;                  !- Key Field
 
@@ -117,35 +123,8 @@ Output:Table:SummaryReports,
 OutputControl:Table:Style,
     HTML;                     !- Column Separator
 
-Output:Variable,
-    *,                        !- Key Value
-    Site Outdoor Air Drybulb Temperature,    !- Variable Name
-    Daily;                 !- Reporting Frequency
 
-Output:Variable,
-    *,                        !- Key Value
-    Site Outdoor Air Wetbulb Temperature,    !- Variable Name
-    Daily;                 !- Reporting Frequency
 
-Output:Variable,
-    *,                        !- Key Value
-    Site Outdoor Air Dewpoint Temperature,    !- Variable Name
-    Daily;                 !- Reporting Frequency
-
-Output:Variable,
-    *,                        !- Key Value
-    Site Solar Azimuth Angle,    !- Variable Name
-    Daily;                 !- Reporting Frequency
-
-Output:Variable,
-    *,                        !- Key Value
-    Site Solar Altitude Angle,    !- Variable Name
-    Daily;                 !- Reporting Frequency
-
-Output:Variable,
-    *,                        !- Key Value
-    Site Direct Solar Radiation Rate per Area,    !- Variable Name
-    Daily;                 !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
@@ -163,20 +142,6 @@ Output:Variable,
     Daily;                 !- Reporting Frequency
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ! --- Request Meters for Entire Facility ---
 Output:Meter,
   Heating:EnergyTransfer,
@@ -185,3 +150,151 @@ Output:Meter,
 Output:Meter,
   Cooling:EnergyTransfer,
   Hourly;
+
+
+
+
+
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Air System Sensible Heating Energy, !- Variable Name
+    Hourly;                    !- Reporting Frequency (or Daily, Monthly, Timestep)
+
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Air System Sensible Cooling Energy, !- Variable Name
+    Hourly;                    !- Reporting Frequency
+
+! --- Optional: Add if interested in rates ---
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Air System Sensible Heating Rate, !- Variable Name
+    Hourly;                    !- Reporting Frequency
+
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Air System Sensible Cooling Rate, !- Variable Name
+    Hourly;                    !- Reporting Frequency
+
+! --- Optional: Add for latent loads if needed ---
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Air System Latent Cooling Energy, !- Variable Name
+    Hourly;                    !- Reporting Frequency
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+! --- Infiltration ---
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Infiltration Standard Density Volume Flow Rate, !- Variable Name: Infiltration flow rate [m3/s] at standard conditions
+    Hourly;                    !- Reporting Frequency
+
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Infiltration Sensible Heat Loss Energy, !- Variable Name: Energy impact [J]
+    Hourly;                    !- Reporting Frequency
+
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Infiltration Sensible Heat Gain Energy, !- Variable Name: Energy impact [J]
+    Hourly;                    !- Reporting Frequency
+
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Infiltration Latent Heat Loss Energy, !- Variable Name: Energy impact [J]
+    Hourly;                    !- Reporting Frequency
+
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Infiltration Latent Heat Gain Energy, !- Variable Name: Energy impact [J]
+    Hourly;                    !- Reporting Frequency
+
+! --- Zone/Natural Ventilation (from ZoneVentilation:* objects) ---
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Ventilation Standard Density Volume Flow Rate, !- Variable Name: Ventilation flow rate [m3/s] at standard conditions
+    Hourly;                    !- Reporting Frequency
+
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Ventilation Sensible Heat Loss Energy, !- Variable Name: Energy impact [J]
+    Hourly;                    !- Reporting Frequency
+
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Ventilation Sensible Heat Gain Energy, !- Variable Name: Energy impact [J]
+    Hourly;                    !- Reporting Frequency
+
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Ventilation Latent Heat Loss Energy, !- Variable Name: Energy impact [J]
+    Hourly;                    !- Reporting Frequency
+
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Ventilation Latent Heat Gain Energy, !- Variable Name: Energy impact [J]
+    Hourly;                    !- Reporting Frequency
+
+! --- Mechanical Ventilation (Outdoor Air from HVAC System) ---
+! Note: Zone Mechanical Ventilation Standard Density Volume Flow Rate might not always be available.
+! Mass Flow Rate is generally more reliable. Check your .rdd file.
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Mechanical Ventilation Mass Flow Rate, !- Variable Name: Outdoor air mass flow from HVAC [kg/s]
+    Hourly;                    !- Reporting Frequency
+
+! --- Total Zone Outdoor Air ---
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Outdoor Air Volume Flow Rate, !- Variable Name: Total OA entering zone (infiltration + natural + mechanical) [m3/s] at current density
+    Hourly;                    !- Reporting Frequency
+
+! --- Temperatures ---
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Mean Air Temperature,  !- Variable Name: Indoor air temperature [C]
+    Hourly;                    !- Reporting Frequency
+
+Output:Variable,
+    Environment,               !- Key Value: Special key for site variables
+    Site Outdoor Air Drybulb Temperature, !- Variable Name: Outdoor air temperature [C]
+    Hourly;                    !- Reporting Frequency
+
+Output:Variable,
+    Environment,               !- Key Value: Special key for site variables
+    Site Outdoor Air Relative Humidity, !- Variable Name: Outdoor relative humidity [%]
+    Hourly;                    !- Reporting Frequency
+
+! --- Energy Meters (Building Level) ---
+! Note: These report facility totals directly.
+Output:Meter,
+    Infiltration:EnergyTransfer:Sensible, !- Meter Name: Sensible energy transfer due to infiltration [J]
+    Hourly;                    !- Reporting Frequency
+
+Output:Meter,
+    Infiltration:EnergyTransfer:Latent, !- Meter Name: Latent energy transfer due to infiltration [J]
+    Hourly;                    !- Reporting Frequency
+
+Output:Meter,
+    Ventilation:EnergyTransfer:Sensible, !- Meter Name: Sensible energy transfer due to ventilation (zone + mechanical) [J]
+    Hourly;                    !- Reporting Frequency
+
+Output:Meter,
+    Ventilation:EnergyTransfer:Latent, !- Meter Name: Latent energy transfer due to ventilation (zone + mechanical) [J]
+    Hourly;                    !- Reporting Frequency
+

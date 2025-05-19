@@ -1,2877 +1,1400 @@
-File: D:\Documents\E_Plus_2030_py\app.py
+File: D:\Documents\energy_cluster_gnn\src\visualization.py
 ============================================================
-"""
-app.py
+# src/visualization.py
 
-A multi-endpoint, job-based Flask application to handle EnergyPlus workflows.
-
-Endpoints:
-  1) POST /jobs
-     - Receives a combined JSON payload (like 'combined.json'),
-       creates a new job with a unique job_id,
-       splits the JSON into separate files (e.g., main_config.json, fenestration.json, etc.)
-       in user_configs/<job_id>.
-       Also creates an output subfolder output/<job_id>.
-       Stores these paths in the job config.
-
-  2) POST /jobs/<job_id>/start
-     - Enqueues the job for execution (runs orchestrate_workflow in a background thread).
-
-  3) GET /jobs/<job_id>/logs
-     - Streams the logs in real time from the job_manager's log queue.
-
-  4) POST /jobs/<job_id>/cancel
-     - Attempts to cancel the job (if queued or running).
-
-  5) GET /jobs/<job_id>/status
-     - Returns the current status: CREATED, QUEUED, RUNNING, FINISHED, ERROR, or CANCELED.
-
-  6) GET /jobs/<job_id>/results
-     - Example endpoint to list or fetch final simulation results in output/<job_id>,
-       or you can adapt to zip & return them. 
-"""
-
-import logging
-import os
-
-from flask import Flask, request, Response, jsonify
-
-# ------------------------------------------------------------------------
-# Import the job manager for concurrency, queue-based logs, etc.
-# ------------------------------------------------------------------------
-from job_manager import (
-    create_job,
-    enqueue_job,
-    get_job,
-    get_job_logs_queue,
-    get_job_status,
-    cancel_job
-)
-
-# ------------------------------------------------------------------------
-# Import the splitter to break the combined JSON into sub-files
-# ------------------------------------------------------------------------
-from splitter import split_combined_json
-
-###############################################################################
-# Flask Application
-###############################################################################
-app = Flask(__name__)
-
-###############################################################################
-# 1) CREATE JOB - POST /jobs
-###############################################################################
-@app.route("/jobs", methods=["POST"])
-def create_job_endpoint():
-    """
-    Accepts a JSON payload describing the entire workflow config (similar to 'combined.json').
-    
-    Steps performed:
-      - Generate a new job_id (status=CREATED).
-      - Create a subfolder for user_configs/<job_id> for the input config files.
-      - Create a subfolder for output/<job_id> for the simulation results.
-      - Split the posted JSON into multiple config files (e.g., main_config.json).
-      - Store these paths in the job's config.
-    
-    Returns:
-      JSON response: { "job_id": "<unique-uuid>" }
-    """
-    if not request.is_json:
-        return jsonify({"error": "Expected JSON payload"}), 400
-
-    # 1) Load the combined JSON from request
-    posted_data = request.get_json()
-
-    # 2) Create a job with an initially empty config
-    job_id = create_job(config={})  
-    # Note: create_job() sets job["config"]["job_id"] = job_id internally.
-
-    # 3) Create a subfolder for user_configs/<job_id>
-    #    This ensures concurrency-friendly isolation (no overwriting each other's files).
-    base_user_configs = os.path.join(os.getcwd(), "user_configs")
-    job_subfolder = os.path.join(base_user_configs, job_id)
-    os.makedirs(job_subfolder, exist_ok=True)
-
-    # 4) Create a corresponding output folder for this job's results: output/<job_id>
-    base_output = os.path.join(os.getcwd(), "output")
-    job_output_folder = os.path.join(base_output, job_id)
-    os.makedirs(job_output_folder, exist_ok=True)
-
-    # 5) Split the combined JSON into multiple files, each named <top_key>.json
-    split_combined_json(posted_data, job_subfolder)
-
-    # 6) Update the job config with the subfolder paths
-    new_config = {
-        # job_id is already stored, but you can re-store it if you want:
-        "job_id": job_id,
-        "job_subfolder": job_subfolder,
-        "output_subfolder": job_output_folder,
-        "posted_data": posted_data
-    }
-
-    job = get_job(job_id)
-    if job:
-        job["config"] = new_config
-
-    # 7) Return the job_id so the user can call /jobs/<job_id>/start
-    return jsonify({"job_id": job_id}), 200
-
-
-###############################################################################
-# 2) START JOB - POST /jobs/<job_id>/start
-###############################################################################
-@app.route("/jobs/<job_id>/start", methods=["POST"])
-def start_job(job_id):
-    """
-    Moves the job from CREATED => RUNNING (or QUEUED if concurrency is max).
-    The job_manager enqueue_job() will handle concurrency checks.
-
-    Response:
-      {
-        "message": "Job enqueued or running",
-        "job_id": "<the job_id>"
-      }
-    """
-    job = get_job(job_id)
-    if not job:
-        return jsonify({"error": "No such job_id"}), 404
-
-    # Enqueue or start the job
-    enqueue_job(job_id)
-
-    return jsonify({"message": "Job enqueued or running", "job_id": job_id}), 200
-
-
-###############################################################################
-# 3) STREAM LOGS - GET /jobs/<job_id>/logs
-###############################################################################
-@app.route("/jobs/<job_id>/logs", methods=["GET"])
-def get_job_logs(job_id):
-    """
-    Streams the logs in real time from the job's log queue.
-    The job_manager signals end of logs by sending a 'None' sentinel.
-
-    Usage Example (PowerShell):
-      curl.exe http://localhost:8000/jobs/<job_id>/logs
-    """
-    log_queue = get_job_logs_queue(job_id)
-    if not log_queue:
-        return jsonify({"error": "No such job or no logs queue"}), 404
-
-    def log_stream():
-        while True:
-            line = log_queue.get()
-            if line is None:
-                break
-            yield line + "\n"
-
-    return Response(log_stream(), mimetype="text/plain")
-
-
-###############################################################################
-# 4) CANCEL JOB - POST /jobs/<job_id>/cancel
-###############################################################################
-@app.route("/jobs/<job_id>/cancel", methods=["POST"])
-def cancel_job_endpoint(job_id):
-    """
-    Attempts to cancel the job:
-      - If QUEUED, remove from queue -> status=CANCELED
-      - If RUNNING, set cancel_event -> orchestrator can gracefully stop if it checks for cancellations
-      - If FINISHED/ERROR/CANCELED, no effect
-
-    Response:
-      { "message": "Job <job_id> canceled" } or { "error": ... }
-    """
-    success = cancel_job(job_id)
-    if success:
-        return jsonify({"message": f"Job {job_id} canceled"}), 200
-    else:
-        return jsonify({"error": "Could not cancel (job not found or already finished/canceled)"}), 400
-
-
-###############################################################################
-# 5) JOB STATUS - GET /jobs/<job_id>/status
-###############################################################################
-@app.route("/jobs/<job_id>/status", methods=["GET"])
-def get_job_status_endpoint(job_id):
-    """
-    Returns the current status of the job:
-      - CREATED
-      - QUEUED
-      - RUNNING
-      - FINISHED
-      - ERROR
-      - CANCELED
-
-    Response:
-      {
-        "job_id": "<job_id>",
-        "status": "<STATUS>"
-      }
-    """
-    status = get_job_status(job_id)
-    if status is None:
-        return jsonify({"error": "No such job_id"}), 404
-
-    return jsonify({"job_id": job_id, "status": status}), 200
-
-
-###############################################################################
-# 6) GET /jobs/<job_id>/results
-###############################################################################
-@app.route("/jobs/<job_id>/results", methods=["GET"])
-def get_job_results(job_id):
-    """
-    (Placeholder endpoint)
-    If your orchestrator or IDF creation writes final outputs to 
-    output/<job_id> (or some subfolder), you can retrieve or list them here.
-    
-    Example usage:
-      - Check existence of job config to get "output_subfolder".
-      - Possibly zip the folder or return direct file.
-    """
-    job = get_job(job_id)
-    if not job:
-        return jsonify({"error": "No such job"}), 404
-
-    cfg = job["config"]
-    out_dir = cfg.get("output_subfolder")
-    if not out_dir or not os.path.exists(out_dir):
-        return jsonify({"error": f"No results found for job {job_id}"}), 404
-
-    # For now, just respond with a simple message:
-    return jsonify({
-        "message": f"Results directory is: {out_dir} (Implement your own listing or zip download)."
-    }), 200
-
-
-###############################################################################
-# MAIN - For local dev
-###############################################################################
-if __name__ == "__main__":
-    """
-    In local dev, run Flask directly:
-      python app.py
-
-    For production usage, it's recommended to run:
-      gunicorn -b 0.0.0.0:8000 app:app --workers=4
-    from your Dockerfile or docker-compose.
-    """
-    app.run(host="0.0.0.0", port=8000, debug=True)
-
-------------------------------------------------------------
-
-File: D:\Documents\E_Plus_2030_py\orchestrator.py
-============================================================
-"""
-orchestrator.py
-
-Orchestrates the entire EnergyPlus workflow using a job-specific subfolder
-for config files and a job-specific folder in /output for results.
-
-Steps:
-  1. Retrieve 'job_id' from job_config (set by job_manager or app).
-  2. Form an output directory: <OUTPUT_DIR>/<job_id>.
-  3. Load main_config.json from user_configs/<job_id>.
-  4. Merge with posted_data["main_config"] if present.
-  5. Apply Excel overrides, JSON overrides, create IDFs, run sims, etc.
-  6. If scenario modification is enabled, override paths so scenario IDFs/results
-     stay in the same job folder, then run scenario-based modifications.
-  7. Perform structuring (e.g., flatten assigned CSVs) if requested.
-  8. Perform global validation, sensitivity, surrogate, calibration if requested;
-     patch any relative CSV paths to be inside the job folder (unless "data/").
-  9. Zip & email final results if mail_user.json is present.
-  10. Respect any cancel_event from job_manager.
-"""
-
-import os
-import json
-import logging
-import threading
+import torch
+import numpy as np
 import pandas as pd
+import os
+import logging
+import time
+import imageio.v2 as imageio # Use v2 for consistent API
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import seaborn as sns
+from sklearn.preprocessing import StandardScaler # <-- ADD THIS LINE
+from sklearn.manifold import TSNE
+from tqdm import tqdm # For progress bar
+from .datasets import SpatioTemporalGraphDataset
+# src/visualization.py
+# ... other imports ...
+from src.evaluation import format_cluster_assignments # <-- ADD THIS LINE (or uncomment if it exists)
 
-# Splitting / deep-merge
-from splitter import deep_merge_dicts
+# Setup basic logging
+# ... rest of the file ...
+# Import helper from evaluation if needed (or redefine)
+# from src.evaluation import format_cluster_assignments
 
-# DB loading if needed
-from database_handler import load_buildings_from_db
+# Setup basic logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Excel overrides
-from excel_overrides import (
-    override_dhw_lookup_from_excel_file,
-    override_epw_lookup_from_excel_file,
-    override_lighting_lookup_from_excel_file,
-    override_hvac_lookup_from_excel_file,
-    override_vent_lookup_from_excel_file
-)
+# --- Plotting Functions ---
 
-# Fenestration config
-from idf_objects.fenez.fenez_config_manager import build_fenez_config
-
-# IDF creation
-import idf_creation
-from idf_creation import create_idfs_for_all_buildings
-
-# Scenario modification
-from main_modifi import run_modification_workflow
-
-# Validation
-from validation.main_validation import run_validation_process
-
-# Sensitivity / Surrogate / Calibration
-from cal.unified_sensitivity import run_sensitivity_analysis
-from cal.unified_surrogate import (
-    load_scenario_params as sur_load_scenario_params,
-    pivot_scenario_params,
-    load_sim_results,
-    aggregate_results,
-    merge_params_with_results,
-    build_and_save_surrogate
-)
-from cal.unified_calibration import run_unified_calibration
-
-# Zip & email
-from zip_and_mail import zip_user_output, send_results_email
-
-from cleanup_old_jobs import cleanup_old_results
-
-
-class WorkflowCanceled(Exception):
-    """Custom exception used to stop the workflow if a cancel_event is set."""
-    pass
-
-
-def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None):
+def plot_cluster_evolution_gif(config: dict, cluster_assign_df: pd.DataFrame, static_features_df: pd.DataFrame):
     """
-    Orchestrates the entire E+ workflow using a job-specific subfolder for config JSON,
-    plus a job-specific output folder for results.
+    Generates a GIF showing cluster assignments on a map over time.
 
     Args:
-        job_config (dict): includes:
-            {
-              "job_id": "<unique_id_for_this_job>",
-              "job_subfolder": "user_configs/<job_id>",
-              "posted_data": {...} (optional),
-              ...
-            }
-        cancel_event (threading.Event): If set, we gracefully exit early.
+        config (dict): Configuration dictionary.
+        cluster_assign_df (pd.DataFrame): Long-format DataFrame with columns
+                                          ['time_index', 'building_id', 'cluster_id'].
+        static_features_df (pd.DataFrame): DataFrame with static features, including 'lat', 'lon',
+                                            indexed by building_id (as string).
+    """
+    logging.info("Generating cluster evolution GIF...")
+    start_time = time.time()
 
-    Raises:
-        WorkflowCanceled if cancel_event is set mid-way.
+    results_dir = config['SCENARIO_RESULTS_DIR']
+    plot_dir = os.path.join(results_dir, 'plots')
+    gif_path = os.path.join(plot_dir, 'cluster_evolution.gif')
+    temp_frame_dir = os.path.join(plot_dir, 'temp_frames')
+    os.makedirs(temp_frame_dir, exist_ok=True)
+
+    # Merge coordinates
+    static_features_df.index = static_features_df.index.astype(str) # Ensure index is string
+    cluster_assign_df['building_id'] = cluster_assign_df['building_id'].astype(str)
+    plot_data = pd.merge(cluster_assign_df, static_features_df[['lat', 'lon']],
+                         left_on='building_id', right_index=True, how='left')
+
+    if plot_data[['lat', 'lon']].isnull().values.any():
+        missing_coords = plot_data[plot_data['lat'].isnull()]['building_id'].unique()
+        logging.warning(f"Missing coordinates for some buildings: {missing_coords[:10]}... These will not be plotted.")
+        plot_data.dropna(subset=['lat', 'lon'], inplace=True)
+
+    if plot_data.empty:
+        logging.error("No data available for plotting after merging coordinates.")
+        return
+
+    # Determine time steps and clusters
+    time_indices = sorted(plot_data['time_index'].unique())
+    num_clusters = config.get('NUM_CLUSTERS_K', 6)
+    colors = cm.get_cmap('viridis', num_clusters) # Use a consistent colormap
+
+    # Determine plotting frequency (plot every 'n' steps to limit frames)
+    plot_every_n_steps = config.get('VIZ_GIF_PLOT_EVERY_N_STEPS', max(1, len(time_indices) // 100)) # Aim for ~100 frames max
+    plot_time_indices = time_indices[::plot_every_n_steps]
+
+    frame_paths = []
+    logging.info(f"Generating {len(plot_time_indices)} frames for GIF (plotting every {plot_every_n_steps} steps)...")
+    pbar_gif = tqdm(plot_time_indices, desc="Generating GIF Frames", leave=False, unit="frame")
+
+    for t_idx in pbar_gif:
+        frame_path = os.path.join(temp_frame_dir, f"frame_{t_idx:05d}.png")
+        data_t = plot_data[plot_data['time_index'] == t_idx]
+
+        if data_t.empty:
+             logging.warning(f"No data points found for time index {t_idx}, skipping frame.")
+             continue
+
+        fig, ax = plt.subplots(figsize=(10, 8))
+        scatter = ax.scatter(data_t['lon'], data_t['lat'],
+                           c=data_t['cluster_id'],
+                           cmap=colors,
+                           vmin=0, vmax=num_clusters - 1, # Ensure consistent color scale
+                           s=20, alpha=0.8)
+
+        # Create legend (optional, can be slow/cluttered)
+        # handles, _ = scatter.legend_elements(prop="colors", alpha=0.6)
+        # legend_labels = [f"Cluster {i}" for i in range(num_clusters)]
+        # ax.legend(handles, legend_labels, title="Clusters", bbox_to_anchor=(1.05, 1), loc='upper left')
+
+        # Use timestamp if available, otherwise use index
+        timestamp = pd.to_datetime(f"{t_idx * 15 // 60:02d}:{t_idx * 15 % 60:02d}:00", format='%H:%M:%S').strftime('%H:%M:%S') if 'timestamp' not in data_t.columns else data_t['timestamp'].iloc[0]
+        ax.set_title(f"Building Clusters at Time: {timestamp} (Index: {t_idx})")
+        ax.set_xlabel("Longitude")
+        ax.set_ylabel("Latitude")
+        ax.grid(True, linestyle='--', alpha=0.5)
+        plt.tight_layout()
+        plt.savefig(frame_path)
+        plt.close(fig)
+        frame_paths.append(frame_path)
+
+    # Create GIF
+    if frame_paths:
+        logging.info(f"Saving GIF to {gif_path}...")
+        try:
+            imageio.mimsave(gif_path, [imageio.imread(fp) for fp in frame_paths],
+                            duration=config.get('VIZ_GIF_FRAME_DURATION', 0.3), # Duration per frame in seconds
+                            loop=0) # Loop indefinitely
+            logging.info("GIF saved successfully.")
+        except Exception as e:
+             logging.error(f"Failed to create GIF: {e}")
+
+        # Clean up temporary frames
+        try:
+            for fp in frame_paths:
+                os.remove(fp)
+            os.rmdir(temp_frame_dir)
+            logging.info("Cleaned up temporary frame files.")
+        except Exception as e:
+            logging.warning(f"Could not remove temporary frame files: {e}")
+    else:
+        logging.warning("No frames generated for GIF.")
+
+    end_time = time.time()
+    logging.info(f"GIF generation finished. Duration: {end_time - start_time:.2f} seconds")
+
+def plot_evaluation_summary(config: dict, metrics_dict: dict):
+    """
+    Creates a bar chart summarizing the main evaluation metrics.
+
+    Args:
+        config (dict): Configuration dictionary.
+        metrics_dict (dict): Dictionary containing averaged evaluation metrics.
+    """
+    logging.info("Generating evaluation summary plot...")
+    plot_dir = os.path.join(config['SCENARIO_RESULTS_DIR'], 'plots')
+    save_path = os.path.join(plot_dir, 'evaluation_summary_bars.png')
+
+    # Select key metrics for plotting
+    plot_metrics = {
+        'Avg ARI': metrics_dict.get('avg_ari', np.nan),
+        'Avg NMI': metrics_dict.get('avg_nmi', np.nan),
+        'Avg Churn Rate': metrics_dict.get('avg_churn_rate', np.nan),
+        'Avg Cluster SSR': metrics_dict.get('avg_cluster_ssr', np.nan),
+        'Avg Silhouette': metrics_dict.get('avg_silhouette_score', np.nan),
+        'Feeder Violation': metrics_dict.get('avg_feeder_violation_rate', np.nan),
+        'Distance Violation': metrics_dict.get('avg_distance_violation_rate', np.nan),
+    }
+    # Filter out NaN values for plotting
+    plot_metrics = {k: v for k, v in plot_metrics.items() if pd.notna(v)}
+
+    if not plot_metrics:
+        logging.warning("No valid metrics found to plot in evaluation summary.")
+        return
+
+    try:
+        plt.figure(figsize=(12, 7))
+        keys = list(plot_metrics.keys())
+        values = list(plot_metrics.values())
+
+        bars = plt.bar(keys, values)
+        plt.ylabel("Metric Value")
+        plt.title(f"Evaluation Metric Summary - {config.get('SCENARIO_NAME', 'Unknown')}")
+        plt.xticks(rotation=45, ha='right')
+        plt.grid(axis='y', linestyle='--', alpha=0.7)
+        # Add values on top of bars
+        for bar in bars:
+             yval = bar.get_height()
+             plt.text(bar.get_x() + bar.get_width()/2.0, yval, f'{yval:.3f}', va='bottom', ha='center') # Adjust position as needed
+
+        plt.tight_layout()
+        plt.savefig(save_path)
+        plt.close()
+        logging.info(f"Saved evaluation summary plot to: {save_path}")
+    except Exception as e:
+        logging.error(f"Failed to generate evaluation summary plot: {e}")
+
+
+def plot_embedding_tsne(config: dict, embeddings: np.ndarray, labels: np.ndarray, time_index: int):
+    """
+    Generates a t-SNE plot of node embeddings for a specific time step.
+
+    Args:
+        config (dict): Configuration dictionary.
+        embeddings (np.ndarray): Node embeddings for the time step. Shape [num_nodes, embedding_dim].
+        labels (np.ndarray): Cluster labels for the nodes. Shape [num_nodes].
+        time_index (int): The time step index being plotted.
+    """
+    logging.info(f"Generating t-SNE plot for time step {time_index}...")
+    plot_dir = os.path.join(config['SCENARIO_RESULTS_DIR'], 'plots')
+    save_path = os.path.join(plot_dir, f'embedding_tsne_t{time_index:05d}.png')
+
+    n_nodes = embeddings.shape[0]
+    if n_nodes < 2:
+        logging.warning(f"Skipping t-SNE plot: Only {n_nodes} node(s) at time {time_index}.")
+        return
+    if len(np.unique(labels)) < 2:
+        logging.warning(f"Skipping t-SNE plot: Only 1 cluster found at time {time_index}.")
+        # Still plot if only one cluster? Maybe useful. Let's allow it.
+        # return
+
+    try:
+        # --- Optional: Scale embeddings before t-SNE ---
+        if config.get('SCALE_EMBEDDINGS_BEFORE_TSNE', True):
+             scaler = StandardScaler()
+             embeddings = scaler.fit_transform(embeddings)
+
+        # --- Apply t-SNE ---
+        tsne = TSNE(n_components=2,
+                    perplexity=min(30.0, n_nodes - 1.0), # Perplexity must be less than n_samples
+                    random_state=config.get('SEED', 42),
+                    n_iter=300, # Fewer iterations for faster plot
+                    init='pca', # PCA initialization is often faster and stabler
+                    learning_rate='auto') # Recommended setting
+        embeddings_2d = tsne.fit_transform(embeddings)
+
+        # --- Plot ---
+        plt.figure(figsize=(10, 8))
+        num_clusters = config.get('NUM_CLUSTERS_K', 6)
+        colors = cm.get_cmap('viridis', num_clusters)
+
+        scatter = plt.scatter(embeddings_2d[:, 0], embeddings_2d[:, 1],
+                              c=labels,
+                              cmap=colors,
+                              vmin=0, vmax=num_clusters - 1,
+                              s=20, alpha=0.8)
+
+        timestamp = pd.to_datetime(f"{time_index * 15 // 60:02d}:{time_index * 15 % 60:02d}:00", format='%H:%M:%S').strftime('%H:%M:%S')
+        plt.title(f"t-SNE of Node Embeddings at Time: {timestamp} (Index: {time_index})")
+        plt.xlabel("t-SNE Dimension 1")
+        plt.ylabel("t-SNE Dimension 2")
+        plt.grid(True, linestyle='--', alpha=0.5)
+        # Add colorbar legend
+        cbar = plt.colorbar(scatter, label='Cluster ID', ticks=range(num_clusters))
+
+        plt.tight_layout()
+        plt.savefig(save_path)
+        plt.close()
+        logging.info(f"Saved t-SNE plot to: {save_path}")
+
+    except Exception as e:
+        logging.error(f"Failed to generate t-SNE plot for time step {time_index}: {e}")
+
+
+# --- Main Visualization Runner ---
+
+def run_visualization(config: dict, cluster_assignments: dict, final_embeddings: torch.Tensor,
+                      evaluation_metrics: dict, dataset: SpatioTemporalGraphDataset):
+    """
+    Runs all visualization steps.
+
+    Args:
+        config (dict): Configuration dictionary.
+        cluster_assignments (dict): Clustering results {t: {node_id: cluster_id}}.
+        final_embeddings (torch.Tensor): Embeddings output from inference.
+        evaluation_metrics (dict): Dictionary of calculated evaluation metrics.
+        dataset (SpatioTemporalGraphDataset): Dataset object containing metadata.
+    """
+    logging.info(f"--- Starting Visualization Pipeline for Scenario: {config.get('SCENARIO_NAME', 'Unknown')} ---")
+
+    # --- Prepare Data ---
+    logging.info("Preparing data for visualization...")
+    num_timesteps = final_embeddings.shape[1]
+    # Convert assignments dict to DataFrame needed by GIF plotter
+    cluster_assign_df = format_cluster_assignments(cluster_assignments, dataset.node_ids, num_timesteps)
+
+    # Load static features for coordinates
+    static_features_path = os.path.join(config['PROCESSED_DATA_DIR'], 'processed_static_features.csv')
+    try:
+        static_features_df = pd.read_csv(static_features_path, index_col='building_id')
+    except Exception as e:
+        logging.error(f"Failed to load static features for visualization: {e}")
+        return # Cannot proceed without coordinates for GIF
+
+    # --- Generate Plots ---
+    # 1. Cluster Evolution GIF
+    if config.get('VIZ_GENERATE_GIF', True):
+         plot_cluster_evolution_gif(config, cluster_assign_df.copy(), static_features_df.copy())
+
+    # 2. Evaluation Summary Bar Chart
+    if config.get('VIZ_PLOT_SUMMARY', True):
+         plot_evaluation_summary(config, evaluation_metrics)
+
+    # 3. t-SNE plot for a specific time step (e.g., the middle one)
+    if config.get('VIZ_PLOT_TSNE', True):
+         tsne_time_index = num_timesteps // 2 # Plot the middle time step
+         try:
+             # Need smoothed embeddings for the t-SNE plot, as that's what was clustered
+             window_size = config.get('EMBEDDING_SMOOTHING_WINDOW_W', 1)
+             from src.clustering import smooth_embeddings # Import here or move smoother to utils
+             smoothed_embeddings_np = smooth_embeddings(final_embeddings, window_size)
+
+             embeddings_t = smoothed_embeddings_np[:, tsne_time_index, :]
+             labels_t_dict = cluster_assignments.get(tsne_time_index, {})
+             # Create labels array in the correct node order
+             labels_t = np.array([labels_t_dict.get(str(node_id), -1) for node_id in dataset.node_ids], dtype=int)
+
+             if -1 in labels_t:
+                  logging.warning(f"Missing cluster assignments for some nodes at t-SNE time index {tsne_time_index}.")
+
+             plot_embedding_tsne(config, embeddings_t, labels_t, tsne_time_index)
+
+         except Exception as e:
+             logging.error(f"Could not generate t-SNE plot: {e}")
+
+    # --- TODO: Add time series plots for metrics ---
+    # Needs evaluation.py to save/return time series metrics or recalculate here.
+    # plot_stability_timeseries(config, ...)
+    # plot_synergy_timeseries(config, ...)
+
+    logging.info(f"--- Visualization Pipeline Finished ---")
+
+
+# Example Usage (within main.py or for testing)
+if __name__ == '__main__':
+    # This block requires outputs from previous steps
+    logging.info("Testing visualization script standalone...")
+
+    # 1. Load Config (replace with actual loader)
+    config = {
+        'SCENARIO_NAME': 'Scenario_B_Feeder_Constraint', # Change to test others
+        'PROCESSED_DATA_DIR': os.path.join('..', 'data', 'processed'), # Adjust relative path
+        'RESULTS_DIR': os.path.join('..', 'results'),
+        'SCENARIO_RESULTS_DIR': os.path.join('..', 'results', 'Scenario_B_Feeder_Constraint'),# Adjust
+        'NUM_CLUSTERS_K': 5,
+        'VIZ_GIF_PLOT_EVERY_N_STEPS': 5, # Plot fewer frames for speed
+        'VIZ_GIF_FRAME_DURATION': 0.5,
+        'VIZ_GENERATE_GIF': True,
+        'VIZ_PLOT_SUMMARY': True,
+        'VIZ_PLOT_TSNE': True,
+        'EMBEDDING_SMOOTHING_WINDOW_W': 4, # Needed for t-SNE
+        'EMBEDDING_DIM': 16 # Example dimension
+    }
+    os.makedirs(os.path.join(config['SCENARIO_RESULTS_DIR'], 'plots'), exist_ok=True)
+
+    try:
+        # 2. Load dummy/real cluster assignments
+        assign_file = os.path.join(config['SCENARIO_RESULTS_DIR'], 'cluster_assignments.csv')
+        eval_file = os.path.join(config['SCENARIO_RESULTS_DIR'], 'evaluation_metrics.json')
+        static_file = os.path.join(config['PROCESSED_DATA_DIR'], 'processed_static_features.csv')
+
+        if not all(os.path.exists(f) for f in [assign_file, eval_file, static_file]):
+             print(f"Prerequisite file(s) not found. Ensure clustering and evaluation ran.")
+        else:
+            cluster_assign_df_loaded = pd.read_csv(assign_file)
+            # Convert back to dict format expected by run_visualization
+            cluster_assignments_dict = {}
+            for name, group in cluster_assign_df_loaded.groupby('time_index'):
+                 cluster_assignments_dict[name] = group.set_index('building_id')['cluster_id'].astype(int).astype(str).to_dict() # Ensure string keys
+
+
+            with open(eval_file, 'r') as f:
+                 evaluation_metrics_loaded = json.load(f)
+
+            # Load dummy/real embeddings
+            num_nodes = cluster_assign_df_loaded['building_id'].nunique()
+            num_timesteps = cluster_assign_df_loaded['time_index'].max() + 1
+            dummy_embeddings = torch.randn(num_nodes, num_timesteps, config['EMBEDDING_DIM'])
+
+            # Load dummy/real dataset object
+            class DummyDataset:
+                 def __init__(self, assign_df):
+                     self.node_ids = assign_df['building_id'].astype(str).unique().tolist() # Use strings as per dict keys
+            dummy_dataset = DummyDataset(cluster_assign_df_loaded)
+
+            # 6. Run Visualization
+            run_visualization(config, cluster_assignments_dict, dummy_embeddings, evaluation_metrics_loaded, dummy_dataset)
+
+            print("\n--- Standalone Visualization Test Finished ---")
+            print(f"Check {os.path.join(config['SCENARIO_RESULTS_DIR'], 'plots')} for output images/GIF.")
+
+    except FileNotFoundError as e:
+         print(f"\nError: Prerequisite file not found. Details: {e}")
+    except Exception as e:
+        logging.exception(f"An error occurred during visualization test: {e}")
+------------------------------------------------------------
+
+File: D:\Documents\energy_cluster_gnn\src\training.py
+============================================================
+# src/training.py
+
+import torch
+import torch.optim as optim
+# from torch.utils.data import DataLoader # Ensure this is commented out/removed
+from torch_geometric.loader import DataLoader # Ensure this is the DataLoader being used
+import os
+import logging
+import time
+from tqdm import tqdm # For progress bar
+import torch.nn as nn
+import numpy as np # Added for standalone seed setting
+import random      # Added for standalone seed setting
+
+
+# Import from our source modules
+# Ensure these paths are correct relative to where this script is or adjust sys.path
+try:
+    from models import SpatioTemporalGNNEmbedder # Assuming models.py is in the same directory or src/
+    from loss_fn import ContrastiveLoss         # Assuming loss_fn.py is in the same directory or src/
+    from datasets import SpatioTemporalGraphDataset # Assuming datasets.py is in the same directory or src/
+except ImportError as e:
+     # Basic logging might not be configured yet if run standalone very early
+     print(f"[ERROR] Error importing project modules in training.py: {e}")
+     print("[ERROR] Ensure training.py is run in an environment where 'models', 'loss_fn', 'datasets' are accessible.")
+     # Depending on execution context, might need:
+     # import sys
+     # sys.path.append(os.path.dirname(__file__)) # Add src directory to path if needed
+
+# Setup basic logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+def train_epoch(model: nn.Module, dataloader: DataLoader, optimizer: optim.Optimizer,
+                loss_fn: nn.Module, device: torch.device, epoch: int, num_epochs: int) -> float:
+    """
+    Performs a single training epoch.
+
+    Args:
+        model: The PyTorch model to train.
+        dataloader: The PyG DataLoader providing training data batches (Data or Batch objects).
+        optimizer: The optimizer for updating model weights.
+        loss_fn: The loss function to calculate training loss.
+        device: The device (CPU or CUDA) to run training on.
+        epoch (int): Current epoch number (for logging).
+        num_epochs (int): Total number of epochs (for progress bar).
 
     Returns:
-        None (logs extensively, optionally zips/emails final results).
+        float: The average training loss for the epoch.
     """
-    logger = logging.getLogger(__name__)
-    logger.info("=== Starting orchestrate_workflow ===")
-
-    # -------------------------------------------------------------------------
-    # 0) Identify job_id, define check_canceled
-    # -------------------------------------------------------------------------
-    job_id = job_config.get("job_id", "unknown_job_id")
-    logger.info(f"[INFO] Orchestrator for job_id={job_id}")
-
-    def check_canceled():
-        """Raise WorkflowCanceled if cancel_event is set."""
-        if cancel_event and cancel_event.is_set():
-            logger.warning("=== CANCEL event detected. Stopping workflow. ===")
-            raise WorkflowCanceled("Workflow was canceled by user request.")
-
-    # -------------------------------------------------------------------------
-    # 1) Identify the user_configs folder (where main_config.json resides)
-    # -------------------------------------------------------------------------
-    user_configs_folder = job_config.get("job_subfolder")
-    if not user_configs_folder or not os.path.isdir(user_configs_folder):
-        logger.error(f"[ERROR] job_subfolder not found or invalid => {user_configs_folder}")
-        return
-
-    # -------------------------------------------------------------------------
-    # 2) Build an output directory for this job under OUTPUT_DIR
-    #    e.g. /usr/src/app/output/<job_id>
-    # -------------------------------------------------------------------------
-    env_out_dir = os.environ.get("OUTPUT_DIR", "/usr/src/app/output")
-    job_output_dir = os.path.join(env_out_dir, job_id)
-    os.makedirs(job_output_dir, exist_ok=True)
-    logger.info(f"[INFO] Using job-specific output folder: {job_output_dir}")
-
-    # -------------------------------------------------------------------------
-    # 3) Load main_config.json from user_configs/<job_id>
-    # -------------------------------------------------------------------------
-    main_config_path = os.path.join(user_configs_folder, "main_config.json")
-    if not os.path.isfile(main_config_path):
-        logger.error(f"[ERROR] Cannot find main_config.json at {main_config_path}")
-        return
-
-    with open(main_config_path, "r") as f:
-        existing_config_raw = json.load(f)
-    main_config = existing_config_raw.get("main_config", {})
-    logger.info(f"[INFO] Loaded existing main_config from {main_config_path}.")
-
-    # Merge posted_data["main_config"] if present
-    posted_data = job_config.get("posted_data", {})
-    if "main_config" in posted_data:
-        logger.info("[INFO] Deep merging posted_data['main_config'] into main_config.")
-        deep_merge_dicts(main_config, posted_data["main_config"])
-        # optionally re-save
-        with open(main_config_path, "w") as f:
-            json.dump({"main_config": main_config}, f, indent=2)
-
-    # -------------------------------------------------------------------------
-    # 4) Extract sub-sections from main_config
-    # -------------------------------------------------------------------------
-    check_canceled()
-    paths_dict       = main_config.get("paths", {})
-    excel_flags      = main_config.get("excel_overrides", {})
-    user_flags       = main_config.get("user_config_overrides", {})
-    def_dicts        = main_config.get("default_dicts", {})
-    structuring_cfg  = main_config.get("structuring", {})
-    modification_cfg = main_config.get("modification", {})
-    validation_cfg   = main_config.get("validation", {})
-    sens_cfg         = main_config.get("sensitivity", {})
-    sur_cfg          = main_config.get("surrogate", {})
-    cal_cfg          = main_config.get("calibration", {})
-
-    # IDF creation block
-    idf_cfg = main_config.get("idf_creation", {})
-    perform_idf_creation = idf_cfg.get("perform_idf_creation", False)
-    scenario             = idf_cfg.get("scenario", "scenario1")
-    calibration_stage    = idf_cfg.get("calibration_stage", "pre_calibration")
-    strategy             = idf_cfg.get("strategy", "B")
-    random_seed          = idf_cfg.get("random_seed", 42)
-    run_simulations      = idf_cfg.get("run_simulations", True)
-    simulate_config      = idf_cfg.get("simulate_config", {})
-    post_process         = idf_cfg.get("post_process", True)
-    post_process_config  = idf_cfg.get("post_process_config", {})
-    output_definitions   = idf_cfg.get("output_definitions", {})
-    use_database         = main_config.get("use_database", False)
-    db_filter            = main_config.get("db_filter", {})
-    filter_by            = main_config.get("filter_by")  # if using DB
-
-    # -------------------------------------------------------------------------
-    # 5) Possibly override idf_creation.idf_config from env, then force IDFs
-    #    to go in <job_output_dir>/output_IDFs
-    # -------------------------------------------------------------------------
-    check_canceled()
-
-    env_idd_path = os.environ.get("IDD_PATH")
-    if env_idd_path:
-        idf_creation.idf_config["iddfile"] = env_idd_path
-    env_base_idf = os.environ.get("BASE_IDF_PATH")
-    if env_base_idf:
-        idf_creation.idf_config["idf_file_path"] = env_base_idf
-
-    job_idf_dir = os.path.join(job_output_dir, "output_IDFs")
-    os.makedirs(job_idf_dir, exist_ok=True)
-    idf_creation.idf_config["output_dir"] = job_idf_dir
-
-    # If user explicitly set these in main_config, override again
-    if "iddfile" in idf_cfg:
-        idf_creation.idf_config["iddfile"] = idf_cfg["iddfile"]
-    if "idf_file_path" in idf_cfg:
-        idf_creation.idf_config["idf_file_path"] = idf_cfg["idf_file_path"]
-
-    if "output_idf_dir" in idf_cfg:
-        subfolder = idf_cfg["output_idf_dir"]  # e.g. "output_IDFs"
-        full_dir = os.path.join(job_output_dir, subfolder)
-        idf_creation.idf_config["output_dir"] = full_dir
-    else:
-        idf_creation.idf_config["output_dir"] = os.path.join(job_output_dir, "output_IDFs")
-
-    # -------------------------------------------------------------------------
-    # 6) Setup default dictionaries
-    # -------------------------------------------------------------------------
-    base_res_data    = def_dicts.get("res_data", {})
-    base_nonres_data = def_dicts.get("nonres_data", {})
-    dhw_lookup       = def_dicts.get("dhw", {})
-    epw_lookup       = def_dicts.get("epw", [])
-    lighting_lookup  = def_dicts.get("lighting", {})
-    hvac_lookup      = def_dicts.get("hvac", {})
-    vent_lookup      = def_dicts.get("vent", {})
-
-    # -------------------------------------------------------------------------
-    # 7) Apply Excel overrides if flags are set
-    # -------------------------------------------------------------------------
-    check_canceled()
-
-    updated_res_data, updated_nonres_data = build_fenez_config(
-        base_res_data=base_res_data,
-        base_nonres_data=base_nonres_data,
-        excel_path=paths_dict.get("fenez_excel", ""),
-        do_excel_override=excel_flags.get("override_fenez_excel", False),
-        user_fenez_overrides=[]
-    )
-
-    if excel_flags.get("override_dhw_excel", False):
-        dhw_lookup = override_dhw_lookup_from_excel_file(
-            dhw_excel_path=paths_dict.get("dhw_excel", ""),
-            default_dhw_lookup=dhw_lookup,
-            override_dhw_flag=True
-        )
-
-    if excel_flags.get("override_epw_excel", False):
-        epw_lookup = override_epw_lookup_from_excel_file(
-            epw_excel_path=paths_dict.get("epw_excel", ""),
-            epw_lookup=epw_lookup,
-            override_epw_flag=True
-        )
-
-    if excel_flags.get("override_lighting_excel", False):
-        lighting_lookup = override_lighting_lookup_from_excel_file(
-            lighting_excel_path=paths_dict.get("lighting_excel", ""),
-            lighting_lookup=lighting_lookup,
-            override_lighting_flag=True
-        )
-
-    if excel_flags.get("override_hvac_excel", False):
-        hvac_lookup = override_hvac_lookup_from_excel_file(
-            hvac_excel_path=paths_dict.get("hvac_excel", ""),
-            hvac_lookup=hvac_lookup,
-            override_hvac_flag=True
-        )
-
-    if excel_flags.get("override_vent_excel", False):
-        vent_lookup = override_vent_lookup_from_excel_file(
-            vent_excel_path=paths_dict.get("vent_excel", ""),
-            vent_lookup=vent_lookup,
-            override_vent_flag=True
-        )
-
-    # -------------------------------------------------------------------------
-    # 8) JSON overrides from user_configs/<job_id> if user_flags are set
-    # -------------------------------------------------------------------------
-    check_canceled()
-
-    def safe_load_subjson(fname, key):
-        """
-        Loads user_configs/<job_id>/fname if it exists, returns data.get(key).
-        """
-        full_path = os.path.join(user_configs_folder, fname)
-        if os.path.isfile(full_path):
-            try:
-                with open(full_path, "r") as ff:
-                    data = json.load(ff)
-                return data.get(key)
-            except Exception as e:
-                logger.error(f"[ERROR] loading {fname} => {e}")
-        return None
-
-    # Fenestration
-    user_fenez_data = []
-    if user_flags.get("override_fenez_json", False):
-        loaded = safe_load_subjson("fenestration.json", "fenestration")
-        if loaded:
-            user_fenez_data = loaded
-
-    updated_res_data, updated_nonres_data = build_fenez_config(
-        base_res_data=updated_res_data,
-        base_nonres_data=updated_nonres_data,
-        excel_path="",
-        do_excel_override=False,
-        user_fenez_overrides=user_fenez_data
-    )
-
-    # DHW
-    user_config_dhw = None
-    if user_flags.get("override_dhw_json", False):
-        user_config_dhw = safe_load_subjson("dhw.json", "dhw")
-
-    # EPW
-    user_config_epw = []
-    if user_flags.get("override_epw_json", False):
-        e = safe_load_subjson("epw.json", "epw")
-        if e:
-            user_config_epw = e
-
-    # Lighting
-    user_config_lighting = None
-    if user_flags.get("override_lighting_json", False):
-        user_config_lighting = safe_load_subjson("lighting.json", "lighting")
-
-    # HVAC
-    user_config_hvac = None
-    if user_flags.get("override_hvac_json", False):
-        user_config_hvac = safe_load_subjson("hvac.json", "hvac")
-
-    # Vent
-    user_config_vent = []
-    if user_flags.get("override_vent_json", False):
-        v = safe_load_subjson("vent.json", "vent")
-        if v:
-            user_config_vent = v
-
-    # Geometry
-    geom_data = {}
-    if user_flags.get("override_geometry_json", False):
-        g = safe_load_subjson("geometry.json", "geometry")
-        if g:
-            geom_data["geometry"] = g
-
-    # Shading
-    shading_data = {}
-    if user_flags.get("override_shading_json", False):
-        s = safe_load_subjson("shading.json", "shading")
-        if s:
-            shading_data["shading"] = s
-
-    # -------------------------------------------------------------------------
-    # 9) IDF creation
-    # -------------------------------------------------------------------------
-    check_canceled()
-    df_buildings = pd.DataFrame()
-
-    if perform_idf_creation:
-        logger.info("[INFO] IDF creation is ENABLED.")
-
-        # a) Load building data
-        if use_database:
-            logger.info("[INFO] Loading building data from DB.")
-            if not filter_by:
-                raise ValueError("[ERROR] 'filter_by' must be specified when 'use_database' is True.")
-            df_buildings = load_buildings_from_db(db_filter, filter_by)
-
-            # Optionally save the raw DB buildings
-            extracted_csv_path = os.path.join(job_output_dir, "extracted_buildings.csv")
-            df_buildings.to_csv(extracted_csv_path, index=False)
-            logger.info(f"[INFO] Saved extracted buildings to {extracted_csv_path}")
-
-        else:
-            bldg_data_path = paths_dict.get("building_data", "")
-            if os.path.isfile(bldg_data_path):
-                df_buildings = pd.read_csv(bldg_data_path)
-            else:
-                logger.warning(f"[WARN] building_data CSV not found => {bldg_data_path}")
-
-        # b) Create IDFs & (optionally) run sims in job folder
-        df_buildings = create_idfs_for_all_buildings(
-            df_buildings=df_buildings,
-            scenario=scenario,
-            calibration_stage=calibration_stage,
-            strategy=strategy,
-            random_seed=random_seed,
-            user_config_geom=geom_data.get("geometry", []),
-            user_config_lighting=user_config_lighting,
-            user_config_dhw=user_config_dhw,
-            res_data=updated_res_data,
-            nonres_data=updated_nonres_data,
-            user_config_hvac=user_config_hvac,
-            user_config_vent=user_config_vent,
-            user_config_epw=user_config_epw,
-            output_definitions=output_definitions,
-            run_simulations=run_simulations,
-            simulate_config=simulate_config,
-            post_process=post_process,
-            post_process_config=post_process_config,
-            logs_base_dir=job_output_dir
-        )
-
-        # === Store the mapping (ogc_fid -> idf_name) so we can look it up later ===
-        idf_map_csv = os.path.join(job_output_dir, "extracted_idf_buildings.csv")
-        df_buildings.to_csv(idf_map_csv, index=False)
-        logger.info(f"[INFO] Wrote building -> IDF map to {idf_map_csv}")
-
-    else:
-        logger.info("[INFO] Skipping IDF creation.")
-
-    # -------------------------------------------------------------------------
-    # 10) Perform structuring if requested
-    # -------------------------------------------------------------------------
-    check_canceled()
-    if structuring_cfg.get("perform_structuring", False):
-        logger.info("[INFO] Performing structuring ...")
-
-        # Example: Fenestration
-        from idf_objects.structuring.fenestration_structuring import transform_fenez_log_to_structured_with_ranges
-        fenez_conf = structuring_cfg.get("fenestration", {})
-        fenez_in   = fenez_conf.get("csv_in",  "assigned/assigned_fenez_params.csv")
-        fenez_out  = fenez_conf.get("csv_out", "assigned/structured_fenez_params.csv")
-
-        if not os.path.isabs(fenez_in):
-            fenez_in = os.path.join(job_output_dir, fenez_in)
-        if not os.path.isabs(fenez_out):
-            fenez_out = os.path.join(job_output_dir, fenez_out)
-
-        if os.path.isfile(fenez_in):
-            transform_fenez_log_to_structured_with_ranges(csv_input=fenez_in, csv_output=fenez_out)
-        else:
-            logger.warning(f"[STRUCTURING] Fenestration input CSV not found => {fenez_in}")
-
-        # Example: DHW
-        from idf_objects.structuring.dhw_structuring import transform_dhw_log_to_structured
-        dhw_conf = structuring_cfg.get("dhw", {})
-        dhw_in   = dhw_conf.get("csv_in",  "assigned/assigned_dhw_params.csv")
-        dhw_out  = dhw_conf.get("csv_out", "assigned/structured_dhw_params.csv")
-
-        if not os.path.isabs(dhw_in):
-            dhw_in = os.path.join(job_output_dir, dhw_in)
-        if not os.path.isabs(dhw_out):
-            dhw_out = os.path.join(job_output_dir, dhw_out)
-
-        if os.path.isfile(dhw_in):
-            transform_dhw_log_to_structured(dhw_in, dhw_out)
-        else:
-            logger.warning(f"[STRUCTURING] DHW input CSV not found => {dhw_in}")
-
-        # Example: HVAC flatten
-        from idf_objects.structuring.flatten_hvac import flatten_hvac_data, parse_assigned_value as parse_hvac
-        hvac_conf = structuring_cfg.get("hvac", {})
-        hvac_in   = hvac_conf.get("csv_in",  "assigned/assigned_hvac_params.csv")
-        hvac_bld  = hvac_conf.get("build_out", "assigned/assigned_hvac_building.csv")
-        hvac_zone = hvac_conf.get("zone_out",  "assigned/assigned_hvac_zones.csv")
-
-        if not os.path.isabs(hvac_in):
-            hvac_in = os.path.join(job_output_dir, hvac_in)
-        if not os.path.isabs(hvac_bld):
-            hvac_bld = os.path.join(job_output_dir, hvac_bld)
-        if not os.path.isabs(hvac_zone):
-            hvac_zone = os.path.join(job_output_dir, hvac_zone)
-
-        if os.path.isfile(hvac_in):
-            df_hvac = pd.read_csv(hvac_in)
-            df_hvac["assigned_value"] = df_hvac["assigned_value"].apply(parse_hvac)
-            flatten_hvac_data(
-                df_input=df_hvac,
-                out_build_csv=hvac_bld,
-                out_zone_csv=hvac_zone
-            )
-        else:
-            logger.warning(f"[STRUCTURING] HVAC input CSV not found => {hvac_in}")
-
-        # Example: Vent flatten
-        from idf_objects.structuring.flatten_assigned_vent import flatten_ventilation_data, parse_assigned_value as parse_vent
-        vent_conf = structuring_cfg.get("vent", {})
-        vent_in   = vent_conf.get("csv_in", "assigned/assigned_ventilation.csv")
-        vent_bld  = vent_conf.get("build_out", "assigned/assigned_vent_building.csv")
-        vent_zone = vent_conf.get("zone_out", "assigned/assigned_vent_zones.csv")
-
-        if not os.path.isabs(vent_in):
-            vent_in = os.path.join(job_output_dir, vent_in)
-        if not os.path.isabs(vent_bld):
-            vent_bld = os.path.join(job_output_dir, vent_bld)
-        if not os.path.isabs(vent_zone):
-            vent_zone = os.path.join(job_output_dir, vent_zone)
-
-        if os.path.isfile(vent_in):
-            df_vent = pd.read_csv(vent_in)
-            df_vent["assigned_value"] = df_vent["assigned_value"].apply(parse_vent)
-            flatten_ventilation_data(
-                df_input=df_vent,
-                out_build_csv=vent_bld,
-                out_zone_csv=vent_zone
-            )
-        else:
-            logger.warning(f"[STRUCTURING] Vent input CSV not found => {vent_in}")
-
-    else:
-        logger.info("[INFO] Skipping structuring.")
-
-    # -------------------------------------------------------------------------
-    # 11) Scenario Modification
-    # -------------------------------------------------------------------------
-    check_canceled()
-    if modification_cfg.get("perform_modification", False):
-        logger.info("[INFO] Scenario modification is ENABLED.")
-
-        mod_cfg = modification_cfg["modify_config"]
-
-        # 1) Ensure scenario IDFs go to <job_output_dir>/scenario_idfs
-        scenario_idf_dir = os.path.join(job_output_dir, "scenario_idfs")
-        os.makedirs(scenario_idf_dir, exist_ok=True)
-        mod_cfg["output_idf_dir"] = scenario_idf_dir
-
-        # 2) Ensure scenario sims => <job_output_dir>/Sim_Results/Scenarios
-        if "simulation_config" in mod_cfg:
-            sim_out = os.path.join(job_output_dir, "Sim_Results", "Scenarios")
-            os.makedirs(sim_out, exist_ok=True)
-            mod_cfg["simulation_config"]["output_dir"] = sim_out
-
-        # 3) Post-process => <job_output_dir>/results_scenarioes
-        if "post_process_config" in mod_cfg:
-            ppcfg = mod_cfg["post_process_config"]
-            as_is_csv = os.path.join(job_output_dir, "results_scenarioes", "merged_as_is_scenarios.csv")
-            daily_csv = os.path.join(job_output_dir, "results_scenarioes", "merged_daily_mean_scenarios.csv")
-            os.makedirs(os.path.dirname(as_is_csv), exist_ok=True)
-            os.makedirs(os.path.dirname(daily_csv), exist_ok=True)
-            ppcfg["output_csv_as_is"] = as_is_csv
-            ppcfg["output_csv_daily_mean"] = daily_csv
-
-        # 4) Fix assigned_csv paths
-        assigned_csv_dict = mod_cfg.get("assigned_csv", {})
-        for key, rel_path in assigned_csv_dict.items():
-            assigned_csv_dict[key] = os.path.join(job_output_dir, rel_path)
-
-        # 5) Fix scenario_csv paths
-        scenario_csv_dict = mod_cfg.get("scenario_csv", {})
-        for key, rel_path in scenario_csv_dict.items():
-            scenario_csv_dict[key] = os.path.join(job_output_dir, rel_path)
-
-        # ----------------------------------------------------------------------
-        # NEW LOGIC: pick the base_idf_path from building_id automatically
-        # ----------------------------------------------------------------------
-        # The user sets "building_id" in the config, e.g. 20233330
-        building_id = mod_cfg["building_id"]
-
-        # We need the CSV that was saved right after create_idfs_for_all_buildings(...)
-        idf_map_csv = os.path.join(job_output_dir, "extracted_idf_buildings.csv")
-        if not os.path.isfile(idf_map_csv):
-            raise FileNotFoundError(
-                f"Cannot find building->IDF map CSV at {idf_map_csv}. "
-                f"Did you skip 'perform_idf_creation'?"
-            )
-
-        # Read the mapping: each row has "ogc_fid" and "idf_name"
-        df_idf_map = pd.read_csv(idf_map_csv)
-        row_match = df_idf_map.loc[df_idf_map["ogc_fid"] == building_id]
-
-        if row_match.empty:
-            raise ValueError(
-                f"No building found for building_id={building_id} in {idf_map_csv}"
-            )
-
-        # e.g. "building_0.idf", "building_16.idf", "building_16_ba62d0.idf", etc.
-        idf_filename = row_match.iloc[0]["idf_name"]
-
-        # Build the full path to that IDF in output_IDFs
-        base_idf_path = os.path.join(job_output_dir, "output_IDFs", idf_filename)
-        mod_cfg["base_idf_path"] = base_idf_path
-        logger.info(f"[INFO] Auto-selected base IDF => {base_idf_path}")
-        # ----------------------------------------------------------------------
-
-        # Finally, run the scenario workflow
-        run_modification_workflow(mod_cfg)
-    else:
-        logger.info("[INFO] Skipping scenario modification.")
-
-
-    # -------------------------------------------------------------------------
-    # 12) Helper to handle patching CSVs that are "relative" but not "data/".
-    # -------------------------------------------------------------------------
-    def patch_if_relative(csv_path: str):
-        """
-        1) If absolute, return as-is.
-        2) If starts with 'data/', interpret as /usr/src/app/data/... (no job folder).
-        3) Else, join with job_output_dir.
-        """
-        if not csv_path:
-            return csv_path
-        if os.path.isabs(csv_path):
-            return csv_path
-        if csv_path.startswith("data/"):
-            return os.path.join("/usr/src/app", csv_path)
-        return os.path.join(job_output_dir, csv_path)
-
-    # -------------------------------------------------------------------------
-    # 13) Global Validation
-    # -------------------------------------------------------------------------
-        # (A) Validation - BASE
-    # -------------------------------------------------------------------------
-    check_canceled()
-    base_validation_cfg = main_config.get("validation_base", {})
-    if base_validation_cfg.get("perform_validation", False):
-        logger.info("[INFO] BASE Validation is ENABLED.")
-        val_conf = base_validation_cfg["config"]
-
-        # Patch relative paths
-        sim_csv = val_conf.get("sim_data_csv")
-        if sim_csv:
-            val_conf["sim_data_csv"] = patch_if_relative(sim_csv)
-
-        real_csv = val_conf.get("real_data_csv")
-        if real_csv:
-            val_conf["real_data_csv"] = patch_if_relative(real_csv)
-
-        out_csv = val_conf.get("output_csv")
-        if out_csv:
-            val_conf["output_csv"] = patch_if_relative(out_csv)
-
-        # Now run the validation
-        run_validation_process(val_conf)
-    else:
-        logger.info("[INFO] Skipping BASE validation or not requested.")
-
-    # (B) Validation - SCENARIOS
-    # -------------------------------------------------------------------------
-    check_canceled()
-    scenario_validation_cfg = main_config.get("validation_scenarios", {})
-    if scenario_validation_cfg.get("perform_validation", False):
-        logger.info("[INFO] SCENARIO Validation is ENABLED.")
-        val_conf = scenario_validation_cfg["config"]
-
-        # Patch relative paths
-        sim_csv = val_conf.get("sim_data_csv")
-        if sim_csv:
-            val_conf["sim_data_csv"] = patch_if_relative(sim_csv)
-
-        real_csv = val_conf.get("real_data_csv")
-        if real_csv:
-            val_conf["real_data_csv"] = patch_if_relative(real_csv)
-
-        out_csv = val_conf.get("output_csv")
-        if out_csv:
-            val_conf["output_csv"] = patch_if_relative(out_csv)
-
-        # Now run the validation
-        run_validation_process(val_conf)
-    else:
-        logger.info("[INFO] Skipping SCENARIO validation or not requested.")
-
-
-    # -------------------------------------------------------------------------
-    # 14) Sensitivity Analysis
-    # -------------------------------------------------------------------------
-    check_canceled()
-    if sens_cfg.get("perform_sensitivity", False):
-        logger.info("[INFO] Sensitivity Analysis is ENABLED.")
-
-        scenario_folder = sens_cfg.get("scenario_folder", "")
-        sens_cfg["scenario_folder"] = patch_if_relative(scenario_folder)
-
-        results_csv = sens_cfg.get("results_csv", "")
-        sens_cfg["results_csv"] = patch_if_relative(results_csv)
-
-        out_csv = sens_cfg.get("output_csv", "sensitivity_output.csv")
-        sens_cfg["output_csv"] = patch_if_relative(out_csv)
-
-        run_sensitivity_analysis(
-            scenario_folder=sens_cfg["scenario_folder"],
-            method=sens_cfg["method"],
-            results_csv=sens_cfg.get("results_csv", ""),
-            target_variable=sens_cfg.get("target_variable", []),
-            output_csv=sens_cfg.get("output_csv", "sensitivity_output.csv"),
-            n_morris_trajectories=sens_cfg.get("n_morris_trajectories", 10),
-            num_levels=sens_cfg.get("num_levels", 4),
-            n_sobol_samples=sens_cfg.get("n_sobol_samples", 128)
-        )
-    else:
-        logger.info("[INFO] Skipping sensitivity analysis.")
-
-    # -------------------------------------------------------------------------
-    # 15) Surrogate Modeling
-    # -------------------------------------------------------------------------
-    check_canceled()
-    if sur_cfg.get("perform_surrogate", False):
-        logger.info("[INFO] Surrogate Modeling is ENABLED.")
-
-        scenario_folder = sur_cfg.get("scenario_folder", "")
-        sur_cfg["scenario_folder"] = patch_if_relative(scenario_folder)
-
-        results_csv = sur_cfg.get("results_csv", "")
-        sur_cfg["results_csv"] = patch_if_relative(results_csv)
-
-        model_out = sur_cfg.get("model_out", "")
-        sur_cfg["model_out"] = patch_if_relative(model_out)
-
-        cols_out = sur_cfg.get("cols_out", "")
-        sur_cfg["cols_out"] = patch_if_relative(cols_out)
-
-        target_var = sur_cfg["target_variable"]
-        test_size  = sur_cfg["test_size"]
-
-        df_scen = sur_load_scenario_params(sur_cfg["scenario_folder"])
-        pivot_df = pivot_scenario_params(df_scen)
-
-        df_sim = load_sim_results(sur_cfg["results_csv"])
-        df_agg = aggregate_results(df_sim)
-        merged_df = merge_params_with_results(pivot_df, df_agg, target_var)
-
-        rf_model, trained_cols = build_and_save_surrogate(
-            df_data=merged_df,
-            target_col=target_var,
-            model_out_path=sur_cfg["model_out"],
-            columns_out_path=sur_cfg["cols_out"],
-            test_size=test_size,
-            random_state=42
-        )
-        if rf_model:
-            logger.info("[INFO] Surrogate model built & saved.")
-        else:
-            logger.warning("[WARN] Surrogate modeling failed or insufficient data.")
-    else:
-        logger.info("[INFO] Skipping surrogate modeling.")
-
-    # -------------------------------------------------------------------------
-    # 16) Calibration
-    # -------------------------------------------------------------------------
-    check_canceled()
-    if cal_cfg.get("perform_calibration", False):
-        logger.info("[INFO] Calibration is ENABLED.")
-
-        scen_folder = cal_cfg.get("scenario_folder", "")
-        cal_cfg["scenario_folder"] = patch_if_relative(scen_folder)
-
-        real_csv = cal_cfg.get("real_data_csv", "")
-        cal_cfg["real_data_csv"] = patch_if_relative(real_csv)
-
-        sur_model_path = cal_cfg.get("surrogate_model_path", "")
-        cal_cfg["surrogate_model_path"] = patch_if_relative(sur_model_path)
-
-        sur_cols_path = cal_cfg.get("surrogate_columns_path", "")
-        cal_cfg["surrogate_columns_path"] = patch_if_relative(sur_cols_path)
-
-        hist_csv = cal_cfg.get("output_history_csv", "")
-        cal_cfg["output_history_csv"] = patch_if_relative(hist_csv)
-
-        best_params_folder = cal_cfg.get("best_params_folder", "")
-        cal_cfg["best_params_folder"] = patch_if_relative(best_params_folder)
-
-        run_unified_calibration(cal_cfg)
-    else:
-        logger.info("[INFO] Skipping calibration.")
-
-    # -------------------------------------------------------------------------
-    # 17) Zip & Email final results, if mail_user.json present
-    # -------------------------------------------------------------------------
-    try:
-        mail_user_path = os.path.join(user_configs_folder, "mail_user.json")
-        if os.path.isfile(mail_user_path):
-            with open(mail_user_path, "r") as f:
-                mail_info = json.load(f)
-
-            mail_user_list = mail_info.get("mail_user", [])
-            if len(mail_user_list) > 0:
-                first_user = mail_user_list[0]
-                recipient_email = first_user.get("email", "")
-                if recipient_email:
-                    zip_path = zip_user_output(job_output_dir)
-                    send_results_email(zip_path, recipient_email)
-                    logger.info(f"[INFO] Emailed zip {zip_path} to {recipient_email}")
-                else:
-                    logger.warning("[WARN] mail_user.json => missing 'email'")
-            else:
-                logger.warning("[WARN] mail_user.json => 'mail_user' list is empty.")
-        else:
-            logger.info("[INFO] No mail_user.json found, skipping email.")
-    except Exception as e:
-        logger.error(f"[ERROR] Zipping/Emailing results failed => {e}")
-
-    # -------------------------------------------------------------------------
-    # LAST STEP: (Optional) Call the cleanup function
-    # -------------------------------------------------------------------------
-    try:
-        cleanup_old_results()  # This will remove any job folder older than MAX_AGE_HOURS
-    except Exception as e:
-        logger.error(f"[CLEANUP ERROR] => {e}")
-
-    logger.info("=== End of orchestrate_workflow ===")
-
-------------------------------------------------------------
-
-File: D:\Documents\E_Plus_2030_py\job_manager.py
-============================================================
-"""
-job_manager.py
-
-A more comprehensive in-memory job manager to handle multiple
-workflow runs (jobs). Each job can be in states like CREATED,
-QUEUED, RUNNING, FINISHED, ERROR, or CANCELED.
-
-Features:
-  - Unique job_id generation
-  - Concurrency limit (max simultaneous running jobs)
-  - Job queue (if concurrency limit is reached)
-  - In-memory log queue for real-time streaming
-  - Support for cancellation
-  - Placeholders for persistence (if needed in future)
-
-CAVEATS:
-  - If the Python process exits, in-memory jobs are lost.
-  - For production usage, consider a persistent store (Redis, DB).
-"""
-
-import uuid
-import queue
-import threading
-import time
-import enum
-from typing import Any, Dict, Optional, Union
-
-from orchestrator import WorkflowCanceled
-
-
-###############################################################################
-# Global Job Store and Concurrency
-###############################################################################
-
-# You can store up to X jobs as RUNNING at once. Others will wait in a queue.
-MAX_RUNNING_JOBS = 2
-
-# The global store for jobs and a global queue for waiting jobs.
-_jobs: Dict[str, Dict] = {}
-_waiting_jobs: queue.Queue = queue.Queue()  # For jobs awaiting execution if concurrency is at max.
-
-# A global lock to protect shared state, e.g., reading/writing _jobs, counting running jobs, etc.
-_jobs_lock = threading.Lock()
-
-###############################################################################
-# Enum: JobStatus
-###############################################################################
-class JobStatus(str, enum.Enum):
-    CREATED = "CREATED"
-    QUEUED = "QUEUED"
-    RUNNING = "RUNNING"
-    FINISHED = "FINISHED"
-    ERROR = "ERROR"
-    CANCELED = "CANCELED"
-
-
-###############################################################################
-# Data Structure for Each Job
-###############################################################################
-# Each job dictionary in _jobs has keys:
-#   {
-#       "status": JobStatus,
-#       "config": dict,             # includes "job_id" and other user config
-#       "logs": queue.Queue,        # For log streaming
-#       "thread": threading.Thread or None,
-#       "result": Any,              # Store final result or summary
-#       "cancel_event": threading.Event # Signals that we want to cancel
-#   }
-
-
-###############################################################################
-# Main API
-###############################################################################
-
-def create_job(config: dict) -> str:
-    """
-    Create a new job, store it in _jobs, return its job_id.
-    
-    :param config: Dictionary of user-supplied config for the job
-    :return: job_id (string)
-    """
-    job_id = str(uuid.uuid4())
-    with _jobs_lock:
-        # We also store job_id in the config so orchestrator can see it.
-        config["job_id"] = job_id
-
-        _jobs[job_id] = {
-            "status": JobStatus.CREATED,
-            "config": config,
-            "logs": queue.Queue(),
-            "thread": None,
-            "result": None,
-            "cancel_event": threading.Event(),
-        }
-    return job_id
-
-
-def enqueue_job(job_id: str) -> None:
-    """
-    Place a job into the waiting queue if concurrency is at max, or run it immediately if not.
-    """
-    with _jobs_lock:
-        job = _jobs.get(job_id)
-        if not job:
-            return
-        # If job is not in CREATED state, do nothing
-        if job["status"] != JobStatus.CREATED:
-            return
-
-        # Count how many are running
-        running_count = sum(1 for j in _jobs.values() if j["status"] == JobStatus.RUNNING)
-        if running_count < MAX_RUNNING_JOBS:
-            # We can start this job immediately
-            _start_job(job_id)
-        else:
-            # We have to queue it
-            job["status"] = JobStatus.QUEUED
-            _waiting_jobs.put(job_id)
-
-
-def get_job(job_id: str) -> Optional[Dict]:
-    """Retrieve the entire job dictionary by job_id."""
-    with _jobs_lock:
-        return _jobs.get(job_id)
-
-
-def get_job_status(job_id: str) -> Optional[str]:
-    """Return the status of the job as a string (or None if not found)."""
-    with _jobs_lock:
-        job = _jobs.get(job_id)
-        if job:
-            return job["status"]
-    return None
-
-
-def get_job_logs_queue(job_id: str) -> Optional[queue.Queue]:
-    """Return the logs queue for a job, if it exists."""
-    with _jobs_lock:
-        job = _jobs.get(job_id)
-        if job:
-            return job["logs"]
-    return None
-
-
-def cancel_job(job_id: str) -> bool:
-    """
-    Signal that a job should be canceled (if RUNNING or QUEUED).
-    This sets the 'cancel_event' so the job's thread can check and stop if possible.
-    
-    :return: True if job was canceled or is in the process of being canceled, False if not found.
-    """
-    with _jobs_lock:
-        job = _jobs.get(job_id)
-        if not job:
-            return False
-
-        status = job["status"]
-        if status in [JobStatus.FINISHED, JobStatus.ERROR, JobStatus.CANCELED]:
-            return False  # It's already done or canceled
-
-        # Signal the thread to stop
-        job["cancel_event"].set()
-
-        if status == JobStatus.QUEUED:
-            # If queued, remove it from the queue
-            # We'll need to rebuild the queue without that job_id
-            _remove_queued_job(job_id)
-            job["status"] = JobStatus.CANCELED
-        elif status == JobStatus.RUNNING:
-            # The thread should eventually notice the cancel_event
-            pass
-        else:
-            # If CREATED and not yet enqueued, we'll just mark it canceled
-            if status == JobStatus.CREATED:
-                job["status"] = JobStatus.CANCELED
-
-        return True
-
-
-def set_job_result(job_id: str, result_data: Any) -> None:
-    """Store final results or summary data for the given job."""
-    with _jobs_lock:
-        if job_id in _jobs:
-            _jobs[job_id]["result"] = result_data
-
-
-def get_job_result(job_id: str) -> Any:
-    """Retrieve whatever was set as the result data."""
-    with _jobs_lock:
-        job = _jobs.get(job_id)
-        if job:
-            return job["result"]
-    return None
-
-
-###############################################################################
-# Internal Worker Helpers
-###############################################################################
-
-def _start_job(job_id: str) -> None:
-    """
-    Transition job to RUNNING and spawn a thread to execute it.
-    """
-    job = _jobs[job_id]
-    job["status"] = JobStatus.RUNNING
-
-    # We'll create a new thread that calls _job_thread_runner(job_id)
-    t = threading.Thread(target=_job_thread_runner, args=(job_id,), daemon=True)
-    job["thread"] = t
-    t.start()
-
-
-def _job_thread_runner(job_id: str) -> None:
-    """Worker function that runs in a separate thread for each job."""
-    try:
-        job = _jobs[job_id]
-        cancel_event = job["cancel_event"]
-
-        # 1) Import orchestrate_workflow
-        from orchestrator import orchestrate_workflow
-
-        # 2) Run the workflow, passing the entire job["config"] which has "job_id"
-        orchestrate_workflow(job["config"], cancel_event=cancel_event)
-
-        # If orchestrate_workflow finishes with no exception => FINISHED
-        job["status"] = JobStatus.FINISHED
-
-    except WorkflowCanceled:
-        job["status"] = JobStatus.CANCELED
-    except Exception as e:
-        job["status"] = JobStatus.ERROR
-        err_msg = f"[Job {job_id}] crashed => {e}"
-        job["logs"].put(err_msg)
-    finally:
-        _signal_end_of_logs(job_id)
-        _try_start_next_queued_job()
-
-
-def _try_start_next_queued_job():
-    """
-    Check if there's a queued job. If concurrency allows, start it.
-    """
-    with _jobs_lock:
-        running_count = sum(1 for j in _jobs.values() if j["status"] == JobStatus.RUNNING)
-        if running_count >= MAX_RUNNING_JOBS:
-            return  # No slot available
-
-        # Otherwise, pop from waiting queue if any
-        while not _waiting_jobs.empty():
-            next_job_id = _waiting_jobs.get()
-            job = _jobs.get(next_job_id)
-            if not job:
-                continue  # might have been canceled or removed
-
-            if job["status"] == JobStatus.QUEUED:
-                # Start it
-                _start_job(next_job_id)
-                break
-
-
-def _remove_queued_job(job_id: str):
-    """
-    Remove a job from the waiting queue if it's in there by rebuilding the queue 
-    without that job_id.
-    """
-    temp_list = []
-    while not _waiting_jobs.empty():
-        j_id = _waiting_jobs.get()
-        if j_id != job_id:
-            temp_list.append(j_id)
-    # re-queue the others
-    for j_id in temp_list:
-        _waiting_jobs.put(j_id)
-
-
-def _signal_end_of_logs(job_id: str):
-    """
-    Put a `None` sentinel in the job's log queue to indicate no more logs.
-    The client log streamer can break on encountering None.
-    """
-    with _jobs_lock:
-        job = _jobs.get(job_id)
-        if job:
-            job["logs"].put(None)
-
-------------------------------------------------------------
-
-File: D:\Documents\E_Plus_2030_py\main_modifi.py
-============================================================
-"""
-main_modifi.py
-
-Handles the generation of scenario-based IDFs for sensitivity, surrogate,
-calibration, or any parametric runs, then optionally runs E+ simulation,
-post-processing, and validation in a job-specific folder if provided.
-
-Usage:
-  - Typically invoked from your orchestrator (or command line) with a config dict:
-    {
-      "base_idf_path": "output_IDFs/building_0.idf",
-      "idd_path": "EnergyPlus/Energy+.idd",
-      "assigned_csv": {
-        "hvac_building": "output/assigned/assigned_hvac_building.csv",
-        "hvac_zones": "output/assigned/assigned_hvac_zones.csv",
-        "dhw": "output/assigned/assigned_dhw_params.csv",
-        "vent_build": "output/assigned/assigned_vent_building.csv",
-        "vent_zones": "output/assigned/assigned_vent_zones.csv",
-        "elec": "output/assigned/assigned_lighting.csv",
-        "fenez": "output/assigned/structured_fenez_params.csv"
-      },
-      "scenario_csv": {
-        "hvac": "output/scenarios/scenario_params_hvac.csv",
-        "dhw": "output/scenarios/scenario_params_dhw.csv",
-        "vent": "output/scenarios/scenario_params_vent.csv",
-        "elec": "output/scenarios/scenario_params_elec.csv",
-        "fenez": "output/scenarios/scenario_params_fenez.csv"
-      },
-      "output_idf_dir": "output/scenario_idfs",
-      "building_id": 4136730,
-      "num_scenarios": 5,
-      "picking_method": "random_uniform",
-      "picking_scale_factor": 0.5,
-
-      "run_simulations": true,
-      "simulation_config": {
-        "num_workers": 4,
-        "output_dir": "output/Sim_Results/Scenarios"
-      },
-      "perform_post_process": true,
-      "post_process_config": {
-        "output_csv_as_is": "output/results_scenarioes/merged_as_is_scenarios.csv",
-        "output_csv_daily_mean": "output/results_scenarioes/merged_daily_mean_scenarios.csv"
-      },
-      "perform_validation": true,
-      "validation_config": {
-        "real_data_csv": "data/mock_merged_daily_mean.csv",
-        "sim_data_csv": "output/results_scenarioes/merged_daily_mean_scenarios.csv",
-        "bldg_ranges": { "0": [0,1,2] },
-        "variables_to_compare": [...],
-        "threshold_cv_rmse": 30.0,
-        "skip_plots": true,
-        "output_csv": "scenario_validation_report.csv"
-      },
-
-      "job_output_dir": "/usr/src/app/output/xxxx-uuid"   # (Optional)
-    }
-"""
-
-import os
-import logging
-import pandas as pd
-
-# ---------------------------------------------------------------------------
-# A) Common Utilities
-# ---------------------------------------------------------------------------
-from modification.common_utils import (
-    load_assigned_csv,
-    load_scenario_csv,
-    load_idf,
-    save_idf,
-    generate_multiple_param_sets,
-    save_param_scenarios_to_csv
-)
-
-# ---------------------------------------------------------------------------
-# B) Modules for scenario creation & application
-# ---------------------------------------------------------------------------
-from modification.hvac_functions import (
-    create_hvac_scenarios,
-    apply_building_level_hvac,
-    apply_zone_level_hvac
-)
-from modification.dhw_functions import (
-    create_dhw_scenarios,
-    apply_dhw_params_to_idf
-)
-from modification.vent_functions import (
-    create_vent_scenarios,
-    apply_building_level_vent,
-    apply_zone_level_vent
-)
-from modification.elec_functions import (
-    create_elec_scenarios,
-    apply_building_level_elec,
-    apply_object_level_elec
-)
-from modification.fenez_functions2 import (
-    create_fenez_scenarios,
-    apply_object_level_fenez
-)
-
-# ---------------------------------------------------------------------------
-# C) Simulation + Post-processing + Validation
-# ---------------------------------------------------------------------------
-from epw.run_epw_sims import simulate_all
-from postproc.merge_results import merge_all_results
-from validation.main_validation import run_validation_process
-
-
-def run_all_idfs_in_folder(
-    folder_path: str,
-    iddfile: str,
-    base_output_dir: str,
-    default_lat: float = 52.15,
-    default_lon: float = 4.40,
-    default_year: int = 2020,
-    num_workers: int = 4
-):
-    """
-    Utility function to find .idf files in folder_path and run them with simulate_all(...).
-    Adjust lat/lon/year or load them from a side CSV if needed.
-    """
-    logger = logging.getLogger(__name__)
-    logger.info(f"[run_all_idfs_in_folder] Searching .idf files in {folder_path}")
-
-    if not os.path.isdir(folder_path):
-        logger.warning(f"[run_all_idfs_in_folder] Folder not found => {folder_path}")
-        return
-
-    idf_files = [f for f in os.listdir(folder_path) if f.lower().endswith(".idf")]
-    if not idf_files:
-        logger.warning(f"[run_all_idfs_in_folder] No .idf files in {folder_path} to run.")
-        return
-
-    data_rows = []
-    for idx, idf_name in enumerate(idf_files):
-        data_rows.append({
-            "idf_name": idf_name,
-            "lat": default_lat,
-            "lon": default_lon,
-            "desired_climate_year": default_year,
-            "ogc_fid": idx  # or parse from filename
-        })
-
-    df_scenarios = pd.DataFrame(data_rows)
-    logger.info(f"[run_all_idfs_in_folder] Running {len(df_scenarios)} scenario IDFs with simulate_all...")
-
-    simulate_all(
-        df_buildings=df_scenarios,
-        idf_directory=folder_path,
-        iddfile=iddfile,
-        base_output_dir=base_output_dir,
-        user_config_epw=None,
-        assigned_epw_log=None,
-        num_workers=num_workers
-    )
-    logger.info("[run_all_idfs_in_folder] Simulations triggered.")
-
-
-def run_modification_workflow(config):
-    """
-    Main function for scenario-based IDF creation + optional E+ simulation,
-    post-processing, and validation.
-
-    Steps:
-      1) Resolve folder paths (scenario IDFs, results) based on config + optional job_output_dir.
-      2) Load assigned CSV data (HVAC, DHW, Vent, Elec, Fenez).
-      3) Filter for the chosen building.
-      4) Generate scenario param picks (random or otherwise).
-      5) For each scenario, load a fresh base IDF, apply picks, save scenario IDF.
-      6) (Optional) run E+ sims for these scenario IDFs, then post-process, then validate.
-
-    :param config: dict
-    :return: None
-    """
-    logger = logging.getLogger(__name__)
-    logger.info("[MODIFICATION] Starting scenario-based workflow...")
-
-    # -----------------------------------------------------------------------
-    # 1) Extract config parts & resolve paths
-    # -----------------------------------------------------------------------
-    base_idf_path   = config["base_idf_path"]
-    idd_path        = config["idd_path"]
-    assigned_csvs   = config["assigned_csv"]
-    scenario_csvs   = config["scenario_csv"]
-    building_id     = config["building_id"]
-    num_scenarios   = config["num_scenarios"]
-    picking_method  = config["picking_method"]
-    scale_factor    = config.get("picking_scale_factor", 1.0)
-
-    # The user might specify something like "output/scenario_idfs" or just "scenario_idfs".
-    scenario_idf_dir = config.get("output_idf_dir", "output/scenario_idfs")
-
-    # Also we have simulation, post-processing, and validation flags:
-    run_sims        = config.get("run_simulations", False)
-    sim_cfg         = config.get("simulation_config", {})
-    do_postproc     = config.get("perform_post_process", False)
-    postproc_cfg    = config.get("post_process_config", {})
-    do_validation   = config.get("perform_validation", False)
-    validation_cfg  = config.get("validation_config", {})
-
-    # If "job_output_dir" is provided, make scenario_idf_dir relative to it (if it's not absolute).
-    job_output_dir = config.get("job_output_dir")  # optional
-    if job_output_dir and not os.path.isabs(scenario_idf_dir):
-        scenario_idf_dir = os.path.join(job_output_dir, scenario_idf_dir)
-    os.makedirs(scenario_idf_dir, exist_ok=True)
-
-    logger.info(f"[MODIFICATION] Scenario IDFs will be placed in: {scenario_idf_dir}")
-
-    # -----------------------------------------------------------------------
-    # 2) Load assigned CSV data
-    # -----------------------------------------------------------------------
-    # HVAC
-    df_hvac_bld = None
-    df_hvac_zn  = None
-    if "hvac_building" in assigned_csvs and "hvac_zones" in assigned_csvs:
-        df_hvac_bld = load_assigned_csv(assigned_csvs["hvac_building"])
-        df_hvac_zn  = load_assigned_csv(assigned_csvs["hvac_zones"])
-    elif "hvac" in assigned_csvs:
-        df_hvac_bld = load_assigned_csv(assigned_csvs["hvac"])
-
-    # DHW
-    df_dhw = load_assigned_csv(assigned_csvs["dhw"]) if "dhw" in assigned_csvs else None
-
-    # Vent
-    df_vent_bld = None
-    df_vent_zn  = None
-    if "vent_build" in assigned_csvs and "vent_zones" in assigned_csvs:
-        df_vent_bld = load_assigned_csv(assigned_csvs["vent_build"])
-        df_vent_zn  = load_assigned_csv(assigned_csvs["vent_zones"])
-    elif "vent" in assigned_csvs:
-        df_vent_bld = load_assigned_csv(assigned_csvs["vent"])
-
-    # Elec
-    df_elec  = load_assigned_csv(assigned_csvs["elec"])  if "elec"  in assigned_csvs else None
-
-    # Fenestration
-    df_fenez = load_assigned_csv(assigned_csvs["fenez"]) if "fenez" in assigned_csvs else None
-
-    # -----------------------------------------------------------------------
-    # 3) Filter data for this building
-    # -----------------------------------------------------------------------
-    def filter_for_building(df):
-        if df is not None and not df.empty:
-            return df[df["ogc_fid"] == building_id].copy()
-        return pd.DataFrame()
-
-    df_hvac_bld_sub = filter_for_building(df_hvac_bld)
-    df_hvac_zn_sub  = filter_for_building(df_hvac_zn)
-    df_dhw_sub      = filter_for_building(df_dhw)
-    df_vent_bld_sub = filter_for_building(df_vent_bld)
-    df_vent_zn_sub  = filter_for_building(df_vent_zn)
-    df_elec_sub     = filter_for_building(df_elec)
-    df_fenez_sub    = filter_for_building(df_fenez)
-
-    # -----------------------------------------------------------------------
-    # 4) Generate scenario picks (random or otherwise)
-    # -----------------------------------------------------------------------
-    # HVAC
-    if not df_hvac_bld_sub.empty:
-        if not df_hvac_zn_sub.empty:
-            # multi-step scenario creation for building & zone
-            create_hvac_scenarios(
-                df_building=df_hvac_bld_sub,
-                df_zones=df_hvac_zn_sub,
-                building_id=building_id,
-                num_scenarios=num_scenarios,
-                picking_method=picking_method,
-                random_seed=42,
-                scenario_csv_out=scenario_csvs["hvac"]
-            )
-        else:
-            hvac_scen = generate_multiple_param_sets(
-                df_main_sub=df_hvac_bld_sub,
-                num_sets=num_scenarios,
-                picking_method=picking_method,
-                scale_factor=scale_factor
-            )
-            save_param_scenarios_to_csv(hvac_scen, building_id, scenario_csvs["hvac"])
-
-    # DHW
-    if not df_dhw_sub.empty:
-        create_dhw_scenarios(
-            df_dhw_input=df_dhw_sub,
-            building_id=building_id,
-            num_scenarios=num_scenarios,
-            picking_method=picking_method,
-            random_seed=42,
-            scenario_csv_out=scenario_csvs["dhw"]
-        )
-
-    # Vent
-    if not df_vent_bld_sub.empty or not df_vent_zn_sub.empty:
-        create_vent_scenarios(
-            df_building=df_vent_bld_sub,
-            df_zones=df_vent_zn_sub,
-            building_id=building_id,
-            num_scenarios=num_scenarios,
-            picking_method=picking_method,
-            random_seed=42,
-            scenario_csv_out=scenario_csvs["vent"]
-        )
-
-    # Elec
-    if not df_elec_sub.empty:
-        create_elec_scenarios(
-            df_lighting=df_elec_sub,
-            building_id=building_id,
-            num_scenarios=num_scenarios,
-            picking_method=picking_method,
-            random_seed=42,
-            scenario_csv_out=scenario_csvs["elec"]
-        )
-
-    # Fenestration
-    if not df_fenez_sub.empty:
-        create_fenez_scenarios(
-            df_struct_fenez=df_fenez_sub,
-            building_id=building_id,
-            num_scenarios=num_scenarios,
-            picking_method=picking_method,
-            random_seed=42,
-            scenario_csv_out=scenario_csvs["fenez"]
-        )
-
-    # -----------------------------------------------------------------------
-    # 5) Load scenario CSV => group by scenario_index
-    # -----------------------------------------------------------------------
-    def safe_load_scenario(csv_path):
-        if os.path.isfile(csv_path):
-            return load_scenario_csv(csv_path)
-        return pd.DataFrame()
-
-    df_hvac_scen  = safe_load_scenario(scenario_csvs["hvac"])
-    df_dhw_scen   = safe_load_scenario(scenario_csvs["dhw"])
-    df_vent_scen  = safe_load_scenario(scenario_csvs["vent"])
-    df_elec_scen  = safe_load_scenario(scenario_csvs["elec"])
-    df_fenez_scen = safe_load_scenario(scenario_csvs["fenez"])
-
-    hvac_groups  = df_hvac_scen.groupby("scenario_index")  if not df_hvac_scen.empty  else None
-    dhw_groups   = df_dhw_scen.groupby("scenario_index")   if not df_dhw_scen.empty   else None
-    vent_groups  = df_vent_scen.groupby("scenario_index")  if not df_vent_scen.empty  else None
-    elec_groups  = df_elec_scen.groupby("scenario_index")  if not df_elec_scen.empty  else None
-    fenez_groups = df_fenez_scen.groupby("scenario_index") if not df_fenez_scen.empty else None
-
-    # -----------------------------------------------------------------------
-    # 6) For each scenario, load base IDF, apply parameters, save new IDF
-    # -----------------------------------------------------------------------
-    for i in range(num_scenarios):
-        logger.info(f"[MODIFICATION] => Creating scenario #{i} for building {building_id}")
-
-        hvac_df   = hvac_groups.get_group(i) if hvac_groups and i in hvac_groups.groups else pd.DataFrame()
-        dhw_df    = dhw_groups.get_group(i)  if dhw_groups  and i in dhw_groups.groups  else pd.DataFrame()
-        vent_df   = vent_groups.get_group(i) if vent_groups and i in vent_groups.groups else pd.DataFrame()
-        elec_df   = elec_groups.get_group(i) if elec_groups and i in elec_groups.groups else pd.DataFrame()
-        fenez_df  = fenez_groups.get_group(i)if fenez_groups and i in fenez_groups.groups else pd.DataFrame()
-
-        hvac_bld_df   = hvac_df[hvac_df["zone_name"].isna()]
-        hvac_zone_df  = hvac_df[hvac_df["zone_name"].notna()]
-        hvac_params   = _make_param_dict(hvac_bld_df)
-
-        dhw_params    = _make_param_dict(dhw_df)
-
-        vent_bld_df   = vent_df[vent_df["zone_name"].isnull()]
-        vent_zone_df  = vent_df[vent_df["zone_name"].notnull()]
-        vent_params   = _make_param_dict(vent_bld_df)
-
-        elec_params   = _make_param_dict(elec_df)
-
-        # Load base IDF
-        idf = load_idf(base_idf_path, idd_path)
-
-        # Apply HVAC
-        apply_building_level_hvac(idf, hvac_params)
-        apply_zone_level_hvac(idf, hvac_zone_df)
-
-        # Apply DHW
-        apply_dhw_params_to_idf(idf, dhw_params, suffix=f"Scenario_{i}")
-
-        # Apply Vent
-        if not vent_bld_df.empty or not vent_zone_df.empty:
-            apply_building_level_vent(idf, vent_params)
-            apply_zone_level_vent(idf, vent_zone_df)
-
-        # Apply Elec => building-level or object-level
-        if not elec_df.empty:
-            apply_building_level_elec(idf, elec_params, zonelist_name="ALL_ZONES")
-            # or use apply_object_level_elec(idf, elec_df) if you prefer
-
-        # Apply Fenestration => object-level
-        apply_object_level_fenez(idf, fenez_df)
-
-        # Save scenario IDF
-        scenario_idf_name = f"building_{building_id}_scenario_{i}.idf"
-        scenario_idf_path = os.path.join(scenario_idf_dir, scenario_idf_name)
-        save_idf(idf, scenario_idf_path)
-        logger.info(f"[MODIFICATION] Saved scenario IDF => {scenario_idf_path}")
-
-    logger.info("[MODIFICATION] All scenario IDFs generated successfully.")
-
-    # -----------------------------------------------------------------------
-    # 7) (Optional) Simulations
-    # -----------------------------------------------------------------------
-    if run_sims:
-        logger.info("[MODIFICATION] Running E+ simulations for all scenario IDFs.")
-        base_sim_dir = sim_cfg.get("output_dir", "output/Sim_Results/Scenarios")
-
-        # if job_output_dir is given, we can make the sim results go inside it, too:
-        if job_output_dir and not os.path.isabs(base_sim_dir):
-            base_sim_dir = os.path.join(job_output_dir, base_sim_dir)
-        os.makedirs(base_sim_dir, exist_ok=True)
-
-        num_workers  = sim_cfg.get("num_workers", 4)
-
-        run_all_idfs_in_folder(
-            folder_path=scenario_idf_dir,
-            iddfile=idd_path,
-            base_output_dir=base_sim_dir,
-            default_lat=52.15,
-            default_lon=4.40,
-            default_year=2020,
-            num_workers=num_workers
-        )
-
-    # -----------------------------------------------------------------------
-    # 8) (Optional) Post-processing
-    # -----------------------------------------------------------------------
-    if do_postproc:
-        logger.info("[MODIFICATION] Performing post-processing merges.")
-
-        base_sim_dir = sim_cfg.get("output_dir", "output/Sim_Results/Scenarios")
-        if job_output_dir and not os.path.isabs(base_sim_dir):
-            base_sim_dir = os.path.join(job_output_dir, base_sim_dir)
-
-        output_csv_as_is = postproc_cfg.get("output_csv_as_is", "")
-        output_csv_daily_mean = postproc_cfg.get("output_csv_daily_mean", "")
-
-        # Build full paths inside job_output_dir if they are relative
-        if output_csv_as_is:
-            if job_output_dir and not os.path.isabs(output_csv_as_is):
-                output_csv_as_is = os.path.join(job_output_dir, output_csv_as_is)
-            os.makedirs(os.path.dirname(output_csv_as_is), exist_ok=True)
-
-            merge_all_results(
-                base_output_dir=base_sim_dir,
-                output_csv=output_csv_as_is,
-                convert_to_daily=False,
-                convert_to_monthly=False
-            )
-
-        if output_csv_daily_mean:
-            if job_output_dir and not os.path.isabs(output_csv_daily_mean):
-                output_csv_daily_mean = os.path.join(job_output_dir, output_csv_daily_mean)
-            os.makedirs(os.path.dirname(output_csv_daily_mean), exist_ok=True)
-
-            merge_all_results(
-                base_output_dir=base_sim_dir,
-                output_csv=output_csv_daily_mean,
-                convert_to_daily=True,
-                daily_aggregator="mean",
-                convert_to_monthly=False
-            )
-
-        logger.info("[MODIFICATION] Post-processing step complete.")
-
-    # -----------------------------------------------------------------------
-    # 9) (Optional) Validation
-    # -----------------------------------------------------------------------
-    if do_validation:
-        logger.info("[MODIFICATION] Performing scenario validation with config => %s", validation_cfg)
-
-        # If the validation config references CSV paths that might be relative,
-        # you could also adjust them to be inside job_output_dir here if desired.
-        # e.g.:
-        # real_csv = validation_cfg.get("real_data_csv", "")
-        # if job_output_dir and not os.path.isabs(real_csv):
-        #     real_csv = os.path.join(job_output_dir, real_csv)
-        # validation_cfg["real_data_csv"] = real_csv
-
-        run_validation_process(validation_cfg)
-        logger.info("[MODIFICATION] Validation step complete.")
-
-
-def _make_param_dict(df_scenario):
-    """
-    Builds a dict {param_name: value} from the scenario DataFrame columns,
-    checking 'assigned_value' or 'param_value'.
-    """
-    if df_scenario.empty:
-        return {}
-
-    cols = df_scenario.columns.tolist()
-    if "assigned_value" in cols:
-        val_col = "assigned_value"
-    elif "param_value" in cols:
-        val_col = "param_value"
-    else:
-        raise AttributeError(
-            "No 'assigned_value' or 'param_value' column found in scenario dataframe! "
-            f"Columns are: {cols}"
-        )
-
-    result = {}
-    for row in df_scenario.itertuples():
-        p_name = row.param_name
-        raw_val = getattr(row, val_col)
+    model.train() # Set model to training mode
+    total_loss = 0.0
+    num_batches = 0 # Initialize batch count
+
+    # Progress bar setup using the PyG DataLoader
+    pbar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{num_epochs}", leave=True, unit="batch")
+
+    for batch in pbar:
+        num_batches += 1 # Increment batch count
         try:
-            result[p_name] = float(raw_val)
-        except (ValueError, TypeError):
-            result[p_name] = raw_val
-    return result
+            # PyG DataLoader handles moving Data/Batch objects correctly
+            batch = batch.to(device)
+        except Exception as e_move:
+            logging.error(f"Error moving batch to device: {e_move}. Skipping batch.")
+            continue # Skip this batch
 
+        optimizer.zero_grad()
+
+        try:
+            # Forward pass - Model expects a PyG Data or Batch object
+            embeddings = model(batch) # Output Shape: [num_nodes_in_batch, seq_len, embedding_dim]
+
+            # Calculate loss
+            # Loss function expects embeddings and edge_index from the batch object
+            # Ensure batch has edge_index attribute (should for PyG Data/Batch)
+            if not hasattr(batch, 'edge_index'):
+                 logging.error("Batch object missing 'edge_index'. Cannot compute loss. Skipping batch.")
+                 continue
+            loss = loss_fn(embeddings, batch.edge_index)
+
+            # Backward pass
+            loss.backward()
+
+            # Optimizer step
+            optimizer.step()
+
+            total_loss += loss.item()
+            pbar.set_postfix(loss=f"{loss.item():.4f}") # Update progress bar
+
+        except RuntimeError as e_mem:
+             if "CUDA out of memory" in str(e_mem):
+                 logging.error(f"CUDA out of memory during training step (Epoch {epoch+1}). Try reducing batch size if > 1, sequence length, or model size.")
+                 # Optionally: torch.cuda.empty_cache() # Might help, but often doesn't solve fundamental OOM
+                 raise e_mem # Reraise the error to stop training
+             else:
+                 logging.error(f"Runtime error during training step: {e_mem}. Skipping batch.")
+                 continue
+        except Exception as e_train:
+            logging.error(f"Error during training step (forward/loss/backward): {e_train}. Skipping batch.")
+            # Optionally raise e_train after logging if you want the script to stop
+            continue
+
+    avg_loss = total_loss / num_batches if num_batches > 0 else 0.0
+    pbar.close() # Close progress bar for the epoch
+    return avg_loss
+
+def train_model(config: dict, model: SpatioTemporalGNNEmbedder, dataset: SpatioTemporalGraphDataset) -> list:
+    """
+    Main function to train the Spatio-Temporal GNN model.
+
+    Args:
+        config (dict): Configuration dictionary.
+        model (SpatioTemporalGNNEmbedder): Initialized model instance.
+        dataset (SpatioTemporalGraphDataset): Initialized dataset instance.
+
+    Returns:
+        list: A list containing the average training loss for each epoch.
+    """
+    logging.info(f"--- Starting Model Training for Scenario: {config.get('SCENARIO_NAME', 'Unknown')} ---")
+    start_time = time.time()
+
+    # --- Setup Device ---
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+        gpu_index = torch.cuda.current_device()
+        gpu_name = torch.cuda.get_device_name(gpu_index)
+        logging.info(f"CUDA is available. Training on GPU {gpu_index}: {gpu_name}.")
+    else:
+        device = torch.device("cpu")
+        logging.info("CUDA not available. Training on CPU.")
+    model.to(device)
+
+    # --- Setup PyG DataLoader ---
+    # The import at the top ensures this uses torch_geometric.loader.DataLoader
+    batch_size = config.get('TRAINING_BATCH_SIZE', 1)
+    # Consider adding a config option for num_workers, especially if data loading is slow
+    num_workers = config.get('DATALOADER_WORKERS', 0)
+    if batch_size != 1:
+        logging.warning(f"Configured BATCH_SIZE is {batch_size}. Ensure model/loss handle batches correctly.")
+
+    # Use PyG DataLoader here
+    dataloader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=True, # Shuffle sequences each epoch
+        num_workers=num_workers, # Use configured num_workers
+        pin_memory=True if device.type == 'cuda' else False # Enable pin_memory for CUDA
+    )
+    logging.info(f"PyG DataLoader created with batch_size={batch_size}, shuffle=True, num_workers={num_workers}, pin_memory={dataloader.pin_memory}.")
+
+    # --- Setup Optimizer ---
+    lr = config.get('LEARNING_RATE', 0.001)
+    wd = config.get('WEIGHT_DECAY', 0.0001)
+    optimizer_name = config.get('OPTIMIZER', 'AdamW').lower()
+
+    if optimizer_name == 'adamw':
+        optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=wd)
+    elif optimizer_name == 'adam':
+        optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
+    # Add other optimizers like SGD if needed
+    # elif optimizer_name == 'sgd':
+    #    optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=wd, momentum=config.get('MOMENTUM', 0.9))
+    else:
+        logging.warning(f"Unsupported optimizer '{optimizer_name}', defaulting to AdamW.")
+        optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=wd)
+    logging.info(f"Optimizer: {optimizer_name.capitalize()}, LR: {lr}, Weight Decay: {wd}")
+
+    # --- Setup Loss Function ---
+    loss_fn_name = config.get('LOSS_FUNCTION', 'ContrastiveLoss')
+    if loss_fn_name == 'ContrastiveLoss':
+        loss_fn = ContrastiveLoss(config).to(device) # Move loss function to device
+    else:
+        # Add other potential loss functions here if needed
+        raise ValueError(f"Unsupported LOSS_FUNCTION specified in config: {loss_fn_name}")
+    logging.info(f"Loss Function: {loss_fn_name}")
+
+    # --- Training Loop ---
+    num_epochs = config.get('EPOCHS', 50)
+    logging.info(f"Starting training for {num_epochs} epochs on device: {device}")
+
+    training_losses = [] # Initialize list to store losses
+    try:
+        for epoch in range(num_epochs):
+            avg_train_loss = train_epoch(model, dataloader, optimizer, loss_fn, device, epoch, num_epochs)
+            training_losses.append(avg_train_loss) # Store loss
+            logging.info(f"Epoch {epoch+1}/{num_epochs} - Average Training Loss: {avg_train_loss:.6f}")
+
+            # --- Optional: Validation Step Placeholder ---
+            # if config.get('VALIDATION_ENABLED', False) and 'val_dataloader' in locals(): # Check if val_dataloader exists
+            #     # avg_val_loss = evaluate_epoch(model, val_dataloader, loss_fn, device) # Needs evaluate_epoch func
+            #     # logging.info(f"Epoch {epoch+1}/{num_epochs} - Average Validation Loss: {avg_val_loss:.6f}")
+            #     # Add logic for early stopping or saving best model based on val_loss
+            #     pass
+
+    except KeyboardInterrupt:
+         logging.warning("Training interrupted by user (KeyboardInterrupt). Saving current model state.")
+         # Save model even if interrupted
+    except Exception as e:
+         logging.exception(f"An error occurred during the training loop: {e}")
+         # Save model even if there was an error during training? Optional.
+         # Consider re-raising the exception if the pipeline should stop: raise e
+    finally:
+         # --- Save Final Model (always attempt unless disabled) ---
+         if config.get('SAVE_MODEL', True):
+             model_save_dir = os.path.join(config['SCENARIO_RESULTS_DIR'], 'model')
+             os.makedirs(model_save_dir, exist_ok=True)
+             model_save_path = os.path.join(model_save_dir, 'final_model.pt')
+             try:
+                 # Move model back to CPU before saving state_dict for better compatibility
+                 model.to('cpu')
+                 torch.save(model.state_dict(), model_save_path)
+                 logging.info(f"Saved final model state dict to: {model_save_path}")
+                 # Move model back to original device if needed later (though training is done)
+                 # model.to(device)
+             except Exception as e_save:
+                 logging.error(f"Error saving model: {e_save}")
+
+         end_time = time.time()
+         training_duration = end_time - start_time
+         logging.info(f"--- Model Training Finished. Duration: {training_duration:.2f} seconds ---")
+
+    # Return the collected training losses
+    return training_losses
+
+# Example Usage (within main.py or for testing)
+if __name__ == '__main__':
+    # This block requires successful execution of previous steps:
+    # config_loader, data_processing, graph_construction, datasets, models, loss_fn
+    # And saved processed data/graph files.
+
+    logging.info("--- Testing training script standalone ---")
+
+    # --- CUDA Check ---
+    if torch.cuda.is_available():
+        print(f"Is CUDA available? {torch.cuda.is_available()}")
+        print(f"CUDA device count: {torch.cuda.device_count()}")
+        print(f"Current CUDA device: {torch.cuda.current_device()}")
+        print(f"CUDA device name: {torch.cuda.get_device_name(torch.cuda.current_device())}")
+    else:
+        print("CUDA not available.")
+
+    # 1. Load Config (replace with actual loader or use dummy)
+    # Using a dummy config here for demonstration
+    config_test = {
+        'SCENARIO_NAME': 'Scenario_Standalone_Test',
+        'PROCESSED_DATA_DIR': os.path.join('..', 'data', 'processed'),
+        'RESULTS_DIR': os.path.join('..', 'results'),
+        'SCENARIO_RESULTS_DIR': os.path.join('..', 'results', 'Scenario_Standalone_Test'),
+        'MODEL_NAME': 'GATLSTMEmbedder',
+        'INPUT_SEQ_LEN': 12,
+        'EPOCHS': 5,
+        'LEARNING_RATE': 0.005,
+        'OPTIMIZER': 'AdamW',
+        'WEIGHT_DECAY': 0.0001,
+        'LOSS_FUNCTION': 'ContrastiveLoss',
+        'CONTRASTIVE_MARGIN': 1.0,
+        'LOSS_EMBEDDING_SOURCE': 'last',
+        'NEGATIVE_SAMPLING_STRATEGY': 'random',
+        'SAVE_MODEL': True,
+        'DATALOADER_WORKERS': 0, # Set based on your system, 0 often safest for testing
+        'TRAINING_BATCH_SIZE': 1, # Keep as 1 for this dataset type
+        'LSTM_HIDDEN_DIM': 32, 'LSTM_LAYERS': 1, 'GNN_HIDDEN_DIM': 32,
+        'GNN_LAYERS': 1, 'GNN_HEADS': 2, 'EMBEDDING_DIM': 16, 'DROPOUT_RATE': 0.1,
+        'SEED': 42
+    }
+     # Set seed if needed for standalone
+    random_seed = config_test.get('SEED', 42)
+    random.seed(random_seed)
+    np.random.seed(random_seed)
+    torch.manual_seed(random_seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(random_seed)
+
+     # Ensure results dir exists
+    os.makedirs(config_test['SCENARIO_RESULTS_DIR'], exist_ok=True)
+    os.makedirs(os.path.join(config_test['SCENARIO_RESULTS_DIR'], 'model'), exist_ok=True)
+
+    try:
+        # 2. Initialize Dataset (needs processed files)
+        # Attempt to load data for the test scenario or fallback
+        dataset_scenario = config_test['SCENARIO_NAME']
+        graph_path = os.path.join(config_test['PROCESSED_DATA_DIR'], f"graph_{dataset_scenario}.pt")
+        dyn_path = os.path.join(config_test['PROCESSED_DATA_DIR'], 'processed_dynamic_features.parquet')
+
+        if not os.path.exists(graph_path) or not os.path.exists(dyn_path):
+             logging.warning(f"Data for {dataset_scenario} not found. Trying 'Scenario_B_Feeder_Constraint' data for standalone test.")
+             config_test['SCENARIO_NAME'] = 'Scenario_B_Feeder_Constraint' # Fallback
+             # Recheck paths after fallback
+             graph_path = os.path.join(config_test['PROCESSED_DATA_DIR'], f"graph_{config_test['SCENARIO_NAME']}.pt")
+             if not os.path.exists(graph_path) or not os.path.exists(dyn_path):
+                  raise FileNotFoundError(f"Required processed data not found for fallback scenario either: {graph_path} or {dyn_path}")
+
+
+        logging.info(f"--- Standalone: Initializing Dataset using config for {config_test['SCENARIO_NAME']} ---")
+        dataset = SpatioTemporalGraphDataset(config_test)
+
+        # 3. Initialize Model (get feature dims from dataset/graph)
+        static_dim = dataset.x_static.shape[1]
+        dynamic_dim = dataset.dynamic_features.shape[2]
+        model_instance = SpatioTemporalGNNEmbedder(config_test, static_feature_dim=static_dim, dynamic_feature_dim=dynamic_dim)
+        logging.info(f"--- Standalone: Model Initialized ---")
+
+        # 4. Run Training and capture losses
+        logging.info(f"--- Standalone: Starting Training ---")
+        epoch_losses = train_model(config_test, model_instance, dataset)
+
+        print("\n--- Standalone Training Test Finished ---")
+        if epoch_losses: # Check if training actually ran
+            print(f"Average Training Losses per Epoch: {[f'{l:.6f}' for l in epoch_losses]}")
+        else:
+            print("Training did not complete any epochs successfully.")
+        if config_test.get('SAVE_MODEL', True):
+             print(f"Final model state dict saved in: {os.path.join(config_test['SCENARIO_RESULTS_DIR'], 'model')}")
+
+    except FileNotFoundError as e:
+        print(f"\nError: Prerequisite file not found. Ensure data_processing.py and graph_construction.py ran successfully. Details: {e}")
+    except Exception as e:
+        logging.exception(f"An error occurred during training standalone test: {e}")
 ------------------------------------------------------------
 
-File: D:\Documents\E_Plus_2030_py\idf_creation.py
+File: D:\Documents\energy_cluster_gnn\src\inference.py
 ============================================================
-"""
-idf_creation.py
+# src/inference.py
 
-Handles the creation of EnergyPlus IDF files for a list of buildings,
-plus optional simulation runs and post-processing.
-
-Key functionalities:
-  1) create_idf_for_building(...) builds a single IDF using geomeppy,
-     applying geometry, fenestration, HVAC, etc.
-  2) create_idfs_for_all_buildings(...) loops over multiple buildings,
-     then optionally runs simulations and merges results in one or more ways.
-
-Updated to allow writing logs/results inside a specific job folder via logs_base_dir.
-"""
-
+import torch
+# from torch.utils.data import DataLoader # <-- REMOVE Standard DataLoader
+from torch_geometric.loader import DataLoader # <-- ADD PyG DataLoader
 import os
 import logging
-import pandas as pd
+import time
+import numpy as np
+from tqdm import tqdm # For progress bar
 
-# geomeppy for IDF manipulation
-from geomeppy import IDF
+# Import from our source modules
+# Ensure these paths are correct relative to where this script is or adjust sys.path
+try:
+    from models import SpatioTemporalGNNEmbedder # Assuming models.py is in the same directory or src/
+    from datasets import SpatioTemporalGraphDataset # Assuming datasets.py is in the same directory or src/
+except ImportError as e:
+     # Basic logging might not be configured yet if run standalone very early
+     print(f"[ERROR] Error importing project modules in inference.py: {e}")
+     print("[ERROR] Ensure inference.py is run in an environment where 'models', 'datasets' are accessible.")
 
-# --- Import your custom submodules ---
-from idf_objects.geomz.building import create_building_with_roof_type
-from idf_objects.fenez.fenestration import add_fenestration
-from idf_objects.fenez.materials import (
-    update_construction_materials,
-    assign_constructions_to_surfaces
-)
-from idf_objects.Elec.lighting import add_lights_and_parasitics
-from idf_objects.DHW.water_heater import add_dhw_to_idf
-from idf_objects.HVAC.custom_hvac import add_HVAC_Ideal_to_all_zones
-from idf_objects.ventilation.add_ventilation import add_ventilation_to_idf
-from idf_objects.setzone.add_outdoor_air_and_zone_sizing_to_all_zones import add_outdoor_air_and_zone_sizing_to_all_zones
-from idf_objects.tempground.add_ground_temperatures import add_ground_temperatures
-from idf_objects.other.zonelist import create_zonelist
+# Setup basic logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Output & simulation modules
-from idf_objects.outputdef.assign_output_settings import assign_output_settings
-from idf_objects.outputdef.add_output_definitions import add_output_definitions
-from postproc.merge_results import merge_all_results
-from epw.run_epw_sims import simulate_all
-
-###############################################################################
-# Global Default IDF Config
-# (Override these via environment variables or main_config if needed.)
-###############################################################################
-idf_config = {
-    "iddfile": "EnergyPlus/Energy+.idd",         # Default path to the IDD file
-    "idf_file_path": "EnergyPlus/Minimal.idf",   # Default path to a minimal base IDF
-    "output_dir": "output/output_IDFs"           # Default folder to save generated IDFs
-}
-
-
-def create_idf_for_building(
-    building_row,
-    building_index,
-    scenario="scenario1",
-    calibration_stage="pre_calibration",
-    strategy="B",
-    random_seed=42,
-    # Geometry
-    user_config_geom=None,
-    assigned_geom_log=None,
-    # Lighting
-    user_config_lighting=None,
-    assigned_lighting_log=None,
-    # DHW
-    user_config_dhw=None,
-    assigned_dhw_log=None,
-    # Fenestration
-    res_data=None,
-    nonres_data=None,
-    assigned_fenez_log=None,
-    # HVAC
-    user_config_hvac=None,
-    assigned_hvac_log=None,
-    # Vent
-    user_config_vent=None,
-    assigned_vent_log=None,
-    # Zone sizing
-    assigned_setzone_log=None,
-    # Ground temps
-    assigned_groundtemp_log=None,
-    # Output definitions
-    output_definitions=None
-):
+def generate_embeddings(config: dict, model: SpatioTemporalGNNEmbedder, dataset: SpatioTemporalGraphDataset) -> torch.Tensor:
     """
-    Build an IDF for a single building, applying geometry, fenestration, lighting,
-    HVAC, ventilation, zone sizing, ground temps, and user overrides.
+    Generates node embeddings for the entire time series using a trained model.
 
-    Returns
-    -------
-    out_path : str
-        File path to the saved IDF.
+    Args:
+        config (dict): Configuration dictionary.
+        model (SpatioTemporalGNNEmbedder): Initialized model instance (weights should be loaded).
+        dataset (SpatioTemporalGraphDataset): Initialized dataset instance.
+
+    Returns:
+        torch.Tensor: A tensor containing node embeddings for all nodes over all
+                      original time steps. Shape: [num_nodes, num_timesteps, embedding_dim]
     """
-    # 1) Setup IDF from the minimal template
-    IDF.setiddname(idf_config["iddfile"])
-    idf = IDF(idf_config["idf_file_path"])
+    logging.info(f"--- Starting Embedding Generation for Scenario: {config.get('SCENARIO_NAME', 'Unknown')} ---")
+    start_time = time.time()
 
-    # 2) Basic building object settings
-    building_obj = idf.newidfobject("BUILDING")
-    building_obj.Name = f"Sample_Building_{building_index}"
-
-    orientation = building_row.get("building_orientation", 0.0)
-    if not pd.isna(orientation):
-        building_obj.North_Axis = orientation
-
-    # 3) Create geometry
-    if assigned_geom_log is not None and building_row.get("ogc_fid") not in assigned_geom_log:
-        assigned_geom_log[building_row.get("ogc_fid")] = {}
-
-    edge_types = []
-    for side_col in ["north_side", "east_side", "south_side", "west_side"]:
-        edge_types.append(building_row.get(side_col, "Facade"))
-
-    create_building_with_roof_type(
-        idf=idf,
-        area=building_row.get("area", 100.0),
-        perimeter=building_row.get("perimeter", 40.0),
-        orientation=orientation,
-        building_row=building_row,
-        edge_types=edge_types,
-        calibration_stage=calibration_stage,
-        strategy=strategy,
-        random_seed=random_seed,
-        user_config=user_config_geom,
-        assigned_geom_log=assigned_geom_log
-    )
-
-    # 4) Update materials & constructions
-    construction_map = update_construction_materials(
-        idf=idf,
-        building_row=building_row,
-        building_index=building_index,
-        scenario=scenario,
-        calibration_stage=calibration_stage,
-        strategy=strategy,
-        random_seed=random_seed,
-        user_config_fenez=None,  # not used directly
-        assigned_fenez_log=assigned_fenez_log
-    )
-    assign_constructions_to_surfaces(idf, construction_map)
-
-    # Create zone list for convenience
-    create_zonelist(idf, zonelist_name="ALL_ZONES")
-
-    # 5) Fenestration
-    add_fenestration(
-        idf=idf,
-        building_row=building_row,
-        scenario=scenario,
-        calibration_stage=calibration_stage,
-        strategy=strategy,
-        random_seed=random_seed,
-        res_data=res_data,
-        nonres_data=nonres_data,
-        assigned_fenez_log=assigned_fenez_log
-    )
-
-    # 6) Lighting
-    add_lights_and_parasitics(
-        idf=idf,
-        building_row=building_row,
-        calibration_stage=calibration_stage,
-        strategy=strategy,
-        random_seed=random_seed,
-        user_config=user_config_lighting,
-        assigned_values_log=assigned_lighting_log
-    )
-
-    # 7) DHW
-    add_dhw_to_idf(
-        idf=idf,
-        building_row=building_row,
-        calibration_stage=calibration_stage,
-        strategy=strategy,
-        random_seed=random_seed,
-        name_suffix=f"MyDHW_{building_index}",
-        user_config_dhw=user_config_dhw,
-        assigned_dhw_log=assigned_dhw_log,
-        use_nta=True
-    )
-
-    # 8) HVAC
-    add_HVAC_Ideal_to_all_zones(
-        idf=idf,
-        building_row=building_row,
-        calibration_stage=calibration_stage,
-        strategy=strategy,
-        random_seed=random_seed,
-        user_config_hvac=user_config_hvac,
-        assigned_hvac_log=assigned_hvac_log
-    )
-
-    # 9) Ventilation
-    add_ventilation_to_idf(
-        idf=idf,
-        building_row=building_row,
-        calibration_stage=calibration_stage,
-        strategy=strategy,
-        random_seed=random_seed,
-        user_config_vent=user_config_vent,
-        assigned_vent_log=assigned_vent_log
-    )
-
-    # 10) Zone sizing
-    add_outdoor_air_and_zone_sizing_to_all_zones(
-        idf=idf,
-        building_row=building_row,
-        calibration_stage=calibration_stage,
-        strategy=strategy,
-        random_seed=random_seed,
-        assigned_setzone_log=assigned_setzone_log
-    )
-
-    # 11) Ground temperatures
-    add_ground_temperatures(
-        idf=idf,
-        calibration_stage=calibration_stage,
-        strategy=strategy,
-        random_seed=random_seed,
-        assigned_groundtemp_log=assigned_groundtemp_log
-    )
-
-    # 12) Output definitions
-    if output_definitions is None:
-        output_definitions = {
-            "desired_variables": ["Facility Total Electric Demand Power", "Zone Air Temperature"],
-            "desired_meters": ["Electricity:Facility"],
-            "override_variable_frequency": "Hourly",
-            "override_meter_frequency": "Hourly",
-            "include_tables": True,
-            "include_summary": True
-        }
-    out_settings = assign_output_settings(
-        desired_variables=output_definitions.get("desired_variables", []),
-        desired_meters=output_definitions.get("desired_meters", []),
-        override_variable_frequency=output_definitions.get("override_variable_frequency", "Hourly"),
-        override_meter_frequency=output_definitions.get("override_meter_frequency", "Hourly"),
-        include_tables=output_definitions.get("include_tables", True),
-        include_summary=output_definitions.get("include_summary", True)
-    )
-    add_output_definitions(idf, out_settings)
-
-    # 13) Save final IDF
-    os.makedirs(idf_config["output_dir"], exist_ok=True)
-    idf_filename = f"building_{building_index}.idf"
-    out_path = os.path.join(idf_config["output_dir"], idf_filename)
-    idf.save(out_path)
-    print(f"[create_idf_for_building] IDF saved at: {out_path}")
-
-    return out_path
-
-
-def create_idfs_for_all_buildings(
-    df_buildings,
-    scenario="scenario1",
-    calibration_stage="pre_calibration",
-    strategy="B",
-    random_seed=42,
-    # partial user configs
-    user_config_geom=None,
-    user_config_lighting=None,
-    user_config_dhw=None,
-    res_data=None,
-    nonres_data=None,
-    user_config_hvac=None,
-    user_config_vent=None,
-    user_config_epw=None,  # pass epw config or list if relevant
-    # output definitions
-    output_definitions=None,
-    # simulation & postprocess
-    run_simulations=True,
-    simulate_config=None,
-    post_process=True,
-    post_process_config=None,
-    # NEW: Where to store logs and results
-    logs_base_dir=None
-):
-    """
-    Loops over df_buildings, calls create_idf_for_building for each building,
-    optionally runs E+ simulations in parallel, and merges results if post_process=True.
-
-    If logs_base_dir is provided, all assigned_*.csv and merged results go under that folder
-    (e.g. logs_base_dir/assigned, logs_base_dir/Sim_Results, etc.).
-    """
-    logger = logging.getLogger(__name__)
-
-    # A) Prepare dictionaries to store final picks for each module
-    assigned_geom_log       = {}
-    assigned_lighting_log   = {}
-    assigned_dhw_log        = {}
-    assigned_fenez_log      = {}
-    assigned_hvac_log       = {}
-    assigned_vent_log       = {}
-    assigned_epw_log        = {}
-    assigned_groundtemp_log = {}
-    assigned_setzone_log    = {}
-
-    # B) Create an IDF for each building
-    for idx, row in df_buildings.iterrows():
-        bldg_id = row.get("ogc_fid", idx)
-        logger.info(f"--- Creating IDF for building index {idx}, ogc_fid={bldg_id} ---")
-
-        idf_path = create_idf_for_building(
-            building_row=row,
-            building_index=idx,
-            scenario=scenario,
-            calibration_stage=calibration_stage,
-            strategy=strategy,
-            random_seed=random_seed,
-            # geometry
-            user_config_geom=user_config_geom,
-            assigned_geom_log=assigned_geom_log,
-            # lighting
-            user_config_lighting=user_config_lighting,
-            assigned_lighting_log=assigned_lighting_log,
-            # DHW
-            user_config_dhw=user_config_dhw,
-            assigned_dhw_log=assigned_dhw_log,
-            # Fenestration
-            res_data=res_data,
-            nonres_data=nonres_data,
-            assigned_fenez_log=assigned_fenez_log,
-            # HVAC
-            user_config_hvac=user_config_hvac,
-            assigned_hvac_log=assigned_hvac_log,
-            # Vent
-            user_config_vent=user_config_vent,
-            assigned_vent_log=assigned_vent_log,
-            # zone sizing
-            assigned_setzone_log=assigned_setzone_log,
-            # ground temps
-            assigned_groundtemp_log=assigned_groundtemp_log,
-            # output definitions
-            output_definitions=output_definitions
-        )
-        # Store the final IDF filename in df_buildings
-        df_buildings.loc[idx, "idf_name"] = os.path.basename(idf_path)
-
-    # C) If we’re told to run simulations
-    if run_simulations:
-        logger.info("[create_idfs_for_all_buildings] => Running simulations ...")
-        if simulate_config is None:
-            simulate_config = {}
-
-        # Decide on a base_output_dir for sim results
-        if logs_base_dir:
-            sim_output_dir = os.path.join(logs_base_dir, "Sim_Results")
-        else:
-            sim_output_dir = simulate_config.get("base_output_dir", "output/Sim_Results")
-
-        idf_directory = idf_config["output_dir"]
-        iddfile       = idf_config["iddfile"]
-
-        simulate_all(
-            df_buildings=df_buildings,
-            idf_directory=idf_directory,
-            iddfile=iddfile,
-            base_output_dir=sim_output_dir,
-            user_config_epw=user_config_epw,
-            assigned_epw_log=assigned_epw_log,
-            num_workers=simulate_config.get("num_workers", 4)
-            # ep_force_overwrite=simulate_config.get("ep_force_overwrite", False)
-        )
-
-    # D) Post-processing
-    if post_process:
-        logger.info("[create_idfs_for_all_buildings] => Post-processing results & writing logs ...")
-
-        if post_process_config is None:
-            post_process_config = {
-                "base_output_dir": "output/Sim_Results",
-                "outputs": [
-                    {
-                        "convert_to_daily": False,
-                        "convert_to_monthly": False,
-                        "aggregator": "none",
-                        "output_csv": "output/results/merged_as_is.csv"
-                    }
-                ]
-            }
-
-        # If logs_base_dir is set, we override base_output_dir
-        if logs_base_dir:
-            post_process_config["base_output_dir"] = os.path.join(logs_base_dir, "Sim_Results")
-
-        base_output_dir = post_process_config.get("base_output_dir", "output/Sim_Results")
-        multiple_outputs = post_process_config.get("outputs", [])
-
-        # Possibly handle multiple post-process outputs
-        for proc_item in multiple_outputs:
-            convert_daily = proc_item.get("convert_to_daily", False)
-            convert_monthly = proc_item.get("convert_to_monthly", False)
-            aggregator = proc_item.get("aggregator", "mean")  # daily aggregator
-            out_csv = proc_item.get("output_csv", "output/results/merged_default.csv")
-
-            # If logs_base_dir is set and the out_csv is still something like "output/results/..."
-            # We can relocate it under logs_base_dir, e.g. logs_base_dir/results
-            # Let's do a check:
-            if logs_base_dir and "output/" in out_csv:
-                # redirect to logs_base_dir
-                # e.g. logs_base_dir/results/merged_default.csv
-                # you can pick your subfolder naming
-                rel_filename = out_csv.split("output/")[-1]  # e.g. results/merged_default.csv
-                out_csv = os.path.join(logs_base_dir, rel_filename)
-
-            # Make sure directory exists
-            os.makedirs(os.path.dirname(out_csv), exist_ok=True)
-
-            # Now merge the results
-            merge_all_results(
-                base_output_dir=base_output_dir,
-                output_csv=out_csv,
-                convert_to_daily=convert_daily,
-                daily_aggregator=aggregator,
-                convert_to_monthly=convert_monthly
-            )
-
-        # Write CSV logs for assigned parameters
-        _write_geometry_csv(assigned_geom_log, logs_base_dir)
-        _write_lighting_csv(assigned_lighting_log, logs_base_dir)
-        _write_fenestration_csv(assigned_fenez_log, logs_base_dir)
-        _write_dhw_csv(assigned_dhw_log, logs_base_dir)
-        _write_hvac_csv(assigned_hvac_log, logs_base_dir)
-        _write_vent_csv(assigned_vent_log, logs_base_dir)
-        # (If needed, also EPW or groundtemp logs, do similarly)
-
-        logger.info("[create_idfs_for_all_buildings] => Done post-processing.")
-
-    return df_buildings  # includes "idf_name" column
-
-
-###############################################################################
-# Internal Helper Functions to Write Assigned Logs
-# -- Now accept logs_base_dir so we can place them in job_output_dir
-###############################################################################
-def _make_assigned_path(filename, logs_base_dir):
-    """Helper to build the path for assigned_*.csv, given logs_base_dir."""
-    if logs_base_dir:
-        assigned_dir = os.path.join(logs_base_dir, "assigned")
+    # --- Setup Device ---
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+        gpu_index = torch.cuda.current_device()
+        gpu_name = torch.cuda.get_device_name(gpu_index)
+        logging.info(f"CUDA is available. Running inference on GPU {gpu_index}: {gpu_name}.")
     else:
-        assigned_dir = "output/assigned"
+        device = torch.device("cpu")
+        logging.info("CUDA not available. Running inference on CPU.")
 
-    os.makedirs(assigned_dir, exist_ok=True)
-    return os.path.join(assigned_dir, filename)
+    # --- Load Trained Model Weights ---
+    # Ensure the model passed in is already initialized (architecture only)
+    model_save_dir = os.path.join(config['SCENARIO_RESULTS_DIR'], 'model')
+    model_load_path = os.path.join(model_save_dir, 'final_model.pt') # Or 'best_model.pt'
 
+    if not os.path.exists(model_load_path):
+        logging.error(f"Trained model file not found at: {model_load_path}. Run training first.")
+        raise FileNotFoundError(f"Model file not found: {model_load_path}")
 
-def _write_geometry_csv(assigned_geom_log, logs_base_dir):
-    rows = []
-    for bldg_id, param_dict in assigned_geom_log.items():
-        for param_name, param_val in param_dict.items():
-            rows.append({
-                "ogc_fid": bldg_id,
-                "param_name": param_name,
-                "assigned_value": param_val
-            })
-    if not rows:
-        return
-    df = pd.DataFrame(rows)
-    out_path = _make_assigned_path("assigned_geometry.csv", logs_base_dir)
-    df.to_csv(out_path, index=False)
+    try:
+        # Load state dict onto the correct device directly
+        # Set weights_only=True for security unless you trust the source implicitly
+        model.load_state_dict(torch.load(model_load_path, map_location=device, weights_only=True))
+        logging.info(f"Loaded trained model weights from: {model_load_path}")
+    except Exception as e:
+        logging.error(f"Error loading model weights: {e}")
+        raise
 
+    model.to(device) # Ensure model is on the correct device after loading weights
+    model.eval() # Set model to evaluation mode (important!)
 
-def _write_lighting_csv(assigned_lighting_log, logs_base_dir):
-    rows = []
-    for bldg_id, param_dict in assigned_lighting_log.items():
-        for param_name, subdict in param_dict.items():
-            assigned_val = subdict.get("assigned_value")
-            min_v = subdict.get("min_val")
-            max_v = subdict.get("max_val")
-            obj_name = subdict.get("object_name", "")
-            rows.append({
-                "ogc_fid": bldg_id,
-                "object_name": obj_name,
-                "param_name": param_name,
-                "assigned_value": assigned_val,
-                "min_val": min_v,
-                "max_val": max_v
-            })
-    if not rows:
-        return
-    df = pd.DataFrame(rows)
-    out_path = _make_assigned_path("assigned_lighting.csv", logs_base_dir)
-    df.to_csv(out_path, index=False)
+    # --- Setup PyG DataLoader ---
+    # Use batch_size=1 for full graph processing. Shuffle=False for sequential order.
+    # The import at the top ensures this uses torch_geometric.loader.DataLoader
+    num_workers = config.get('DATALOADER_WORKERS', 0)
+    dataloader = DataLoader( # This is now PyG DataLoader
+        dataset,
+        batch_size=1, # Process one sequence start index at a time
+        shuffle=False, # Important for reconstructing time series in order
+        num_workers=num_workers,
+        pin_memory=True if device.type == 'cuda' else False
+    )
+    logging.info(f"PyG DataLoader created for inference (shuffle=False, num_workers={num_workers}, pin_memory={dataloader.pin_memory}).")
 
-
-def _write_fenestration_csv(assigned_fenez_log, logs_base_dir):
-    rows = []
-    for bldg_id, param_dict in assigned_fenez_log.items():
-        for key, val in param_dict.items():
-            rows.append({
-                "ogc_fid": bldg_id,
-                "param_name": key,
-                "assigned_value": val
-            })
-    if not rows:
-        return
-    df = pd.DataFrame(rows)
-    out_path = _make_assigned_path("assigned_fenez_params.csv", logs_base_dir)
-    df.to_csv(out_path, index=False)
+    # --- Inference Loop & Reconstruction ---
+    num_nodes = dataset.num_nodes
+    num_timesteps = dataset.num_timesteps
+    seq_len = dataset.seq_len
+    embedding_dim = config.get('EMBEDDING_DIM') # Get from config
+    if embedding_dim is None:
+        raise ValueError("EMBEDDING_DIM not found in config.")
 
 
-def _write_dhw_csv(assigned_dhw_log, logs_base_dir):
-    rows = []
-    for bldg_id, param_dict in assigned_dhw_log.items():
-        for param_name, param_val in param_dict.items():
-            rows.append({
-                "ogc_fid": bldg_id,
-                "param_name": param_name,
-                "assigned_value": param_val
-            })
-    if not rows:
-        return
-    df = pd.DataFrame(rows)
-    out_path = _make_assigned_path("assigned_dhw_params.csv", logs_base_dir)
-    df.to_csv(out_path, index=False)
+    # Initialize tensors to store summed embeddings and counts for averaging overlaps
+    # Place these on CPU initially to avoid potential GPU memory overflow if num_timesteps is large
+    all_embeddings_sum = torch.zeros((num_nodes, num_timesteps, embedding_dim), dtype=torch.float32, device='cpu')
+    all_embeddings_counts = torch.zeros((num_nodes, num_timesteps, 1), dtype=torch.float32, device='cpu')
+
+    logging.info(f"Reconstructing full embedding tensor ({num_nodes} nodes, {num_timesteps} timesteps, {embedding_dim} dim)...")
+
+    with torch.no_grad(): # Disable gradient calculations for inference
+        pbar = tqdm(dataloader, desc="Generating Embeddings", leave=True, unit="sequence")
+        for i, batch in enumerate(pbar): # This loop should now work
+            # batch contains data for sequence starting at time index i
+            start_time_idx = i # Because shuffle=False and batch_size=1
+            end_time_idx = start_time_idx + seq_len
+
+            try:
+                batch = batch.to(device) # Move data to device
+            except Exception as e_move:
+                logging.error(f"Error moving batch {i} to device: {e_move}. Skipping.")
+                continue
+
+            try:
+                # Perform forward pass
+                # Output shape: [num_nodes, seq_len, embedding_dim]
+                output_embeddings_seq = model(batch)
+
+                # Add results to the sum and increment counts for the corresponding time window
+                # Move result to CPU before adding to avoid GPU memory issues if reconstruction tensor is large
+                all_embeddings_sum[:, start_time_idx:end_time_idx, :] += output_embeddings_seq.detach().cpu()
+                all_embeddings_counts[:, start_time_idx:end_time_idx, :] += 1.0
+
+            except Exception as e_infer:
+                 logging.error(f"Error during inference forward pass for batch {i}: {e_infer}. Skipping.")
+                 continue
 
 
-def _write_hvac_csv(assigned_hvac_log, logs_base_dir):
-    rows = []
-    for bldg_id, param_dict in assigned_hvac_log.items():
-        for param_name, param_val in param_dict.items():
-            rows.append({
-                "ogc_fid": bldg_id,
-                "param_name": param_name,
-                "assigned_value": param_val
-            })
-    if not rows:
-        return
-    df = pd.DataFrame(rows)
-    out_path = _make_assigned_path("assigned_hvac_params.csv", logs_base_dir)
-    df.to_csv(out_path, index=False)
+    # Calculate the average embeddings for overlapping windows
+    # Avoid division by zero for time steps that might not have been covered
+    all_embeddings_counts[all_embeddings_counts == 0] = 1.0 # Prevent division by zero
+    final_embeddings = all_embeddings_sum / all_embeddings_counts
+
+    end_time = time.time()
+    inference_duration = end_time - start_time
+    logging.info(f"--- Embedding Generation Finished. Duration: {inference_duration:.2f} seconds ---")
+    logging.info(f"Final embeddings tensor shape: {final_embeddings.shape}")
+
+    # Optional: Save Embeddings here if needed, e.g., for debugging or caching
+    # save_path = os.path.join(config['SCENARIO_RESULTS_DIR'], 'final_embeddings.pt')
+    # torch.save(final_embeddings, save_path)
+    # logging.info(f"Saved final embeddings to: {save_path}")
+
+    return final_embeddings
 
 
-def _write_vent_csv(assigned_vent_log, logs_base_dir):
-    rows = []
-    for bldg_id, param_dict in assigned_vent_log.items():
-        for param_name, param_val in param_dict.items():
-            rows.append({
-                "ogc_fid": bldg_id,
-                "param_name": param_name,
-                "assigned_value": param_val
-            })
-    if not rows:
-        return
-    df = pd.DataFrame(rows)
-    out_path = _make_assigned_path("assigned_ventilation.csv", logs_base_dir)
-    df.to_csv(out_path, index=False)
+# Example Usage (within main.py or for testing)
+if __name__ == '__main__':
+    # This block requires successful execution of previous steps and saved files
+    logging.info("--- Testing inference script standalone ---")
 
+     # --- CUDA Check ---
+    if torch.cuda.is_available():
+        print(f"Is CUDA available? {torch.cuda.is_available()}")
+        print(f"CUDA device count: {torch.cuda.device_count()}")
+        print(f"Current CUDA device: {torch.cuda.current_device()}")
+        print(f"CUDA device name: {torch.cuda.get_device_name(torch.cuda.current_device())}")
+    else:
+        print("CUDA not available.")
+
+
+    # 1. Load Config (replace with actual loader or use dummy)
+    config_test = {
+        'SCENARIO_NAME': 'Scenario_Standalone_Test', # Use a consistent name
+        'PROCESSED_DATA_DIR': os.path.join('..', 'data', 'processed'), # Adjust relative path
+        'RESULTS_DIR': os.path.join('..', 'results'),
+        'SCENARIO_RESULTS_DIR': os.path.join('..', 'results', 'Scenario_Standalone_Test'),# Adjust
+        'MODEL_NAME': 'GATLSTMEmbedder',
+        'INPUT_SEQ_LEN': 12, # Must match dataset used for training
+        'EMBEDDING_DIM': 16, # Must match trained model
+        'DATALOADER_WORKERS': 0,
+        # Add other params needed by model/dataset init if not loaded from graph/config
+        'LSTM_HIDDEN_DIM': 32, 'LSTM_LAYERS': 1, 'GNN_HIDDEN_DIM': 32,
+        'GNN_LAYERS': 1, 'GNN_HEADS': 2, 'DROPOUT_RATE': 0.1,
+        'SEED': 42
+    }
+    # Ensure results dir exists for model loading
+    os.makedirs(config_test['SCENARIO_RESULTS_DIR'], exist_ok=True)
+    os.makedirs(os.path.join(config_test['SCENARIO_RESULTS_DIR'], 'model'), exist_ok=True)
+
+    try:
+        # 2. Initialize Dataset (needs processed files)
+        # Attempt to load data for the test scenario or fallback
+        dataset_scenario = config_test['SCENARIO_NAME']
+        graph_path = os.path.join(config_test['PROCESSED_DATA_DIR'], f"graph_{dataset_scenario}.pt")
+        dyn_path = os.path.join(config_test['PROCESSED_DATA_DIR'], 'processed_dynamic_features.parquet')
+
+        if not os.path.exists(graph_path) or not os.path.exists(dyn_path):
+             logging.warning(f"Data for {dataset_scenario} not found. Trying 'Scenario_B_Feeder_Constraint' data for standalone test.")
+             config_test['SCENARIO_NAME'] = 'Scenario_B_Feeder_Constraint' # Fallback for test
+             graph_path = os.path.join(config_test['PROCESSED_DATA_DIR'], f"graph_{config_test['SCENARIO_NAME']}.pt")
+             if not os.path.exists(graph_path) or not os.path.exists(dyn_path):
+                  raise FileNotFoundError(f"Required processed data not found for fallback scenario either: {graph_path} or {dyn_path}")
+
+        logging.info(f"--- Standalone: Initializing Dataset using config for {config_test['SCENARIO_NAME']} ---")
+        dataset = SpatioTemporalGraphDataset(config_test)
+
+        # 3. Initialize Model architecture (weights will be loaded inside generate_embeddings)
+        static_dim = dataset.x_static.shape[1]
+        dynamic_dim = dataset.dynamic_features.shape[2]
+        # Create model instance but don't load weights here
+        model_instance = SpatioTemporalGNNEmbedder(config_test, static_feature_dim=static_dim, dynamic_feature_dim=dynamic_dim)
+        logging.info(f"--- Standalone: Model architecture initialized ---")
+
+        # 4. Generate Embeddings (needs trained model file)
+        model_path = os.path.join(config_test['SCENARIO_RESULTS_DIR'], 'model', 'final_model.pt')
+        # Create a dummy trained model if it doesn't exist FOR TESTING ONLY
+        if not os.path.exists(model_path):
+            logging.warning(f"Trained model not found at {model_path}. Creating a dummy saved model for testing.")
+            # Save the freshly initialized model state - this won't give meaningful embeddings
+            torch.save(model_instance.state_dict(), model_path)
+
+
+        logging.info(f"--- Standalone: Starting Embedding Generation ---")
+        final_embeddings = generate_embeddings(config_test, model_instance, dataset) # Pass the initialized model
+
+        print("\n--- Standalone Inference Test ---")
+        print(f"Generated embeddings shape: {final_embeddings.shape}")
+        # Check shape consistency
+        expected_shape = (dataset.num_nodes, dataset.num_timesteps, config_test['EMBEDDING_DIM'])
+        if final_embeddings.shape == expected_shape:
+             print("Inference test successful! Output shape is correct.")
+        else:
+             print(f"Error: Output shape mismatch! Expected {expected_shape}, Got {final_embeddings.shape}")
+
+
+    except FileNotFoundError as e:
+        print(f"\nError: Prerequisite file not found. Ensure previous steps (data processing, graph construction, training) ran successfully. Details: {e}")
+    except Exception as e:
+        logging.exception(f"An error occurred during inference standalone test: {e}")
 ------------------------------------------------------------
 
-File: D:\Documents\E_Plus_2030_py\combined.json
+File: D:\Documents\energy_cluster_gnn\src\evaluation.py
 ============================================================
-{
-  "dhw": [
-    {
-      "building_id": 4136730,
-      "param_name": "occupant_density_m2_per_person",
-      "min_val": 127.0,
-      "max_val": 233.0
-    },
-    {
-      "building_id": 4136730,
-      "param_name": "liters_per_person_per_day",
-      "fixed_value": 145.0
-    },
-    {
-      "building_function": "residential",
-      "age_range": "1992-2005",
-      "param_name": "setpoint_c",
-      "min_val": 58.0,
-      "max_val": 60.0
-    },
-    {
-      "building_function": "non_residential",
-      "param_name": "occupant_density_m2_per_person",
-      "min_val": 12.0,
-      "max_val": 18.0
+# src/evaluation.py
+
+import torch
+import numpy as np
+import pandas as pd
+import os
+import logging
+import time
+import json
+from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score, silhouette_score
+from scipy.spatial.distance import pdist, squareform # For distance feasibility check
+from tqdm import tqdm # For progress bar
+from datasets import SpatioTemporalGraphDataset
+from src.clustering import smooth_embeddings # <-- ADD THIS LINE
+
+# Setup basic logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# --- Helper Functions ---
+
+def haversine_np(lon1, lat1, lon2, lat2):
+    """
+    Calculate the great circle distance in kilometers between two points
+    on the earth (specified in decimal degrees). Vectorized numpy version.
+    Args:
+        lon1, lat1, lon2, lat2: Numpy arrays of coordinates in degrees.
+    """
+    lon1, lat1, lon2, lat2 = map(np.radians, [lon1, lat1, lon2, lat2])
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = np.sin(dlat/2.0)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2.0)**2
+    c = 2 * np.arcsin(np.sqrt(a))
+    km = 6371 * c # Radius of earth in kilometers.
+    return km
+
+def format_cluster_assignments(cluster_assignments_dict: dict, node_ids: list, num_timesteps: int) -> pd.DataFrame:
+    """Converts the cluster assignment dictionary to a long-format DataFrame."""
+    records = []
+    node_id_map = {str(node_id): node_id for node_id in node_ids} # Ensure keys match if dict uses strings
+
+    for t in range(num_timesteps):
+        assignments_t = cluster_assignments_dict.get(t, {})
+        for node_id_str, cluster_id in assignments_t.items():
+            original_node_id = node_id_map.get(node_id_str) # Map back to original type if needed
+            if original_node_id is not None:
+                 records.append({
+                    'time_index': t,
+                    'building_id': original_node_id,
+                    'cluster_id': cluster_id
+                 })
+            else:
+                 logging.warning(f"Node ID '{node_id_str}' found in cluster assignments but not in dataset's node_ids at time {t}.")
+
+
+    if not records:
+         logging.warning("No records generated from cluster assignments dictionary.")
+         return pd.DataFrame(columns=['time_index', 'building_id', 'cluster_id'])
+
+    df = pd.DataFrame(records)
+    # Ensure correct types
+    df['time_index'] = df['time_index'].astype(int)
+    df['cluster_id'] = df['cluster_id'].astype(int)
+    return df
+
+
+# --- Metric Calculation Functions ---
+
+def calculate_synergy_metrics(cluster_assign_df: pd.DataFrame, dynamic_features_df: pd.DataFrame, config: dict) -> dict:
+    """Calculates synergy metrics (SSR, NetImport) for each cluster over time."""
+    logging.info("Calculating synergy metrics...")
+    if 'net_load' not in dynamic_features_df.columns:
+        logging.error("'net_load' column not found in dynamic features. Cannot calculate synergy.")
+        return {'avg_cluster_ssr': np.nan, 'avg_abs_cluster_net_import': np.nan, 'total_net_import': np.nan}
+
+    # Ensure correct types before merge
+    cluster_assign_df['building_id'] = cluster_assign_df['building_id'].astype(str)
+    dynamic_features_df['building_id'] = dynamic_features_df['building_id'].astype(str)
+    dynamic_features_df['time_index'] = dynamic_features_df.groupby('building_id').cumcount() # Assuming sorted by time in processing
+
+    # Merge assignments with net load data
+    try:
+        merged_df = pd.merge(cluster_assign_df, dynamic_features_df[['building_id', 'time_index', 'net_load']],
+                             on=['building_id', 'time_index'], how='left')
+    except KeyError as e:
+         logging.error(f"Merge error likely due to missing columns: {e}. Check DataFrames.")
+         logging.error(f"Cluster Assign Columns: {cluster_assign_df.columns}")
+         logging.error(f"Dynamic Features Columns: {dynamic_features_df.columns}")
+         raise
+
+    if merged_df['net_load'].isnull().any():
+         logging.warning("Missing net_load values after merging with cluster assignments. Synergy metrics might be affected.")
+         # Optionally fillna(0) or handle otherwise
+         merged_df['net_load'].fillna(0, inplace=True)
+
+    # Group by time and cluster
+    grouped = merged_df.groupby(['time_index', 'cluster_id'])
+
+    # Calculate metrics per group
+    synergy_results = pd.DataFrame()
+    synergy_results['net_import'] = grouped['net_load'].sum()
+    synergy_results['abs_net_load_sum'] = np.abs(synergy_results['net_import'])
+    synergy_results['sum_abs_net_load'] = grouped['net_load'].apply(lambda x: np.sum(np.abs(x)))
+
+    # Calculate Self-Sufficiency Ratio (SSR)
+    # SSR = 1 - |sum(net_load)| / sum(|net_load|)
+    # Handle division by zero if sum_abs_net_load is 0 (cluster perfectly balanced or empty)
+    synergy_results['ssr'] = 1 - (synergy_results['abs_net_load_sum'] / synergy_results['sum_abs_net_load'])
+    synergy_results['ssr'] = synergy_results['ssr'].fillna(1.0) # If sum_abs is 0, cluster is self-sufficient (SSR=1)
+    synergy_results['ssr'] = np.clip(synergy_results['ssr'], 0, 1) # Ensure SSR is between 0 and 1
+
+    # --- Aggregate Results ---
+    # Average SSR across all clusters and time steps (weighted by cluster activity?)
+    # Simple mean for now:
+    avg_cluster_ssr = synergy_results['ssr'].mean()
+    # Average absolute net import per cluster per time step
+    avg_abs_cluster_net_import = synergy_results['abs_net_load_sum'].mean()
+    # Total net import across all clusters and time (should equal total system net load)
+    total_net_import = synergy_results['net_import'].sum()
+
+    logging.info(f"Synergy Metrics: Avg SSR={avg_cluster_ssr:.4f}, Avg Abs Cluster Net Import={avg_abs_cluster_net_import:.2f}")
+    return {
+        'avg_cluster_ssr': avg_cluster_ssr,
+        'avg_abs_cluster_net_import': avg_abs_cluster_net_import,
+        'total_net_import': total_net_import
+        # Can also return the full synergy_results DataFrame if needed
     }
-  ],
-  "epw": [
-    {
-      "building_id": 4136730,
-      "fixed_epw_path": "data/weather/2050.epw"
-    },
-    {
-      "desired_year": 2050,
-      "override_year_to": 2020
+
+
+def calculate_stability_metrics(cluster_assign_df: pd.DataFrame, config: dict) -> dict:
+    """Calculates stability metrics (ARI, NMI, Churn Rate) over time."""
+    logging.info("Calculating stability metrics...")
+    num_timesteps = cluster_assign_df['time_index'].max() + 1
+    num_nodes = cluster_assign_df['building_id'].nunique()
+
+    if num_timesteps < 2:
+        logging.warning("Need at least 2 time steps for stability metrics. Skipping.")
+        return {'avg_ari': np.nan, 'avg_nmi': np.nan, 'avg_churn_rate': np.nan}
+
+    # Pivot to easily access labels per time step: [time_index, building_id] -> cluster_id
+    try:
+         pivot_labels = cluster_assign_df.pivot(index='time_index', columns='building_id', values='cluster_id')
+    except Exception as e:
+         logging.error(f"Error pivoting cluster assignments, likely duplicate time/building entries: {e}")
+         # Check for duplicates
+         duplicates = cluster_assign_df[cluster_assign_df.duplicated(subset=['time_index', 'building_id'], keep=False)]
+         logging.error(f"Duplicate assignments found:\n{duplicates}")
+         raise
+
+    aris = []
+    nmis = []
+    churns = []
+
+    for t in range(1, num_timesteps):
+        try:
+            labels_t = pivot_labels.loc[t].values
+            labels_t_minus_1 = pivot_labels.loc[t-1].values
+
+            # Handle potential NaNs if some buildings don't have assignments at certain times
+            valid_mask = ~np.isnan(labels_t) & ~np.isnan(labels_t_minus_1)
+            if np.sum(valid_mask) < 2: # Need at least 2 common points
+                continue
+
+            labels_t_valid = labels_t[valid_mask]
+            labels_t_minus_1_valid = labels_t_minus_1[valid_mask]
+
+            if len(np.unique(labels_t_valid)) < 2 or len(np.unique(labels_t_minus_1_valid)) < 2:
+                # ARI/NMI undefined if all points in one cluster
+                 ari = 1.0 if np.array_equal(labels_t_valid, labels_t_minus_1_valid) else 0.0
+                 nmi = 1.0 if np.array_equal(labels_t_valid, labels_t_minus_1_valid) else 0.0
+            else:
+                ari = adjusted_rand_score(labels_t_valid, labels_t_minus_1_valid)
+                nmi = normalized_mutual_info_score(labels_t_valid, labels_t_minus_1_valid)
+
+            churn = np.sum(labels_t_valid != labels_t_minus_1_valid) / len(labels_t_valid)
+
+            aris.append(ari)
+            nmis.append(nmi)
+            churns.append(churn)
+        except KeyError:
+             logging.warning(f"Missing time index {t} or {t-1} in pivoted labels. Skipping stability calc for this step.")
+             continue
+
+
+    avg_ari = np.mean(aris) if aris else np.nan
+    avg_nmi = np.mean(nmis) if nmis else np.nan
+    avg_churn_rate = np.mean(churns) if churns else np.nan
+
+    logging.info(f"Stability Metrics: Avg ARI={avg_ari:.4f}, Avg NMI={avg_nmi:.4f}, Avg Churn Rate={avg_churn_rate:.4f}")
+    return {'avg_ari': avg_ari, 'avg_nmi': avg_nmi, 'avg_churn_rate': avg_churn_rate}
+
+
+def calculate_feasibility_metrics(cluster_assign_df: pd.DataFrame, static_features_df: pd.DataFrame, config: dict) -> dict:
+    """Calculates feasibility violation rates (optional)."""
+    if not config.get('CHECK_FEASIBILITY_POST_CLUSTER', False):
+        logging.info("Skipping feasibility checks as per configuration.")
+        return {'avg_feeder_violation_rate': np.nan, 'avg_distance_violation_rate': np.nan}
+
+    logging.info("Calculating feasibility metrics...")
+    if 'line_id' not in static_features_df.columns:
+         logging.warning("Missing 'line_id' in static features, cannot check feeder violations.")
+         return {'avg_feeder_violation_rate': np.nan, 'avg_distance_violation_rate': np.nan}
+    if not all(col in static_features_df.columns for col in ['lat', 'lon']):
+        logging.warning("Missing 'lat'/'lon' in static features, cannot check distance violations.")
+        return {'avg_feeder_violation_rate': np.nan, 'avg_distance_violation_rate': np.nan}
+
+    threshold_km = config.get('FEASIBILITY_DISTANCE_THRESHOLD_KM', 0.5)
+    num_timesteps = cluster_assign_df['time_index'].max() + 1
+
+    # Merge static info once
+    static_info = static_features_df[['line_id', 'lat', 'lon']].astype({'line_id': str})
+    cluster_assign_df['building_id'] = cluster_assign_df['building_id'].astype(str)
+    static_info.index = static_info.index.astype(str) # Ensure index types match
+    merged_df = pd.merge(cluster_assign_df, static_info, left_on='building_id', right_index=True, how='left')
+
+    total_pairs_checked = 0
+    feeder_violations = 0
+    distance_violations = 0
+
+    for t in tqdm(range(num_timesteps), desc="Checking Feasibility", leave=False):
+        df_t = merged_df[merged_df['time_index'] == t]
+        for cluster_id in df_t['cluster_id'].unique():
+            cluster_nodes = df_t[df_t['cluster_id'] == cluster_id]
+            n_cluster = len(cluster_nodes)
+            if n_cluster < 2:
+                continue
+
+            # Check all pairs within the cluster
+            node_indices = cluster_nodes.index # Use DataFrame index for pair iteration
+            for i in range(n_cluster):
+                for j in range(i + 1, n_cluster):
+                    idx1 = node_indices[i]
+                    idx2 = node_indices[j]
+                    node1 = cluster_nodes.loc[idx1]
+                    node2 = cluster_nodes.loc[idx2]
+
+                    total_pairs_checked += 1
+
+                    # Feeder check
+                    if node1['line_id'] != node2['line_id']:
+                        feeder_violations += 1
+
+                    # Distance check
+                    dist = haversine_np(node1['lon'], node1['lat'], node2['lon'], node2['lat'])
+                    if dist > threshold_km:
+                        distance_violations += 1
+
+    avg_feeder_violation_rate = (feeder_violations / total_pairs_checked) if total_pairs_checked > 0 else 0
+    avg_distance_violation_rate = (distance_violations / total_pairs_checked) if total_pairs_checked > 0 else 0
+
+    logging.info(f"Feasibility Metrics: Avg Feeder Violation Rate={avg_feeder_violation_rate:.4f}, Avg Distance Violation Rate={avg_distance_violation_rate:.4f}")
+    return {'avg_feeder_violation_rate': avg_feeder_violation_rate, 'avg_distance_violation_rate': avg_distance_violation_rate}
+
+
+def calculate_quality_metrics(smoothed_embeddings_np: np.ndarray, cluster_assign_df: pd.DataFrame, config: dict) -> dict:
+    """Calculates clustering quality metrics (Silhouette Score)."""
+    logging.info("Calculating quality metrics (Silhouette Score)...")
+    num_timesteps = cluster_assign_df['time_index'].max() + 1
+    num_nodes = cluster_assign_df['building_id'].nunique()
+
+    if smoothed_embeddings_np.shape[0] != num_nodes or smoothed_embeddings_np.shape[1] != num_timesteps:
+         logging.error(f"Embeddings shape mismatch! Expected ({num_nodes}, {num_timesteps}, ...), got {smoothed_embeddings_np.shape}")
+         return {'avg_silhouette_score': np.nan}
+
+    # Pivot assignments for easy lookup
+    pivot_labels = cluster_assign_df.pivot(index='time_index', columns='building_id', values='cluster_id')
+    node_order = pivot_labels.columns.tolist() # Get consistent node order
+
+    silhouette_scores = []
+    for t in tqdm(range(num_timesteps), desc="Calculating Silhouette", leave=False):
+         try:
+             embeddings_t = smoothed_embeddings_np[:, t, :] # Assumes node order matches pivot cols
+             labels_t = pivot_labels.loc[t].values
+
+             # Check for NaNs or invalid states before calculating score
+             valid_mask = ~np.isnan(labels_t)
+             if np.sum(valid_mask) < 2: continue # Need at least 2 points
+
+             embeddings_t_valid = embeddings_t[valid_mask]
+             labels_t_valid = labels_t[valid_mask]
+
+             # Silhouette score requires at least 2 clusters and >1 point per cluster implicitly
+             n_labels = len(np.unique(labels_t_valid))
+             if n_labels < 2 or n_labels >= len(labels_t_valid):
+                 # Score is ill-defined, append NaN or skip
+                 continue
+
+             score = silhouette_score(embeddings_t_valid, labels_t_valid)
+             silhouette_scores.append(score)
+         except KeyError:
+             logging.warning(f"Missing time index {t} in pivoted labels for Silhouette score.")
+             continue
+         except ValueError as e:
+             logging.warning(f"Could not calculate Silhouette score for time step {t}: {e}")
+             continue # Skip score for this timestep
+
+
+    avg_silhouette_score = np.mean(silhouette_scores) if silhouette_scores else np.nan
+
+    logging.info(f"Quality Metrics: Avg Silhouette Score={avg_silhouette_score:.4f}")
+    return {'avg_silhouette_score': avg_silhouette_score}
+
+
+# --- Main Evaluation Runner ---
+
+def run_evaluation(config: dict, cluster_assignments: dict, final_embeddings: torch.Tensor,
+                   dataset: SpatioTemporalGraphDataset):
+    """
+    Runs all evaluation steps and saves the results.
+
+    Args:
+        config (dict): Configuration dictionary.
+        cluster_assignments (dict): Clustering results {t: {node_id: cluster_id}}.
+        final_embeddings (torch.Tensor): Embeddings output from inference.
+        dataset (SpatioTemporalGraphDataset): Dataset object containing metadata.
+    """
+    logging.info(f"--- Starting Evaluation Pipeline for Scenario: {config.get('SCENARIO_NAME', 'Unknown')} ---")
+    all_metrics = {}
+
+    # --- Prepare Inputs ---
+    logging.info("Preparing data for evaluation...")
+    # Convert cluster assignments dict to DataFrame
+    num_timesteps = final_embeddings.shape[1]
+    cluster_assign_df = format_cluster_assignments(cluster_assignments, dataset.node_ids, num_timesteps)
+
+    # Load processed dynamic features (need net_load)
+    dynamic_features_path = os.path.join(config['PROCESSED_DATA_DIR'], 'processed_dynamic_features.parquet')
+    try:
+         dynamic_features_df = pd.read_parquet(dynamic_features_path)
+    except Exception as e:
+         logging.error(f"Failed to load dynamic features for evaluation: {e}")
+         return # Cannot proceed without dynamic features
+
+    # Load processed static features (need line_id, lat, lon for feasibility)
+    static_features_path = os.path.join(config['PROCESSED_DATA_DIR'], 'processed_static_features.csv')
+    try:
+        static_features_df = pd.read_csv(static_features_path, index_col='building_id')
+        static_features_df.index = static_features_df.index.astype(str) # Ensure index is string for merge
+    except Exception as e:
+        logging.error(f"Failed to load static features for evaluation: {e}")
+        return # Cannot proceed
+
+
+    # --- Calculate Metrics ---
+    synergy_metrics = calculate_synergy_metrics(cluster_assign_df.copy(), dynamic_features_df.copy(), config)
+    all_metrics.update(synergy_metrics)
+
+    stability_metrics = calculate_stability_metrics(cluster_assign_df.copy(), config)
+    all_metrics.update(stability_metrics)
+
+    if config.get('CHECK_FEASIBILITY_POST_CLUSTER', False):
+        feasibility_metrics = calculate_feasibility_metrics(cluster_assign_df.copy(), static_features_df.copy(), config)
+        all_metrics.update(feasibility_metrics)
+    else:
+        all_metrics.update({'avg_feeder_violation_rate': np.nan, 'avg_distance_violation_rate': np.nan})
+
+
+    # Quality metrics need the smoothed embeddings
+    # Need to run smoothing again or load if saved by clustering step
+    try:
+         window_size = config.get('EMBEDDING_SMOOTHING_WINDOW_W', 1)
+         # Assuming clustering used smoothing, we recalculate here. Ideally pass from clustering.
+         smoothed_embeddings_np = smooth_embeddings(final_embeddings, window_size)
+         quality_metrics = calculate_quality_metrics(smoothed_embeddings_np, cluster_assign_df.copy(), config)
+         all_metrics.update(quality_metrics)
+    except Exception as e:
+         logging.error(f"Failed to calculate quality metrics: {e}")
+         all_metrics.update({'avg_silhouette_score': np.nan})
+
+
+    # --- Save Metrics ---
+    metrics_save_path = os.path.join(config['SCENARIO_RESULTS_DIR'], 'evaluation_metrics.json')
+    summary_save_path = os.path.join(config['SCENARIO_RESULTS_DIR'], 'evaluation_summary.txt')
+
+    try:
+        # Convert numpy types to native Python types for JSON serialization
+        serializable_metrics = {k: (float(v) if isinstance(v, (np.float32, np.float64, np.number)) else v) for k, v in all_metrics.items()}
+        serializable_metrics = {k: None if pd.isna(v) else v for k, v in serializable_metrics.items()} # Convert NaN to None
+
+        with open(metrics_save_path, 'w') as f:
+            json.dump(serializable_metrics, f, indent=4)
+        logging.info(f"Saved evaluation metrics to: {metrics_save_path}")
+
+        # Generate summary table text
+        summary_text = f"Evaluation Summary for: {config.get('SCENARIO_NAME', 'Unknown')}\n"
+        summary_text += "=" * 40 + "\n"
+        for key, value in serializable_metrics.items():
+             summary_text += f"{key:<30}: {value:.4f}\n" if isinstance(value, float) else f"{key:<30}: {value}\n"
+        summary_text += "=" * 40 + "\n"
+
+        with open(summary_save_path, 'w') as f:
+            f.write(summary_text)
+        logging.info(f"Saved evaluation summary table to: {summary_save_path}")
+
+    except Exception as e:
+        logging.error(f"Error saving evaluation results: {e}")
+
+    logging.info(f"--- Evaluation Pipeline Finished ---")
+    return all_metrics
+
+
+# Example Usage (within main.py or for testing)
+if __name__ == '__main__':
+    # This block requires outputs from clustering, inference, and data processing
+    logging.info("Testing evaluation script standalone...")
+
+    # 1. Load Config (replace with actual loader)
+    config = {
+        'SCENARIO_NAME': 'Scenario_B_Feeder_Constraint', # Change to test others
+        'PROCESSED_DATA_DIR': os.path.join('..', 'data', 'processed'), # Adjust relative path
+        'RESULTS_DIR': os.path.join('..', 'results'),
+        'SCENARIO_RESULTS_DIR': os.path.join('..', 'results', 'Scenario_B_Feeder_Constraint'),# Adjust
+        'CHECK_FEASIBILITY_POST_CLUSTER': False, # Example for Scenario B
+        'FEASIBILITY_DISTANCE_THRESHOLD_KM': 0.5,
+        'EMBEDDING_SMOOTHING_WINDOW_W': 4,
+        'EMBEDDING_DIM': 16 # Example
     }
-  ],
-  "mail_user": [
-    {
-      "email": "amin.jalilzade1@gmail.com"
-    }
-  ],
-  "fenestration": [
-    {
-      "building_id": 4136730,
-      "building_function": "residential",
-      "building_type": "Two-and-a-half-story House",
-      "age_range": "1992-2005",
-      "scenario": "scenario1",
-      "param_name": "wwr",
-      "min_val": 0.025,
-      "max_val": 0.03
-    },
-    {
-      "building_function": "non_residential",
-      "age_range": "2015 and later",
-      "scenario": "scenario1",
-      "param_name": "roof_R_value",
-      "fixed_value": 3.0
-    }
-  ],
-  "geometry": [
-    {
-      "building_id": 4136730,
-      "param_name": "perimeter_depth",
-      "min_val": 3.5,
-      "max_val": 4.0,
-      "fixed_value": true
-    },
-    {
-      "building_id": 4136730,
-      "param_name": "has_core",
-      "fixed_value": true
-    },
-    {
-      "building_type": "Meeting Function",
-      "param_name": "has_core",
-      "fixed_value": true
-    }
-  ],
-  "hvac": [
-    {
-      "building_id": 4136730,
-      "param_name": "heating_day_setpoint",
-      "min_val": 10.0,
-      "max_val": 11.0
-    },
-    {
-      "building_function": "residential",
-      "param_name": "cooling_day_setpoint",
-      "fixed_value": 25.6
-    },
-    {
-      "scenario": "scenario1",
-      "age_range": "2015 and later",
-      "param_name": "max_heating_supply_air_temp",
-      "min_val": 48.6,
-      "max_val": 50.0
-    }
-  ],
-  "lighting": [
-    {
-      "building_id": 4136730,
-      "param_name": "lights_wm2",
-      "min_val": 18.0,
-      "max_val": 20.0
-    },
-    {
-      "building_type": "Residential",
-      "param_name": "tN",
-      "min_val": 10999,
-      "max_val": 11999
-    },
-    {
-      "building_id": 4136731,
-      "building_type": "non_residential",
-      "param_name": "parasitic_wm2",
-      "min_val": 0.28,
-      "max_val": 0.3
-    }
-  ],
-  "main_config": {
-    "paths": {
-      "building_data": "data/df_buildings.csv",
-      "fenez_excel": "excel_data/envelop.xlsx",
-      "dhw_excel": "excel_data/dhw_overrides.xlsx",
-      "epw_excel": "excel_data/epw_overrides.xlsx",
-      "lighting_excel": "excel_data/lighting_overrides.xlsx",
-      "hvac_excel": "excel_data/hvac_overrides.xlsx",
-      "vent_excel": "excel_data/vent_overrides.xlsx"
-    },
+    os.makedirs(config['SCENARIO_RESULTS_DIR'], exist_ok=True)
 
 
-    "use_database": false,
-      "filter_by": "meestvoorkomendepostcode",
-      "db_filter": {
-        "meestvoorkomendepostcode": ["4816BL"], 
-        "pand_id": ["0383100000001369", "0383100000001370"],
-        "pand_ids": ["XYZ123", "XYZ999"],
-        "bbox_xy": [120000.0, 487000.0, 121000.0, 488000.0],
-        "bbox_latlon": [52.35, 4.85, 52.37, 4.92]
+    try:
+        # 2. Load dummy/real cluster assignments (replace with loading from file)
+        assign_file = os.path.join(config['SCENARIO_RESULTS_DIR'], 'cluster_assignments.csv')
+        if not os.path.exists(assign_file):
+             print(f"Cluster assignments file not found: {assign_file}. Cannot run evaluation.")
+        else:
+             cluster_assign_df_loaded = pd.read_csv(assign_file)
+             # Convert back to dictionary format expected? No, run_evaluation uses the DataFrame format now.
+             # Recreate dict format for testing if needed, or adapt run_evaluation inputs
+             cluster_assignments_dict = {}
+             for name, group in cluster_assign_df_loaded.groupby('time_index'):
+                  cluster_assignments_dict[name] = group.set_index('building_id')['cluster_id'].to_dict()
 
 
-    },
-    "excel_overrides": {
-      "override_fenez_excel": false,
-      "override_dhw_excel": false,
-      "override_epw_excel": false,
-      "override_lighting_excel": false,
-      "override_hvac_excel": false,
-      "override_vent_excel": false
-    },
-    "user_config_overrides": {
-      "override_fenez_json": true,
-      "override_dhw_json": true,
-      "override_epw_json": true,
-      "override_lighting_json": true,
-      "override_hvac_json": true,
-      "override_vent_json": true,
-      "override_geometry_json": true,
-      "override_shading_json": false
-    },
-    "default_dicts": {
-      "res_data": {
-        "R1": "some_res_data"
-      },
-      "nonres_data": {
-        "NR1": "some_nonres_data"
-      },
-      "dhw": {
-        "Office": {
-          "setpoint_c": 55.0
-        }
-      },
-      "epw": [
-        {
-          "city": "DefaultCity",
-          "file": "Default.epw"
-        }
-      ],
-      "lighting": {
-        "lights_wm2": 100.0
-      },
-      "hvac": {
-        "heating_day_setpoint": 20.0
-      },
-      "vent": {
-        "infiltration_base": 1.0
-      }
-    },
-    "idf_creation": {
-      "perform_idf_creation": true,
-      "scenario": "scenario1",
-      "calibration_stage": "pre_calibration",
-      "strategy": "B",
-      "random_seed": 42,
-      "iddfile": "EnergyPlus/Energy+.idd",
-      "idf_file_path": "EnergyPlus/Minimal.idf",
-      "output_idf_dir": "output_IDFs",
-      "run_simulations": true,
-      "simulate_config": {
-        "num_workers": 4,
-        "ep_force_overwrite": true
-      },
-      "post_process": true,
-      "post_process_config": {
-        "base_output_dir": "Sim_Results",
-        "outputs": [
-          {
-            "convert_to_daily": false,
-            "convert_to_monthly": false,
-            "aggregator": "none",
-            "output_csv": "output/results/merged_as_is.csv"
-          },
-          {
-            "convert_to_daily": true,
-            "convert_to_monthly": false,
-            "aggregator": "mean",
-            "output_csv": "output/results/merged_daily_mean.csv"
-          }
-        ]
-      },
-      "output_definitions": {
-        "desired_variables": [
-          "Facility Total Electric Demand Power",
-          "Zone Air Temperature"
-        ],
-        "desired_meters": [
-          "Electricity:Facility"
-        ],
-        "override_variable_frequency": "Hourly",
-        "override_meter_frequency": "Hourly",
-        "include_tables": true,
-        "include_summary": true
-      }
-    },
-    "structuring": {
-      "perform_structuring": true,
-      "dhw": {
-        "csv_in": "assigned/assigned_dhw_params.csv",
-        "csv_out": "assigned/structured_dhw_params.csv"
-      },
-      "fenestration": {
-        "csv_in": "assigned/assigned_fenez_params.csv",
-        "csv_out": "assigned/structured_fenez_params.csv"
-      },
-      "hvac": {
-        "csv_in": "assigned/assigned_hvac_params.csv",
-        "build_out": "assigned/assigned_hvac_building.csv",
-        "zone_out": "assigned/assigned_hvac_zones.csv"
-      },
-      "vent": {
-        "csv_in": "assigned/assigned_ventilation.csv",
-        "build_out": "assigned/assigned_vent_building.csv",
-        "zone_out": "assigned/assigned_vent_zones.csv"
-      }
-    },
-    "modification": {
-      "perform_modification": true,
-      "modify_config": {
+             # 3. Load dummy/real embeddings (replace with loading from file or inference output)
+             num_nodes = cluster_assign_df_loaded['building_id'].nunique()
+             num_timesteps = cluster_assign_df_loaded['time_index'].max() + 1
+             dummy_embeddings = torch.randn(num_nodes, num_timesteps, config['EMBEDDING_DIM'])
 
+             # 4. Load dummy/real dataset object (only needs node_ids)
+             class DummyDataset:
+                 def __init__(self, assign_df):
+                     self.node_ids = assign_df['building_id'].unique().tolist()
+             dummy_dataset = DummyDataset(cluster_assign_df_loaded)
 
-        "idd_path": "EnergyPlus/Energy+.idd",
-        "assigned_csv": {
-          "hvac_building": "assigned/assigned_hvac_building.csv",
-          "hvac_zones": "assigned/assigned_hvac_zones.csv",
-          "dhw": "assigned/assigned_dhw_params.csv",
-          "vent_build": "assigned/assigned_vent_building.csv",
-          "vent_zones": "assigned/assigned_vent_zones.csv",
-          "elec": "assigned/assigned_lighting.csv",
-          "fenez": "assigned/structured_fenez_params.csv"
-        },
-        "scenario_csv": {
-          "hvac": "scenarios/scenario_params_hvac.csv",
-          "dhw": "scenarios/scenario_params_dhw.csv",
-          "vent": "scenarios/scenario_params_vent.csv",
-          "elec": "scenarios/scenario_params_elec.csv",
-          "fenez": "scenarios/scenario_params_fenez.csv"
-        },
-        "output_idf_dir": "scenario_idfs",
-        "building_id": 4136730,
-        "num_scenarios": 5,
-        "picking_method": "random_uniform",
-        "picking_scale_factor": 0.5,
-        "run_simulations": true,
-        "simulation_config": {
-          "num_workers": 4,
-          "output_dir": "Sim_Results/Scenarios"
-        },
-        "perform_post_process": true,
-        "post_process_config": {
-          "output_csv_as_is": "results_scenarioes/merged_as_is_scenarios.csv",
-          "output_csv_daily_mean": "results_scenarioes/merged_daily_mean_scenarios.csv"
-        },
-        "perform_validation": false,
-        "validation_config": {
-          "real_data_csv": "data/mock_merged_daily_mean.csv",
-          "sim_data_csv":  "results/merged_daily_mean.csv",
-          "bldg_ranges": {
-            "0": [0, 1, 2]
-          },
-          "variables_to_compare": [
-            "Electricity:Facility [J](Hourly)",
-            "Heating:EnergyTransfer [J](Hourly)",
-            "Cooling:EnergyTransfer [J](Hourly)"
-          ],
-          "threshold_cv_rmse": 30.0,
-          "skip_plots": true,
-          "output_csv": "scenario_validation_report.csv"
-        }
-      }
-    },
+             # 5. Run Evaluation (run_evaluation now handles loading internal files)
+             run_evaluation(config, cluster_assignments_dict, dummy_embeddings, dummy_dataset) # Pass dict here
 
-    
+             print("\n--- Standalone Evaluation Test Finished ---")
+             print(f"Check {config['SCENARIO_RESULTS_DIR']} for evaluation_metrics.json and evaluation_summary.txt")
 
-
-  "validation_base": {
-    "perform_validation": true,
-    "config": {
-      "real_data_csv": "data/mock_merged_daily_mean.csv",
-      "sim_data_csv":  "results/merged_daily_mean.csv",
-      "bldg_ranges": {
-        "0": [0,1,2,3]
-      },
-      "variables_to_compare": [
-        "Electricity:Facility [J](Hourly)",
-        "Heating:EnergyTransfer [J](Hourly)",
-        "Cooling:EnergyTransfer [J](Hourly)"
-      ],
-      "threshold_cv_rmse": 30.0,
-      "skip_plots": true,
-      "output_csv": "validation_report_base.csv"
-    }
-  },
-
-  "validation_scenarios": {
-    "perform_validation": true,
-    "config": {
-      "real_data_csv": "data/mock_merged_daily_mean.csv",
-      "sim_data_csv":  "results_scenarioes/merged_daily_mean_scenarios.csv",
-      "bldg_ranges": {
-        "0": [0,1,2]
-      },
-      "variables_to_compare": [
-        "Electricity:Facility [J](Hourly)",
-        "Heating:EnergyTransfer [J](Hourly)",
-        "Cooling:EnergyTransfer [J](Hourly)"
-      ],
-      "threshold_cv_rmse": 30.0,
-      "skip_plots": true,
-      "output_csv": "validation_report_scenarios.csv"
-    }
-  },
-
-
-
-
-
-
-
-
-    "sensitivity": {
-      "perform_sensitivity": true,
-      "scenario_folder": "scenarios",
-      "method": "morris",
-      "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
-      "target_variable": [
-        "Heating:EnergyTransfer [J](Hourly)",
-        "Cooling:EnergyTransfer [J](Hourly)",
-        "Electricity:Facility [J](Hourly)"
-      ],
-      "output_csv": "multi_corr_sensitivity.csv",
-      "n_morris_trajectories": 10,
-      "num_levels": 4
-    },
-    "surrogate": {
-      "perform_surrogate": true,
-      "scenario_folder": "scenarios",
-      "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
-      "target_variable": "Heating:EnergyTransfer [J](Hourly)",
-      "model_out": "heating_surrogate_model.joblib",
-      "cols_out": "heating_surrogate_columns.joblib",
-      "test_size": 0.3
-    },
-    "calibration": {
-      "perform_calibration": true,
-      "scenario_folder": "scenarios",
-      "scenario_files": [
-        "scenario_params_dhw.csv",
-        "scenario_params_elec.csv"
-      ],
-      "subset_sensitivity_csv": "multi_corr_sensitivity.csv",
-      "top_n_params": 10,
-      "method": "ga",
-      "use_surrogate": true,
-      "real_data_csv": "data/mock_merged_daily_mean.csv",
-      "surrogate_model_path": "heating_surrogate_model.joblib",
-      "surrogate_columns_path": "heating_surrogate_columns.joblib",
-      "calibrate_min_max": true,
-      "ga_pop_size": 10,
-      "ga_generations": 5,
-      "ga_crossover_prob": 0.7,
-      "ga_mutation_prob": 0.2,
-      "bayes_n_calls": 15,
-      "random_n_iter": 20,
-      "output_history_csv": "calibration_history.csv",
-      "best_params_folder": "calibrated",
-      "history_folder": "calibrated"
-    }
-  },
-  "shading": [
-    {
-      "building_id": 4136730,
-      "param_name": "top_n_buildings",
-      "fixed_value": 5
-    },
-    {
-      "building_function": "residential",
-      "param_name": "summer_value",
-      "min_val": 0.4,
-      "max_val": 0.6
-    },
-    {
-      "param_name": "top_n_trees",
-      "fixed_value": 3
-    }
-  ],
-  "vent": [
-    {
-      "building_id": 4136730,
-      "param_name": "infiltration_base",
-      "min_val": 100.3,
-      "max_val": 100.4
-    },
-    {
-      "building_function": "residential",
-      "age_range": "1992-2005",
-      "param_name": "year_factor",
-      "min_val": 21.4,
-      "max_val": 21.5
-    },
-    {
-      "building_id": 4136731,
-      "param_name": "system_type",
-      "fixed_value": "D"
-    },
-    {
-      "building_id": 4136731,
-      "param_name": "fan_pressure",
-      "min_val": 100,
-      "max_val": 120
-    }
-  ]
-}
-
+    except FileNotFoundError:
+         print("\nError: Prerequisite file not found (e.g., cluster_assignments.csv, processed data). Ensure previous steps ran.")
+    except Exception as e:
+        logging.exception(f"An error occurred during evaluation test: {e}")
 ------------------------------------------------------------
 

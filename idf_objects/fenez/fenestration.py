@@ -3,7 +3,9 @@ fenestration.py
 
 Handles the creation or updating of fenestration (windows, etc.) in a geomeppy IDF.
 It references final fenestration dictionaries (res_data, nonres_data) that
-already incorporate Excel + user JSON overrides. 
+already incorporate Excel + user JSON overrides.
+
+Key function: add_fenestration(...)
 """
 
 import pandas as pd
@@ -30,9 +32,10 @@ def add_fenestration(
     Steps:
       1) Determine building function => use 'res_data' or 'nonres_data'.
       2) Call 'assign_fenestration_parameters(...)' to get final WWR or computed WWR.
-      3) Remove existing fenestration surfaces.
+      3) Remove existing fenestration surfaces (FENESTRATIONSURFACE:DETAILED).
       4) Use geomeppy 'idf.set_wwr(...)' to add windows with the final WWR.
-      5) Log picks & new fenestration object names in 'assigned_fenez_log'.
+         By default, references a construction "Window1C" (ensure it exists in materials).
+      5) Log picks & new fenestration object names in 'assigned_fenez_log' if provided.
 
     Parameters
     ----------
@@ -51,7 +54,7 @@ def add_fenestration(
     assigned_fenez_log : dict
         A place to store assigned picks for CSV logging later.
     use_computed_wwr : bool
-        If True, compute WWR from sub-element areas (windows, doors, etc.) 
+        If True, compute WWR from sub-element areas (windows, doors, etc.)
         rather than from the dictionary's wwr_range.
     include_doors_in_wwr : bool
         If True, door area is counted as fenestration in the WWR ratio.
@@ -81,10 +84,11 @@ def add_fenestration(
 
     # 3) Remove existing fenestration surfaces
     fen_objects = idf.idfobjects["FENESTRATIONSURFACE:DETAILED"]
-    del fen_objects[:]  # clear them
+    del fen_objects[:]  # clear them all
 
-    # 4) Use geomeppy to create new window surfaces
-    #    We assume the construction "Window1C" already exists or will be created in materials step
+    # 4) Use geomeppy to create new window surfaces for each exterior wall
+    #    The default or fallback construction name is "Window1C".
+    #    Make sure your updated materials/constructions code has created "Window1C" or a suitable name.
     GeppyIDF.set_wwr(idf, wwr=wwr, construction="Window1C")
 
     # 5) Optional: Log fenestration object names

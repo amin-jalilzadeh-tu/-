@@ -1,6 +1,4 @@
-D:\Documents\E_Plus_2030_py\app.py
-D:\Documents\E_Plus_2030_py\orchestrator.py
-D:\Documents\E_Plus_2030_py\job_manager.py
-D:\Documents\E_Plus_2030_py\main_modifi.py
-D:\Documents\E_Plus_2030_py\idf_creation.py
-D:\Documents\E_Plus_2030_py\combined.json
+D:\Documents\energy_cluster_gnn\src\visualization.py
+D:\Documents\energy_cluster_gnn\src\training.py
+D:\Documents\energy_cluster_gnn\src\inference.py
+D:\Documents\energy_cluster_gnn\src\evaluation.py

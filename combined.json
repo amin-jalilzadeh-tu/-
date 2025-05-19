@@ -132,13 +132,13 @@
 
 
     "use_database": false,
-      "filter_by": "meestvoorkomendepostcode",
+      "filter_by": "meestvoorkomendepostcode", 
       "db_filter": {
-        "meestvoorkomendepostcode": ["4816BL"], 
-        "pand_id": ["0383100000001369", "0383100000001370"],
+        "meestvoorkomendepostcode": ["3066HG"], 
+        "pand_id": ["0383100000001369", "0383100000001370", "5473VX"],
         "pand_ids": ["XYZ123", "XYZ999"],
         "bbox_xy": [120000.0, 487000.0, 121000.0, 488000.0],
-        "bbox_latlon": [52.35, 4.85, 52.37, 4.92]
+        "bbox_latlon": [51.873, 5.589, 51.878, 5.60]
 
 
     },
@@ -159,34 +159,6 @@
       "override_vent_json": true,
       "override_geometry_json": true,
       "override_shading_json": false
-    },
-    "default_dicts": {
-      "res_data": {
-        "R1": "some_res_data"
-      },
-      "nonres_data": {
-        "NR1": "some_nonres_data"
-      },
-      "dhw": {
-        "Office": {
-          "setpoint_c": 55.0
-        }
-      },
-      "epw": [
-        {
-          "city": "DefaultCity",
-          "file": "Default.epw"
-        }
-      ],
-      "lighting": {
-        "lights_wm2": 100.0
-      },
-      "hvac": {
-        "heating_day_setpoint": 20.0
-      },
-      "vent": {
-        "infiltration_base": 1.0
-      }
     },
     "idf_creation": {
       "perform_idf_creation": true,
@@ -217,22 +189,33 @@
             "convert_to_monthly": false,
             "aggregator": "mean",
             "output_csv": "output/results/merged_daily_mean.csv"
+          },
+          {
+            "convert_to_daily": true,
+            "convert_to_monthly": true,
+            "aggregator": "mean",
+            "output_csv": "output/results/merged_monthly_mean.csv"
           }
         ]
       },
       "output_definitions": {
         "desired_variables": [
           "Facility Total Electric Demand Power",
-          "Zone Air Temperature"
+          "Zone Air Temperature",
+          "Boiler Heating Energy",
+          "Water Heater Heating Energy"
         ],
         "desired_meters": [
-          "Electricity:Facility"
+          "Electricity:Facility",
+          "Heating:EnergyTransfer",
+          "Cooling:EnergyTransfer"
         ],
-        "override_variable_frequency": "Hourly",
-        "override_meter_frequency": "Hourly",
+        "override_variable_frequency": "Daily",
+        "override_meter_frequency": "Daily",
         "include_tables": true,
         "include_summary": true
       }
+
     },
     "structuring": {
       "perform_structuring": true,
@@ -256,7 +239,7 @@
       }
     },
     "modification": {
-      "perform_modification": true,
+      "perform_modification": false,
       "modify_config": {
 
 
@@ -315,7 +298,7 @@
 
 
   "validation_base": {
-    "perform_validation": true,
+    "perform_validation": false,
     "config": {
       "real_data_csv": "data/mock_merged_daily_mean.csv",
       "sim_data_csv":  "results/merged_daily_mean.csv",
@@ -334,7 +317,7 @@
   },
 
   "validation_scenarios": {
-    "perform_validation": true,
+    "perform_validation": false,
     "config": {
       "real_data_csv": "data/mock_merged_daily_mean.csv",
       "sim_data_csv":  "results_scenarioes/merged_daily_mean_scenarios.csv",

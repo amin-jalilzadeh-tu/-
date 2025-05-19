@@ -98,7 +98,7 @@ def add_dhw_to_idf(
         fuel_type = "NaturalGas"
         heater_eff = 0.8
     else:
-        fuel_type = "Electricity"
+        fuel_type = "NaturalGas"
         heater_eff = 0.9
 
     wh_obj = idf.newidfobject(
