@@ -1,8 +1,8 @@
 # ventilation/create_ventilation_systems.py
 
 import random
-import math # For isnan checks if needed
-from typing import Optional, Any, Tuple # Added typing
+import math  # For isnan checks if needed
+from typing import Optional, Any, Tuple
 
 # Import IDF class for type hinting (assuming geomeppy is used)
 try:
@@ -19,6 +19,41 @@ except ImportError:
     SYSTEMS_CONFIG = {} # Provide an empty dict to avoid crashes later, but setup will likely fail
 
 
+# ---------------------------------------------------------------------------
+# Helper: Apply weather-dependent infiltration coefficients
+# ---------------------------------------------------------------------------
+def apply_weather_coefficients(
+    infil_obj: Any,
+    base_flow_m3_s: float,
+    typical_delta_t: float = 10.0,
+    typical_wind: float = 3.0,
+):
+    """Configure infiltration coefficients so that the infiltration flow
+    varies with temperature difference and wind speed.
+
+    The ``base_flow_m3_s`` value is assumed to correspond to the flow when
+    ``typical_delta_t`` (degC) and ``typical_wind`` (m/s) occur.  Coefficients
+    are chosen so that the resulting design flow rate equals ``base_flow_m3_s``
+    under those typical conditions.
+    """
+
+    # Simple default coefficients that introduce dependence on \u0394T and wind
+    A = 0.5
+    B = 0.02
+    C = 0.04
+    D = 0.0
+
+    denom = A + B * typical_delta_t + C * typical_wind + D * (typical_wind ** 2)
+    if denom <= 0:
+        denom = 1.0
+
+    infil_obj.Design_Flow_Rate = base_flow_m3_s / denom
+    infil_obj.Constant_Term_Coefficient = A
+    infil_obj.Temperature_Term_Coefficient = B
+    infil_obj.Velocity_Term_Coefficient = C
+    infil_obj.Velocity_Squared_Term_Coefficient = D
+
+
 def create_ventilation_system(
     idf: IDF,
     building_function: str,      # 'residential' or 'non_residential'
@@ -28,18 +63,22 @@ def create_ventilation_system(
     infiltration_m3_s: float,      # Calculated infiltration for THIS zone (m3/s)
     vent_flow_m3_s: float,         # Calculated required ventilation for THIS zone (m3/s)
     # --- Schedule names ---
-    infiltration_sched_name: str ="AlwaysOnSched",
-    ventilation_sched_name: str ="VentSched_DayNight", # Used for ZoneVentilation and IdealLoads Availability
+    infiltration_sched_name: str = "AlwaysOnSched",
+    ventilation_sched_name: str = "VentSched_DayNight",  # Used for ZoneVentilation and IdealLoads Availability
+    # --- Infiltration modelling ---
+    infiltration_model: str = "constant",  # "constant" or "weather"
+    typical_delta_t: float = 10.0,
+    typical_wind: float = 3.0,
     # --- Strategy for picking from ranges (e.g., fan eff from SYSTEMS_CONFIG) ---
-    pick_strategy: str ="midpoint", # or "random"
+    pick_strategy: str = "midpoint",  # or "random"
     # --- Parameters specifically for System D (IdealLoads) ---
-    dsoa_object_name: Optional[str] =None, # Name of the DesignSpecification:OutdoorAir object
-    hrv_sensible_effectiveness: float =0.0,
-    hrv_latent_effectiveness: float =0.0,
+    dsoa_object_name: Optional[str] = None,  # Name of the DesignSpecification:OutdoorAir object
+    hrv_sensible_effectiveness: float = 0.0,
+    hrv_latent_effectiveness: float = 0.0,
     # --- NEW: Overrides for fan parameters (for Systems A, B, C primarily) ---
     fan_pressure_override_Pa: Optional[float] = None,
-    fan_efficiency_override: Optional[float] = None
-) -> Tuple[Optional[Any], Optional[Any]]: # Return type hint Any or specific eppy/geomeppy type
+    fan_efficiency_override: Optional[float] = None,
+) -> Tuple[Optional[Any], Optional[Any]]:  # Return type hint Any or specific eppy/geomeppy type
     """
     Creates EnergyPlus objects for infiltration and ventilation for a specific zone.
     (Refer to previous docstring for more details)
@@ -48,6 +87,8 @@ def create_ventilation_system(
     - More robust IdealLoadsAirSystem object lookup.
     - Uses fan_pressure_override_Pa and fan_efficiency_override if provided for Systems A,B,C.
     - Applies ventilation_sched_name to IdealLoadsAirSystem's Availability_Schedule_Name for System D.
+    - ``infiltration_model`` selects between constant or weather-dependent infiltration.
+    - ``typical_delta_t`` and ``typical_wind`` set the reference conditions for weather-dependent mode.
     """
 
     # --- 1) Get System Configuration from SYSTEMS_CONFIG ---
@@ -117,15 +158,22 @@ def create_ventilation_system(
 
         iobj.Schedule_Name = infiltration_sched_name
         iobj.Design_Flow_Rate_Calculation_Method = "Flow/Zone"
-        iobj.Design_Flow_Rate = max(0.0, infiltration_m3_s) # Ensure non-negative
 
-        # Coefficients for constant flow (pre-calculated, not dynamic based on weather here)
-        # To make infiltration weather-dependent here, these coefficients would need to be set
-        # based on a model (e.g., Sherman-Grimsrud) and infiltration_m3_s would be a base rate.
-        iobj.Constant_Term_Coefficient = 1.0
-        iobj.Temperature_Term_Coefficient = 0.0
-        iobj.Velocity_Term_Coefficient = 0.0
-        iobj.Velocity_Squared_Term_Coefficient = 0.0 # Or Velocity_Squared_Term_Coefficient
+        if infiltration_model.lower() == "weather":
+            # In weather mode, use reference conditions to set coefficients
+            apply_weather_coefficients(
+                iobj,
+                max(0.0, infiltration_m3_s),
+                typical_delta_t=typical_delta_t,
+                typical_wind=typical_wind,
+            )
+        else:
+            # Constant flow with coefficients fixed at 1, 0, 0, 0
+            iobj.Design_Flow_Rate = max(0.0, infiltration_m3_s)
+            iobj.Constant_Term_Coefficient = 1.0
+            iobj.Temperature_Term_Coefficient = 0.0
+            iobj.Velocity_Term_Coefficient = 0.0
+            iobj.Velocity_Squared_Term_Coefficient = 0.0
 
     except Exception as e:
         print(f"[ERROR] Failed to create ZONEINFILTRATION:DESIGNFLOWRATE for {zone_name}: {e}")
