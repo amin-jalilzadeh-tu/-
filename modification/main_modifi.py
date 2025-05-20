@@ -43,6 +43,13 @@ from modification.elec_functions import (
     apply_object_level_elec
 )
 
+# Equipment
+from modification.equipment_functions import (
+    create_equipment_scenarios,
+    apply_building_level_equipment,
+    apply_object_level_equipment,
+)
+
 # Fenestration
 from modification.fenez_functions2 import (
     create_fenez_scenarios,
@@ -137,7 +144,13 @@ def run_modification_workflow(config):
     df_elec_sub = df_elec_all[df_elec_all["ogc_fid"] == building_id].copy()
 
     # -----------------------------------------------------------------------
-    # 6) Fenestration
+    # 6) Equipment
+    # -----------------------------------------------------------------------
+    df_equip_all = load_assigned_csv(assigned_csvs["equip"])
+    df_equip_sub = df_equip_all[df_equip_all["ogc_fid"] == building_id].copy()
+
+    # -----------------------------------------------------------------------
+    # 7) Fenestration
     # -----------------------------------------------------------------------
     df_fenez_all = load_assigned_csv(assigned_csvs["fenez"])
     df_fenez_sub = df_fenez_all[df_fenez_all["ogc_fid"] == building_id].copy()
@@ -210,7 +223,17 @@ def run_modification_workflow(config):
         scenario_csv_out=scenario_csvs["elec"]
     )
 
-    # 7E) Fenestration
+    # 7E) Equipment
+    df_scen_equip = create_equipment_scenarios(
+        df_equipment=df_equip_sub,
+        building_id=building_id,
+        num_scenarios=num_scenarios,
+        picking_method=picking_method,
+        random_seed=42,
+        scenario_csv_out=scenario_csvs["equip"]
+    )
+
+    # 7F) Fenestration
     df_scen_fenez = create_fenez_scenarios(
         df_struct_fenez=df_fenez_sub,
         building_id=building_id,
@@ -227,12 +250,14 @@ def run_modification_workflow(config):
     df_dhw_scen   = load_scenario_csv(scenario_csvs["dhw"])   if os.path.isfile(scenario_csvs["dhw"])   else pd.DataFrame()
     df_vent_scen  = load_scenario_csv(scenario_csvs["vent"])  if os.path.isfile(scenario_csvs["vent"])  else pd.DataFrame()
     df_elec_scen  = load_scenario_csv(scenario_csvs["elec"])  if os.path.isfile(scenario_csvs["elec"])  else pd.DataFrame()
+    df_equip_scen = load_scenario_csv(scenario_csvs["equip"]) if os.path.isfile(scenario_csvs["equip"]) else pd.DataFrame()
     df_fenez_scen = load_scenario_csv(scenario_csvs["fenez"]) if os.path.isfile(scenario_csvs["fenez"]) else pd.DataFrame()
 
     hvac_groups  = df_hvac_scen.groupby("scenario_index")  if not df_hvac_scen.empty  else None
     dhw_groups   = df_dhw_scen.groupby("scenario_index")   if not df_dhw_scen.empty   else None
     vent_groups  = df_vent_scen.groupby("scenario_index")  if not df_vent_scen.empty  else None
     elec_groups  = df_elec_scen.groupby("scenario_index")  if not df_elec_scen.empty  else None
+    equip_groups = df_equip_scen.groupby("scenario_index") if not df_equip_scen.empty else None
     fenez_groups = df_fenez_scen.groupby("scenario_index") if not df_fenez_scen.empty else None
 
     # -----------------------------------------------------------------------
@@ -246,6 +271,7 @@ def run_modification_workflow(config):
         dhw_df  = dhw_groups.get_group(i)  if dhw_groups  and i in dhw_groups.groups  else pd.DataFrame()
         vent_df = vent_groups.get_group(i) if vent_groups and i in vent_groups.groups else pd.DataFrame()
         elec_df = elec_groups.get_group(i) if elec_groups and i in elec_groups.groups else pd.DataFrame()
+        equip_df = equip_groups.get_group(i) if equip_groups and i in equip_groups.groups else pd.DataFrame()
         fenez_df= fenez_groups.get_group(i)if fenez_groups and i in fenez_groups.groups else pd.DataFrame()
 
         # 9B) For HVAC: building-level vs. zone-level
@@ -264,30 +290,37 @@ def run_modification_workflow(config):
         # 9E) Elec => building-level approach or object-level
         elec_params = _make_param_dict(elec_df)
 
-        # 9F) Load base IDF
+        # 9F) Equipment
+        equip_params = _make_param_dict(equip_df)
+
+        # 9G) Load base IDF
         idf = load_idf(base_idf_path, idd_path)
 
-        # 9G) Apply building-level + zone-level HVAC
+        # 9H) Apply building-level + zone-level HVAC
         apply_building_level_hvac(idf, hvac_params)
         apply_zone_level_hvac(idf, hvac_zone_df)
 
-        # 9H) Apply DHW
+        # 9I) Apply DHW
         apply_dhw_params_to_idf(idf, dhw_params, suffix=f"Scenario_{i}")
 
-        # 9I) Apply Vent
+        # 9J) Apply Vent
         if not vent_bld_df.empty or not vent_zone_df.empty:
             apply_building_level_vent(idf, vent_params)
             apply_zone_level_vent(idf, vent_zone_df)
 
-        # 9J) Apply Elec => building-level approach
+        # 9K) Apply Elec => building-level approach
         #    Or if you prefer object-level, do apply_object_level_elec(idf, elec_df)
         if not elec_df.empty:
             apply_building_level_elec(idf, elec_params, zonelist_name="ALL_ZONES")
 
-        # 9K) Apply Fenestration (object-level)
+        # 9L) Apply Equipment
+        if not equip_df.empty:
+            apply_building_level_equipment(idf, equip_params, zonelist_name="ALL_ZONES")
+
+        # 9M) Apply Fenestration (object-level)
         apply_object_level_fenez(idf, fenez_df)
 
-        # 9L) Save scenario IDF
+        # 9N) Save scenario IDF
         scenario_idf_name = f"building_{building_id}_scenario_{i}.idf"
         scenario_idf_path = os.path.join(output_idf_dir, scenario_idf_name)
         save_idf(idf, scenario_idf_path)
