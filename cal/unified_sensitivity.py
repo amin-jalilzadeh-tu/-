@@ -139,6 +139,7 @@ def load_scenario_params(scenario_folder: str) -> pd.DataFrame:
     scenario_files = [
         "scenario_params_dhw.csv",
         "scenario_params_elec.csv",
+        "scenario_params_equipment.csv",
         "scenario_params_fenez.csv",
         "scenario_params_hvac.csv",
         "scenario_params_vent.csv"

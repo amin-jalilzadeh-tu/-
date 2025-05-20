@@ -87,6 +87,7 @@ def load_scenario_csvs(scenario_folder: str, scenario_files: List[str]) -> pd.Da
         scenario_files = [
             "scenario_params_dhw.csv",
             "scenario_params_elec.csv",
+            "scenario_params_equipment.csv",
             "scenario_params_fenez.csv",
             "scenario_params_hvac.csv",
             "scenario_params_vent.csv"
