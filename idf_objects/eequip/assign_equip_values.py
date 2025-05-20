@@ -15,7 +15,13 @@ def assign_equipment_parameters(
     assigned_log: dict = None     # optional dictionary to store final picks
 ):
     """
-    Returns a dict with "equip_wm2", "tD", "tN", etc. for electric equipment.
+    Returns a dict with ``equip_wm2``, ``tD`` and ``tN`` picks for electric
+    equipment.  Building type strings are normalised ("residential" →
+    "Residential") before lookup so overrides are more forgiving.
+
+    The optional ``assigned_log`` receives a structure containing both the final
+    values and the ranges they were drawn from, allowing downstream
+    inspection.
 
     Steps:
       1) Check calibration_stage in equip_lookup; else fallback to "pre_calibration".
@@ -31,6 +37,14 @@ def assign_equipment_parameters(
 
     if random_seed is not None:
         random.seed(random_seed)
+
+    # Normalize building_type strings so that lookups are consistent
+    if building_type:
+        bt_low = building_type.lower()
+        if bt_low == "residential":
+            building_type = "Residential"
+        elif bt_low == "non_residential":
+            building_type = "Non-Residential"
 
     # 1) Grab the stage dictionary or fallback
     if calibration_stage not in equip_lookup:
@@ -85,8 +99,22 @@ def assign_equipment_parameters(
         "tN": pick_val(tN_rng)
     }
 
-    # 6) Optional logging
+    # Basic sanity checks so negative values or obviously unrealistic
+    # picks do not slip through. You can adapt the thresholds to your
+    # own domain knowledge.
+    assigned["equip_wm2"] = max(0.0, assigned["equip_wm2"])
+    assigned["tD"] = max(0.0, assigned["tD"])
+    assigned["tN"] = max(0.0, assigned["tN"])
+
+    # 6) Optional logging of both the picks and underlying ranges
     if assigned_log is not None:
-        assigned_log[building_id] = assigned
+        assigned_log[building_id] = {
+            "assigned": assigned,
+            "ranges": {
+                "equip_wm2": equip_rng,
+                "tD": tD_rng,
+                "tN": tN_rng,
+            },
+        }
 
     return assigned
