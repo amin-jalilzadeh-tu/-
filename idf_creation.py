@@ -103,8 +103,33 @@ def create_idf_for_building(
     building_obj.Name = f"Sample_Building_{building_index}"
 
     orientation = building_row.get("building_orientation", 0.0)
-    if not pd.isna(orientation):
-        building_obj.North_Axis = orientation
+
+
+
+    # for orientation correction this changed 
+    #if not pd.isna(orientation):
+    #    building_obj.North_Axis = orientation
+
+
+
+
+
+
+    if pd.isna(orientation):
+        orientation = 0.0
+
+    # Apply orientation when creating geometry.  The BUILDING object's
+    # North_Axis is kept at 0 so that the rotated geometry correctly
+    # represents the building's orientation in the world coordinate system.
+    building_obj.North_Axis = 0.0
+
+
+
+
+
+
+
+
 
     # 3) Create geometry
     if assigned_geom_log is not None and building_row.get("ogc_fid") not in assigned_geom_log:
