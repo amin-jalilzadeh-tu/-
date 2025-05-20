@@ -27,7 +27,7 @@ This repository automates the entire process of creating, running, and post-proc
 ## Major Modules
 
 1. **Core Packages**  
-   - **`geomz`, `fenez`, `DHW`, `HVAC`, `ventilation`, `Elec`, `setzone`, etc.**  
+   - **`geomz`, `fenez`, `DHW`, `HVAC`, `ventilation`, `Elec`, `eequip`, `setzone`, etc.**
      Each folder configures a specific aspect of building energy modeling:
        - Default lookup dictionaries (WWR ranges, R-values, etc.).
        - Functions to apply user/Excel/JSON overrides.

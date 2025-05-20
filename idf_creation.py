@@ -28,6 +28,7 @@ from idf_objects.fenez.materials import (
     assign_constructions_to_surfaces
 )
 from idf_objects.Elec.lighting import add_lights_and_parasitics
+from idf_objects.eequip.equipment import add_electric_equipment
 from idf_objects.DHW.water_heater import add_dhw_to_idf
 from idf_objects.HVAC.custom_hvac import add_HVAC_Ideal_to_all_zones
 from idf_objects.ventilation.add_ventilation import add_ventilation_to_idf
@@ -65,6 +66,9 @@ def create_idf_for_building(
     # Lighting
     user_config_lighting=None,
     assigned_lighting_log=None,
+    # Electric equipment
+    user_config_equipment=None,
+    assigned_equip_log=None,
     # DHW
     user_config_dhw=None,
     assigned_dhw_log=None,
@@ -169,7 +173,18 @@ def create_idf_for_building(
         assigned_values_log=assigned_lighting_log
     )
 
-    # 7) DHW
+    # 7) Electric equipment
+    add_electric_equipment(
+        idf=idf,
+        building_row=building_row,
+        calibration_stage=calibration_stage,
+        strategy=strategy,
+        random_seed=random_seed,
+        user_config=user_config_equipment,
+        assigned_values_log=assigned_equip_log,
+        zonelist_name="ALL_ZONES",
+    )
+    # 8) DHW
     add_dhw_to_idf(
         idf=idf,
         building_row=building_row,
@@ -182,7 +197,7 @@ def create_idf_for_building(
         use_nta=True
     )
 
-    # 8) HVAC
+    # 9) HVAC
     add_HVAC_Ideal_to_all_zones(
         idf=idf,
         building_row=building_row,
@@ -193,7 +208,7 @@ def create_idf_for_building(
         assigned_hvac_log=assigned_hvac_log
     )
 
-    # 9) Ventilation
+    # 10) Ventilation
     add_ventilation_to_idf(
         idf=idf,
         building_row=building_row,
@@ -204,7 +219,7 @@ def create_idf_for_building(
         assigned_vent_log=assigned_vent_log
     )
 
-    # 10) Zone sizing
+    # 11) Zone sizing
     add_outdoor_air_and_zone_sizing_to_all_zones(
         idf=idf,
         building_row=building_row,
@@ -214,7 +229,7 @@ def create_idf_for_building(
         assigned_setzone_log=assigned_setzone_log
     )
 
-    # 11) Ground temperatures
+    # 12) Ground temperatures
     add_ground_temperatures(
         idf=idf,
         calibration_stage=calibration_stage,
@@ -223,7 +238,7 @@ def create_idf_for_building(
         assigned_groundtemp_log=assigned_groundtemp_log
     )
 
-    # 12) Output definitions
+    # 13) Output definitions
     if output_definitions is None:
         output_definitions = {
             "desired_variables": ["Facility Total Electric Demand Power", "Zone Air Temperature"],
@@ -262,6 +277,7 @@ def create_idfs_for_all_buildings(
     # partial user configs
     user_config_geom=None,
     user_config_lighting=None,
+    user_config_equipment=None,
     user_config_dhw=None,
     res_data=None,
     nonres_data=None,
@@ -290,6 +306,7 @@ def create_idfs_for_all_buildings(
     # A) Prepare dictionaries to store final picks for each module
     assigned_geom_log       = {}
     assigned_lighting_log   = {}
+    assigned_equip_log      = {}
     assigned_dhw_log        = {}
     assigned_fenez_log      = {}
     assigned_hvac_log       = {}
@@ -316,6 +333,9 @@ def create_idfs_for_all_buildings(
             # lighting
             user_config_lighting=user_config_lighting,
             assigned_lighting_log=assigned_lighting_log,
+            # electric equipment
+            user_config_equipment=user_config_equipment,
+            assigned_equip_log=assigned_equip_log,
             # DHW
             user_config_dhw=user_config_dhw,
             assigned_dhw_log=assigned_dhw_log,
@@ -421,6 +441,7 @@ def create_idfs_for_all_buildings(
         # Write CSV logs for assigned parameters
         _write_geometry_csv(assigned_geom_log, logs_base_dir)
         _write_lighting_csv(assigned_lighting_log, logs_base_dir)
+        _write_equipment_csv(assigned_equip_log, logs_base_dir)
         _write_fenestration_csv(assigned_fenez_log, logs_base_dir)
         _write_dhw_csv(assigned_dhw_log, logs_base_dir)
         _write_hvac_csv(assigned_hvac_log, logs_base_dir)
@@ -547,4 +568,20 @@ def _write_vent_csv(assigned_vent_log, logs_base_dir):
         return
     df = pd.DataFrame(rows)
     out_path = _make_assigned_path("assigned_ventilation.csv", logs_base_dir)
+    df.to_csv(out_path, index=False)
+
+
+def _write_equipment_csv(assigned_equip_log, logs_base_dir):
+    rows = []
+    for bldg_id, param_dict in assigned_equip_log.items():
+        for param_name, param_val in param_dict.items():
+            rows.append({
+                "ogc_fid": bldg_id,
+                "param_name": param_name,
+                "assigned_value": param_val,
+            })
+    if not rows:
+        return
+    df = pd.DataFrame(rows)
+    out_path = _make_assigned_path("assigned_equipment.csv", logs_base_dir)
     df.to_csv(out_path, index=False)

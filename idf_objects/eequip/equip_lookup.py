@@ -21,10 +21,9 @@ equip_lookup = {
         # ===============================
         "Residential": {
             "Corner House": {
-                # A hypothetical range for typical equipment loads
                 "EQUIP_WM2_range": (3.0, 5.0),
-                "tD_range": (400, 600),  # daytime usage hours
-                "tN_range": (100, 200)   # nighttime usage hours
+                "tD_range": (400, 600),
+                "tN_range": (100, 200)
             },
             "Apartment": {
                 "EQUIP_WM2_range": (2.0, 4.0),
@@ -40,16 +39,36 @@ equip_lookup = {
                 "EQUIP_WM2_range": (4.0, 6.0),
                 "tD_range": (500, 700),
                 "tN_range": (200, 300)
+            },
+            "Two-and-a-half-story House": {
+                "EQUIP_WM2_range": (4.0, 6.0),
+                "tD_range": (500, 700),
+                "tN_range": (200, 300)
             }
         },
         # ===============================
         # 2) NON-RESIDENTIAL (example sub-types)
         # ===============================
         "Non-Residential": {
-            "Office Function": {
+            "Meeting Function": {
                 "EQUIP_WM2_range": (8.0, 10.0),
                 "tD_range": (2000, 2200),
                 "tN_range": (300, 400)
+            },
+            "Healthcare Function": {
+                "EQUIP_WM2_range": (10.0, 12.0),
+                "tD_range": (3000, 4000),
+                "tN_range": (600, 800)
+            },
+            "Sport Function": {
+                "EQUIP_WM2_range": (9.0, 11.0),
+                "tD_range": (2500, 2700),
+                "tN_range": (500, 700)
+            },
+            "Cell Function": {
+                "EQUIP_WM2_range": (8.0, 10.0),
+                "tD_range": (3500, 3800),
+                "tN_range": (800, 1000)
             },
             "Retail Function": {
                 "EQUIP_WM2_range": (10.0, 12.0),
@@ -60,6 +79,21 @@ equip_lookup = {
                 "EQUIP_WM2_range": (12.0, 15.0),
                 "tD_range": (3000, 3200),
                 "tN_range": (600, 800)
+            },
+            "Accommodation Function": {
+                "EQUIP_WM2_range": (6.0, 8.0),
+                "tD_range": (2500, 3000),
+                "tN_range": (600, 800)
+            },
+            "Office Function": {
+                "EQUIP_WM2_range": (8.0, 10.0),
+                "tD_range": (2000, 2200),
+                "tN_range": (300, 400)
+            },
+            "Education Function": {
+                "EQUIP_WM2_range": (7.0, 9.0),
+                "tD_range": (1500, 1700),
+                "tN_range": (200, 400)
             },
             "Other Use Function": {
                 "EQUIP_WM2_range": (5.0, 8.0),
@@ -93,13 +127,33 @@ equip_lookup = {
                 "EQUIP_WM2_range": (5.0, 5.0),
                 "tD_range": (600, 600),
                 "tN_range": (250, 250)
+            },
+            "Two-and-a-half-story House": {
+                "EQUIP_WM2_range": (5.0, 5.0),
+                "tD_range": (600, 600),
+                "tN_range": (250, 250)
             }
         },
         "Non-Residential": {
-            "Office Function": {
+            "Meeting Function": {
                 "EQUIP_WM2_range": (9.0, 9.0),
                 "tD_range": (2100, 2100),
                 "tN_range": (350, 350)
+            },
+            "Healthcare Function": {
+                "EQUIP_WM2_range": (11.0, 11.0),
+                "tD_range": (3500, 3500),
+                "tN_range": (700, 700)
+            },
+            "Sport Function": {
+                "EQUIP_WM2_range": (10.0, 10.0),
+                "tD_range": (2600, 2600),
+                "tN_range": (600, 600)
+            },
+            "Cell Function": {
+                "EQUIP_WM2_range": (9.0, 9.0),
+                "tD_range": (3600, 3600),
+                "tN_range": (900, 900)
             },
             "Retail Function": {
                 "EQUIP_WM2_range": (11.0, 11.0),
@@ -110,6 +164,21 @@ equip_lookup = {
                 "EQUIP_WM2_range": (13.0, 13.0),
                 "tD_range": (3100, 3100),
                 "tN_range": (700, 700)
+            },
+            "Accommodation Function": {
+                "EQUIP_WM2_range": (7.0, 7.0),
+                "tD_range": (2700, 2700),
+                "tN_range": (700, 700)
+            },
+            "Office Function": {
+                "EQUIP_WM2_range": (9.0, 9.0),
+                "tD_range": (2100, 2100),
+                "tN_range": (350, 350)
+            },
+            "Education Function": {
+                "EQUIP_WM2_range": (8.0, 8.0),
+                "tD_range": (1600, 1600),
+                "tN_range": (300, 300)
             },
             "Other Use Function": {
                 "EQUIP_WM2_range": (6.0, 6.0),
