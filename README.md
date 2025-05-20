@@ -16,8 +16,10 @@ This repository automates the entire process of creating, running, and post-proc
 - **Sensitivity & Surrogate Methods**  
   Perform Morris or Sobol analyses with SALib, or build Random Forest–based surrogate models to speed up parametric explorations.
 
-- **Calibration Approaches**  
+- **Calibration Approaches**
   Random search, genetic algorithms, or Bayesian optimization to match real data, producing best-fit parameter sets.
+- **Electric Equipment Modeling**
+  Dedicated support for building-level ELECTRICEQUIPMENT objects with schedule generation and scenario workflows.
 
 - **API & Job Management**  
   A Flask-based service that orchestrates “jobs” via a concurrency-limited queue. Each job’s logs can be streamed live, canceled, or retrieved for final outputs.
@@ -26,8 +28,8 @@ This repository automates the entire process of creating, running, and post-proc
 
 ## Major Modules
 
-1. **Core Packages**  
-   - **`geomz`, `fenez`, `DHW`, `HVAC`, `ventilation`, `Elec`, `setzone`, etc.**  
+1. **Core Packages**
+   - **`geomz`, `fenez`, `DHW`, `HVAC`, `ventilation`, `Elec`, `eequip`, `setzone`, etc.**
      Each folder configures a specific aspect of building energy modeling:
        - Default lookup dictionaries (WWR ranges, R-values, etc.).
        - Functions to apply user/Excel/JSON overrides.
