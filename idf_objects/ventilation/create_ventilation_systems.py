@@ -66,7 +66,11 @@ def create_ventilation_system(
     infiltration_sched_name: str = "AlwaysOnSched",
     ventilation_sched_name: str = "VentSched_DayNight",  # Used for ZoneVentilation and IdealLoads Availability
     # --- Infiltration modelling ---
+<<<<<<< HEAD
     infiltration_model: str = "weather",  # "constant" or "weather"
+=======
+    infiltration_model: str = "constant",  # "constant" or "weather"
+>>>>>>> bae532a25f709652711511a09797a62264a27de3
     typical_delta_t: float = 10.0,
     typical_wind: float = 3.0,
     # --- Strategy for picking from ranges (e.g., fan eff from SYSTEMS_CONFIG) ---
