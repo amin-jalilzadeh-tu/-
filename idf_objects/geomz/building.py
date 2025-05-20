@@ -62,6 +62,54 @@ def create_building_with_roof_type(
 
 
 
+    # ------------------------------------------------
+    # Approach A: Reconcile total height & floors
+    # ------------------------------------------------
+    bldg_func = building_row.get("building_function", "").lower()
+
+    # Decide typical min/max floor heights per function
+    if "residential" in bldg_func:
+        typical_floor_height_min = 2.5
+        typical_floor_height_max = 4.0
+    else:
+        # e.g. non-res might allow taller floors
+        typical_floor_height_min = 3.0
+        typical_floor_height_max = 6.0
+
+    # implied floor height
+    implied_floor_height = gem_hoogte / num_floors
+
+    # If each floor is taller than max => increase floors
+    if implied_floor_height > typical_floor_height_max:
+        new_floors = int(round(gem_hoogte / typical_floor_height_max))
+        if new_floors < 1:
+            new_floors = 1
+        num_floors = new_floors
+
+    # Recompute after possible update above
+    implied_floor_height = gem_hoogte / num_floors
+
+    # If each floor is shorter than min => reduce floors (only if floors>1)
+    if implied_floor_height < typical_floor_height_min and num_floors > 1:
+        new_floors = int(round(gem_hoogte / typical_floor_height_min))
+        if new_floors < 1:
+            new_floors = 1
+        num_floors = new_floors
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     if wall_height is None:
         if gem_hoogte is not None:

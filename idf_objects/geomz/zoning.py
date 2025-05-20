@@ -196,9 +196,9 @@ def create_zones_with_perimeter_depth(
           - anything else => "Outdoors"
         """
         e_lower = e.lower().strip()
-        if e_lower == "Facade":
+        if e_lower == "facade":
             return "Outdoors"
-        elif e_lower == "Shared":
+        elif e_lower == "shared":
             return "Adiabatic"
         else:
             return "Outdoors"
