@@ -1,1400 +1,977 @@
-File: D:\Documents\energy_cluster_gnn\src\visualization.py
+File: D:\Documents\E_Plus_2030_py\idf_objects\geomz\assign_geometry_values.py
 ============================================================
-# src/visualization.py
+# geomz/assign_geometry_values.py
 
-import torch
-import numpy as np
-import pandas as pd
-import os
-import logging
-import time
-import imageio.v2 as imageio # Use v2 for consistent API
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-import seaborn as sns
-from sklearn.preprocessing import StandardScaler # <-- ADD THIS LINE
-from sklearn.manifold import TSNE
-from tqdm import tqdm # For progress bar
-from .datasets import SpatioTemporalGraphDataset
-# src/visualization.py
-# ... other imports ...
-from src.evaluation import format_cluster_assignments # <-- ADD THIS LINE (or uncomment if it exists)
+import random
+from .geometry_lookup import geometry_lookup
+from .geometry_overrides_from_excel import pick_geom_params_from_rules
 
-# Setup basic logging
-# ... rest of the file ...
-# Import helper from evaluation if needed (or redefine)
-# from src.evaluation import format_cluster_assignments
 
-# Setup basic logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-# --- Plotting Functions ---
-
-def plot_cluster_evolution_gif(config: dict, cluster_assign_df: pd.DataFrame, static_features_df: pd.DataFrame):
+def find_geom_overrides(building_id, building_type, user_config):
     """
-    Generates a GIF showing cluster assignments on a map over time.
-
-    Args:
-        config (dict): Configuration dictionary.
-        cluster_assign_df (pd.DataFrame): Long-format DataFrame with columns
-                                          ['time_index', 'building_id', 'cluster_id'].
-        static_features_df (pd.DataFrame): DataFrame with static features, including 'lat', 'lon',
-                                            indexed by building_id (as string).
+    Returns any matching rows from user_config for the given building_id / building_type.
+    Each override can define:
+      - building_id (exact match, if provided)
+      - building_type (exact match, if provided)
+      - param_name in ["perimeter_depth", "has_core"]
+      - min_val, max_val (for numeric overrides)
+      - fixed_value (for boolean or "lock" numeric)
     """
-    logging.info("Generating cluster evolution GIF...")
-    start_time = time.time()
+    matches = []
+    for row in (user_config or []):
+        # Match building_id if specified
+        if "building_id" in row:
+            if row["building_id"] != building_id:
+                continue
+        # Match building_type if specified
+        if "building_type" in row:
+            if row["building_type"] != building_type:
+                continue
+        matches.append(row)
+    return matches
 
-    results_dir = config['SCENARIO_RESULTS_DIR']
-    plot_dir = os.path.join(results_dir, 'plots')
-    gif_path = os.path.join(plot_dir, 'cluster_evolution.gif')
-    temp_frame_dir = os.path.join(plot_dir, 'temp_frames')
-    os.makedirs(temp_frame_dir, exist_ok=True)
 
-    # Merge coordinates
-    static_features_df.index = static_features_df.index.astype(str) # Ensure index is string
-    cluster_assign_df['building_id'] = cluster_assign_df['building_id'].astype(str)
-    plot_data = pd.merge(cluster_assign_df, static_features_df[['lat', 'lon']],
-                         left_on='building_id', right_index=True, how='left')
+def pick_val_with_range(
+    rng_tuple,
+    strategy="A",
+    log_dict=None,      # e.g. assigned_geom_log[bldg_id]
+    param_name=None
+):
+    """
+    rng_tuple = (min_val, max_val)
+    strategy  = "A" => midpoint
+                "B" => random uniform
+                else => pick min_val
+    log_dict  => dictionary for logging (if not None)
+    param_name=> e.g. "perimeter_depth"
 
-    if plot_data[['lat', 'lon']].isnull().values.any():
-        missing_coords = plot_data[plot_data['lat'].isnull()]['building_id'].unique()
-        logging.warning(f"Missing coordinates for some buildings: {missing_coords[:10]}... These will not be plotted.")
-        plot_data.dropna(subset=['lat', 'lon'], inplace=True)
+    We log both the range and the final chosen value:
+       log_dict["perimeter_depth_range"] = (2.0, 3.0)
+       log_dict["perimeter_depth"]       = 2.45
+    """
+    min_v, max_v = rng_tuple
 
-    if plot_data.empty:
-        logging.error("No data available for plotting after merging coordinates.")
-        return
-
-    # Determine time steps and clusters
-    time_indices = sorted(plot_data['time_index'].unique())
-    num_clusters = config.get('NUM_CLUSTERS_K', 6)
-    colors = cm.get_cmap('viridis', num_clusters) # Use a consistent colormap
-
-    # Determine plotting frequency (plot every 'n' steps to limit frames)
-    plot_every_n_steps = config.get('VIZ_GIF_PLOT_EVERY_N_STEPS', max(1, len(time_indices) // 100)) # Aim for ~100 frames max
-    plot_time_indices = time_indices[::plot_every_n_steps]
-
-    frame_paths = []
-    logging.info(f"Generating {len(plot_time_indices)} frames for GIF (plotting every {plot_every_n_steps} steps)...")
-    pbar_gif = tqdm(plot_time_indices, desc="Generating GIF Frames", leave=False, unit="frame")
-
-    for t_idx in pbar_gif:
-        frame_path = os.path.join(temp_frame_dir, f"frame_{t_idx:05d}.png")
-        data_t = plot_data[plot_data['time_index'] == t_idx]
-
-        if data_t.empty:
-             logging.warning(f"No data points found for time index {t_idx}, skipping frame.")
-             continue
-
-        fig, ax = plt.subplots(figsize=(10, 8))
-        scatter = ax.scatter(data_t['lon'], data_t['lat'],
-                           c=data_t['cluster_id'],
-                           cmap=colors,
-                           vmin=0, vmax=num_clusters - 1, # Ensure consistent color scale
-                           s=20, alpha=0.8)
-
-        # Create legend (optional, can be slow/cluttered)
-        # handles, _ = scatter.legend_elements(prop="colors", alpha=0.6)
-        # legend_labels = [f"Cluster {i}" for i in range(num_clusters)]
-        # ax.legend(handles, legend_labels, title="Clusters", bbox_to_anchor=(1.05, 1), loc='upper left')
-
-        # Use timestamp if available, otherwise use index
-        timestamp = pd.to_datetime(f"{t_idx * 15 // 60:02d}:{t_idx * 15 % 60:02d}:00", format='%H:%M:%S').strftime('%H:%M:%S') if 'timestamp' not in data_t.columns else data_t['timestamp'].iloc[0]
-        ax.set_title(f"Building Clusters at Time: {timestamp} (Index: {t_idx})")
-        ax.set_xlabel("Longitude")
-        ax.set_ylabel("Latitude")
-        ax.grid(True, linestyle='--', alpha=0.5)
-        plt.tight_layout()
-        plt.savefig(frame_path)
-        plt.close(fig)
-        frame_paths.append(frame_path)
-
-    # Create GIF
-    if frame_paths:
-        logging.info(f"Saving GIF to {gif_path}...")
-        try:
-            imageio.mimsave(gif_path, [imageio.imread(fp) for fp in frame_paths],
-                            duration=config.get('VIZ_GIF_FRAME_DURATION', 0.3), # Duration per frame in seconds
-                            loop=0) # Loop indefinitely
-            logging.info("GIF saved successfully.")
-        except Exception as e:
-             logging.error(f"Failed to create GIF: {e}")
-
-        # Clean up temporary frames
-        try:
-            for fp in frame_paths:
-                os.remove(fp)
-            os.rmdir(temp_frame_dir)
-            logging.info("Cleaned up temporary frame files.")
-        except Exception as e:
-            logging.warning(f"Could not remove temporary frame files: {e}")
+    if strategy == "A":         # midpoint
+        chosen = (min_v + max_v) / 2.0
+    elif strategy == "B":       # random uniform
+        chosen = random.uniform(min_v, max_v)
     else:
-        logging.warning("No frames generated for GIF.")
+        chosen = min_v          # fallback => min
 
-    end_time = time.time()
-    logging.info(f"GIF generation finished. Duration: {end_time - start_time:.2f} seconds")
+    if log_dict is not None and param_name is not None:
+        log_dict[f"{param_name}_range"] = (min_v, max_v)
+        log_dict[param_name] = chosen
 
-def plot_evaluation_summary(config: dict, metrics_dict: dict):
+    return chosen
+
+
+def assign_geometry_values(
+    building_row,
+    calibration_stage="pre_calibration",
+    strategy="A",
+    random_seed=None,
+    user_config=None,         # optional list of partial overrides from JSON
+    assigned_geom_log=None,   # dictionary for logging
+    excel_rules=None          # optional excel-based geometry rules
+):
     """
-    Creates a bar chart summarizing the main evaluation metrics.
-
-    Args:
-        config (dict): Configuration dictionary.
-        metrics_dict (dict): Dictionary containing averaged evaluation metrics.
+    1) Identify building_function => "residential" or "non_residential".
+    2) Identify sub-type => read "residential_type" or "non_residential_type".
+    3) Start from geometry_lookup[ building_function ][ sub_type ][ calibration_stage ] => param_dict
+       e.g. { "perimeter_depth_range": (2.0,3.0), "has_core": False }
+    4) If excel_rules => override further (pick_geom_params_from_rules(...)).
+    5) If user_config => partial override for "perimeter_depth" or "has_core".
+       - If param_name="perimeter_depth" with min_val & max_val => update perimeter_depth_range.
+         If "fixed_value":true => interpret it as (min_val, min_val) => no randomness.
+       - If param_name="has_core" and fixed_value => set has_core = that boolean
+    6) We pick final perimeter_depth using pick_val_with_range(...).
+    7) Return a dictionary => {"perimeter_depth": X, "has_core": Y}.
+    8) Log final picks (and numeric range) in assigned_geom_log if provided.
     """
-    logging.info("Generating evaluation summary plot...")
-    plot_dir = os.path.join(config['SCENARIO_RESULTS_DIR'], 'plots')
-    save_path = os.path.join(plot_dir, 'evaluation_summary_bars.png')
 
-    # Select key metrics for plotting
-    plot_metrics = {
-        'Avg ARI': metrics_dict.get('avg_ari', np.nan),
-        'Avg NMI': metrics_dict.get('avg_nmi', np.nan),
-        'Avg Churn Rate': metrics_dict.get('avg_churn_rate', np.nan),
-        'Avg Cluster SSR': metrics_dict.get('avg_cluster_ssr', np.nan),
-        'Avg Silhouette': metrics_dict.get('avg_silhouette_score', np.nan),
-        'Feeder Violation': metrics_dict.get('avg_feeder_violation_rate', np.nan),
-        'Distance Violation': metrics_dict.get('avg_distance_violation_rate', np.nan),
-    }
-    # Filter out NaN values for plotting
-    plot_metrics = {k: v for k, v in plot_metrics.items() if pd.notna(v)}
-
-    if not plot_metrics:
-        logging.warning("No valid metrics found to plot in evaluation summary.")
-        return
-
-    try:
-        plt.figure(figsize=(12, 7))
-        keys = list(plot_metrics.keys())
-        values = list(plot_metrics.values())
-
-        bars = plt.bar(keys, values)
-        plt.ylabel("Metric Value")
-        plt.title(f"Evaluation Metric Summary - {config.get('SCENARIO_NAME', 'Unknown')}")
-        plt.xticks(rotation=45, ha='right')
-        plt.grid(axis='y', linestyle='--', alpha=0.7)
-        # Add values on top of bars
-        for bar in bars:
-             yval = bar.get_height()
-             plt.text(bar.get_x() + bar.get_width()/2.0, yval, f'{yval:.3f}', va='bottom', ha='center') # Adjust position as needed
-
-        plt.tight_layout()
-        plt.savefig(save_path)
-        plt.close()
-        logging.info(f"Saved evaluation summary plot to: {save_path}")
-    except Exception as e:
-        logging.error(f"Failed to generate evaluation summary plot: {e}")
-
-
-def plot_embedding_tsne(config: dict, embeddings: np.ndarray, labels: np.ndarray, time_index: int):
-    """
-    Generates a t-SNE plot of node embeddings for a specific time step.
-
-    Args:
-        config (dict): Configuration dictionary.
-        embeddings (np.ndarray): Node embeddings for the time step. Shape [num_nodes, embedding_dim].
-        labels (np.ndarray): Cluster labels for the nodes. Shape [num_nodes].
-        time_index (int): The time step index being plotted.
-    """
-    logging.info(f"Generating t-SNE plot for time step {time_index}...")
-    plot_dir = os.path.join(config['SCENARIO_RESULTS_DIR'], 'plots')
-    save_path = os.path.join(plot_dir, f'embedding_tsne_t{time_index:05d}.png')
-
-    n_nodes = embeddings.shape[0]
-    if n_nodes < 2:
-        logging.warning(f"Skipping t-SNE plot: Only {n_nodes} node(s) at time {time_index}.")
-        return
-    if len(np.unique(labels)) < 2:
-        logging.warning(f"Skipping t-SNE plot: Only 1 cluster found at time {time_index}.")
-        # Still plot if only one cluster? Maybe useful. Let's allow it.
-        # return
-
-    try:
-        # --- Optional: Scale embeddings before t-SNE ---
-        if config.get('SCALE_EMBEDDINGS_BEFORE_TSNE', True):
-             scaler = StandardScaler()
-             embeddings = scaler.fit_transform(embeddings)
-
-        # --- Apply t-SNE ---
-        tsne = TSNE(n_components=2,
-                    perplexity=min(30.0, n_nodes - 1.0), # Perplexity must be less than n_samples
-                    random_state=config.get('SEED', 42),
-                    n_iter=300, # Fewer iterations for faster plot
-                    init='pca', # PCA initialization is often faster and stabler
-                    learning_rate='auto') # Recommended setting
-        embeddings_2d = tsne.fit_transform(embeddings)
-
-        # --- Plot ---
-        plt.figure(figsize=(10, 8))
-        num_clusters = config.get('NUM_CLUSTERS_K', 6)
-        colors = cm.get_cmap('viridis', num_clusters)
-
-        scatter = plt.scatter(embeddings_2d[:, 0], embeddings_2d[:, 1],
-                              c=labels,
-                              cmap=colors,
-                              vmin=0, vmax=num_clusters - 1,
-                              s=20, alpha=0.8)
-
-        timestamp = pd.to_datetime(f"{time_index * 15 // 60:02d}:{time_index * 15 % 60:02d}:00", format='%H:%M:%S').strftime('%H:%M:%S')
-        plt.title(f"t-SNE of Node Embeddings at Time: {timestamp} (Index: {time_index})")
-        plt.xlabel("t-SNE Dimension 1")
-        plt.ylabel("t-SNE Dimension 2")
-        plt.grid(True, linestyle='--', alpha=0.5)
-        # Add colorbar legend
-        cbar = plt.colorbar(scatter, label='Cluster ID', ticks=range(num_clusters))
-
-        plt.tight_layout()
-        plt.savefig(save_path)
-        plt.close()
-        logging.info(f"Saved t-SNE plot to: {save_path}")
-
-    except Exception as e:
-        logging.error(f"Failed to generate t-SNE plot for time step {time_index}: {e}")
-
-
-# --- Main Visualization Runner ---
-
-def run_visualization(config: dict, cluster_assignments: dict, final_embeddings: torch.Tensor,
-                      evaluation_metrics: dict, dataset: SpatioTemporalGraphDataset):
-    """
-    Runs all visualization steps.
-
-    Args:
-        config (dict): Configuration dictionary.
-        cluster_assignments (dict): Clustering results {t: {node_id: cluster_id}}.
-        final_embeddings (torch.Tensor): Embeddings output from inference.
-        evaluation_metrics (dict): Dictionary of calculated evaluation metrics.
-        dataset (SpatioTemporalGraphDataset): Dataset object containing metadata.
-    """
-    logging.info(f"--- Starting Visualization Pipeline for Scenario: {config.get('SCENARIO_NAME', 'Unknown')} ---")
-
-    # --- Prepare Data ---
-    logging.info("Preparing data for visualization...")
-    num_timesteps = final_embeddings.shape[1]
-    # Convert assignments dict to DataFrame needed by GIF plotter
-    cluster_assign_df = format_cluster_assignments(cluster_assignments, dataset.node_ids, num_timesteps)
-
-    # Load static features for coordinates
-    static_features_path = os.path.join(config['PROCESSED_DATA_DIR'], 'processed_static_features.csv')
-    try:
-        static_features_df = pd.read_csv(static_features_path, index_col='building_id')
-    except Exception as e:
-        logging.error(f"Failed to load static features for visualization: {e}")
-        return # Cannot proceed without coordinates for GIF
-
-    # --- Generate Plots ---
-    # 1. Cluster Evolution GIF
-    if config.get('VIZ_GENERATE_GIF', True):
-         plot_cluster_evolution_gif(config, cluster_assign_df.copy(), static_features_df.copy())
-
-    # 2. Evaluation Summary Bar Chart
-    if config.get('VIZ_PLOT_SUMMARY', True):
-         plot_evaluation_summary(config, evaluation_metrics)
-
-    # 3. t-SNE plot for a specific time step (e.g., the middle one)
-    if config.get('VIZ_PLOT_TSNE', True):
-         tsne_time_index = num_timesteps // 2 # Plot the middle time step
-         try:
-             # Need smoothed embeddings for the t-SNE plot, as that's what was clustered
-             window_size = config.get('EMBEDDING_SMOOTHING_WINDOW_W', 1)
-             from src.clustering import smooth_embeddings # Import here or move smoother to utils
-             smoothed_embeddings_np = smooth_embeddings(final_embeddings, window_size)
-
-             embeddings_t = smoothed_embeddings_np[:, tsne_time_index, :]
-             labels_t_dict = cluster_assignments.get(tsne_time_index, {})
-             # Create labels array in the correct node order
-             labels_t = np.array([labels_t_dict.get(str(node_id), -1) for node_id in dataset.node_ids], dtype=int)
-
-             if -1 in labels_t:
-                  logging.warning(f"Missing cluster assignments for some nodes at t-SNE time index {tsne_time_index}.")
-
-             plot_embedding_tsne(config, embeddings_t, labels_t, tsne_time_index)
-
-         except Exception as e:
-             logging.error(f"Could not generate t-SNE plot: {e}")
-
-    # --- TODO: Add time series plots for metrics ---
-    # Needs evaluation.py to save/return time series metrics or recalculate here.
-    # plot_stability_timeseries(config, ...)
-    # plot_synergy_timeseries(config, ...)
-
-    logging.info(f"--- Visualization Pipeline Finished ---")
-
-
-# Example Usage (within main.py or for testing)
-if __name__ == '__main__':
-    # This block requires outputs from previous steps
-    logging.info("Testing visualization script standalone...")
-
-    # 1. Load Config (replace with actual loader)
-    config = {
-        'SCENARIO_NAME': 'Scenario_B_Feeder_Constraint', # Change to test others
-        'PROCESSED_DATA_DIR': os.path.join('..', 'data', 'processed'), # Adjust relative path
-        'RESULTS_DIR': os.path.join('..', 'results'),
-        'SCENARIO_RESULTS_DIR': os.path.join('..', 'results', 'Scenario_B_Feeder_Constraint'),# Adjust
-        'NUM_CLUSTERS_K': 5,
-        'VIZ_GIF_PLOT_EVERY_N_STEPS': 5, # Plot fewer frames for speed
-        'VIZ_GIF_FRAME_DURATION': 0.5,
-        'VIZ_GENERATE_GIF': True,
-        'VIZ_PLOT_SUMMARY': True,
-        'VIZ_PLOT_TSNE': True,
-        'EMBEDDING_SMOOTHING_WINDOW_W': 4, # Needed for t-SNE
-        'EMBEDDING_DIM': 16 # Example dimension
-    }
-    os.makedirs(os.path.join(config['SCENARIO_RESULTS_DIR'], 'plots'), exist_ok=True)
-
-    try:
-        # 2. Load dummy/real cluster assignments
-        assign_file = os.path.join(config['SCENARIO_RESULTS_DIR'], 'cluster_assignments.csv')
-        eval_file = os.path.join(config['SCENARIO_RESULTS_DIR'], 'evaluation_metrics.json')
-        static_file = os.path.join(config['PROCESSED_DATA_DIR'], 'processed_static_features.csv')
-
-        if not all(os.path.exists(f) for f in [assign_file, eval_file, static_file]):
-             print(f"Prerequisite file(s) not found. Ensure clustering and evaluation ran.")
-        else:
-            cluster_assign_df_loaded = pd.read_csv(assign_file)
-            # Convert back to dict format expected by run_visualization
-            cluster_assignments_dict = {}
-            for name, group in cluster_assign_df_loaded.groupby('time_index'):
-                 cluster_assignments_dict[name] = group.set_index('building_id')['cluster_id'].astype(int).astype(str).to_dict() # Ensure string keys
-
-
-            with open(eval_file, 'r') as f:
-                 evaluation_metrics_loaded = json.load(f)
-
-            # Load dummy/real embeddings
-            num_nodes = cluster_assign_df_loaded['building_id'].nunique()
-            num_timesteps = cluster_assign_df_loaded['time_index'].max() + 1
-            dummy_embeddings = torch.randn(num_nodes, num_timesteps, config['EMBEDDING_DIM'])
-
-            # Load dummy/real dataset object
-            class DummyDataset:
-                 def __init__(self, assign_df):
-                     self.node_ids = assign_df['building_id'].astype(str).unique().tolist() # Use strings as per dict keys
-            dummy_dataset = DummyDataset(cluster_assign_df_loaded)
-
-            # 6. Run Visualization
-            run_visualization(config, cluster_assignments_dict, dummy_embeddings, evaluation_metrics_loaded, dummy_dataset)
-
-            print("\n--- Standalone Visualization Test Finished ---")
-            print(f"Check {os.path.join(config['SCENARIO_RESULTS_DIR'], 'plots')} for output images/GIF.")
-
-    except FileNotFoundError as e:
-         print(f"\nError: Prerequisite file not found. Details: {e}")
-    except Exception as e:
-        logging.exception(f"An error occurred during visualization test: {e}")
-------------------------------------------------------------
-
-File: D:\Documents\energy_cluster_gnn\src\training.py
-============================================================
-# src/training.py
-
-import torch
-import torch.optim as optim
-# from torch.utils.data import DataLoader # Ensure this is commented out/removed
-from torch_geometric.loader import DataLoader # Ensure this is the DataLoader being used
-import os
-import logging
-import time
-from tqdm import tqdm # For progress bar
-import torch.nn as nn
-import numpy as np # Added for standalone seed setting
-import random      # Added for standalone seed setting
-
-
-# Import from our source modules
-# Ensure these paths are correct relative to where this script is or adjust sys.path
-try:
-    from models import SpatioTemporalGNNEmbedder # Assuming models.py is in the same directory or src/
-    from loss_fn import ContrastiveLoss         # Assuming loss_fn.py is in the same directory or src/
-    from datasets import SpatioTemporalGraphDataset # Assuming datasets.py is in the same directory or src/
-except ImportError as e:
-     # Basic logging might not be configured yet if run standalone very early
-     print(f"[ERROR] Error importing project modules in training.py: {e}")
-     print("[ERROR] Ensure training.py is run in an environment where 'models', 'loss_fn', 'datasets' are accessible.")
-     # Depending on execution context, might need:
-     # import sys
-     # sys.path.append(os.path.dirname(__file__)) # Add src directory to path if needed
-
-# Setup basic logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-def train_epoch(model: nn.Module, dataloader: DataLoader, optimizer: optim.Optimizer,
-                loss_fn: nn.Module, device: torch.device, epoch: int, num_epochs: int) -> float:
-    """
-    Performs a single training epoch.
-
-    Args:
-        model: The PyTorch model to train.
-        dataloader: The PyG DataLoader providing training data batches (Data or Batch objects).
-        optimizer: The optimizer for updating model weights.
-        loss_fn: The loss function to calculate training loss.
-        device: The device (CPU or CUDA) to run training on.
-        epoch (int): Current epoch number (for logging).
-        num_epochs (int): Total number of epochs (for progress bar).
-
-    Returns:
-        float: The average training loss for the epoch.
-    """
-    model.train() # Set model to training mode
-    total_loss = 0.0
-    num_batches = 0 # Initialize batch count
-
-    # Progress bar setup using the PyG DataLoader
-    pbar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{num_epochs}", leave=True, unit="batch")
-
-    for batch in pbar:
-        num_batches += 1 # Increment batch count
-        try:
-            # PyG DataLoader handles moving Data/Batch objects correctly
-            batch = batch.to(device)
-        except Exception as e_move:
-            logging.error(f"Error moving batch to device: {e_move}. Skipping batch.")
-            continue # Skip this batch
-
-        optimizer.zero_grad()
-
-        try:
-            # Forward pass - Model expects a PyG Data or Batch object
-            embeddings = model(batch) # Output Shape: [num_nodes_in_batch, seq_len, embedding_dim]
-
-            # Calculate loss
-            # Loss function expects embeddings and edge_index from the batch object
-            # Ensure batch has edge_index attribute (should for PyG Data/Batch)
-            if not hasattr(batch, 'edge_index'):
-                 logging.error("Batch object missing 'edge_index'. Cannot compute loss. Skipping batch.")
-                 continue
-            loss = loss_fn(embeddings, batch.edge_index)
-
-            # Backward pass
-            loss.backward()
-
-            # Optimizer step
-            optimizer.step()
-
-            total_loss += loss.item()
-            pbar.set_postfix(loss=f"{loss.item():.4f}") # Update progress bar
-
-        except RuntimeError as e_mem:
-             if "CUDA out of memory" in str(e_mem):
-                 logging.error(f"CUDA out of memory during training step (Epoch {epoch+1}). Try reducing batch size if > 1, sequence length, or model size.")
-                 # Optionally: torch.cuda.empty_cache() # Might help, but often doesn't solve fundamental OOM
-                 raise e_mem # Reraise the error to stop training
-             else:
-                 logging.error(f"Runtime error during training step: {e_mem}. Skipping batch.")
-                 continue
-        except Exception as e_train:
-            logging.error(f"Error during training step (forward/loss/backward): {e_train}. Skipping batch.")
-            # Optionally raise e_train after logging if you want the script to stop
-            continue
-
-    avg_loss = total_loss / num_batches if num_batches > 0 else 0.0
-    pbar.close() # Close progress bar for the epoch
-    return avg_loss
-
-def train_model(config: dict, model: SpatioTemporalGNNEmbedder, dataset: SpatioTemporalGraphDataset) -> list:
-    """
-    Main function to train the Spatio-Temporal GNN model.
-
-    Args:
-        config (dict): Configuration dictionary.
-        model (SpatioTemporalGNNEmbedder): Initialized model instance.
-        dataset (SpatioTemporalGraphDataset): Initialized dataset instance.
-
-    Returns:
-        list: A list containing the average training loss for each epoch.
-    """
-    logging.info(f"--- Starting Model Training for Scenario: {config.get('SCENARIO_NAME', 'Unknown')} ---")
-    start_time = time.time()
-
-    # --- Setup Device ---
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-        gpu_index = torch.cuda.current_device()
-        gpu_name = torch.cuda.get_device_name(gpu_index)
-        logging.info(f"CUDA is available. Training on GPU {gpu_index}: {gpu_name}.")
+    # optional reproducibility
+    if random_seed is not None:
+        random.seed(random_seed)
+
+    bldg_id        = building_row.get("ogc_fid", 0)
+    bldg_function  = building_row.get("building_function", "residential").lower()
+    area           = building_row.get("area", 100.0)
+    perimeter      = building_row.get("perimeter", 40.0)
+
+    # 1) get sub-type
+    if bldg_function == "residential":
+        sub_type = building_row.get("residential_type", "Two-and-a-half-story House")
+        dict_for_function = geometry_lookup.get("residential", {}).get(sub_type, {})
     else:
-        device = torch.device("cpu")
-        logging.info("CUDA not available. Training on CPU.")
-    model.to(device)
+        sub_type = building_row.get("non_residential_type", "Office Function")
+        dict_for_function = geometry_lookup.get("non_residential", {}).get(sub_type, {})
 
-    # --- Setup PyG DataLoader ---
-    # The import at the top ensures this uses torch_geometric.loader.DataLoader
-    batch_size = config.get('TRAINING_BATCH_SIZE', 1)
-    # Consider adding a config option for num_workers, especially if data loading is slow
-    num_workers = config.get('DATALOADER_WORKERS', 0)
-    if batch_size != 1:
-        logging.warning(f"Configured BATCH_SIZE is {batch_size}. Ensure model/loss handle batches correctly.")
+    # 2) if calibration_stage not found => fallback
+    if calibration_stage not in dict_for_function:
+        param_dict = {
+            "perimeter_depth_range": (2.0, 3.0),
+            "has_core": False
+        }
+    else:
+        param_dict = dict_for_function[calibration_stage]
 
-    # Use PyG DataLoader here
-    dataloader = DataLoader(
-        dataset,
-        batch_size=batch_size,
-        shuffle=True, # Shuffle sequences each epoch
-        num_workers=num_workers, # Use configured num_workers
-        pin_memory=True if device.type == 'cuda' else False # Enable pin_memory for CUDA
+    # Start with these defaults
+    perimeter_depth_range = param_dict.get("perimeter_depth_range", (2.0, 3.0))
+    has_core_default      = param_dict.get("has_core", False)
+
+    # 3) If excel_rules => apply
+    if excel_rules:
+        rule_result = pick_geom_params_from_rules(
+            building_function=bldg_function,
+            building_type=sub_type,
+            area=area,
+            perimeter=perimeter,
+            all_rules=excel_rules,
+            calibration_stage=calibration_stage
+        )
+        if rule_result:
+            perimeter_depth_range = rule_result["perimeter_depth_range"]
+            core_val = rule_result["has_core_override"]
+            if core_val is not None:
+                has_core_default = core_val
+
+    # 4) Check user_config partial overrides
+    matched_rows = []
+    if user_config:
+        matched_rows = find_geom_overrides(bldg_id, sub_type, user_config)
+
+    for row in matched_rows:
+        pname = row.get("param_name", "")
+        if pname == "perimeter_depth":
+            mn = row.get("min_val")
+            mx = row.get("max_val")
+            if mn is not None and mx is not None:
+                # If "fixed_value": true => make it (mn, mn)
+                if row.get("fixed_value") is True:
+                    perimeter_depth_range = (mn, mn)
+                else:
+                    perimeter_depth_range = (mn, mx)
+
+        elif pname == "has_core":
+            val = row.get("fixed_value")
+            if val is not None:
+                has_core_default = bool(val)
+
+    # 5) Logging dict
+    if assigned_geom_log is not None and bldg_id not in assigned_geom_log:
+        assigned_geom_log[bldg_id] = {}
+    log_dict = assigned_geom_log[bldg_id] if assigned_geom_log and bldg_id else None
+
+    # 6) Pick final perimeter_depth
+    perimeter_depth = pick_val_with_range(
+        rng_tuple=perimeter_depth_range,
+        strategy=strategy,
+        log_dict=log_dict,
+        param_name="perimeter_depth"
     )
-    logging.info(f"PyG DataLoader created with batch_size={batch_size}, shuffle=True, num_workers={num_workers}, pin_memory={dataloader.pin_memory}.")
 
-    # --- Setup Optimizer ---
-    lr = config.get('LEARNING_RATE', 0.001)
-    wd = config.get('WEIGHT_DECAY', 0.0001)
-    optimizer_name = config.get('OPTIMIZER', 'AdamW').lower()
+    # 7) has_core => store directly
+    if log_dict is not None:
+        log_dict["has_core"] = has_core_default
 
-    if optimizer_name == 'adamw':
-        optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=wd)
-    elif optimizer_name == 'adam':
-        optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
-    # Add other optimizers like SGD if needed
-    # elif optimizer_name == 'sgd':
-    #    optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=wd, momentum=config.get('MOMENTUM', 0.9))
-    else:
-        logging.warning(f"Unsupported optimizer '{optimizer_name}', defaulting to AdamW.")
-        optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=wd)
-    logging.info(f"Optimizer: {optimizer_name.capitalize()}, LR: {lr}, Weight Decay: {wd}")
-
-    # --- Setup Loss Function ---
-    loss_fn_name = config.get('LOSS_FUNCTION', 'ContrastiveLoss')
-    if loss_fn_name == 'ContrastiveLoss':
-        loss_fn = ContrastiveLoss(config).to(device) # Move loss function to device
-    else:
-        # Add other potential loss functions here if needed
-        raise ValueError(f"Unsupported LOSS_FUNCTION specified in config: {loss_fn_name}")
-    logging.info(f"Loss Function: {loss_fn_name}")
-
-    # --- Training Loop ---
-    num_epochs = config.get('EPOCHS', 50)
-    logging.info(f"Starting training for {num_epochs} epochs on device: {device}")
-
-    training_losses = [] # Initialize list to store losses
-    try:
-        for epoch in range(num_epochs):
-            avg_train_loss = train_epoch(model, dataloader, optimizer, loss_fn, device, epoch, num_epochs)
-            training_losses.append(avg_train_loss) # Store loss
-            logging.info(f"Epoch {epoch+1}/{num_epochs} - Average Training Loss: {avg_train_loss:.6f}")
-
-            # --- Optional: Validation Step Placeholder ---
-            # if config.get('VALIDATION_ENABLED', False) and 'val_dataloader' in locals(): # Check if val_dataloader exists
-            #     # avg_val_loss = evaluate_epoch(model, val_dataloader, loss_fn, device) # Needs evaluate_epoch func
-            #     # logging.info(f"Epoch {epoch+1}/{num_epochs} - Average Validation Loss: {avg_val_loss:.6f}")
-            #     # Add logic for early stopping or saving best model based on val_loss
-            #     pass
-
-    except KeyboardInterrupt:
-         logging.warning("Training interrupted by user (KeyboardInterrupt). Saving current model state.")
-         # Save model even if interrupted
-    except Exception as e:
-         logging.exception(f"An error occurred during the training loop: {e}")
-         # Save model even if there was an error during training? Optional.
-         # Consider re-raising the exception if the pipeline should stop: raise e
-    finally:
-         # --- Save Final Model (always attempt unless disabled) ---
-         if config.get('SAVE_MODEL', True):
-             model_save_dir = os.path.join(config['SCENARIO_RESULTS_DIR'], 'model')
-             os.makedirs(model_save_dir, exist_ok=True)
-             model_save_path = os.path.join(model_save_dir, 'final_model.pt')
-             try:
-                 # Move model back to CPU before saving state_dict for better compatibility
-                 model.to('cpu')
-                 torch.save(model.state_dict(), model_save_path)
-                 logging.info(f"Saved final model state dict to: {model_save_path}")
-                 # Move model back to original device if needed later (though training is done)
-                 # model.to(device)
-             except Exception as e_save:
-                 logging.error(f"Error saving model: {e_save}")
-
-         end_time = time.time()
-         training_duration = end_time - start_time
-         logging.info(f"--- Model Training Finished. Duration: {training_duration:.2f} seconds ---")
-
-    # Return the collected training losses
-    return training_losses
-
-# Example Usage (within main.py or for testing)
-if __name__ == '__main__':
-    # This block requires successful execution of previous steps:
-    # config_loader, data_processing, graph_construction, datasets, models, loss_fn
-    # And saved processed data/graph files.
-
-    logging.info("--- Testing training script standalone ---")
-
-    # --- CUDA Check ---
-    if torch.cuda.is_available():
-        print(f"Is CUDA available? {torch.cuda.is_available()}")
-        print(f"CUDA device count: {torch.cuda.device_count()}")
-        print(f"Current CUDA device: {torch.cuda.current_device()}")
-        print(f"CUDA device name: {torch.cuda.get_device_name(torch.cuda.current_device())}")
-    else:
-        print("CUDA not available.")
-
-    # 1. Load Config (replace with actual loader or use dummy)
-    # Using a dummy config here for demonstration
-    config_test = {
-        'SCENARIO_NAME': 'Scenario_Standalone_Test',
-        'PROCESSED_DATA_DIR': os.path.join('..', 'data', 'processed'),
-        'RESULTS_DIR': os.path.join('..', 'results'),
-        'SCENARIO_RESULTS_DIR': os.path.join('..', 'results', 'Scenario_Standalone_Test'),
-        'MODEL_NAME': 'GATLSTMEmbedder',
-        'INPUT_SEQ_LEN': 12,
-        'EPOCHS': 5,
-        'LEARNING_RATE': 0.005,
-        'OPTIMIZER': 'AdamW',
-        'WEIGHT_DECAY': 0.0001,
-        'LOSS_FUNCTION': 'ContrastiveLoss',
-        'CONTRASTIVE_MARGIN': 1.0,
-        'LOSS_EMBEDDING_SOURCE': 'last',
-        'NEGATIVE_SAMPLING_STRATEGY': 'random',
-        'SAVE_MODEL': True,
-        'DATALOADER_WORKERS': 0, # Set based on your system, 0 often safest for testing
-        'TRAINING_BATCH_SIZE': 1, # Keep as 1 for this dataset type
-        'LSTM_HIDDEN_DIM': 32, 'LSTM_LAYERS': 1, 'GNN_HIDDEN_DIM': 32,
-        'GNN_LAYERS': 1, 'GNN_HEADS': 2, 'EMBEDDING_DIM': 16, 'DROPOUT_RATE': 0.1,
-        'SEED': 42
+    # 8) Return final dictionary
+    result = {
+        "perimeter_depth": perimeter_depth,
+        "has_core": has_core_default
     }
-     # Set seed if needed for standalone
-    random_seed = config_test.get('SEED', 42)
-    random.seed(random_seed)
-    np.random.seed(random_seed)
-    torch.manual_seed(random_seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(random_seed)
+    return result
 
-     # Ensure results dir exists
-    os.makedirs(config_test['SCENARIO_RESULTS_DIR'], exist_ok=True)
-    os.makedirs(os.path.join(config_test['SCENARIO_RESULTS_DIR'], 'model'), exist_ok=True)
-
-    try:
-        # 2. Initialize Dataset (needs processed files)
-        # Attempt to load data for the test scenario or fallback
-        dataset_scenario = config_test['SCENARIO_NAME']
-        graph_path = os.path.join(config_test['PROCESSED_DATA_DIR'], f"graph_{dataset_scenario}.pt")
-        dyn_path = os.path.join(config_test['PROCESSED_DATA_DIR'], 'processed_dynamic_features.parquet')
-
-        if not os.path.exists(graph_path) or not os.path.exists(dyn_path):
-             logging.warning(f"Data for {dataset_scenario} not found. Trying 'Scenario_B_Feeder_Constraint' data for standalone test.")
-             config_test['SCENARIO_NAME'] = 'Scenario_B_Feeder_Constraint' # Fallback
-             # Recheck paths after fallback
-             graph_path = os.path.join(config_test['PROCESSED_DATA_DIR'], f"graph_{config_test['SCENARIO_NAME']}.pt")
-             if not os.path.exists(graph_path) or not os.path.exists(dyn_path):
-                  raise FileNotFoundError(f"Required processed data not found for fallback scenario either: {graph_path} or {dyn_path}")
-
-
-        logging.info(f"--- Standalone: Initializing Dataset using config for {config_test['SCENARIO_NAME']} ---")
-        dataset = SpatioTemporalGraphDataset(config_test)
-
-        # 3. Initialize Model (get feature dims from dataset/graph)
-        static_dim = dataset.x_static.shape[1]
-        dynamic_dim = dataset.dynamic_features.shape[2]
-        model_instance = SpatioTemporalGNNEmbedder(config_test, static_feature_dim=static_dim, dynamic_feature_dim=dynamic_dim)
-        logging.info(f"--- Standalone: Model Initialized ---")
-
-        # 4. Run Training and capture losses
-        logging.info(f"--- Standalone: Starting Training ---")
-        epoch_losses = train_model(config_test, model_instance, dataset)
-
-        print("\n--- Standalone Training Test Finished ---")
-        if epoch_losses: # Check if training actually ran
-            print(f"Average Training Losses per Epoch: {[f'{l:.6f}' for l in epoch_losses]}")
-        else:
-            print("Training did not complete any epochs successfully.")
-        if config_test.get('SAVE_MODEL', True):
-             print(f"Final model state dict saved in: {os.path.join(config_test['SCENARIO_RESULTS_DIR'], 'model')}")
-
-    except FileNotFoundError as e:
-        print(f"\nError: Prerequisite file not found. Ensure data_processing.py and graph_construction.py ran successfully. Details: {e}")
-    except Exception as e:
-        logging.exception(f"An error occurred during training standalone test: {e}")
 ------------------------------------------------------------
 
-File: D:\Documents\energy_cluster_gnn\src\inference.py
+File: D:\Documents\E_Plus_2030_py\idf_objects\geomz\building.py
 ============================================================
-# src/inference.py
+# geomz/building.py
 
-import torch
-# from torch.utils.data import DataLoader # <-- REMOVE Standard DataLoader
-from torch_geometric.loader import DataLoader # <-- ADD PyG DataLoader
-import os
-import logging
-import time
-import numpy as np
-from tqdm import tqdm # For progress bar
-
-# Import from our source modules
-# Ensure these paths are correct relative to where this script is or adjust sys.path
-try:
-    from models import SpatioTemporalGNNEmbedder # Assuming models.py is in the same directory or src/
-    from datasets import SpatioTemporalGraphDataset # Assuming datasets.py is in the same directory or src/
-except ImportError as e:
-     # Basic logging might not be configured yet if run standalone very early
-     print(f"[ERROR] Error importing project modules in inference.py: {e}")
-     print("[ERROR] Ensure inference.py is run in an environment where 'models', 'datasets' are accessible.")
-
-# Setup basic logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-def generate_embeddings(config: dict, model: SpatioTemporalGNNEmbedder, dataset: SpatioTemporalGraphDataset) -> torch.Tensor:
-    """
-    Generates node embeddings for the entire time series using a trained model.
-
-    Args:
-        config (dict): Configuration dictionary.
-        model (SpatioTemporalGNNEmbedder): Initialized model instance (weights should be loaded).
-        dataset (SpatioTemporalGraphDataset): Initialized dataset instance.
-
-    Returns:
-        torch.Tensor: A tensor containing node embeddings for all nodes over all
-                      original time steps. Shape: [num_nodes, num_timesteps, embedding_dim]
-    """
-    logging.info(f"--- Starting Embedding Generation for Scenario: {config.get('SCENARIO_NAME', 'Unknown')} ---")
-    start_time = time.time()
-
-    # --- Setup Device ---
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-        gpu_index = torch.cuda.current_device()
-        gpu_name = torch.cuda.get_device_name(gpu_index)
-        logging.info(f"CUDA is available. Running inference on GPU {gpu_index}: {gpu_name}.")
-    else:
-        device = torch.device("cpu")
-        logging.info("CUDA not available. Running inference on CPU.")
-
-    # --- Load Trained Model Weights ---
-    # Ensure the model passed in is already initialized (architecture only)
-    model_save_dir = os.path.join(config['SCENARIO_RESULTS_DIR'], 'model')
-    model_load_path = os.path.join(model_save_dir, 'final_model.pt') # Or 'best_model.pt'
-
-    if not os.path.exists(model_load_path):
-        logging.error(f"Trained model file not found at: {model_load_path}. Run training first.")
-        raise FileNotFoundError(f"Model file not found: {model_load_path}")
-
-    try:
-        # Load state dict onto the correct device directly
-        # Set weights_only=True for security unless you trust the source implicitly
-        model.load_state_dict(torch.load(model_load_path, map_location=device, weights_only=True))
-        logging.info(f"Loaded trained model weights from: {model_load_path}")
-    except Exception as e:
-        logging.error(f"Error loading model weights: {e}")
-        raise
-
-    model.to(device) # Ensure model is on the correct device after loading weights
-    model.eval() # Set model to evaluation mode (important!)
-
-    # --- Setup PyG DataLoader ---
-    # Use batch_size=1 for full graph processing. Shuffle=False for sequential order.
-    # The import at the top ensures this uses torch_geometric.loader.DataLoader
-    num_workers = config.get('DATALOADER_WORKERS', 0)
-    dataloader = DataLoader( # This is now PyG DataLoader
-        dataset,
-        batch_size=1, # Process one sequence start index at a time
-        shuffle=False, # Important for reconstructing time series in order
-        num_workers=num_workers,
-        pin_memory=True if device.type == 'cuda' else False
-    )
-    logging.info(f"PyG DataLoader created for inference (shuffle=False, num_workers={num_workers}, pin_memory={dataloader.pin_memory}).")
-
-    # --- Inference Loop & Reconstruction ---
-    num_nodes = dataset.num_nodes
-    num_timesteps = dataset.num_timesteps
-    seq_len = dataset.seq_len
-    embedding_dim = config.get('EMBEDDING_DIM') # Get from config
-    if embedding_dim is None:
-        raise ValueError("EMBEDDING_DIM not found in config.")
-
-
-    # Initialize tensors to store summed embeddings and counts for averaging overlaps
-    # Place these on CPU initially to avoid potential GPU memory overflow if num_timesteps is large
-    all_embeddings_sum = torch.zeros((num_nodes, num_timesteps, embedding_dim), dtype=torch.float32, device='cpu')
-    all_embeddings_counts = torch.zeros((num_nodes, num_timesteps, 1), dtype=torch.float32, device='cpu')
-
-    logging.info(f"Reconstructing full embedding tensor ({num_nodes} nodes, {num_timesteps} timesteps, {embedding_dim} dim)...")
-
-    with torch.no_grad(): # Disable gradient calculations for inference
-        pbar = tqdm(dataloader, desc="Generating Embeddings", leave=True, unit="sequence")
-        for i, batch in enumerate(pbar): # This loop should now work
-            # batch contains data for sequence starting at time index i
-            start_time_idx = i # Because shuffle=False and batch_size=1
-            end_time_idx = start_time_idx + seq_len
-
-            try:
-                batch = batch.to(device) # Move data to device
-            except Exception as e_move:
-                logging.error(f"Error moving batch {i} to device: {e_move}. Skipping.")
-                continue
-
-            try:
-                # Perform forward pass
-                # Output shape: [num_nodes, seq_len, embedding_dim]
-                output_embeddings_seq = model(batch)
-
-                # Add results to the sum and increment counts for the corresponding time window
-                # Move result to CPU before adding to avoid GPU memory issues if reconstruction tensor is large
-                all_embeddings_sum[:, start_time_idx:end_time_idx, :] += output_embeddings_seq.detach().cpu()
-                all_embeddings_counts[:, start_time_idx:end_time_idx, :] += 1.0
-
-            except Exception as e_infer:
-                 logging.error(f"Error during inference forward pass for batch {i}: {e_infer}. Skipping.")
-                 continue
-
-
-    # Calculate the average embeddings for overlapping windows
-    # Avoid division by zero for time steps that might not have been covered
-    all_embeddings_counts[all_embeddings_counts == 0] = 1.0 # Prevent division by zero
-    final_embeddings = all_embeddings_sum / all_embeddings_counts
-
-    end_time = time.time()
-    inference_duration = end_time - start_time
-    logging.info(f"--- Embedding Generation Finished. Duration: {inference_duration:.2f} seconds ---")
-    logging.info(f"Final embeddings tensor shape: {final_embeddings.shape}")
-
-    # Optional: Save Embeddings here if needed, e.g., for debugging or caching
-    # save_path = os.path.join(config['SCENARIO_RESULTS_DIR'], 'final_embeddings.pt')
-    # torch.save(final_embeddings, save_path)
-    # logging.info(f"Saved final embeddings to: {save_path}")
-
-    return final_embeddings
-
-
-# Example Usage (within main.py or for testing)
-if __name__ == '__main__':
-    # This block requires successful execution of previous steps and saved files
-    logging.info("--- Testing inference script standalone ---")
-
-     # --- CUDA Check ---
-    if torch.cuda.is_available():
-        print(f"Is CUDA available? {torch.cuda.is_available()}")
-        print(f"CUDA device count: {torch.cuda.device_count()}")
-        print(f"Current CUDA device: {torch.cuda.current_device()}")
-        print(f"CUDA device name: {torch.cuda.get_device_name(torch.cuda.current_device())}")
-    else:
-        print("CUDA not available.")
-
-
-    # 1. Load Config (replace with actual loader or use dummy)
-    config_test = {
-        'SCENARIO_NAME': 'Scenario_Standalone_Test', # Use a consistent name
-        'PROCESSED_DATA_DIR': os.path.join('..', 'data', 'processed'), # Adjust relative path
-        'RESULTS_DIR': os.path.join('..', 'results'),
-        'SCENARIO_RESULTS_DIR': os.path.join('..', 'results', 'Scenario_Standalone_Test'),# Adjust
-        'MODEL_NAME': 'GATLSTMEmbedder',
-        'INPUT_SEQ_LEN': 12, # Must match dataset used for training
-        'EMBEDDING_DIM': 16, # Must match trained model
-        'DATALOADER_WORKERS': 0,
-        # Add other params needed by model/dataset init if not loaded from graph/config
-        'LSTM_HIDDEN_DIM': 32, 'LSTM_LAYERS': 1, 'GNN_HIDDEN_DIM': 32,
-        'GNN_LAYERS': 1, 'GNN_HEADS': 2, 'DROPOUT_RATE': 0.1,
-        'SEED': 42
-    }
-    # Ensure results dir exists for model loading
-    os.makedirs(config_test['SCENARIO_RESULTS_DIR'], exist_ok=True)
-    os.makedirs(os.path.join(config_test['SCENARIO_RESULTS_DIR'], 'model'), exist_ok=True)
-
-    try:
-        # 2. Initialize Dataset (needs processed files)
-        # Attempt to load data for the test scenario or fallback
-        dataset_scenario = config_test['SCENARIO_NAME']
-        graph_path = os.path.join(config_test['PROCESSED_DATA_DIR'], f"graph_{dataset_scenario}.pt")
-        dyn_path = os.path.join(config_test['PROCESSED_DATA_DIR'], 'processed_dynamic_features.parquet')
-
-        if not os.path.exists(graph_path) or not os.path.exists(dyn_path):
-             logging.warning(f"Data for {dataset_scenario} not found. Trying 'Scenario_B_Feeder_Constraint' data for standalone test.")
-             config_test['SCENARIO_NAME'] = 'Scenario_B_Feeder_Constraint' # Fallback for test
-             graph_path = os.path.join(config_test['PROCESSED_DATA_DIR'], f"graph_{config_test['SCENARIO_NAME']}.pt")
-             if not os.path.exists(graph_path) or not os.path.exists(dyn_path):
-                  raise FileNotFoundError(f"Required processed data not found for fallback scenario either: {graph_path} or {dyn_path}")
-
-        logging.info(f"--- Standalone: Initializing Dataset using config for {config_test['SCENARIO_NAME']} ---")
-        dataset = SpatioTemporalGraphDataset(config_test)
-
-        # 3. Initialize Model architecture (weights will be loaded inside generate_embeddings)
-        static_dim = dataset.x_static.shape[1]
-        dynamic_dim = dataset.dynamic_features.shape[2]
-        # Create model instance but don't load weights here
-        model_instance = SpatioTemporalGNNEmbedder(config_test, static_feature_dim=static_dim, dynamic_feature_dim=dynamic_dim)
-        logging.info(f"--- Standalone: Model architecture initialized ---")
-
-        # 4. Generate Embeddings (needs trained model file)
-        model_path = os.path.join(config_test['SCENARIO_RESULTS_DIR'], 'model', 'final_model.pt')
-        # Create a dummy trained model if it doesn't exist FOR TESTING ONLY
-        if not os.path.exists(model_path):
-            logging.warning(f"Trained model not found at {model_path}. Creating a dummy saved model for testing.")
-            # Save the freshly initialized model state - this won't give meaningful embeddings
-            torch.save(model_instance.state_dict(), model_path)
-
-
-        logging.info(f"--- Standalone: Starting Embedding Generation ---")
-        final_embeddings = generate_embeddings(config_test, model_instance, dataset) # Pass the initialized model
-
-        print("\n--- Standalone Inference Test ---")
-        print(f"Generated embeddings shape: {final_embeddings.shape}")
-        # Check shape consistency
-        expected_shape = (dataset.num_nodes, dataset.num_timesteps, config_test['EMBEDDING_DIM'])
-        if final_embeddings.shape == expected_shape:
-             print("Inference test successful! Output shape is correct.")
-        else:
-             print(f"Error: Output shape mismatch! Expected {expected_shape}, Got {final_embeddings.shape}")
-
-
-    except FileNotFoundError as e:
-        print(f"\nError: Prerequisite file not found. Ensure previous steps (data processing, graph construction, training) ran successfully. Details: {e}")
-    except Exception as e:
-        logging.exception(f"An error occurred during inference standalone test: {e}")
-------------------------------------------------------------
-
-File: D:\Documents\energy_cluster_gnn\src\evaluation.py
-============================================================
-# src/evaluation.py
-
-import torch
-import numpy as np
+from .assign_geometry_values import assign_geometry_values
+from .geometry import compute_dimensions_from_area_perimeter, create_building_base_polygon
+from .zoning import create_zones_with_perimeter_depth, link_surfaces
+import math
 import pandas as pd
-import os
-import logging
-import time
-import json
-from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score, silhouette_score
-from scipy.spatial.distance import pdist, squareform # For distance feasibility check
-from tqdm import tqdm # For progress bar
-from datasets import SpatioTemporalGraphDataset
-from src.clustering import smooth_embeddings # <-- ADD THIS LINE
 
-# Setup basic logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-# --- Helper Functions ---
-
-def haversine_np(lon1, lat1, lon2, lat2):
+def create_building_with_roof_type(
+    idf,
+    area,
+    perimeter,
+    orientation,
+    building_row,
+    edge_types,
+    wall_height=None,
+    roof_slope_axis='length',
+    ridge_position=0.5,
+    calibration_stage="pre_calibration",
+    strategy="A",
+    random_seed=None,
+    user_config=None,
+    assigned_geom_log=None,
+    excel_rules=None
+):
     """
-    Calculate the great circle distance in kilometers between two points
-    on the earth (specified in decimal degrees). Vectorized numpy version.
-    Args:
-        lon1, lat1, lon2, lat2: Numpy arrays of coordinates in degrees.
+    Create building geometry in the IDF, multi-floor, optionally perimeter+core.
+    Now includes logic to link each new floor's Floor to the old floor's Ceiling.
     """
-    lon1, lat1, lon2, lat2 = map(np.radians, [lon1, lat1, lon2, lat2])
-    dlon = lon2 - lon1
-    dlat = lat2 - lat1
-    a = np.sin(dlat/2.0)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2.0)**2
-    c = 2 * np.arcsin(np.sqrt(a))
-    km = 6371 * c # Radius of earth in kilometers.
-    return km
 
-def format_cluster_assignments(cluster_assignments_dict: dict, node_ids: list, num_timesteps: int) -> pd.DataFrame:
-    """Converts the cluster assignment dictionary to a long-format DataFrame."""
-    records = []
-    node_id_map = {str(node_id): node_id for node_id in node_ids} # Ensure keys match if dict uses strings
-
-    for t in range(num_timesteps):
-        assignments_t = cluster_assignments_dict.get(t, {})
-        for node_id_str, cluster_id in assignments_t.items():
-            original_node_id = node_id_map.get(node_id_str) # Map back to original type if needed
-            if original_node_id is not None:
-                 records.append({
-                    'time_index': t,
-                    'building_id': original_node_id,
-                    'cluster_id': cluster_id
-                 })
-            else:
-                 logging.warning(f"Node ID '{node_id_str}' found in cluster assignments but not in dataset's node_ids at time {t}.")
-
-
-    if not records:
-         logging.warning("No records generated from cluster assignments dictionary.")
-         return pd.DataFrame(columns=['time_index', 'building_id', 'cluster_id'])
-
-    df = pd.DataFrame(records)
-    # Ensure correct types
-    df['time_index'] = df['time_index'].astype(int)
-    df['cluster_id'] = df['cluster_id'].astype(int)
-    return df
-
-
-# --- Metric Calculation Functions ---
-
-def calculate_synergy_metrics(cluster_assign_df: pd.DataFrame, dynamic_features_df: pd.DataFrame, config: dict) -> dict:
-    """Calculates synergy metrics (SSR, NetImport) for each cluster over time."""
-    logging.info("Calculating synergy metrics...")
-    if 'net_load' not in dynamic_features_df.columns:
-        logging.error("'net_load' column not found in dynamic features. Cannot calculate synergy.")
-        return {'avg_cluster_ssr': np.nan, 'avg_abs_cluster_net_import': np.nan, 'total_net_import': np.nan}
-
-    # Ensure correct types before merge
-    cluster_assign_df['building_id'] = cluster_assign_df['building_id'].astype(str)
-    dynamic_features_df['building_id'] = dynamic_features_df['building_id'].astype(str)
-    dynamic_features_df['time_index'] = dynamic_features_df.groupby('building_id').cumcount() # Assuming sorted by time in processing
-
-    # Merge assignments with net load data
-    try:
-        merged_df = pd.merge(cluster_assign_df, dynamic_features_df[['building_id', 'time_index', 'net_load']],
-                             on=['building_id', 'time_index'], how='left')
-    except KeyError as e:
-         logging.error(f"Merge error likely due to missing columns: {e}. Check DataFrames.")
-         logging.error(f"Cluster Assign Columns: {cluster_assign_df.columns}")
-         logging.error(f"Dynamic Features Columns: {dynamic_features_df.columns}")
-         raise
-
-    if merged_df['net_load'].isnull().any():
-         logging.warning("Missing net_load values after merging with cluster assignments. Synergy metrics might be affected.")
-         # Optionally fillna(0) or handle otherwise
-         merged_df['net_load'].fillna(0, inplace=True)
-
-    # Group by time and cluster
-    grouped = merged_df.groupby(['time_index', 'cluster_id'])
-
-    # Calculate metrics per group
-    synergy_results = pd.DataFrame()
-    synergy_results['net_import'] = grouped['net_load'].sum()
-    synergy_results['abs_net_load_sum'] = np.abs(synergy_results['net_import'])
-    synergy_results['sum_abs_net_load'] = grouped['net_load'].apply(lambda x: np.sum(np.abs(x)))
-
-    # Calculate Self-Sufficiency Ratio (SSR)
-    # SSR = 1 - |sum(net_load)| / sum(|net_load|)
-    # Handle division by zero if sum_abs_net_load is 0 (cluster perfectly balanced or empty)
-    synergy_results['ssr'] = 1 - (synergy_results['abs_net_load_sum'] / synergy_results['sum_abs_net_load'])
-    synergy_results['ssr'] = synergy_results['ssr'].fillna(1.0) # If sum_abs is 0, cluster is self-sufficient (SSR=1)
-    synergy_results['ssr'] = np.clip(synergy_results['ssr'], 0, 1) # Ensure SSR is between 0 and 1
-
-    # --- Aggregate Results ---
-    # Average SSR across all clusters and time steps (weighted by cluster activity?)
-    # Simple mean for now:
-    avg_cluster_ssr = synergy_results['ssr'].mean()
-    # Average absolute net import per cluster per time step
-    avg_abs_cluster_net_import = synergy_results['abs_net_load_sum'].mean()
-    # Total net import across all clusters and time (should equal total system net load)
-    total_net_import = synergy_results['net_import'].sum()
-
-    logging.info(f"Synergy Metrics: Avg SSR={avg_cluster_ssr:.4f}, Avg Abs Cluster Net Import={avg_abs_cluster_net_import:.2f}")
-    return {
-        'avg_cluster_ssr': avg_cluster_ssr,
-        'avg_abs_cluster_net_import': avg_abs_cluster_net_import,
-        'total_net_import': total_net_import
-        # Can also return the full synergy_results DataFrame if needed
-    }
-
-
-def calculate_stability_metrics(cluster_assign_df: pd.DataFrame, config: dict) -> dict:
-    """Calculates stability metrics (ARI, NMI, Churn Rate) over time."""
-    logging.info("Calculating stability metrics...")
-    num_timesteps = cluster_assign_df['time_index'].max() + 1
-    num_nodes = cluster_assign_df['building_id'].nunique()
-
-    if num_timesteps < 2:
-        logging.warning("Need at least 2 time steps for stability metrics. Skipping.")
-        return {'avg_ari': np.nan, 'avg_nmi': np.nan, 'avg_churn_rate': np.nan}
-
-    # Pivot to easily access labels per time step: [time_index, building_id] -> cluster_id
-    try:
-         pivot_labels = cluster_assign_df.pivot(index='time_index', columns='building_id', values='cluster_id')
-    except Exception as e:
-         logging.error(f"Error pivoting cluster assignments, likely duplicate time/building entries: {e}")
-         # Check for duplicates
-         duplicates = cluster_assign_df[cluster_assign_df.duplicated(subset=['time_index', 'building_id'], keep=False)]
-         logging.error(f"Duplicate assignments found:\n{duplicates}")
-         raise
-
-    aris = []
-    nmis = []
-    churns = []
-
-    for t in range(1, num_timesteps):
-        try:
-            labels_t = pivot_labels.loc[t].values
-            labels_t_minus_1 = pivot_labels.loc[t-1].values
-
-            # Handle potential NaNs if some buildings don't have assignments at certain times
-            valid_mask = ~np.isnan(labels_t) & ~np.isnan(labels_t_minus_1)
-            if np.sum(valid_mask) < 2: # Need at least 2 common points
-                continue
-
-            labels_t_valid = labels_t[valid_mask]
-            labels_t_minus_1_valid = labels_t_minus_1[valid_mask]
-
-            if len(np.unique(labels_t_valid)) < 2 or len(np.unique(labels_t_minus_1_valid)) < 2:
-                # ARI/NMI undefined if all points in one cluster
-                 ari = 1.0 if np.array_equal(labels_t_valid, labels_t_minus_1_valid) else 0.0
-                 nmi = 1.0 if np.array_equal(labels_t_valid, labels_t_minus_1_valid) else 0.0
-            else:
-                ari = adjusted_rand_score(labels_t_valid, labels_t_minus_1_valid)
-                nmi = normalized_mutual_info_score(labels_t_valid, labels_t_minus_1_valid)
-
-            churn = np.sum(labels_t_valid != labels_t_minus_1_valid) / len(labels_t_valid)
-
-            aris.append(ari)
-            nmis.append(nmi)
-            churns.append(churn)
-        except KeyError:
-             logging.warning(f"Missing time index {t} or {t-1} in pivoted labels. Skipping stability calc for this step.")
-             continue
-
-
-    avg_ari = np.mean(aris) if aris else np.nan
-    avg_nmi = np.mean(nmis) if nmis else np.nan
-    avg_churn_rate = np.mean(churns) if churns else np.nan
-
-    logging.info(f"Stability Metrics: Avg ARI={avg_ari:.4f}, Avg NMI={avg_nmi:.4f}, Avg Churn Rate={avg_churn_rate:.4f}")
-    return {'avg_ari': avg_ari, 'avg_nmi': avg_nmi, 'avg_churn_rate': avg_churn_rate}
-
-
-def calculate_feasibility_metrics(cluster_assign_df: pd.DataFrame, static_features_df: pd.DataFrame, config: dict) -> dict:
-    """Calculates feasibility violation rates (optional)."""
-    if not config.get('CHECK_FEASIBILITY_POST_CLUSTER', False):
-        logging.info("Skipping feasibility checks as per configuration.")
-        return {'avg_feeder_violation_rate': np.nan, 'avg_distance_violation_rate': np.nan}
-
-    logging.info("Calculating feasibility metrics...")
-    if 'line_id' not in static_features_df.columns:
-         logging.warning("Missing 'line_id' in static features, cannot check feeder violations.")
-         return {'avg_feeder_violation_rate': np.nan, 'avg_distance_violation_rate': np.nan}
-    if not all(col in static_features_df.columns for col in ['lat', 'lon']):
-        logging.warning("Missing 'lat'/'lon' in static features, cannot check distance violations.")
-        return {'avg_feeder_violation_rate': np.nan, 'avg_distance_violation_rate': np.nan}
-
-    threshold_km = config.get('FEASIBILITY_DISTANCE_THRESHOLD_KM', 0.5)
-    num_timesteps = cluster_assign_df['time_index'].max() + 1
-
-    # Merge static info once
-    static_info = static_features_df[['line_id', 'lat', 'lon']].astype({'line_id': str})
-    cluster_assign_df['building_id'] = cluster_assign_df['building_id'].astype(str)
-    static_info.index = static_info.index.astype(str) # Ensure index types match
-    merged_df = pd.merge(cluster_assign_df, static_info, left_on='building_id', right_index=True, how='left')
-
-    total_pairs_checked = 0
-    feeder_violations = 0
-    distance_violations = 0
-
-    for t in tqdm(range(num_timesteps), desc="Checking Feasibility", leave=False):
-        df_t = merged_df[merged_df['time_index'] == t]
-        for cluster_id in df_t['cluster_id'].unique():
-            cluster_nodes = df_t[df_t['cluster_id'] == cluster_id]
-            n_cluster = len(cluster_nodes)
-            if n_cluster < 2:
-                continue
-
-            # Check all pairs within the cluster
-            node_indices = cluster_nodes.index # Use DataFrame index for pair iteration
-            for i in range(n_cluster):
-                for j in range(i + 1, n_cluster):
-                    idx1 = node_indices[i]
-                    idx2 = node_indices[j]
-                    node1 = cluster_nodes.loc[idx1]
-                    node2 = cluster_nodes.loc[idx2]
-
-                    total_pairs_checked += 1
-
-                    # Feeder check
-                    if node1['line_id'] != node2['line_id']:
-                        feeder_violations += 1
-
-                    # Distance check
-                    dist = haversine_np(node1['lon'], node1['lat'], node2['lon'], node2['lat'])
-                    if dist > threshold_km:
-                        distance_violations += 1
-
-    avg_feeder_violation_rate = (feeder_violations / total_pairs_checked) if total_pairs_checked > 0 else 0
-    avg_distance_violation_rate = (distance_violations / total_pairs_checked) if total_pairs_checked > 0 else 0
-
-    logging.info(f"Feasibility Metrics: Avg Feeder Violation Rate={avg_feeder_violation_rate:.4f}, Avg Distance Violation Rate={avg_distance_violation_rate:.4f}")
-    return {'avg_feeder_violation_rate': avg_feeder_violation_rate, 'avg_distance_violation_rate': avg_distance_violation_rate}
-
-
-def calculate_quality_metrics(smoothed_embeddings_np: np.ndarray, cluster_assign_df: pd.DataFrame, config: dict) -> dict:
-    """Calculates clustering quality metrics (Silhouette Score)."""
-    logging.info("Calculating quality metrics (Silhouette Score)...")
-    num_timesteps = cluster_assign_df['time_index'].max() + 1
-    num_nodes = cluster_assign_df['building_id'].nunique()
-
-    if smoothed_embeddings_np.shape[0] != num_nodes or smoothed_embeddings_np.shape[1] != num_timesteps:
-         logging.error(f"Embeddings shape mismatch! Expected ({num_nodes}, {num_timesteps}, ...), got {smoothed_embeddings_np.shape}")
-         return {'avg_silhouette_score': np.nan}
-
-    # Pivot assignments for easy lookup
-    pivot_labels = cluster_assign_df.pivot(index='time_index', columns='building_id', values='cluster_id')
-    node_order = pivot_labels.columns.tolist() # Get consistent node order
-
-    silhouette_scores = []
-    for t in tqdm(range(num_timesteps), desc="Calculating Silhouette", leave=False):
-         try:
-             embeddings_t = smoothed_embeddings_np[:, t, :] # Assumes node order matches pivot cols
-             labels_t = pivot_labels.loc[t].values
-
-             # Check for NaNs or invalid states before calculating score
-             valid_mask = ~np.isnan(labels_t)
-             if np.sum(valid_mask) < 2: continue # Need at least 2 points
-
-             embeddings_t_valid = embeddings_t[valid_mask]
-             labels_t_valid = labels_t[valid_mask]
-
-             # Silhouette score requires at least 2 clusters and >1 point per cluster implicitly
-             n_labels = len(np.unique(labels_t_valid))
-             if n_labels < 2 or n_labels >= len(labels_t_valid):
-                 # Score is ill-defined, append NaN or skip
-                 continue
-
-             score = silhouette_score(embeddings_t_valid, labels_t_valid)
-             silhouette_scores.append(score)
-         except KeyError:
-             logging.warning(f"Missing time index {t} in pivoted labels for Silhouette score.")
-             continue
-         except ValueError as e:
-             logging.warning(f"Could not calculate Silhouette score for time step {t}: {e}")
-             continue # Skip score for this timestep
-
-
-    avg_silhouette_score = np.mean(silhouette_scores) if silhouette_scores else np.nan
-
-    logging.info(f"Quality Metrics: Avg Silhouette Score={avg_silhouette_score:.4f}")
-    return {'avg_silhouette_score': avg_silhouette_score}
-
-
-# --- Main Evaluation Runner ---
-
-def run_evaluation(config: dict, cluster_assignments: dict, final_embeddings: torch.Tensor,
-                   dataset: SpatioTemporalGraphDataset):
-    """
-    Runs all evaluation steps and saves the results.
-
-    Args:
-        config (dict): Configuration dictionary.
-        cluster_assignments (dict): Clustering results {t: {node_id: cluster_id}}.
-        final_embeddings (torch.Tensor): Embeddings output from inference.
-        dataset (SpatioTemporalGraphDataset): Dataset object containing metadata.
-    """
-    logging.info(f"--- Starting Evaluation Pipeline for Scenario: {config.get('SCENARIO_NAME', 'Unknown')} ---")
-    all_metrics = {}
-
-    # --- Prepare Inputs ---
-    logging.info("Preparing data for evaluation...")
-    # Convert cluster assignments dict to DataFrame
-    num_timesteps = final_embeddings.shape[1]
-    cluster_assign_df = format_cluster_assignments(cluster_assignments, dataset.node_ids, num_timesteps)
-
-    # Load processed dynamic features (need net_load)
-    dynamic_features_path = os.path.join(config['PROCESSED_DATA_DIR'], 'processed_dynamic_features.parquet')
-    try:
-         dynamic_features_df = pd.read_parquet(dynamic_features_path)
-    except Exception as e:
-         logging.error(f"Failed to load dynamic features for evaluation: {e}")
-         return # Cannot proceed without dynamic features
-
-    # Load processed static features (need line_id, lat, lon for feasibility)
-    static_features_path = os.path.join(config['PROCESSED_DATA_DIR'], 'processed_static_features.csv')
-    try:
-        static_features_df = pd.read_csv(static_features_path, index_col='building_id')
-        static_features_df.index = static_features_df.index.astype(str) # Ensure index is string for merge
-    except Exception as e:
-        logging.error(f"Failed to load static features for evaluation: {e}")
-        return # Cannot proceed
-
-
-    # --- Calculate Metrics ---
-    synergy_metrics = calculate_synergy_metrics(cluster_assign_df.copy(), dynamic_features_df.copy(), config)
-    all_metrics.update(synergy_metrics)
-
-    stability_metrics = calculate_stability_metrics(cluster_assign_df.copy(), config)
-    all_metrics.update(stability_metrics)
-
-    if config.get('CHECK_FEASIBILITY_POST_CLUSTER', False):
-        feasibility_metrics = calculate_feasibility_metrics(cluster_assign_df.copy(), static_features_df.copy(), config)
-        all_metrics.update(feasibility_metrics)
+     # --------------------------------------------------------------------
+    # 1) Safely read gem_hoogte (float) and num_floors (int), with defaults
+    # --------------------------------------------------------------------
+    raw_hoogte = building_row.get("gem_hoogte", 3)  # default 3
+    if pd.isna(raw_hoogte) or raw_hoogte is None:
+        gem_hoogte = 3.0
     else:
-        all_metrics.update({'avg_feeder_violation_rate': np.nan, 'avg_distance_violation_rate': np.nan})
+        try:
+            gem_hoogte = float(raw_hoogte)
+        except ValueError:
+            # In case it's a weird string
+            gem_hoogte = 3.0
+
+    # Safely get num_floors as an int
+    raw_floors = building_row.get("gem_bouwlagen", 1)  # default 1
+    if pd.isna(raw_floors) or raw_floors is None:
+        num_floors = 1
+    else:
+        try:
+            # Round or floor/ceil as needed
+            num_floors = int(round(float(raw_floors)))
+        except ValueError:
+            # In case it's a weird string
+            num_floors = 1
+
+    # Guard against zero or negative floors
+    if num_floors < 1:
+        num_floors = 1
 
 
-    # Quality metrics need the smoothed embeddings
-    # Need to run smoothing again or load if saved by clustering step
-    try:
-         window_size = config.get('EMBEDDING_SMOOTHING_WINDOW_W', 1)
-         # Assuming clustering used smoothing, we recalculate here. Ideally pass from clustering.
-         smoothed_embeddings_np = smooth_embeddings(final_embeddings, window_size)
-         quality_metrics = calculate_quality_metrics(smoothed_embeddings_np, cluster_assign_df.copy(), config)
-         all_metrics.update(quality_metrics)
-    except Exception as e:
-         logging.error(f"Failed to calculate quality metrics: {e}")
-         all_metrics.update({'avg_silhouette_score': np.nan})
 
 
-    # --- Save Metrics ---
-    metrics_save_path = os.path.join(config['SCENARIO_RESULTS_DIR'], 'evaluation_metrics.json')
-    summary_save_path = os.path.join(config['SCENARIO_RESULTS_DIR'], 'evaluation_summary.txt')
-
-    try:
-        # Convert numpy types to native Python types for JSON serialization
-        serializable_metrics = {k: (float(v) if isinstance(v, (np.float32, np.float64, np.number)) else v) for k, v in all_metrics.items()}
-        serializable_metrics = {k: None if pd.isna(v) else v for k, v in serializable_metrics.items()} # Convert NaN to None
-
-        with open(metrics_save_path, 'w') as f:
-            json.dump(serializable_metrics, f, indent=4)
-        logging.info(f"Saved evaluation metrics to: {metrics_save_path}")
-
-        # Generate summary table text
-        summary_text = f"Evaluation Summary for: {config.get('SCENARIO_NAME', 'Unknown')}\n"
-        summary_text += "=" * 40 + "\n"
-        for key, value in serializable_metrics.items():
-             summary_text += f"{key:<30}: {value:.4f}\n" if isinstance(value, float) else f"{key:<30}: {value}\n"
-        summary_text += "=" * 40 + "\n"
-
-        with open(summary_save_path, 'w') as f:
-            f.write(summary_text)
-        logging.info(f"Saved evaluation summary table to: {summary_save_path}")
-
-    except Exception as e:
-        logging.error(f"Error saving evaluation results: {e}")
-
-    logging.info(f"--- Evaluation Pipeline Finished ---")
-    return all_metrics
 
 
-# Example Usage (within main.py or for testing)
-if __name__ == '__main__':
-    # This block requires outputs from clustering, inference, and data processing
-    logging.info("Testing evaluation script standalone...")
 
-    # 1. Load Config (replace with actual loader)
-    config = {
-        'SCENARIO_NAME': 'Scenario_B_Feeder_Constraint', # Change to test others
-        'PROCESSED_DATA_DIR': os.path.join('..', 'data', 'processed'), # Adjust relative path
-        'RESULTS_DIR': os.path.join('..', 'results'),
-        'SCENARIO_RESULTS_DIR': os.path.join('..', 'results', 'Scenario_B_Feeder_Constraint'),# Adjust
-        'CHECK_FEASIBILITY_POST_CLUSTER': False, # Example for Scenario B
-        'FEASIBILITY_DISTANCE_THRESHOLD_KM': 0.5,
-        'EMBEDDING_SMOOTHING_WINDOW_W': 4,
-        'EMBEDDING_DIM': 16 # Example
-    }
-    os.makedirs(config['SCENARIO_RESULTS_DIR'], exist_ok=True)
-
-
-    try:
-        # 2. Load dummy/real cluster assignments (replace with loading from file)
-        assign_file = os.path.join(config['SCENARIO_RESULTS_DIR'], 'cluster_assignments.csv')
-        if not os.path.exists(assign_file):
-             print(f"Cluster assignments file not found: {assign_file}. Cannot run evaluation.")
+    if wall_height is None:
+        if gem_hoogte is not None:
+            total_height = gem_hoogte
         else:
-             cluster_assign_df_loaded = pd.read_csv(assign_file)
-             # Convert back to dictionary format expected? No, run_evaluation uses the DataFrame format now.
-             # Recreate dict format for testing if needed, or adapt run_evaluation inputs
-             cluster_assignments_dict = {}
-             for name, group in cluster_assign_df_loaded.groupby('time_index'):
-                  cluster_assignments_dict[name] = group.set_index('building_id')['cluster_id'].to_dict()
+            total_height = 3.0 * num_floors
+        wall_height = total_height / num_floors
+
+    # 2) Determine geometry parameters (perimeter_depth, has_core) from dictionary + overrides
+    geom_params = assign_geometry_values(
+        building_row=building_row,
+        calibration_stage=calibration_stage,
+        strategy=strategy,
+        random_seed=random_seed,
+        user_config=user_config,
+        assigned_geom_log=assigned_geom_log,
+        excel_rules=excel_rules
+    )
+    perimeter_depth = geom_params["perimeter_depth"]
+    has_core = geom_params["has_core"]
+
+    # 3) Rectangle dimensions from area & perimeter
+    width, length = compute_dimensions_from_area_perimeter(area, perimeter)
+
+    # 4) Create base polygon for ground floor
+    A0, B0, C0, D0 = create_building_base_polygon(width, length, orientation)
+    base_poly_0 = [A0, B0, C0, D0]
+
+    # 5) Create each floor in a loop
+    floors_zones = {}
+    current_base_poly = base_poly_0
+
+    prev_floor_zones = None  # Will store the zone surfaces from the previous floor
+    for floor_i in range(1, num_floors + 1):
+        # "Ground" for 1st floor, else "Internal"
+        floor_type = "Ground" if floor_i == 1 else "Internal"
+        is_top_floor = (floor_i == num_floors)
+
+        # Create zones for this floor (could be single or perimeter+core)
+        zones_data = create_zones_with_perimeter_depth(
+            idf=idf,
+            floor_i=floor_i,
+            base_poly=current_base_poly,
+            wall_height=wall_height,
+            edge_types=edge_types,
+            perimeter_depth=perimeter_depth,
+            floor_type=floor_type,
+            has_core=has_core,
+            is_top_floor=is_top_floor
+        )
+        floors_zones[floor_i] = zones_data
+
+        # -------------------------------------------------------
+        #  LINK THIS FLOOR’S "FLOOR" SURFACES TO PREV FLOOR’S "CEILING" SURFACES
+        # -------------------------------------------------------
+        if floor_i > 1 and prev_floor_zones:
+            # We'll do a basic approach: match zone names in sorted order
+            old_zone_names = sorted(prev_floor_zones.keys())
+            new_zone_names = sorted(zones_data.keys())
+
+            for oz, nz in zip(old_zone_names, new_zone_names):
+                old_zone_surfs = prev_floor_zones[oz][3]  # (bpoly, tpoly, surf_list) => index 3
+                new_zone_surfs = zones_data[nz][3]
+
+                # find the "Ceiling" in old zone
+                old_ceiling = None
+                for srf in old_zone_surfs:
+                    if srf.Name.endswith("_Ceiling") or srf.Name.endswith("_Roof"):
+                        # If the old floor was not top floor, we expect a "Ceiling"
+                        # If the old floor was top floor (?), it might be a "Roof" -- but typically that wouldn't stack
+                        old_ceiling = srf
+                        break
+
+                # find the "Floor" in new zone
+                new_floor = new_zone_surfs[0]  # typically index=0 is the Floor object from create_zone_surfaces
+
+                # If found both, link them (interzone conduction)
+                if old_ceiling and new_floor:
+                    link_surfaces(new_floor, old_ceiling)
+
+        prev_floor_zones = zones_data
+
+        # shift the base polygon upward by wall_height for the next floor
+        current_base_poly = [(p[0], p[1], p[2] + wall_height) for p in current_base_poly]
+
+    # (Optional) if you want to add pitched roof logic, do it after the top floor is created
+    return floors_zones
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_objects\geomz\geometry_lookup.py
+============================================================
+# geomz/geometry_lookup.py
+
+geometry_lookup = {
+    "non_residential": {
+        "Accommodation Function": {
+            "post_calibration": {
+                "has_core": True,
+                "perimeter_depth_range": (2.5, 2.5)
+            },
+            "pre_calibration": {
+                "has_core": True,
+                "perimeter_depth_range": (2.0, 3.0)
+            }
+        },
+        "Cell Function": {
+            "post_calibration": {
+                "has_core": True,
+                "perimeter_depth_range": (2.2, 2.2)
+            },
+            "pre_calibration": {
+                "has_core": True,
+                "perimeter_depth_range": (1.2, 2.2)
+            }
+        },
+        "Education Function": {
+            "post_calibration": {
+                "has_core": True,
+                "perimeter_depth_range": (2.5, 2.5)
+            },
+            "pre_calibration": {
+                "has_core": True,
+                "perimeter_depth_range": (2.0, 3.0)
+            }
+        },
+        "Healthcare Function": {
+            "post_calibration": {
+                "has_core": True,
+                "perimeter_depth_range": (3.5, 3.5)
+            },
+            "pre_calibration": {
+                "has_core": True,
+                "perimeter_depth_range": (3.0, 4.0)
+            }
+        },
+        "Industrial Function": {
+            "post_calibration": {
+                "has_core": True,
+                "perimeter_depth_range": (3.5, 3.5)
+            },
+            "pre_calibration": {
+                "has_core": True,
+                "perimeter_depth_range": (3.0, 4.0)
+            }
+        },
+        "Meeting Function": {
+            "post_calibration": {
+                "has_core": True,
+                "perimeter_depth_range": (2.0, 2.0)
+            },
+            "pre_calibration": {
+                "has_core": True,
+                "perimeter_depth_range": (1.0, 2.0)
+            }
+        },
+        "Office Function": {
+            "post_calibration": {
+                "has_core": True,
+                "perimeter_depth_range": (3.0, 3.0)
+            },
+            "pre_calibration": {
+                "has_core": True,
+                "perimeter_depth_range": (2.5, 3.5)
+            }
+        },
+        "Other Use Function": {
+            "post_calibration": {
+                "has_core": True,
+                "perimeter_depth_range": (2.3, 2.3)
+            },
+            "pre_calibration": {
+                "has_core": True,
+                "perimeter_depth_range": (1.8, 2.8)
+            }
+        },
+        "Retail Function": {
+            "post_calibration": {
+                "has_core": True,
+                "perimeter_depth_range": (2.5, 2.5)
+            },
+            "pre_calibration": {
+                "has_core": True,
+                "perimeter_depth_range": (2.0, 3.0)
+            }
+        },
+        "Sport Function": {
+            "post_calibration": {
+                "has_core": True,
+                "perimeter_depth_range": (2.5, 2.5)
+            },
+            "pre_calibration": {
+                "has_core": True,
+                "perimeter_depth_range": (1.5, 2.5)
+            }
+        }
+    },
+    "residential": {
+        
+        
+        "Apartment": {
+            "post_calibration": {
+                "has_core": False,
+                "perimeter_depth_range": (2.3, 2.8)
+            },
+            "pre_calibration": {
+                "has_core": False,
+                "perimeter_depth_range": (1.8, 2.3)
+            }
+        },
+        "Corner House": {
+            "post_calibration": {
+                "has_core": False,
+                "perimeter_depth_range": (2.5, 3.0)
+            },
+            "pre_calibration": {
+                "has_core": False,
+                "perimeter_depth_range": (2.0, 2.5)
+            }
+        },
+        "Detached House": {
+            "post_calibration": {
+                "has_core": False,
+                "perimeter_depth_range": (2.5, 3.0)
+            },
+            "pre_calibration": {
+                "has_core": False,
+                "perimeter_depth_range": (2.0, 2.5)
+            }
+        },
+        "Terrace or Semi-detached House": {
+            "post_calibration": {
+                "has_core": False,
+                "perimeter_depth_range": (2.5, 3.0)
+            },
+            "pre_calibration": {
+                "has_core": False,
+                "perimeter_depth_range": (2.0, 2.5)
+            }
+        },
+        "Two-and-a-half-story House": {
+            "post_calibration": {
+                "has_core": True,
+                "perimeter_depth_range": (2.5, 3.0)
+            },
+            "pre_calibration": {
+                "has_core": False,
+                "perimeter_depth_range": (2.0, 2.5)
+            }
+        }
+    }
+}
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_objects\geomz\geometry.py
+============================================================
+import math
+from math import sqrt, radians, cos, sin
+
+def rotate_point(px, py, pz, orientation_rad):
+    x_new = cos(orientation_rad) * px - sin(orientation_rad) * py
+    y_new = sin(orientation_rad) * px + cos(orientation_rad) * py
+    return (x_new, y_new, pz)
+
+def compute_dimensions_from_area_perimeter(area, perimeter):
+    """
+    Solve for width (w) and length (l) using area (A) and perimeter (P):
+      w = A / (P/4)
+      l = A / w
+    """
+    if perimeter <= 0:
+        raise ValueError("Perimeter must be positive.")
+    if area <= 0:
+        raise ValueError("Area must be positive.")
+    width = area / (perimeter / 4.0)
+    length = area / width
+    return width, length
+
+def create_building_base_polygon(width, length, orientation):
+    """
+    Return 4 points in XY plane for a rectangle, rotate them by orientation degrees.
+    """
+    A = (0, 0, 0)
+    B = (width, 0, 0)
+    C = (width, length, 0)
+    D = (0, length, 0)
+
+    if orientation != 0:
+        orientation_rad = radians(orientation)
+        A = rotate_point(*A, orientation_rad)
+        B = rotate_point(*B, orientation_rad)
+        C = rotate_point(*C, orientation_rad)
+        D = rotate_point(*D, orientation_rad)
+
+    return A, B, C, D
+
+def polygon_area(poly):
+    """Compute area in XY plane via Shoelace formula."""
+    x = [p[0] for p in poly]
+    y = [p[1] for p in poly]
+    n = len(poly)
+    area = 0.0
+    for i in range(n):
+        j = (i + 1) % n
+        area += x[i] * y[j] - x[j] * y[i]
+    return abs(area) / 2.0
+
+def inward_offset_polygon(A, B, C, D, depth):
+    """
+    Inward offset of rectangle ABCD by depth, returning [A2,B2,C2,D2] or None if invalid.
+    """
+    def edge_offset(P1, P2, dist):
+        vx = P2[0] - P1[0]
+        vy = P2[1] - P1[1]
+        length = sqrt(vx*vx + vy*vy)
+        nx = -vy / length
+        ny = vx / length
+        return [
+            (P1[0] + nx*dist, P1[1] + ny*dist, P1[2]),
+            (P2[0] + nx*dist, P2[1] + ny*dist, P2[2])
+        ]
+
+    def line_intersect(p1, p2, p3, p4):
+        x1, y1 = p1[0], p1[1]
+        x2, y2 = p2[0], p2[1]
+        x3, y3 = p3[0], p3[1]
+        x4, y4 = p4[0], p4[1]
+        denom = (y4 - y3)*(x2 - x1) - (x4 - x3)*(y2 - y1)
+        if abs(denom) < 1e-12:
+            return None
+        ua = ((x4 - x3)*(y1 - y3) - (y4 - y3)*(x1 - x3)) / denom
+        X = x1 + ua*(x2 - x1)
+        Y = y1 + ua*(y2 - y1)
+        return (X, Y, p1[2])
+
+    front_line = edge_offset(A, B, depth)
+    right_line = edge_offset(B, C, depth)
+    rear_line = edge_offset(C, D, depth)
+    left_line = edge_offset(D, A, depth)
+
+    A2 = line_intersect(front_line[0], front_line[1], left_line[0], left_line[1])
+    B2 = line_intersect(front_line[0], front_line[1], right_line[0], right_line[1])
+    C2 = line_intersect(rear_line[0], rear_line[1], right_line[0], right_line[1])
+    D2 = line_intersect(rear_line[0], rear_line[1], left_line[0], left_line[1])
+
+    if A2 and B2 and C2 and D2:
+        return [A2, B2, C2, D2]
+    else:
+        return None
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_objects\geomz\zoning.py
+============================================================
+# D:\Documents\E_Plus_2030_py\geomz\zoning.py
+# --------------------------------------------------------------------------
+# This module handles the creation of zones (perimeter + core or single)
+# for each floor in a building, plus optional interzone linking. 
+# --------------------------------------------------------------------------
+
+from .geometry import polygon_area, inward_offset_polygon
+
+def link_surfaces(surface_a, surface_b):
+    """
+    Cross-link two surfaces as interzone partitions:
+      1) Both Outside_Boundary_Condition = "Surface"
+      2) Each references the other's name
+
+    This is used for:
+      - Perimeter zone to core zone partitions
+      - Floor-to-ceiling linking between stories (in building.py)
+    """
+    surface_a.Outside_Boundary_Condition = "Surface"
+    surface_b.Outside_Boundary_Condition = "Surface"
+    surface_a.Outside_Boundary_Condition_Object = surface_b.Name
+    surface_b.Outside_Boundary_Condition_Object = surface_a.Name
 
 
-             # 3. Load dummy/real embeddings (replace with loading from file or inference output)
-             num_nodes = cluster_assign_df_loaded['building_id'].nunique()
-             num_timesteps = cluster_assign_df_loaded['time_index'].max() + 1
-             dummy_embeddings = torch.randn(num_nodes, num_timesteps, config['EMBEDDING_DIM'])
+def create_zone_surfaces(
+    idf,
+    zone_name,
+    base_poly,
+    wall_height,
+    floor_bc,
+    wall_bcs,
+    is_top_floor
+):
+    """
+    Create a rectangular zone (Floor, 4 Walls, and a Roof or Ceiling).
 
-             # 4. Load dummy/real dataset object (only needs node_ids)
-             class DummyDataset:
-                 def __init__(self, assign_df):
-                     self.node_ids = assign_df['building_id'].unique().tolist()
-             dummy_dataset = DummyDataset(cluster_assign_df_loaded)
+    Parameters
+    ----------
+    idf : geomeppy.IDF
+        The IDF to which we add surfaces.
+    zone_name : str
+        Name of the new Zone object (e.g. "Zone1", "Zone2_Core", etc.).
+    base_poly : list of (x,y,z)
+        4 corner points (in order) for the zone’s base polygon.
+    wall_height : float
+        Height of the walls for this floor (e.g. 2.5 m).
+    floor_bc : str
+        Boundary Condition for the floor (e.g. "Ground", "Adiabatic", "Outdoors").
+    wall_bcs : list of str or dict
+        4 items for the wall boundary conditions (one per edge).
+        If a dict, e.g. {"bc": "Surface", "adj_surf_name": "..."},
+        we can store info for cross-linking. If just a string, e.g. "Outdoors" or "Adiabatic".
+    is_top_floor : bool
+        If True => create a roof with Outdoors, else => a ceiling with "Adiabatic" (or a placeholder
+        that can later be changed to "Surface" if linking to the floor above).
 
-             # 5. Run Evaluation (run_evaluation now handles loading internal files)
-             run_evaluation(config, cluster_assignments_dict, dummy_embeddings, dummy_dataset) # Pass dict here
+    Returns
+    -------
+    (zone_name, base_poly, top_poly, created_surfaces)
+      zone_name        : str
+      base_poly        : list of points (x,y,z) for the floor polygon
+      top_poly         : list of points (x,y,z) for the upper polygon (floor + wall_height)
+      created_surfaces : list of BUILDINGSURFACE:DETAILED objects created
+    """
+    zone = idf.newidfobject("ZONE")
+    zone.Name = zone_name
 
-             print("\n--- Standalone Evaluation Test Finished ---")
-             print(f"Check {config['SCENARIO_RESULTS_DIR']} for evaluation_metrics.json and evaluation_summary.txt")
+    created_surfaces = []
 
-    except FileNotFoundError:
-         print("\nError: Prerequisite file not found (e.g., cluster_assignments.csv, processed data). Ensure previous steps ran.")
-    except Exception as e:
-        logging.exception(f"An error occurred during evaluation test: {e}")
+    # ===== Floor =====
+    floor_surf = idf.newidfobject("BUILDINGSURFACE:DETAILED")
+    floor_surf.Name = f"{zone_name}_Floor"
+    floor_surf.Surface_Type = "Floor"
+    floor_surf.Zone_Name = zone_name
+    floor_surf.Outside_Boundary_Condition = floor_bc
+
+    # If we have "Outdoors", we set SunExposed, WindExposed; else NoSun/NoWind
+    if floor_bc.lower() == "outdoors":
+        floor_surf.Sun_Exposure = "SunExposed"
+        floor_surf.Wind_Exposure = "WindExposed"
+    else:
+        floor_surf.Sun_Exposure = "NoSun"
+        floor_surf.Wind_Exposure = "NoWind"
+
+    # Reverse coords so the floor normal faces downward
+    floor_surf.setcoords(base_poly[::-1])
+    created_surfaces.append(floor_surf)
+
+    # ===== Walls =====
+    # The top polygon is base_poly + wall_height in Z
+    top_poly = [(p[0], p[1], p[2] + wall_height) for p in base_poly]
+    for i in range(4):
+        p1 = base_poly[i]
+        p2 = base_poly[(i + 1) % 4]
+        p1t = top_poly[i]
+        p2t = top_poly[(i + 1) % 4]
+
+        wall_coords = [p1, p2, p2t, p1t]
+        wall_obj = idf.newidfobject("BUILDINGSURFACE:DETAILED")
+        wall_obj.Name = f"{zone_name}_Wall_{i}"
+        wall_obj.Surface_Type = "Wall"
+        wall_obj.Zone_Name = zone_name
+
+        bc_info = wall_bcs[i]
+        if isinstance(bc_info, dict):
+            # If bc_info is a dict => can specify 'bc' and optionally 'adj_surf_name'
+            bc_str = bc_info.get("bc", "Adiabatic")
+            wall_obj.Outside_Boundary_Condition = bc_str
+            if bc_str.lower() == "outdoors":
+                wall_obj.Sun_Exposure = "SunExposed"
+                wall_obj.Wind_Exposure = "WindExposed"
+            else:
+                wall_obj.Sun_Exposure = "NoSun"
+                wall_obj.Wind_Exposure = "NoWind"
+
+            # If "Surface", optionally set the adjacent surface name
+            if bc_str.lower() == "surface":
+                adj_name = bc_info.get("adj_surf_name", "")
+                wall_obj.Outside_Boundary_Condition_Object = adj_name
+        else:
+            # bc_info is just a string
+            wall_obj.Outside_Boundary_Condition = bc_info
+            if bc_info.lower() == "outdoors":
+                wall_obj.Sun_Exposure = "SunExposed"
+                wall_obj.Wind_Exposure = "WindExposed"
+            else:
+                wall_obj.Sun_Exposure = "NoSun"
+                wall_obj.Wind_Exposure = "NoWind"
+
+        wall_obj.setcoords(wall_coords)
+        created_surfaces.append(wall_obj)
+
+    # ===== Ceiling or Roof =====
+    if is_top_floor:
+        # For top floors, we create a roof surface with "Outdoors"
+        top_surf = idf.newidfobject("BUILDINGSURFACE:DETAILED")
+        top_surf.Name = f"{zone_name}_Roof"
+        top_surf.Surface_Type = "Roof"
+        top_surf.Zone_Name = zone_name
+        top_surf.Outside_Boundary_Condition = "Outdoors"
+        top_surf.Sun_Exposure = "SunExposed"
+        top_surf.Wind_Exposure = "WindExposed"
+        top_surf.setcoords(top_poly)
+        created_surfaces.append(top_surf)
+    else:
+        # For intermediate floors, we typically do "Ceiling" with "Adiabatic"
+        # so it can be changed to "Surface" if we link it to the floor above.
+        top_surf = idf.newidfobject("BUILDINGSURFACE:DETAILED")
+        top_surf.Name = f"{zone_name}_Ceiling"
+        top_surf.Surface_Type = "Ceiling"
+        top_surf.Zone_Name = zone_name
+        top_surf.Outside_Boundary_Condition = "Adiabatic"
+        top_surf.Sun_Exposure = "NoSun"
+        top_surf.Wind_Exposure = "NoWind"
+        top_surf.setcoords(top_poly)
+        created_surfaces.append(top_surf)
+
+    # Return a 4-tuple: (zone_name, base_poly, top_poly, created_surfaces)
+    return (zone_name, base_poly, top_poly, created_surfaces)
+
+
+def create_zones_with_perimeter_depth(
+    idf,
+    floor_i,
+    base_poly,
+    wall_height,
+    edge_types,
+    perimeter_depth,
+    floor_type,
+    has_core,
+    is_top_floor
+):
+    """
+    Create multiple zones (4 perimeter + 1 core) or a single zone if no core.
+    Then explicitly cross-link perimeter-to-core surfaces.
+
+    Returns
+    -------
+    dict : { zone_name => (zname, bpoly, tpoly, list_of_surfaces) }
+
+    Explanation:
+      - "floor_type" can be "Ground" for the 1st floor (so floor BC="Ground"), or "Internal" for higher floors (so floor BC="Adiabatic" initially).
+      - "edge_types" might be ["facade", "shared", ...], each mapping to "Outdoors" or "Adiabatic".
+      - "has_core" => if True, we do perimeter+core. Otherwise, a single zone.
+
+    The final dict has keys = zone_name ("Zone1", "Zone1_Core", etc.),
+    each mapping to a tuple of 4 items: (zname, base_poly, top_poly, surfs_list).
+    That means index [3] is the list of surfaces, so we can do zone_data[zname][3]
+    in building.py.
+    """
+    def edge_to_bc(e):
+        """
+        Convert textual edge label to an EnergyPlus BC string:
+          - "facade" => "Outdoors"
+          - "shared" => "Adiabatic"
+          - anything else => "Outdoors"
+        """
+        e_lower = e.lower().strip()
+        if e_lower == "Facade":
+            return "Outdoors"
+        elif e_lower == "Shared":
+            return "Adiabatic"
+        else:
+            return "Outdoors"
+
+    zone_data = {}
+
+    # Decide the floor boundary condition
+    if floor_type.lower() == "ground":
+        floor_bc = "Ground"
+    else:
+        # For intermediate floors, we temporarily set "Adiabatic"
+        # The code in building.py can link surfaces for multi-story conduction.
+        floor_bc = "Adiabatic"
+
+    # Try to offset the polygon inward for a core
+    A, B, C, D = base_poly
+    inner_poly = None
+    if has_core:
+        inner_poly = inward_offset_polygon(A, B, C, D, perimeter_depth)
+        if inner_poly:
+            A2, B2, C2, D2 = inner_poly
+            # Check if that offset polygon is large enough
+            if polygon_area([A2, B2, C2, D2]) < 1e-3:
+                inner_poly = None  # not valid => discard
+
+    # ================= Single-Zone Case =================
+    if not inner_poly:
+        # Means no valid core => only one zone
+        wall_bcs = [edge_to_bc(e) for e in edge_types]
+        zname, bpoly, tpoly, surfs = create_zone_surfaces(
+            idf,
+            f"Zone{floor_i}",
+            base_poly,
+            wall_height,
+            floor_bc,
+            wall_bcs,
+            is_top_floor
+        )
+        # Store 4 items => so we can do zone_data[zname][3] = surfaces later
+        zone_data[zname] = (zname, bpoly, tpoly, surfs)
+        return zone_data
+
+    # ================= Perimeter + Core Case =================
+    A2, B2, C2, D2 = inner_poly
+
+    # We'll create 4 perimeter zones + 1 core zone
+
+    # 1) Front perimeter
+    front_bc = edge_to_bc(edge_types[0])
+    front_base = [A, B, B2, A2]
+    # We define the perimeter->core edge as the 3rd wall => "Surface"
+    front_walls = [front_bc, "Adiabatic", "Surface", "Adiabatic"]
+    zf, fbpoly, ftpoly, fsurfs = create_zone_surfaces(
+        idf,
+        f"Zone{floor_i}_FrontPerimeter",
+        front_base,
+        wall_height,
+        floor_bc,
+        front_walls,
+        is_top_floor
+    )
+    zone_data[zf] = (zf, fbpoly, ftpoly, fsurfs)
+
+    # 2) Right perimeter
+    right_bc = edge_to_bc(edge_types[1])
+    right_base = [B, C, C2, B2]
+    right_walls = [right_bc, "Adiabatic", "Surface", "Adiabatic"]
+    zr, rbpoly, rtpoly, rsurfs = create_zone_surfaces(
+        idf,
+        f"Zone{floor_i}_RightPerimeter",
+        right_base,
+        wall_height,
+        floor_bc,
+        right_walls,
+        is_top_floor
+    )
+    zone_data[zr] = (zr, rbpoly, rtpoly, rsurfs)
+
+    # 3) Rear perimeter
+    rear_bc = edge_to_bc(edge_types[2])
+    rear_base = [C, D, D2, C2]
+    rear_walls = [rear_bc, "Adiabatic", "Surface", "Adiabatic"]
+    zre, rebpoly, retpoly, resurfs = create_zone_surfaces(
+        idf,
+        f"Zone{floor_i}_RearPerimeter",
+        rear_base,
+        wall_height,
+        floor_bc,
+        rear_walls,
+        is_top_floor
+    )
+    zone_data[zre] = (zre, rebpoly, retpoly, resurfs)
+
+    # 4) Left perimeter
+    left_bc = edge_to_bc(edge_types[3])
+    left_base = [D, A, A2, D2]
+    left_walls = [left_bc, "Adiabatic", "Surface", "Adiabatic"]
+    zl, lbpoly, ltpoly, lsurfs = create_zone_surfaces(
+        idf,
+        f"Zone{floor_i}_LeftPerimeter",
+        left_base,
+        wall_height,
+        floor_bc,
+        left_walls,
+        is_top_floor
+    )
+    zone_data[zl] = (zl, lbpoly, ltpoly, lsurfs)
+
+    # 5) Core
+    #
+    # We pass a reversed polygon so each shared edge is reversed wrt the perimeter side:
+    core_poly_reversed = [A2, D2, C2, B2]
+    # All edges => "Surface" bc
+    core_bc = ["Surface", "Surface", "Surface", "Surface"]
+    zc, cbpoly, ctpoly, csurfs = create_zone_surfaces(
+        idf,
+        f"Zone{floor_i}_Core",
+        core_poly_reversed,
+        wall_height,
+        floor_bc,
+        core_bc,
+        is_top_floor
+    )
+    zone_data[zc] = (zc, cbpoly, ctpoly, csurfs)
+
+    # ===================== Cross-Linking Perimeter->Core =====================
+    #
+    # We assume:
+    #  - The perimeter zone "Wall_2" (index=2 => array position=3 in the surfaces array) 
+    #    is the interior partition to the core.
+    #  - The matching core zone side is "Wall_x", using reversed polygon indexing logic.
+    #
+    # Because we reversed the core polygon, each perimeter edge B2->A2 lines up with A2->B2
+    # in the core. We just have to ensure we pick the correct wall indexes.
+
+    def get_wall(surfs, wall_idx):
+        """
+        For surfs array: 
+          index 0 => Floor, 
+          index 1..4 => Walls, 
+          index 5 => Ceiling/Roof
+        So the perimeter interior wall (index=2) => surfs[1+2] => surfs[3].
+        """
+        return surfs[1 + wall_idx]
+
+    # front perimeter interior => index=2 => surfs[3]
+    front_interior = get_wall(fsurfs, 2)
+    right_interior = get_wall(rsurfs, 2)
+    rear_interior  = get_wall(resurfs, 2)
+    left_interior  = get_wall(lsurfs, 2)
+
+    # In the core zone, we have reversed the polygon. We'll map:
+    #   - front perimeter => core wall_3
+    #   - right perimeter => core wall_2
+    #   - rear perimeter  => core wall_1
+    #   - left perimeter  => core wall_0
+    core_wall_front = get_wall(csurfs, 3)
+    core_wall_right = get_wall(csurfs, 2)
+    core_wall_rear  = get_wall(csurfs, 1)
+    core_wall_left  = get_wall(csurfs, 0)
+
+    link_surfaces(front_interior, core_wall_front)
+    link_surfaces(right_interior, core_wall_right)
+    link_surfaces(rear_interior, core_wall_rear)
+    link_surfaces(left_interior, core_wall_left)
+
+    return zone_data
+
 ------------------------------------------------------------
 

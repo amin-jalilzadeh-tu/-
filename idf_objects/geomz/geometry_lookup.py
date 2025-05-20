@@ -148,7 +148,7 @@ geometry_lookup = {
         },
         "Two-and-a-half-story House": {
             "post_calibration": {
-                "has_core": False,
+                "has_core": True,
                 "perimeter_depth_range": (2.5, 3.0)
             },
             "pre_calibration": {
