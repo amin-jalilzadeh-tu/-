@@ -75,10 +75,18 @@ def add_ventilation_to_idf(
     user_config_vent: Optional[list] =None,
     assigned_vent_log: Optional[AssignedVentLog] =None,
     zone_details: Optional[ZoneInfoMap] =None, 
-    system_d_infiltration_reduction_factor: float = 1.0
+    system_d_infiltration_reduction_factor: float = 1.0,
+    infiltration_model: str = "constant",
+    typical_delta_t: float = 10.0,
+    typical_wind: float = 3.0
 ):
     """
-    Adds infiltration + ventilation to the IDF based on building_row data.
+    Adds infiltration + ventilation to the IDF based on ``building_row`` data.
+    
+    ``infiltration_model`` selects how infiltration varies with weather:
+    ``"constant"`` keeps a fixed design flow, while ``"weather"`` applies
+    coefficients based on ``typical_delta_t`` and ``typical_wind``.
+
     Enhancements:
     - Attempts to sum floor surface areas if ZONE object area is 'autocalculate'.
     - Dynamically sets DSOA Outdoor_Air_Flow_per_Zone_Floor_Area for System D based on
@@ -341,14 +349,21 @@ def add_ventilation_to_idf(
             
         iobj, vobj = create_ventilation_system(
             idf=idf,
-            building_function=bldg_func, system_type=system_type, zone_name=zone_name_curr,
-            infiltration_m3_s=infiltration_for_this_zone_m3_s, vent_flow_m3_s=ventilation_for_this_zone_m3_s,
-            infiltration_sched_name=infiltration_sched_name, ventilation_sched_name=ventilation_sched_name,
-            pick_strategy="random" if strategy == "B" else "midpoint", 
+            building_function=bldg_func,
+            system_type=system_type,
+            zone_name=zone_name_curr,
+            infiltration_m3_s=infiltration_for_this_zone_m3_s,
+            vent_flow_m3_s=ventilation_for_this_zone_m3_s,
+            infiltration_sched_name=infiltration_sched_name,
+            ventilation_sched_name=ventilation_sched_name,
+            infiltration_model=infiltration_model,
+            typical_delta_t=typical_delta_t,
+            typical_wind=typical_wind,
+            pick_strategy="random" if strategy == "B" else "midpoint",
             dsoa_object_name=dsoa_object_name_global if system_type == "D" else None,
             hrv_sensible_effectiveness=hrv_sens_eff if system_type == "D" else 0.0,
             hrv_latent_effectiveness=hrv_lat_eff if system_type == "D" else 0.0,
-            **fan_param_overrides 
+            **fan_param_overrides,
         )
 
         if assigned_vent_log is not None and bldg_id in assigned_vent_log: 
