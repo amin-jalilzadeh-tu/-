@@ -287,8 +287,9 @@ def add_HVAC_Ideal_to_all_zones(
         ideal.Humidification_Control_Type = "ConstantSupplyHumidityRatio" # Or None, Humidistat
         # ideal.Design_Specification_Outdoor_Air_Object_Name = "" # Can link DSOA if needed
 
-        # Optional: Economizer / Heat Recovery (Usually 'None' for basic Ideal Loads)
-        ideal.Outdoor_Air_Economizer_Type = "NoEconomizer"
+        # Optional: Economizer / Heat Recovery
+        ideal.Outdoor_Air_Economizer_Type = "FixedDryBulb"
+        ideal.Economizer_Maximum_Limit_Dry_Bulb_Temperature = 18  # DegC
         ideal.Heat_Recovery_Type = "None"
 
 
