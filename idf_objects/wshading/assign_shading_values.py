@@ -71,36 +71,41 @@ def pick_shading_params(
           ...
         }
     """
-    # 1) Fetch base parameters from shading_lookup
     base_params = shading_lookup.get(shading_type_key, {})
     final_params = dict(base_params)  # shallow copy
 
-    # 2) If user_config => update the base_params or override certain fields
+    # 2) Apply user overrides
     if user_config and shading_type_key in user_config:
         overrides_for_this_type = user_config[shading_type_key]
         for key, val in overrides_for_this_type.items():
             if key in final_params and isinstance(val, tuple) and len(val) == 2:
-                # e.g. override "slat_angle_deg_range" => (30, 60)
                 final_params[key] = val
             else:
-                # you could also allow single fixed values or booleans
                 final_params[key] = val
 
-    # 3) Convert all "*_range" fields to single numeric picks
-    #    e.g. final_params["slat_width_range"] => final_params["slat_width"]
-    #    Then remove the old range key from final_params.
+    # 3) Convert all "*_range" fields => single numeric picks
     fields_to_remove = []
-    for field_key, field_val in final_params.items():
+    fields_to_add    = {}  # store new {param_name: chosen_val}
+
+    # Make sure to iterate on a *fixed list* of items:
+    for field_key, field_val in list(final_params.items()):
         if field_key.endswith("_range") and isinstance(field_val, tuple):
             param_name = field_key[:-6]  # remove "_range"
             chosen_val = pick_val_from_range(field_val, strategy=strategy)
-            final_params[param_name] = chosen_val
+            
+            # Instead of final_params[param_name] = chosen_val here,
+            # we just store it to apply later:
+            fields_to_add[param_name] = chosen_val
+            
             fields_to_remove.append(field_key)
 
+    # Now update final_params in a separate step
     for ftr in fields_to_remove:
         del final_params[ftr]
 
-    # 4) If assigned_shading_log is provided, store the final chosen values
+    final_params.update(fields_to_add)
+
+    # 4) Log if needed
     if assigned_shading_log is not None and window_id is not None:
         if window_id not in assigned_shading_log:
             assigned_shading_log[window_id] = {}
