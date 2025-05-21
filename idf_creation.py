@@ -598,13 +598,27 @@ def _write_vent_csv(assigned_vent_log, logs_base_dir):
 
 
 def _write_equipment_csv(assigned_equip_log, logs_base_dir):
+    """Write ``assigned_equipment.csv`` in the same style as lighting.
+
+    ``assigned_equip_log`` is produced by ``assign_equipment_parameters`` and
+    stores a nested ``"assigned"`` dictionary for each building.  Each
+    parameter entry contains ``object_name``, ``assigned_value``, ``min_val`` and
+    ``max_val``.  We mirror ``_write_lighting_csv`` so that downstream scenario
+    functions can expect the same columns.
+    """
+
     rows = []
     for bldg_id, param_dict in assigned_equip_log.items():
-        for param_name, param_val in param_dict.items():
+        # Older logs might only contain the inner dict.  Default to that format
+        assigned = param_dict.get("assigned", param_dict)
+        for param_name, subdict in assigned.items():
             rows.append({
                 "ogc_fid": bldg_id,
+                "object_name": subdict.get("object_name", ""),
                 "param_name": param_name,
-                "assigned_value": param_val,
+                "assigned_value": subdict.get("assigned_value"),
+                "min_val": subdict.get("min_val"),
+                "max_val": subdict.get("max_val"),
             })
     if not rows:
         return
