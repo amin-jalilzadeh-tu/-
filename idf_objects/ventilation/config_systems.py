@@ -108,7 +108,8 @@ SYSTEMS_CONFIG = {
             "fixed_params": {
                 # These parameters are typically set on the IdealLoads object for System D ventilation.
                 # Design_Specification_Outdoor_Air_Object_Name is set dynamically in create_ventilation_system.
-                "Outdoor_Air_Economizer_Type": "NoEconomizer", # Typically no economizer for basic residential HRV systems
+                "Outdoor_Air_Economizer_Type": "FixedDryBulb", # Enable economizer for free cooling
+                "Economizer_Maximum_Limit_Dry_Bulb_Temperature": 18,  # DegC limit for economizer
                 # Heat_Recovery_Type is set dynamically in create_ventilation_system based on actual effectiveness values.
                 # "Heat_Recovery_Type": "Sensible" # Initial thought, but now dynamic
             },
@@ -179,7 +180,8 @@ SYSTEMS_CONFIG = {
                 # "Fan_Total_Efficiency": (0.65, 0.80),
             },
             "fixed_params": {
-                "Outdoor_Air_Economizer_Type": "NoEconomizer", # Default, could be made configurable or scenario-dependent
+                "Outdoor_Air_Economizer_Type": "FixedDryBulb", # Enable economizer by default
+                "Economizer_Maximum_Limit_Dry_Bulb_Temperature": 18,  # DegC limit for economizer
                 # Heat_Recovery_Type is set dynamically in create_ventilation_system.
             },
             "use_ideal_loads": True
