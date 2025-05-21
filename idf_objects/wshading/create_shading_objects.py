@@ -98,12 +98,12 @@ def add_shading_objects(
             # 2) Create a WindowMaterial:Blind object
             blind_mat = idf.newidfobject("WINDOWMATERIAL:BLIND")
             blind_mat.Name = shading_params["blind_name"] + f"_{window_id}"
-            blind_mat.SlatOrientation = shading_params["slat_orientation"]
-            blind_mat.SlatWidth = shading_params["slat_width"]
-            blind_mat.SlatSeparation = shading_params["slat_separation"]
-            blind_mat.SlatThickness = shading_params["slat_thickness"]
-            blind_mat.SlatAngle = shading_params["slat_angle_deg"]
-            blind_mat.SlatConductivity = shading_params["slat_conductivity"]
+            blind_mat.Slat_Orientation = shading_params["slat_orientation"]
+            blind_mat.Slat_Width = shading_params["slat_width"]
+            blind_mat.Slat_Separation = shading_params["slat_separation"]
+            blind_mat.Slat_Thickness = shading_params["slat_thickness"]
+            blind_mat.Slat_Angle = shading_params["slat_angle_deg"]
+            blind_mat.Slat_Conductivity = shading_params["slat_conductivity"]
             # If your shading_lookup includes solar reflectances, IR emissivity, etc.:
             if "slat_beam_solar_transmittance" in shading_params:
                 blind_mat.Slat_Beam_Solar_Transmittance = shading_params["slat_beam_solar_transmittance"]
