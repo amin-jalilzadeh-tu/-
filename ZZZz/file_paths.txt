@@ -1,7 +1,11 @@
-D:\Documents\E_Plus_2030_py\idf_objects\Elec\constants.py
+D:\Documents\E_Plus_2030_py\idf_objects\eequip\assign_equip_values.py
+D:\Documents\E_Plus_2030_py\idf_objects\eequip\equip_lookup.py
+D:\Documents\E_Plus_2030_py\idf_objects\eequip\equipment.py
+D:\Documents\E_Plus_2030_py\idf_objects\eequip\schedule_def.py
+D:\Documents\E_Plus_2030_py\idf_objects\eequip\schedules.py
 D:\Documents\E_Plus_2030_py\idf_objects\Elec\assign_lighting_values.py
+D:\Documents\E_Plus_2030_py\idf_objects\Elec\constants.py
 D:\Documents\E_Plus_2030_py\idf_objects\Elec\lighting_lookup.py
-D:\Documents\E_Plus_2030_py\idf_objects\Elec\lighting_overrides_from_excel.py
 D:\Documents\E_Plus_2030_py\idf_objects\Elec\lighting.py
 D:\Documents\E_Plus_2030_py\idf_objects\Elec\schedule_def.py
 D:\Documents\E_Plus_2030_py\idf_objects\Elec\schedules.py

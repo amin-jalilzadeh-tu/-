@@ -1,32 +1,747 @@
-File: D:\Documents\E_Plus_2030_py\idf_objects\Elec\constants.py
+File: D:\Documents\E_Plus_2030_py\idf_objects\eequip\assign_equip_values.py
 ============================================================
-# Elec/constants.py
+# eequip/assign_equip_values.py
+
+import random
+from .equip_lookup import equip_lookup
+from .overrides_helper import find_applicable_overrides  # if you use override logic
+
+def assign_equipment_parameters(
+    building_id: int,
+    building_type: str,
+    age_range=None,
+    calibration_stage: str = "pre_calibration",
+    strategy: str = "A",
+    random_seed: int = None,
+    user_config: list = None,     # override table (list of dicts)
+    assigned_log: dict = None     # optional dictionary to store final picks
+):
+    """
+    Returns a dict with "equip_wm2", "tD", "tN", etc. for electric equipment.
+
+    Steps:
+      1) Check calibration_stage in equip_lookup; else fallback to "pre_calibration".
+      2) Get the dictionary for building_type (if missing => pick some default).
+      3) If user_config is provided, find all matching override rows for (building_id, building_type, age_range).
+      4) For each matching row, override the param's range (min_val, max_val).
+      5) Pick final value from the resulting range using 'strategy':
+         - A => midpoint
+         - B => random
+         - else => pick the min_val
+      6) Return assigned dictionary, optionally log it in assigned_log[building_id].
+    """
+
+    if random_seed is not None:
+        random.seed(random_seed)
+
+    # 1) Grab the stage dictionary or fallback
+    if calibration_stage not in equip_lookup:
+        calibration_stage = "pre_calibration"
+    stage_dict = equip_lookup[calibration_stage]
+
+    # 2) Fallback if building_type not found
+    if building_type not in stage_dict:
+        # Minimal fallback approach
+        equip_rng = (3.0, 3.0)
+        tD_rng    = (500, 500)
+        tN_rng    = (200, 200)
+    else:
+        param_dict = stage_dict[building_type]
+        equip_rng = param_dict.get("EQUIP_WM2_range", (3.0, 3.0))
+        tD_rng    = param_dict.get("tD_range", (500, 500))
+        tN_rng    = param_dict.get("tN_range", (200, 200))
+
+    # 3) Find override rows
+    if user_config is not None:
+        matches = find_applicable_overrides(building_id, building_type, age_range, user_config)
+    else:
+        matches = []
+
+    # 4) Apply overrides
+    for row in matches:
+        pname = row["param_name"]  # e.g. "equip_wm2", "tD", "tN"
+        mn = row["min_val"]
+        mx = row["max_val"]
+
+        # Update the relevant range
+        if pname == "equip_wm2":
+            equip_rng = (mn, mx)
+        elif pname == "tD":
+            tD_rng = (mn, mx)
+        elif pname == "tN":
+            tN_rng = (mn, mx)
+        # else ignore
+
+    # 5) Strategy to pick final values
+    def pick_val(r):
+        if strategy == "A":  # midpoint
+            return (r[0] + r[1]) / 2.0
+        elif strategy == "B":  # random
+            return random.uniform(r[0], r[1])
+        else:
+            return r[0]
+
+    assigned = {
+        "equip_wm2": pick_val(equip_rng),
+        "tD": pick_val(tD_rng),
+        "tN": pick_val(tN_rng)
+    }
+
+    # 6) Optional logging
+    if assigned_log is not None:
+        assigned_log[building_id] = assigned
+
+    return assigned
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_objects\eequip\equip_lookup.py
+============================================================
+# eequip/equip_lookup.py
+"""
+Equipment Lookup Table (Pre/Post Calibration)
+---------------------------------------------
+This file defines default electric equipment parameters for both 
+residential and non-residential buildings.
+
+We store everything in a nested dictionary `equip_lookup`, keyed by:
+    1) Calibration stage: "pre_calibration" or "post_calibration"
+    2) Building category: e.g. "Residential" or "Non-Residential"
+    3) Sub-type: e.g. "Corner House", "Office Function", etc.
+    4) Parameter key: "EQUIP_WM2_range", "tD_range", "tN_range", etc.
+
+Adjust the default values/ranges for your real-world scenario.
+"""
+
+equip_lookup = {
+    "pre_calibration": {
+        # ===============================
+        # 1) RESIDENTIAL (example sub-types)
+        # ===============================
+        "Residential": {
+            "Corner House": {
+                "EQUIP_WM2_range": (3.0, 5.0),
+                "tD_range": (400, 600),
+                "tN_range": (100, 200)
+            },
+            "Apartment": {
+                "EQUIP_WM2_range": (2.0, 4.0),
+                "tD_range": (300, 500),
+                "tN_range": (100, 200)
+            },
+            "Terrace or Semi-detached House": {
+                "EQUIP_WM2_range": (3.0, 5.0),
+                "tD_range": (400, 600),
+                "tN_range": (100, 200)
+            },
+            "Detached House": {
+                "EQUIP_WM2_range": (4.0, 6.0),
+                "tD_range": (500, 700),
+                "tN_range": (200, 300)
+            },
+            "Two-and-a-half-story House": {
+                "EQUIP_WM2_range": (4.0, 6.0),
+                "tD_range": (500, 700),
+                "tN_range": (200, 300)
+            }
+        },
+        # ===============================
+        # 2) NON-RESIDENTIAL (example sub-types)
+        # ===============================
+        "Non-Residential": {
+            "Meeting Function": {
+                "EQUIP_WM2_range": (8.0, 10.0),
+                "tD_range": (2000, 2200),
+                "tN_range": (300, 400)
+            },
+            "Healthcare Function": {
+                "EQUIP_WM2_range": (10.0, 12.0),
+                "tD_range": (3000, 4000),
+                "tN_range": (600, 800)
+            },
+            "Sport Function": {
+                "EQUIP_WM2_range": (9.0, 11.0),
+                "tD_range": (2500, 2700),
+                "tN_range": (500, 700)
+            },
+            "Cell Function": {
+                "EQUIP_WM2_range": (8.0, 10.0),
+                "tD_range": (3500, 3800),
+                "tN_range": (800, 1000)
+            },
+            "Retail Function": {
+                "EQUIP_WM2_range": (10.0, 12.0),
+                "tD_range": (2500, 2700),
+                "tN_range": (400, 500)
+            },
+            "Industrial Function": {
+                "EQUIP_WM2_range": (12.0, 15.0),
+                "tD_range": (3000, 3200),
+                "tN_range": (600, 800)
+            },
+            "Accommodation Function": {
+                "EQUIP_WM2_range": (6.0, 8.0),
+                "tD_range": (2500, 3000),
+                "tN_range": (600, 800)
+            },
+            "Office Function": {
+                "EQUIP_WM2_range": (8.0, 10.0),
+                "tD_range": (2000, 2200),
+                "tN_range": (300, 400)
+            },
+            "Education Function": {
+                "EQUIP_WM2_range": (7.0, 9.0),
+                "tD_range": (1500, 1700),
+                "tN_range": (200, 400)
+            },
+            "Other Use Function": {
+                "EQUIP_WM2_range": (5.0, 8.0),
+                "tD_range": (1500, 2000),
+                "tN_range": (200, 400)
+            }
+        }
+    },
+
+    # ------------------------------------------
+    #  POST-CALIBRATION (example narrower ranges)
+    # ------------------------------------------
+    "post_calibration": {
+        "Residential": {
+            "Corner House": {
+                "EQUIP_WM2_range": (4.0, 4.0),
+                "tD_range": (500, 500),
+                "tN_range": (150, 150)
+            },
+            "Apartment": {
+                "EQUIP_WM2_range": (3.0, 3.0),
+                "tD_range": (400, 400),
+                "tN_range": (150, 150)
+            },
+            "Terrace or Semi-detached House": {
+                "EQUIP_WM2_range": (4.0, 4.0),
+                "tD_range": (500, 500),
+                "tN_range": (150, 150)
+            },
+            "Detached House": {
+                "EQUIP_WM2_range": (5.0, 5.0),
+                "tD_range": (600, 600),
+                "tN_range": (250, 250)
+            },
+            "Two-and-a-half-story House": {
+                "EQUIP_WM2_range": (5.0, 5.0),
+                "tD_range": (600, 600),
+                "tN_range": (250, 250)
+            }
+        },
+        "Non-Residential": {
+            "Meeting Function": {
+                "EQUIP_WM2_range": (9.0, 9.0),
+                "tD_range": (2100, 2100),
+                "tN_range": (350, 350)
+            },
+            "Healthcare Function": {
+                "EQUIP_WM2_range": (11.0, 11.0),
+                "tD_range": (3500, 3500),
+                "tN_range": (700, 700)
+            },
+            "Sport Function": {
+                "EQUIP_WM2_range": (10.0, 10.0),
+                "tD_range": (2600, 2600),
+                "tN_range": (600, 600)
+            },
+            "Cell Function": {
+                "EQUIP_WM2_range": (9.0, 9.0),
+                "tD_range": (3600, 3600),
+                "tN_range": (900, 900)
+            },
+            "Retail Function": {
+                "EQUIP_WM2_range": (11.0, 11.0),
+                "tD_range": (2600, 2600),
+                "tN_range": (450, 450)
+            },
+            "Industrial Function": {
+                "EQUIP_WM2_range": (13.0, 13.0),
+                "tD_range": (3100, 3100),
+                "tN_range": (700, 700)
+            },
+            "Accommodation Function": {
+                "EQUIP_WM2_range": (7.0, 7.0),
+                "tD_range": (2700, 2700),
+                "tN_range": (700, 700)
+            },
+            "Office Function": {
+                "EQUIP_WM2_range": (9.0, 9.0),
+                "tD_range": (2100, 2100),
+                "tN_range": (350, 350)
+            },
+            "Education Function": {
+                "EQUIP_WM2_range": (8.0, 8.0),
+                "tD_range": (1600, 1600),
+                "tN_range": (300, 300)
+            },
+            "Other Use Function": {
+                "EQUIP_WM2_range": (6.0, 6.0),
+                "tD_range": (1800, 1800),
+                "tN_range": (300, 300)
+            }
+        }
+    }
+}
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_objects\eequip\equipment.py
+============================================================
+"""equipment.py
+
+Adds ELECTRICEQUIPMENT objects to an IDF using default lookup tables
+and optional user overrides.
+"""
+
+from idf_objects.Elec.lighting import get_building_category_and_subtype
+from .assign_equip_values import assign_equipment_parameters
+from .schedules import create_equipment_schedule
+
+
+def add_electric_equipment(
+    idf,
+    building_row,
+    calibration_stage="pre_calibration",
+    strategy="A",
+    random_seed=None,
+    user_config=None,
+    assigned_values_log=None,
+    zonelist_name="ALL_ZONES",
+):
+    """Create an ELECTRICEQUIPMENT object for the entire building.
+
+    Parameters
+    ----------
+    idf : Eppy IDF
+        The IDF object to modify.
+    building_row : pd.Series or dict
+        Row with at least ``ogc_fid`` and ``building_function`` fields.
+    calibration_stage : str, default "pre_calibration"
+        Lookup key for ``equip_lookup``.
+    strategy : str, default "A"
+        Selection strategy for value picking.
+    random_seed : int, optional
+        Seed for the random generator if strategy uses randomness.
+    user_config : list of dicts, optional
+        Override rows for equipment parameters.
+    assigned_values_log : dict, optional
+        If provided, the picked parameters are stored under
+        ``assigned_values_log[building_id]``.
+    zonelist_name : str, default "ALL_ZONES"
+        ZoneList name to reference in the created object.
+    """
+
+    building_category, sub_type = get_building_category_and_subtype(building_row)
+    bldg_id = int(building_row.get("ogc_fid", 0))
+
+    picks = assign_equipment_parameters(
+        building_id=bldg_id,
+        building_type=sub_type,
+        age_range=None,
+        calibration_stage=calibration_stage,
+        strategy=strategy,
+        random_seed=random_seed,
+        user_config=user_config,
+        assigned_log=assigned_values_log,
+    )
+
+    equip_wm2 = picks["equip_wm2"]
+
+    sched_name = create_equipment_schedule(
+        idf,
+        building_category=building_category,
+        sub_type=sub_type,
+        schedule_name="EquipSchedule",
+    )
+
+    eq_obj = idf.newidfobject("ELECTRICEQUIPMENT")
+    eq_obj.Name = f"Equip_{zonelist_name}"
+    eq_obj.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zonelist_name
+    eq_obj.Schedule_Name = sched_name
+    eq_obj.Design_Level_Calculation_Method = "Watts/Area"
+    eq_obj.Watts_per_Zone_Floor_Area = equip_wm2
+
+    return eq_obj
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_objects\eequip\schedule_def.py
+============================================================
+# eequip/schedule_def.py
 
 """
-Global constants or default fallback values for the lighting module.
-These can be overridden by user configs or Excel-based overrides.
+EQUIP_SCHEDULE_DEFINITIONS
+===========================
+This dictionary defines typical usage patterns for electric equipment
+throughout the day, differentiating weekday vs. weekend, and by building
+category (Residential vs. Non-Residential) and sub-type (e.g. "Corner House", 
+"Office Function", etc.).
+
+Each sub-type entry contains two keys:
+ - "weekday": a list of (start_hour, end_hour, fraction)
+ - "weekend": a list of (start_hour, end_hour, fraction)
+
+The fraction represents the fraction of peak equipment load during that time.
 """
 
-# Default power density values (W/m²)
-DEFAULT_LIGHTING_WM2 = 10.0
-DEFAULT_PARASITIC_WM2 = 0.285
+EQUIP_SCHEDULE_DEFINITIONS = {
+    "Residential": {
+        "Corner House": {
+            "weekday": [
+                (0, 6, 0.10),
+                (6, 9, 0.40),
+                (9, 17, 0.20),
+                (17, 21, 0.60),
+                (21, 24, 0.20),
+            ],
+            "weekend": [
+                (0, 9, 0.25),
+                (9, 22, 0.50),
+                (22, 24, 0.25),
+            ],
+        },
+        "Apartment": {
+            "weekday": [
+                (0, 6, 0.05),
+                (6, 8, 0.20),
+                (8, 18, 0.10),
+                (18, 23, 0.60),
+                (23, 24, 0.05),
+            ],
+            "weekend": [
+                (0, 9, 0.15),
+                (9, 22, 0.50),
+                (22, 24, 0.15),
+            ],
+        },
+        "Terrace or Semi-detached House": {
+            "weekday": [
+                (0, 7, 0.05),
+                (7, 9, 0.20),
+                (9, 17, 0.10),
+                (17, 22, 0.60),
+                (22, 24, 0.05),
+            ],
+            "weekend": [
+                (0, 9, 0.10),
+                (9, 22, 0.50),
+                (22, 24, 0.10),
+            ],
+        },
+        "Detached House": {
+            "weekday": [
+                (0, 7, 0.05),
+                (7, 9, 0.20),
+                (9, 17, 0.10),
+                (17, 22, 0.60),
+                (22, 24, 0.05),
+            ],
+            "weekend": [
+                (0, 9, 0.10),
+                (9, 22, 0.50),
+                (22, 24, 0.10),
+            ],
+        },
+        "Two-and-a-half-story House": {
+            "weekday": [
+                (0, 6, 0.05),
+                (6, 9, 0.20),
+                (9, 18, 0.10),
+                (18, 23, 0.60),
+                (23, 24, 0.05),
+            ],
+            "weekend": [
+                (0, 9, 0.10),
+                (9, 22, 0.50),
+                (22, 24, 0.10),
+            ],
+        },
+    },
+    "Non-Residential": {
+        "Meeting Function": {
+            "weekday": [
+                (0, 6, 0.05),
+                (6, 9, 0.50),
+                (9, 12, 0.80),
+                (12, 13, 0.50),
+                (13, 18, 0.80),
+                (18, 20, 0.50),
+                (20, 24, 0.10),
+            ],
+            "weekend": [
+                (0, 24, 0.10),
+            ],
+        },
+        "Healthcare Function": {
+            "weekday": [
+                (0, 24, 0.80),
+            ],
+            "weekend": [
+                (0, 24, 0.80),
+            ],
+        },
+        "Sport Function": {
+            "weekday": [
+                (0, 6, 0.05),
+                (6, 9, 0.20),
+                (9, 12, 0.70),
+                (12, 14, 0.50),
+                (14, 22, 0.70),
+                (22, 24, 0.10),
+            ],
+            "weekend": [
+                (0, 9, 0.10),
+                (9, 22, 0.70),
+                (22, 24, 0.10),
+            ],
+        },
+        "Cell Function": {
+            "weekday": [
+                (0, 24, 0.90),
+            ],
+            "weekend": [
+                (0, 24, 0.90),
+            ],
+        },
+        "Retail Function": {
+            "weekday": [
+                (0, 6, 0.05),
+                (6, 9, 0.30),
+                (9, 19, 0.90),
+                (19, 21, 0.50),
+                (21, 24, 0.05),
+            ],
+            "weekend": [
+                (0, 8, 0.10),
+                (8, 19, 0.80),
+                (19, 22, 0.30),
+                (22, 24, 0.10),
+            ],
+        },
+        "Industrial Function": {
+            "weekday": [
+                (0, 6, 0.20),
+                (6, 8, 0.50),
+                (8, 17, 0.80),
+                (17, 20, 0.50),
+                (20, 24, 0.20),
+            ],
+            "weekend": [
+                (0, 24, 0.20),
+            ],
+        },
+        "Accommodation Function": {
+            "weekday": [
+                (0, 24, 0.70),
+            ],
+            "weekend": [
+                (0, 24, 0.70),
+            ],
+        },
+        "Office Function": {
+            "weekday": [
+                (0, 6, 0.10),
+                (6, 9, 0.50),
+                (9, 12, 0.90),
+                (12, 13, 0.70),
+                (13, 18, 0.90),
+                (18, 20, 0.50),
+                (20, 24, 0.10),
+            ],
+            "weekend": [
+                (0, 24, 0.10),
+            ],
+        },
+        "Education Function": {
+            "weekday": [
+                (0, 7, 0.05),
+                (7, 8, 0.50),
+                (8, 16, 0.80),
+                (16, 18, 0.50),
+                (18, 24, 0.05),
+            ],
+            "weekend": [
+                (0, 24, 0.10),
+            ],
+        },
+        "Other Use Function": {
+            "weekday": [
+                (0, 24, 0.30),
+            ],
+            "weekend": [
+                (0, 24, 0.20),
+            ],
+        },
+    },
+}
 
-# Default burning hours if not found in the lookup
-DEFAULT_TD = 2000
-DEFAULT_TN = 300
 
-# Optional: If you want fraction parameter defaults here
-# (instead of defining them in the fallback block of assign_lighting_values.py),
-# you can do so, e.g.:
-DEFAULT_LIGHTS_FRACTION_RADIANT = 0.7
-DEFAULT_LIGHTS_FRACTION_VISIBLE = 0.2
-DEFAULT_LIGHTS_FRACTION_REPLACEABLE = 1.0
+def read_schedule_overrides_from_excel(excel_path):
+    """Read Excel overrides for schedule definitions."""
+    import pandas as pd
 
-DEFAULT_EQUIP_FRACTION_RADIANT = 0.0
-DEFAULT_EQUIP_FRACTION_LOST = 1.0
+    df = pd.read_excel(excel_path)
+    required = [
+        "building_category",
+        "sub_type",
+        "day_type",
+        "start_hour",
+        "end_hour",
+        "fraction_value",
+    ]
+    for c in required:
+        if c not in df.columns:
+            raise ValueError(f"Missing column '{c}' in {excel_path}")
 
-# You can import & use these defaults in assign_lighting_values.py
-# or wherever you handle fraction parameters.
+    overrides = {}
+    for _, row in df.iterrows():
+        cat = str(row["building_category"]).strip()
+        stype = str(row["sub_type"]).strip()
+        dtype = str(row["day_type"]).strip().lower()
+        block = (float(row["start_hour"]), float(row["end_hour"]), float(row["fraction_value"]))
+
+        overrides.setdefault(cat, {}).setdefault(stype, {}).setdefault(dtype, []).append(block)
+
+    return overrides
+
+
+def apply_schedule_overrides_to_schedules(base_schedules, overrides):
+    """Merge schedule overrides into ``base_schedules`` in-place."""
+    for cat, stypes in overrides.items():
+        if cat not in base_schedules:
+            base_schedules[cat] = {}
+        for stype, days in stypes.items():
+            if stype not in base_schedules[cat]:
+                base_schedules[cat][stype] = {}
+            for day_type, blocks in days.items():
+                base_schedules[cat][stype][day_type] = blocks
+
+    return base_schedules
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_objects\eequip\schedules.py
+============================================================
+# eequip/schedules.py
+
+from .schedule_def import EQUIP_SCHEDULE_DEFINITIONS
+
+"""
+This module creates detailed schedules for electric equipment usage
+(weekday vs. weekend), differentiating by building category (Residential vs. Non-Residential)
+and sub-type (e.g. Corner House, Office, Retail, etc.).
+
+We provide two main functions:
+
+1) create_equipment_schedule(idf, building_category, sub_type, schedule_name)
+   - Creates a multi-day schedule with 'WeekDays', 'Saturday', 'Sunday'.
+
+2) create_equipment_parasitic_schedule(idf, sched_name)
+   - Creates a schedule that is always ON (1.0).
+"""
+
+
+def create_equipment_schedule(idf, building_category, sub_type, schedule_name="EquipSchedule"):
+    """
+    Creates a SCHEDULE:COMPACT object in the IDF representing a typical 
+    equipment usage pattern for weekdays vs. weekends, based on 
+    EQUIP_SCHEDULE_DEFINITIONS.
+
+    Parameters:
+        - idf: Eppy IDF object (or a similar interface)
+        - building_category: e.g. "Residential" or "Non-Residential"
+        - sub_type: e.g. "Corner House", "Office Function"
+        - schedule_name: name of the schedule in IDF
+
+    Returns:
+        - The name of the new schedule object (same as schedule_name).
+    """
+
+    # Attempt to retrieve a sub-type dict. If not found, fallback to a simple 0.5 fraction all day.
+    try:
+        sub_dict = EQUIP_SCHEDULE_DEFINITIONS[building_category][sub_type]
+    except KeyError:
+        sub_dict = {
+            "weekday": [(0, 24, 0.5)],
+            "weekend": [(0, 24, 0.5)],
+        }
+
+    # Create a new schedule object in the IDF
+    schedule = idf.newidfobject("SCHEDULE:COMPACT")
+    schedule.Name = schedule_name
+    schedule.Schedule_Type_Limits_Name = "Fraction"
+
+    # We'll define a pattern that covers the full year:
+    field_idx = 1
+
+    # First line: "Through: 12/31"
+    setattr(schedule, f"Field_{field_idx}", "Through: 12/31")
+    field_idx += 1
+
+    # 1) WeekDays
+    setattr(schedule, f"Field_{field_idx}", "For: WeekDays")
+    field_idx += 1
+    for (start_hour, end_hour, fraction) in sub_dict["weekday"]:
+        setattr(
+            schedule,
+            f"Field_{field_idx}",
+            f"Until: {end_hour:02d}:00,{fraction:.2f}"
+        )
+        field_idx += 1
+
+    # 2) Saturday
+    setattr(schedule, f"Field_{field_idx}", "For: Saturday")
+    field_idx += 1
+    for (start_hour, end_hour, fraction) in sub_dict["weekend"]:
+        setattr(
+            schedule,
+            f"Field_{field_idx}",
+            f"Until: {end_hour:02d}:00,{fraction:.2f}"
+        )
+        field_idx += 1
+
+    # 3) Sunday
+    setattr(schedule, f"Field_{field_idx}", "For: Sunday")
+    field_idx += 1
+    for (start_hour, end_hour, fraction) in sub_dict["weekend"]:
+        setattr(
+            schedule,
+            f"Field_{field_idx}",
+            f"Until: {end_hour:02d}:00,{fraction:.2f}"
+        )
+        field_idx += 1
+
+    return schedule.Name
+
+
+def create_equipment_parasitic_schedule(idf, sched_name="EquipParasiticSchedule"):
+    """
+    Creates a schedule that is always ON at 1.0 for parasitic equipment loads.
+    You can also rename it or adjust if you want partial load or special schedules.
+
+    Parameters:
+        - idf: Eppy IDF object
+        - sched_name: the schedule name in the IDF
+
+    Returns:
+        - The name of the new schedule object
+    """
+
+    schedule = idf.newidfobject("SCHEDULE:COMPACT")
+    schedule.Name = sched_name
+    schedule.Schedule_Type_Limits_Name = "Fraction"
+
+    # A simple all-day, all-year schedule at 1.0
+    schedule.Field_1 = "Through: 12/31"
+    schedule.Field_2 = "For: AllDays"
+    schedule.Field_3 = "Until: 24:00,1.0"
+
+    return schedule.Name
 
 ------------------------------------------------------------
 
@@ -354,6 +1069,38 @@ def assign_lighting_parameters(
         assigned_log[building_id] = assigned
 
     return assigned
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_objects\Elec\constants.py
+============================================================
+# Elec/constants.py
+
+"""
+Global constants or default fallback values for the lighting module.
+These can be overridden by user configs or Excel-based overrides.
+"""
+
+# Default power density values (W/m²)
+DEFAULT_LIGHTING_WM2 = 10.0
+DEFAULT_PARASITIC_WM2 = 0.285
+
+# Default burning hours if not found in the lookup
+DEFAULT_TD = 2000
+DEFAULT_TN = 300
+
+# Optional: If you want fraction parameter defaults here
+# (instead of defining them in the fallback block of assign_lighting_values.py),
+# you can do so, e.g.:
+DEFAULT_LIGHTS_FRACTION_RADIANT = 0.7
+DEFAULT_LIGHTS_FRACTION_VISIBLE = 0.2
+DEFAULT_LIGHTS_FRACTION_REPLACEABLE = 1.0
+
+DEFAULT_EQUIP_FRACTION_RADIANT = 0.0
+DEFAULT_EQUIP_FRACTION_LOST = 1.0
+
+# You can import & use these defaults in assign_lighting_values.py
+# or wherever you handle fraction parameters.
 
 ------------------------------------------------------------
 
@@ -728,111 +1475,6 @@ lighting_lookup = {
         }
     }
 }
-
-------------------------------------------------------------
-
-File: D:\Documents\E_Plus_2030_py\idf_objects\Elec\lighting_overrides_from_excel.py
-============================================================
-# lighting_overrides_from_excel.py
-import pandas as pd
-import copy
-
-def read_lighting_overrides_from_excel(excel_path):
-    """
-    Reads lighting_overrides.xlsx and returns a structure like:
-      override_data[calibration_stage][building_type][param_name] = (min_val, max_val) or (val, val)
-
-    Expected columns:
-      - calibration_stage
-      - building_type
-      - param_name (like 'lights_wm2', 'parasitic_wm2', 'tD', 'tN', etc.)
-      - min_val
-      - max_val
-      - fixed_value
-    """
-    df = pd.read_excel(excel_path)
-
-    required_cols = ["calibration_stage", "building_type", "param_name", "min_val", "max_val", "fixed_value"]
-    for c in required_cols:
-        if c not in df.columns:
-            raise ValueError(f"Missing column '{c}' in {excel_path}")
-
-    override_data = {}
-
-    for _, row in df.iterrows():
-        stage = str(row["calibration_stage"]).strip()
-        btype = str(row["building_type"]).strip()
-        pname = str(row["param_name"]).strip()   # e.g. "lights_wm2", "tD", "PARASITIC_WM2"
-        fv = row["fixed_value"]
-        mn = row["min_val"]
-        mx = row["max_val"]
-
-        if stage not in override_data:
-            override_data[stage] = {}
-        if btype not in override_data[stage]:
-            override_data[stage][btype] = {}
-
-        # final range
-        if pd.notna(fv):
-            # if fixed_value => (fv, fv)
-            override_data[stage][btype][pname] = (float(fv), float(fv))
-        elif pd.notna(mn) and pd.notna(mx):
-            override_data[stage][btype][pname] = (float(mn), float(mx))
-        else:
-            # if neither => skip or store None
-            continue
-
-    return override_data
-
-
-def apply_lighting_overrides_to_lookup(default_lookup, override_data):
-    """
-    Merges override_data into default_lookup in place (or you can copy first).
-    default_lookup => e.g. lighting_lookup from lighting_lookup.py
-
-    For each stage/btype/param_name, we set or override the 
-      param_name_range in default_lookup[stage][btype].
-
-    E.g. if param_name is "lights_wm2", we need to store it as "LIGHTS_WM2_range".
-    If param_name is "tD", store it as "tD_range". 
-    We'll do a small map or direct approach.
-    """
-
-    # you could do copy if you want:
-    new_lookup = default_lookup
-
-    for stage, btypes_dict in override_data.items():
-        if stage not in new_lookup:
-            new_lookup[stage] = {}
-        for btype, param_dict in btypes_dict.items():
-            if btype not in new_lookup[stage]:
-                new_lookup[stage][btype] = {}
-            for pname, rng_tuple in param_dict.items():
-                # we transform e.g. "lights_wm2" => "LIGHTS_WM2_range"
-                # or "tD" => "tD_range"
-                # uppercase might matter if your existing dict uses "LIGHTS_WM2_range".
-                
-                # A small helper map:
-                # If your existing keys are "LIGHTS_WM2_range", 
-                # you might do a dictionary or just do pattern replacements:
-                
-                # pattern => uppercase param, + "_range"
-                # e.g. "lights_wm2" => "LIGHTS_WM2_range"
-                # if param_name already uppercase => "PARASITIC_WM2" => we might skip re-uppercasing
-                # We'll do a naive approach:
-                
-                # Convert to uppercase (except tD/tN we keep as is?), up to you:
-                if pname.lower() == "lights_wm2":
-                    range_key = "LIGHTS_WM2_range"
-                elif pname.lower() == "parasitic_wm2":
-                    range_key = "PARASITIC_WM2_range"
-                else:
-                    # e.g. tD => "tD_range", tN => "tN_range"
-                    range_key = f"{pname}_range"
-
-                new_lookup[stage][btype][range_key] = rng_tuple
-
-    return new_lookup
 
 ------------------------------------------------------------
 
