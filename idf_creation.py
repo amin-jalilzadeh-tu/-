@@ -32,6 +32,7 @@ from idf_objects.eequip.equipment import add_electric_equipment
 from idf_objects.DHW.water_heater import add_dhw_to_idf
 from idf_objects.HVAC.custom_hvac import add_HVAC_Ideal_to_all_zones
 from idf_objects.ventilation.add_ventilation import add_ventilation_to_idf
+from idf_objects.wshading.create_shading_objects import add_shading_objects
 from idf_objects.setzone.add_outdoor_air_and_zone_sizing_to_all_zones import add_outdoor_air_and_zone_sizing_to_all_zones
 from idf_objects.tempground.add_ground_temperatures import add_ground_temperatures
 from idf_objects.other.zonelist import create_zonelist
@@ -76,6 +77,9 @@ def create_idf_for_building(
     res_data=None,
     nonres_data=None,
     assigned_fenez_log=None,
+    # Window Shading
+    user_config_shading=None,
+    assigned_shading_log=None,
     # HVAC
     user_config_hvac=None,
     assigned_hvac_log=None,
@@ -90,8 +94,9 @@ def create_idf_for_building(
     output_definitions=None
 ):
     """
-    Build an IDF for a single building, applying geometry, fenestration, lighting,
-    HVAC, ventilation, zone sizing, ground temps, and user overrides.
+    Build an IDF for a single building, applying geometry, fenestration, window
+    shading, lighting, HVAC, ventilation, zone sizing, ground temps, and user
+    overrides.
 
     Returns
     -------
@@ -187,7 +192,17 @@ def create_idf_for_building(
         assigned_fenez_log=assigned_fenez_log
     )
 
-    # 6) Lighting
+    # 6) Window shading (e.g., blinds)
+    add_shading_objects(
+        idf=idf,
+        building_row=building_row,
+        strategy=strategy,
+        random_seed=random_seed,
+        user_config_shading=user_config_shading,
+        assigned_shading_log=assigned_shading_log,
+    )
+
+    # 7) Lighting
     add_lights_and_parasitics(
         idf=idf,
         building_row=building_row,
@@ -198,7 +213,7 @@ def create_idf_for_building(
         assigned_values_log=assigned_lighting_log
     )
 
-    # 7) Electric equipment
+    # 8) Electric equipment
     add_electric_equipment(
         idf=idf,
         building_row=building_row,
@@ -209,7 +224,7 @@ def create_idf_for_building(
         assigned_values_log=assigned_equip_log,
         zonelist_name="ALL_ZONES",
     )
-    # 8) DHW
+    # 9) DHW
     add_dhw_to_idf(
         idf=idf,
         building_row=building_row,
@@ -222,7 +237,7 @@ def create_idf_for_building(
         use_nta=True
     )
 
-    # 9) HVAC
+    # 10) HVAC
     add_HVAC_Ideal_to_all_zones(
         idf=idf,
         building_row=building_row,
@@ -233,7 +248,7 @@ def create_idf_for_building(
         assigned_hvac_log=assigned_hvac_log
     )
 
-    # 10) Ventilation
+    # 11) Ventilation
     add_ventilation_to_idf(
         idf=idf,
         building_row=building_row,
@@ -245,7 +260,7 @@ def create_idf_for_building(
         infiltration_model="weather",
     )
 
-    # 11) Zone sizing
+    # 12) Zone sizing
     add_outdoor_air_and_zone_sizing_to_all_zones(
         idf=idf,
         building_row=building_row,
@@ -255,7 +270,7 @@ def create_idf_for_building(
         assigned_setzone_log=assigned_setzone_log
     )
 
-    # 12) Ground temperatures
+    # 13) Ground temperatures
     add_ground_temperatures(
         idf=idf,
         calibration_stage=calibration_stage,
@@ -264,7 +279,7 @@ def create_idf_for_building(
         assigned_groundtemp_log=assigned_groundtemp_log
     )
 
-    # 13) Output definitions
+    # 14) Output definitions
     if output_definitions is None:
         output_definitions = {
             "desired_variables": ["Facility Total Electric Demand Power", "Zone Air Temperature"],
@@ -284,7 +299,7 @@ def create_idf_for_building(
     )
     add_output_definitions(idf, out_settings)
 
-    # 13) Save final IDF
+    # 15) Save final IDF
     os.makedirs(idf_config["output_dir"], exist_ok=True)
     idf_filename = f"building_{building_index}.idf"
     out_path = os.path.join(idf_config["output_dir"], idf_filename)
@@ -307,6 +322,8 @@ def create_idfs_for_all_buildings(
     user_config_dhw=None,
     res_data=None,
     nonres_data=None,
+    user_config_shading=None,
+    assigned_shading_log=None,
     user_config_hvac=None,
     user_config_vent=None,
     user_config_epw=None,  # pass epw config or list if relevant
@@ -322,7 +339,9 @@ def create_idfs_for_all_buildings(
 ):
     """
     Loops over df_buildings, calls create_idf_for_building for each building,
-    optionally runs E+ simulations in parallel, and merges results if post_process=True.
+    optionally runs E+ simulations in parallel, and merges results if
+    post_process=True. Window shading overrides can be passed via
+    ``user_config_shading`` and logged to ``assigned_shading_log``.
 
     If logs_base_dir is provided, all assigned_*.csv and merged results go under that folder
     (e.g. logs_base_dir/assigned, logs_base_dir/Sim_Results, etc.).
@@ -340,6 +359,7 @@ def create_idfs_for_all_buildings(
     assigned_epw_log        = {}
     assigned_groundtemp_log = {}
     assigned_setzone_log    = {}
+    assigned_shading_log    = {}
 
     # B) Create an IDF for each building
     for idx, row in df_buildings.iterrows():
@@ -369,6 +389,9 @@ def create_idfs_for_all_buildings(
             res_data=res_data,
             nonres_data=nonres_data,
             assigned_fenez_log=assigned_fenez_log,
+            # Window shading
+            user_config_shading=user_config_shading,
+            assigned_shading_log=assigned_shading_log,
             # HVAC
             user_config_hvac=user_config_hvac,
             assigned_hvac_log=assigned_hvac_log,
@@ -472,6 +495,7 @@ def create_idfs_for_all_buildings(
         _write_dhw_csv(assigned_dhw_log, logs_base_dir)
         _write_hvac_csv(assigned_hvac_log, logs_base_dir)
         _write_vent_csv(assigned_vent_log, logs_base_dir)
+        _write_shading_csv(assigned_shading_log, logs_base_dir)
         # (If needed, also EPW or groundtemp logs, do similarly)
 
         logger.info("[create_idfs_for_all_buildings] => Done post-processing.")
@@ -624,4 +648,22 @@ def _write_equipment_csv(assigned_equip_log, logs_base_dir):
         return
     df = pd.DataFrame(rows)
     out_path = _make_assigned_path("assigned_equipment.csv", logs_base_dir)
+    df.to_csv(out_path, index=False)
+
+
+def _write_shading_csv(assigned_shading_log, logs_base_dir):
+    """Write ``assigned_shading_params.csv`` from ``assigned_shading_log``."""
+    rows = []
+    for window_id, param_dict in assigned_shading_log.items():
+        shading_params = param_dict.get("shading_params", param_dict)
+        for param_name, param_val in shading_params.items():
+            rows.append({
+                "window_id": window_id,
+                "param_name": param_name,
+                "assigned_value": param_val,
+            })
+    if not rows:
+        return
+    df = pd.DataFrame(rows)
+    out_path = _make_assigned_path("assigned_shading_params.csv", logs_base_dir)
     df.to_csv(out_path, index=False)
