@@ -1,9 +1,10 @@
-# wshading/assign_shading_values.py
-
 """
-Similar to assign_geometry_values or assign_fenestration_values, 
-this module picks the final shading parameters from shading_lookup.py 
-and optionally user overrides or Excel-based rules.
+assign_shading_values.py
+
+This module picks the final shading parameters from shading_lookup.py 
+and optionally user overrides or Excel-based rules. The actual creation 
+of EnergyPlus objects (e.g. WindowMaterial:Blind, Shading:Building:Detailed, etc.) 
+will happen in another file (e.g. create_shading_objects.py).
 """
 
 import random
@@ -40,7 +41,8 @@ def pick_shading_params(
     """
     1) Looks up default shading parameters from shading_lookup[shading_type_key].
     2) If user_config is provided, override or adjust some values if needed.
-    3) Based on 'strategy', pick final numeric values (midpoint or random) from any ranges.
+    3) Based on 'strategy', pick final numeric values (midpoint or random) 
+       from any ranges in these parameters.
     4) Optionally log the final picks in assigned_shading_log.
 
     Parameters
@@ -53,7 +55,7 @@ def pick_shading_params(
         "A" => pick midpoint from ranges; "B" => pick random.
         Otherwise => pick min_val for everything.
     user_config : dict or None
-        Optional. E.g. { "my_external_louvers": { "slat_angle_deg_range": (30, 60) } } 
+        E.g. { "my_external_louvers": { "slat_angle_deg_range": (30, 60) } }
         to override certain ranges for all windows or certain IDs.
     assigned_shading_log : dict or None
         If provided, store final picks under assigned_shading_log[window_id].
@@ -66,7 +68,7 @@ def pick_shading_params(
           "blind_name": "MyExternalLouvers",
           "slat_orientation": "Horizontal",
           "slat_width": 0.025,
-          ... 
+          ...
         }
     """
     # 1) Fetch base parameters from shading_lookup
@@ -74,13 +76,6 @@ def pick_shading_params(
     final_params = dict(base_params)  # shallow copy
 
     # 2) If user_config => update the base_params or override certain fields
-    #    Example structure for user_config might be:
-    #    {
-    #      "my_external_louvers": {
-    #         "slat_angle_deg_range": (30, 60),
-    #         ...
-    #      }
-    #    }
     if user_config and shading_type_key in user_config:
         overrides_for_this_type = user_config[shading_type_key]
         for key, val in overrides_for_this_type.items():
@@ -93,24 +88,19 @@ def pick_shading_params(
 
     # 3) Convert all "*_range" fields to single numeric picks
     #    e.g. final_params["slat_width_range"] => final_params["slat_width"]
-    #    We'll store them as final_params["slat_width"], etc.
     #    Then remove the old range key from final_params.
     fields_to_remove = []
     for field_key, field_val in final_params.items():
         if field_key.endswith("_range") and isinstance(field_val, tuple):
-            # e.g. "slat_width_range"
-            # strip off "_range" => "slat_width"
-            param_name = field_key[:-6]  # everything except "_range"
+            param_name = field_key[:-6]  # remove "_range"
             chosen_val = pick_val_from_range(field_val, strategy=strategy)
             final_params[param_name] = chosen_val
             fields_to_remove.append(field_key)
 
-    # Clean up the range-based keys
     for ftr in fields_to_remove:
         del final_params[ftr]
 
     # 4) If assigned_shading_log is provided, store the final chosen values
-    #    e.g. assigned_shading_log[window_id]["shading_params"] = final_params
     if assigned_shading_log is not None and window_id is not None:
         if window_id not in assigned_shading_log:
             assigned_shading_log[window_id] = {}

@@ -1,15 +1,15 @@
-# wshading/shading_overrides_from_excel.py
-
 """
-If you want to read shading overrides from an Excel file 
-(e.g., different blind angles per season, or custom user settings 
-for certain building IDs), you can do that here.
+shading_overrides_from_excel.py
+
+If you want to read shading overrides from an Excel file (e.g., different 
+blind angles per season, or custom user settings for certain building IDs), 
+you can do that here.
 
 Analogous to geometry_overrides_from_excel.py or dict_override_excel.py:
-- parse the Excel
-- store each row in a rules dictionary
-- 'pick_shading_params_from_rules' uses those rules to find 
-  the best match for a building/window context
+ - parse the Excel
+ - store each row in a rules dictionary
+ - 'pick_shading_params_from_rules' uses those rules to find 
+   the best match for a building/window context
 """
 
 import pandas as pd
@@ -80,13 +80,13 @@ def pick_shading_params_from_rules(
         # shading_type_key must match
         if str(rule.get("shading_type_key", "")).lower() != shading_type_key.lower():
             continue
-        # If multiple matches, we can pick the last or first. Let's pick the last match for demonstration.
+        # If multiple matches, pick last match or define your logic
         best_rule = rule
 
     if best_rule is None:
         return fallback
 
-    # remove the top-level fields "building_id" and "shading_type_key"
+    # remove top-level fields "building_id" and "shading_type_key"
     # the rest are actual overrides
     overrides = dict(best_rule)
     overrides.pop("building_id", None)

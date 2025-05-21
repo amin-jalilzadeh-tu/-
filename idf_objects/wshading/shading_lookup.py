@@ -1,17 +1,16 @@
-# wshading/shading_lookup.py
-
 """
+shading_lookup.py
+
 Contains default (hardcoded) shading parameters for different blind types, 
 overhangs, louvers, etc. This is analogous to geometry_lookup.py or 
 materials_lookup.py, storing dictionary-based defaults.
- 
+
 You can store various fields such as slat width, slat angle ranges, 
 reflectances, etc. for each shading 'key' (e.g., "my_external_louvers").
 """
 
 shading_lookup = {
-    # Example key => "my_external_louvers"
-    # You can store default values or ranges for slat angles, widths, reflectances, etc.
+    # Example: external louvers
     "my_external_louvers": {
         # This name will appear in EnergyPlus as the Blind material name
         "blind_name": "MyExternalLouvers",

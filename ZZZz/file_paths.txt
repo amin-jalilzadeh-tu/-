@@ -1,13 +1,4 @@
-D:\Documents\E_Plus_2030_py\idf_creation.py
-D:\Documents\E_Plus_2030_py\idf_objects\HVAC\assign_hvac_values.py
-D:\Documents\E_Plus_2030_py\idf_objects\HVAC\custom_hvac.py
-D:\Documents\E_Plus_2030_py\idf_objects\HVAC\schedule_creation.py
-D:\Documents\E_Plus_2030_py\idf_objects\ventilation\add_ventilation.py
-D:\Documents\E_Plus_2030_py\idf_objects\ventilation\assign_ventilation_values.py
-D:\Documents\E_Plus_2030_py\idf_objects\ventilation\calc_functions.py
-D:\Documents\E_Plus_2030_py\idf_objects\ventilation\config_systems.py
-D:\Documents\E_Plus_2030_py\idf_objects\ventilation\create_ventilation_systems.py
-D:\Documents\E_Plus_2030_py\idf_objects\ventilation\mappings.py
-D:\Documents\E_Plus_2030_py\idf_objects\ventilation\schedules.py
-
-
+D:\Documents\E_Plus_2030_py\idf_objects\wshading\assign_shading_values.py
+D:\Documents\E_Plus_2030_py\idf_objects\wshading\create_shading_objects.py
+D:\Documents\E_Plus_2030_py\idf_objects\wshading\shading_lookup.py
+D:\Documents\E_Plus_2030_py\idf_objects\wshading\shading_overrides_from_excel.py
