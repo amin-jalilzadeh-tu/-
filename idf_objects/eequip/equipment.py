@@ -1,10 +1,11 @@
+# File: D:\Documents\E_Plus_2030_py\idf_objects\eequip\equipment.py
 """equipment.py
 
 Adds ELECTRICEQUIPMENT objects to an IDF using default lookup tables
 and optional user overrides.
 """
 
-from idf_objects.Elec.lighting import get_building_category_and_subtype
+from idf_objects.Elec.lighting import get_building_category_and_subtype # This will use the debugged version from Elec/lighting.py
 from .assign_equip_values import assign_equipment_parameters
 from .schedules import create_equipment_schedule
 
@@ -42,14 +43,18 @@ def add_electric_equipment(
         ZoneList name to reference in the created object.
     """
 
-    building_category, sub_type = get_building_category_and_subtype(building_row)
+    # 1) Get building_category / sub_type
+    building_category, sub_type = get_building_category_and_subtype(building_row) # Uses the debugged version
+    
     bldg_id = int(building_row.get("ogc_fid", 0))
+    print(f"\n--- [DEBUG add_electric_equipment for bldg_id {bldg_id}] ---")
+    print(f"[DEBUG add_electric_equipment] Calling get_building_category_and_subtype, received: category='{building_category}', sub_type='{sub_type}'")
 
-    picks = assign_equipment_parameters(
+    picks = assign_equipment_parameters( # Call to assign_equipment_parameters
         building_id=bldg_id,
         building_category=building_category,
         sub_type=sub_type,
-        age_range=None,
+        age_range=None, # Assuming age_range is not the issue for now
         calibration_stage=calibration_stage,
         strategy=strategy,
         random_seed=random_seed,
@@ -72,5 +77,7 @@ def add_electric_equipment(
     eq_obj.Schedule_Name = sched_name
     eq_obj.Design_Level_Calculation_Method = "Watts/Area"
     eq_obj.Watts_per_Zone_Floor_Area = equip_wm2
-
+    
+    print(f"[DEBUG add_electric_equipment] Successfully created ELECTRICEQUIPMENT object for bldg_id {bldg_id} with equip_wm2 = {equip_wm2}.")
+    print(f"--- [END DEBUG add_electric_equipment for bldg_id {bldg_id}] ---")
     return eq_obj

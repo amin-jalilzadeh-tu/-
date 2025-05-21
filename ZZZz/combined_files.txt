@@ -1,142 +1,200 @@
 File: D:\Documents\E_Plus_2030_py\idf_objects\eequip\assign_equip_values.py
 ============================================================
-# eequip/assign_equip_values.py
+# File: D:\Documents\E_Plus_2030_py\idf_objects\eequip\assign_equip_values.py
 
 import random
 from .equip_lookup import equip_lookup
-from .overrides_helper import find_applicable_overrides  # if you use override logic
+from .overrides_helper import find_applicable_overrides # if you use override logic
 
 def assign_equipment_parameters(
     building_id: int,
     building_category: str,
     sub_type: str,
-    age_range=None,
+    age_range=None, # Passed to find_applicable_overrides
     calibration_stage: str = "pre_calibration",
     strategy: str = "A",
     random_seed: int = None,
-    user_config: list = None,     # override table (list of dicts)
-    assigned_log: dict = None     # optional dictionary to store final picks
+    user_config: list = None, # override table (list of dicts)
+    assigned_log: dict = None # optional dictionary to store final picks
 ):
     """
     Returns a dict with ``equip_wm2``, ``tD`` and ``tN`` picks for electric
-    equipment.  ``building_category`` should be either "Residential" or
-    "Non-Residential" while ``sub_type`` is the more specific building
-    function (e.g. "Corner House", "Office Function").
-
-    Category strings are normalised ("residential" → "Residential") before
-    lookup so overrides are more forgiving.
-
-    The optional ``assigned_log`` receives a structure containing both the final
-    values and the ranges they were drawn from, allowing downstream
-    inspection.
-
-    Steps:
-      1) Check ``calibration_stage`` in ``equip_lookup``; else fallback to
-         ``pre_calibration``.
-      2) Navigate to ``equip_lookup[calibration_stage][building_category][sub_type]``
-         to get default ranges. If any key is missing, use a minimal fallback.
-      3) If ``user_config`` is provided, find all matching override rows for
-         ``(building_id, sub_type, age_range)``.
-      4) For each matching row, override the param's range (min_val, max_val).
-      5) Pick final value from the resulting range using 'strategy':
-         - A => midpoint
-         - B => random
-         - else => pick the min_val
-      6) Return assigned dictionary, optionally log it in assigned_log[building_id].
+    equipment. (Docstring from original file)
     """
+    print(f"\n--- [DEBUG assign_equipment_parameters for bldg_id {building_id}] ---")
+    print(f"[DEBUG assign_equip_params] INPUTS: building_category='{building_category}', sub_type='{sub_type}', calibration_stage='{calibration_stage}', strategy='{strategy}'")
+    print(f"[DEBUG assign_equip_params]          age_range='{age_range}', user_config is {'Provided' if user_config else 'None'}")
 
     if random_seed is not None:
         random.seed(random_seed)
+        print(f"[DEBUG assign_equip_params] Random seed set to: {random_seed}")
 
     # Normalize category strings so that lookups are consistent
-    if building_category:
+    _original_building_category = building_category
+    if building_category: # Check if building_category is not None or empty
         bt_low = building_category.lower()
         if bt_low == "residential":
             building_category = "Residential"
-        elif bt_low == "non_residential":
+        elif bt_low == "non_residential": # Corrected from "non_residential" to match potential input casing
             building_category = "Non-Residential"
+    print(f"[DEBUG assign_equip_params] Category after normalization: '{building_category}' (was '{_original_building_category}')")
 
+    _original_sub_type = sub_type
     sub_type = sub_type.strip() if sub_type else ""
+    print(f"[DEBUG assign_equip_params] Sub_type after strip: '{sub_type}' (was '{_original_sub_type}') (len: {len(sub_type)})")
+
+    # Initialize ranges with minimal fallbacks, to be updated if lookups succeed
+    equip_rng_default = (3.0, 3.0)
+    tD_rng_default    = (500, 500)
+    tN_rng_default    = (200, 200)
+
+    equip_rng = equip_rng_default
+    tD_rng    = tD_rng_default
+    tN_rng    = tN_rng_default
+    
+    lookup_successful = False
 
     # 1) Grab the stage dictionary or fallback
+    _original_calibration_stage = calibration_stage
     if calibration_stage not in equip_lookup:
+        print(f"[DEBUG assign_equip_params] WARNING: calibration_stage '{calibration_stage}' not in equip_lookup keys: {list(equip_lookup.keys()) if isinstance(equip_lookup, dict) else 'Not a dict'}. Defaulting to 'pre_calibration'.")
         calibration_stage = "pre_calibration"
-    stage_dict = equip_lookup[calibration_stage]
-
-    # 2) Navigate to the sub-type dictionary or fallback
-    if building_category not in stage_dict:
-        # Minimal fallback approach
-        equip_rng = (3.0, 3.0)
-        tD_rng    = (500, 500)
-        tN_rng    = (200, 200)
+    
+    if calibration_stage not in equip_lookup:
+        print(f"[DEBUG assign_equip_params] CRITICAL FALLBACK (Stage): calibration_stage '{calibration_stage}' (even after potential default) is NOT in equip_lookup. Using hardcoded minimal fallback for ALL parameters.")
+        # Ranges already initialized to minimal fallbacks
     else:
-        cat_dict = stage_dict[building_category]
-        if sub_type not in cat_dict:
-            equip_rng = (3.0, 3.0)
-            tD_rng    = (500, 500)
-            tN_rng    = (200, 200)
+        stage_dict = equip_lookup[calibration_stage]
+        print(f"[DEBUG assign_equip_params] Using calibration_stage: '{calibration_stage}'. Stage_dict keys: {list(stage_dict.keys()) if isinstance(stage_dict, dict) else 'Not a dict'}")
+
+        # 2) Navigate to the sub-type dictionary or fallback
+        if not isinstance(stage_dict, dict) or building_category not in stage_dict:
+            print(f"[DEBUG assign_equip_params] FALLBACK (A - category): building_category '{building_category}' not in stage_dict for stage '{calibration_stage}' (or stage_dict is not a dict: {type(stage_dict)}). Using minimal fallback.")
+            # Ranges already initialized to minimal fallbacks
         else:
-            param_dict = cat_dict[sub_type]
-            equip_rng = param_dict.get("EQUIP_WM2_range", (3.0, 3.0))
-            tD_rng    = param_dict.get("tD_range", (500, 500))
-            tN_rng    = param_dict.get("tN_range", (200, 200))
+            cat_dict = stage_dict[building_category]
+            print(f"[DEBUG assign_equip_params] Found cat_dict for '{building_category}'. Sub-type keys in cat_dict: {list(cat_dict.keys()) if isinstance(cat_dict, dict) else 'Not a dict'}")
+            
+            if not isinstance(cat_dict, dict) or sub_type not in cat_dict:
+                print(f"[DEBUG assign_equip_params] FALLBACK (B - sub_type): sub_type '{sub_type}' not in cat_dict for category '{building_category}' (or cat_dict is not a dict: {type(cat_dict)}). Using minimal fallback.")
+                if isinstance(cat_dict, dict): print(f"   Available sub_types in cat_dict: {list(cat_dict.keys())}")
+                # Ranges already initialized to minimal fallbacks
+            else:
+                param_dict = cat_dict[sub_type]
+                if not isinstance(param_dict, dict):
+                    print(f"[DEBUG assign_equip_params] FALLBACK (C - param_dict type): param_dict for '{sub_type}' is not a dictionary (type: {type(param_dict)}). Using minimal fallback.")
+                    # Ranges already initialized to minimal fallbacks
+                else:
+                    print(f"[DEBUG assign_equip_params] SUCCESS: Found param_dict for sub_type '{sub_type}'. Keys: {list(param_dict.keys())}")
+                    lookup_successful = True
+                    # Get parameters with their own fallbacks if specific keys are missing
+                    equip_rng = param_dict.get("EQUIP_WM2_range", equip_rng_default)
+                    tD_rng    = param_dict.get("tD_range", tD_rng_default)
+                    tN_rng    = param_dict.get("tN_range", tN_rng_default)
+                    
+                    if "EQUIP_WM2_range" not in param_dict: print(f"   [DEBUG assign_equip_params] Note: EQUIP_WM2_range missing in param_dict for '{sub_type}', used default {equip_rng_default}.")
+                    if "tD_range" not in param_dict: print(f"   [DEBUG assign_equip_params] Note: tD_range missing in param_dict for '{sub_type}', used default {tD_rng_default}.")
+                    if "tN_range" not in param_dict: print(f"   [DEBUG assign_equip_params] Note: tN_range missing in param_dict for '{sub_type}', used default {tN_rng_default}.")
+
+    print(f"[DEBUG assign_equip_params] Ranges status after lookup (lookup_successful={lookup_successful}):")
+    print(f"  equip_rng: {equip_rng}")
+    print(f"  tD_rng: {tD_rng}")
+    print(f"  tN_rng: {tN_rng}")
 
     # 3) Find override rows
+    matches = [] # Ensure matches is defined
     if user_config is not None:
-        matches = find_applicable_overrides(building_id, sub_type, age_range, user_config)
+        # Assuming find_applicable_overrides exists and works correctly.
+        # Add try-except if it's a source of potential errors.
+        try:
+            matches = find_applicable_overrides(building_id, sub_type, age_range, user_config)
+            print(f"[DEBUG assign_equip_params] Found {len(matches)} applicable overrides for bldg_id={building_id}, sub_type='{sub_type}', age_range='{age_range}'.")
+            if matches: print(f"   Overrides data: {matches}")
+        except Exception as e:
+            print(f"[DEBUG assign_equip_params] ERROR in find_applicable_overrides: {e}")
+            matches = [] # Reset to empty list on error
     else:
+        print(f"[DEBUG assign_equip_params] No user_config provided for overrides.")
         matches = []
 
     # 4) Apply overrides
-    for row in matches:
-        pname = row["param_name"]  # e.g. "equip_wm2", "tD", "tN"
-        mn = row["min_val"]
-        mx = row["max_val"]
+    if matches:
+        print(f"[DEBUG assign_equip_params] Applying {len(matches)} overrides...")
+    for row_idx, row in enumerate(matches):
+        # Defensive get for keys in override rows
+        pname = row.get("param_name")
+        mn = row.get("min_val")
+        mx = row.get("max_val")
 
-        # Update the relevant range
+        if pname is None or mn is None or mx is None:
+            print(f"  [DEBUG assign_equip_params] Override {row_idx+1} skipped: malformed row (missing param_name, min_val, or max_val): {row}")
+            continue
+            
+        pname = pname.strip() # Ensure no leading/trailing spaces
+
+        print(f"  [DEBUG assign_equip_params] Override {row_idx+1}: param='{pname}', min_val={mn}, max_val={mx}")
         if pname == "equip_wm2":
-            equip_rng = (mn, mx)
+            equip_rng = (float(mn), float(mx))
+            print(f"    Updated equip_rng to: {equip_rng}")
         elif pname == "tD":
-            tD_rng = (mn, mx)
+            tD_rng = (float(mn), float(mx))
+            print(f"    Updated tD_rng to: {tD_rng}")
         elif pname == "tN":
-            tN_rng = (mn, mx)
-        # else ignore
+            tN_rng = (float(mn), float(mx))
+            print(f"    Updated tN_rng to: {tN_rng}")
+        else:
+            print(f"    [DEBUG assign_equip_params] Unrecognized param_name '{pname}' in override row.")
+    
+    if matches: print(f"[DEBUG assign_equip_params] Ranges after potential overrides: equip_rng={equip_rng}, tD_rng={tD_rng}, tN_rng={tN_rng}")
 
     # 5) Strategy to pick final values
-    def pick_val(r):
-        if strategy == "A":  # midpoint
-            return (r[0] + r[1]) / 2.0
-        elif strategy == "B":  # random
-            return random.uniform(r[0], r[1])
-        else:
-            return r[0]
+    def pick_val(param_name, r, current_strategy): # Added param_name and strategy for better logging
+        val = None
+        # Ensure r is a tuple of two numbers
+        if not (isinstance(r, (tuple, list)) and len(r) == 2 and all(isinstance(n, (int, float)) for n in r)):
+            print(f"  [DEBUG assign_equip_params] pick_val for '{param_name}': Invalid range format {r}. Using default 0.0.")
+            return 0.0 # Or handle error appropriately
+            
+        if current_strategy == "A": # midpoint
+            val = (r[0] + r[1]) / 2.0
+        elif current_strategy == "B": # random
+            val = random.uniform(r[0], r[1])
+        else: # fallback => pick min
+            val = r[0]
+        print(f"  [DEBUG assign_equip_params] pick_val for '{param_name}': range={r}, strategy='{current_strategy}', picked={val}")
+        return val
 
     assigned = {
-        "equip_wm2": pick_val(equip_rng),
-        "tD": pick_val(tD_rng),
-        "tN": pick_val(tN_rng)
+        "equip_wm2": pick_val("equip_wm2", equip_rng, strategy),
+        "tD": pick_val("tD", tD_rng, strategy),
+        "tN": pick_val("tN", tN_rng, strategy)
     }
+    print(f"[DEBUG assign_equip_params] Values after pick_val (pre-sanity): {assigned}")
 
     # Basic sanity checks so negative values or obviously unrealistic
-    # picks do not slip through. You can adapt the thresholds to your
-    # own domain knowledge.
-    assigned["equip_wm2"] = max(0.0, assigned["equip_wm2"])
-    assigned["tD"] = max(0.0, assigned["tD"])
-    assigned["tN"] = max(0.0, assigned["tN"])
+    # picks do not slip through.
+    assigned["equip_wm2"] = max(0.0, float(assigned["equip_wm2"]))
+    assigned["tD"] = max(0.0, float(assigned["tD"]))
+    assigned["tN"] = max(0.0, float(assigned["tN"]))
+    print(f"[DEBUG assign_equip_params] Final assigned values (post-sanity): {assigned}")
 
     # 6) Optional logging of both the picks and underlying ranges
     if assigned_log is not None:
-        assigned_log[building_id] = {
+        log_data = {
             "assigned": assigned,
             "ranges": {
                 "equip_wm2": equip_rng,
                 "tD": tD_rng,
                 "tN": tN_rng,
             },
+            "lookup_successful": lookup_successful, # Added for insight
+            "overrides_applied_count": len(matches) # Added for insight
         }
+        assigned_log[building_id] = log_data
+        print(f"[DEBUG assign_equip_params] Logged data for building_id {building_id}: {log_data}")
 
+    print(f"--- [END DEBUG assign_equipment_parameters for bldg_id {building_id}] ---")
     return assigned
-
 ------------------------------------------------------------
 
 File: D:\Documents\E_Plus_2030_py\idf_objects\eequip\equip_lookup.py
@@ -336,13 +394,14 @@ equip_lookup = {
 
 File: D:\Documents\E_Plus_2030_py\idf_objects\eequip\equipment.py
 ============================================================
+# File: D:\Documents\E_Plus_2030_py\idf_objects\eequip\equipment.py
 """equipment.py
 
 Adds ELECTRICEQUIPMENT objects to an IDF using default lookup tables
 and optional user overrides.
 """
 
-from idf_objects.Elec.lighting import get_building_category_and_subtype
+from idf_objects.Elec.lighting import get_building_category_and_subtype # This will use the debugged version from Elec/lighting.py
 from .assign_equip_values import assign_equipment_parameters
 from .schedules import create_equipment_schedule
 
@@ -380,14 +439,18 @@ def add_electric_equipment(
         ZoneList name to reference in the created object.
     """
 
-    building_category, sub_type = get_building_category_and_subtype(building_row)
+    # 1) Get building_category / sub_type
+    building_category, sub_type = get_building_category_and_subtype(building_row) # Uses the debugged version
+    
     bldg_id = int(building_row.get("ogc_fid", 0))
+    print(f"\n--- [DEBUG add_electric_equipment for bldg_id {bldg_id}] ---")
+    print(f"[DEBUG add_electric_equipment] Calling get_building_category_and_subtype, received: category='{building_category}', sub_type='{sub_type}'")
 
-    picks = assign_equipment_parameters(
+    picks = assign_equipment_parameters( # Call to assign_equipment_parameters
         building_id=bldg_id,
         building_category=building_category,
         sub_type=sub_type,
-        age_range=None,
+        age_range=None, # Assuming age_range is not the issue for now
         calibration_stage=calibration_stage,
         strategy=strategy,
         random_seed=random_seed,
@@ -410,9 +473,10 @@ def add_electric_equipment(
     eq_obj.Schedule_Name = sched_name
     eq_obj.Design_Level_Calculation_Method = "Watts/Area"
     eq_obj.Watts_per_Zone_Floor_Area = equip_wm2
-
+    
+    print(f"[DEBUG add_electric_equipment] Successfully created ELECTRICEQUIPMENT object for bldg_id {bldg_id} with equip_wm2 = {equip_wm2}.")
+    print(f"--- [END DEBUG add_electric_equipment for bldg_id {bldg_id}] ---")
     return eq_obj
-
 ------------------------------------------------------------
 
 File: D:\Documents\E_Plus_2030_py\idf_objects\eequip\schedule_def.py
@@ -792,19 +856,17 @@ def create_equipment_parasitic_schedule(idf, sched_name="EquipParasiticSchedule"
 
 File: D:\Documents\E_Plus_2030_py\idf_objects\Elec\assign_lighting_values.py
 ============================================================
-# Elec/assign_lighting_values.py
+# File: D:\Documents\E_Plus_2030_py\idf_objects\Elec\assign_lighting_values.py
 
 import random
 from .lighting_lookup import lighting_lookup
-from .constants import (
-    DEFAULT_LIGHTING_WM2,
-    DEFAULT_PARASITIC_WM2,
-    DEFAULT_TD,
-    DEFAULT_TN,
-    # If needed:
-    # DEFAULT_EQUIP_FRACTION_LOST,
+from .constants import ( # Ensure all DEFAULT constants are imported
+    DEFAULT_LIGHTING_WM2, DEFAULT_PARASITIC_WM2, DEFAULT_TD, DEFAULT_TN,
+    DEFAULT_LIGHTS_FRACTION_RADIANT, DEFAULT_LIGHTS_FRACTION_VISIBLE,
+    DEFAULT_LIGHTS_FRACTION_REPLACEABLE, DEFAULT_EQUIP_FRACTION_RADIANT,
+    DEFAULT_EQUIP_FRACTION_LOST
 )
-from .overrides_helper import find_applicable_overrides
+from .overrides_helper import find_applicable_overrides # Assuming this helper function exists and is correct
 
 
 def assign_lighting_parameters(
@@ -815,373 +877,198 @@ def assign_lighting_parameters(
     calibration_stage: str = "pre_calibration",
     strategy: str = "A",
     random_seed: int = None,
-    user_config: list = None,     # list of override dicts from lighting.json
-    assigned_log: dict = None     # optional dictionary to store final picks
+    user_config: list = None, # list of override dicts from lighting.json
+    assigned_log: dict = None # optional dictionary to store final picks
 ):
     """
     Determines final lighting parameters for a given building,
     merging any user overrides from ``lighting.json`` with defaults
     stored under ``lighting_lookup[calibration_stage][building_category][sub_type]``.
-
-    The returned dict has keys like "lights_wm2", "parasitic_wm2", 
-    "tD", "tN", "lights_fraction_radiant", etc. Each key maps to a
-    sub-dict of the form:
-      {
-        "assigned_value": float,
-        "min_val": float,
-        "max_val": float,
-        "object_name": "LIGHTS" or "ELECTRICEQUIPMENT" etc.
-      }
-
-    Steps:
-      1) Identify default ranges from
-         ``lighting_lookup[calibration_stage][building_category][sub_type]``.
-         If not found, fallback to constants.
-      2) If user_config is provided, find all rows that match
-         (building_id, sub_type, age_range).
-      3) Override the relevant ranges with those rows (either fixed_value => (v,v) or min_val/max_val).
-      4) Pick the final assigned value from the resulting range using strategy:
-         - "A" => midpoint
-         - "B" => random.uniform
-         - else => pick the lower bound
-      5) Construct a final dict describing the assigned values 
-         and (optionally) store in assigned_log[building_id].
-
-    Parameters
-    ----------
-    building_id : int
-        Unique identifier for the building (e.g. ogc_fid).
-    building_category : str
-        "Residential" or "Non-Residential".
-    sub_type : str
-        Specific building function (e.g. "Corner House", "Office Function").
-    age_range : str, optional
-        If you want to filter overrides by age_range.
-    calibration_stage : str, default "pre_calibration"
-        Typically "pre_calibration" or "post_calibration" (used as a top-level key in lighting_lookup).
-    strategy : {"A","B"}, default "A"
-        "A" => pick midpoint in [min_val, max_val], "B" => pick random in that range.
-    random_seed : int, optional
-        If you want reproducible random picks, pass an integer seed.
-    user_config : list of dicts, optional
-        The override data from lighting.json. Each dict can have fields like:
-          {
-             "building_id": 4136730,
-             "building_type": "Residential",
-             "param_name": "lights_wm2",
-             "min_val": 8.0,
-             "max_val": 10.0
-          }
-        or "fixed_value": ...
-    assigned_log : dict, optional
-        If provided, the final structured picks are stored as assigned_log[building_id].
-
-    Returns
-    -------
-    dict
-        A dictionary describing final picks, e.g.:
-        {
-          "lights_wm2": {
-            "assigned_value": 9.0,
-            "min_val": 8.0,
-            "max_val": 10.0,
-            "object_name": "LIGHTS"
-          },
-          ...
-        }
     """
+    print(f"\n--- [DEBUG assign_lighting_parameters for bldg_id {building_id}] ---")
+    print(f"[DEBUG assign_light_params] INPUTS: building_category='{building_category}', sub_type='{sub_type}', calibration_stage='{calibration_stage}', strategy='{strategy}'")
 
     # (A) Set random seed if specified
     if random_seed is not None:
         random.seed(random_seed)
+        print(f"[DEBUG assign_light_params] Random seed set to: {random_seed}")
 
     # (B) Get the "stage_dict" for the given calibration_stage
+    _original_calibration_stage = calibration_stage
     if calibration_stage not in lighting_lookup:
+        print(f"[DEBUG assign_light_params] WARNING: calibration_stage '{calibration_stage}' not in lighting_lookup keys: {list(lighting_lookup.keys())}. Defaulting to 'pre_calibration'.")
         calibration_stage = "pre_calibration"
+    
+    # Define the comprehensive fallback structure (as in your original code for this file)
+    # This is used if category or sub_type lookups fail at a high level.
+    FULL_FALLBACK_DICT = {
+        "lights_wm2": {"assigned_value": DEFAULT_LIGHTING_WM2, "min_val": DEFAULT_LIGHTING_WM2, "max_val": DEFAULT_LIGHTING_WM2, "object_name": "LIGHTS"},
+        "parasitic_wm2": {"assigned_value": DEFAULT_PARASITIC_WM2, "min_val": DEFAULT_PARASITIC_WM2, "max_val": DEFAULT_PARASITIC_WM2, "object_name": "ELECTRICEQUIPMENT"},
+        "tD": {"assigned_value": DEFAULT_TD, "min_val": DEFAULT_TD, "max_val": DEFAULT_TD, "object_name": "LIGHTS_SCHEDULE"},
+        "tN": {"assigned_value": DEFAULT_TN, "min_val": DEFAULT_TN, "max_val": DEFAULT_TN, "object_name": "LIGHTS_SCHEDULE"},
+        "lights_fraction_radiant": {"assigned_value": DEFAULT_LIGHTS_FRACTION_RADIANT, "min_val": DEFAULT_LIGHTS_FRACTION_RADIANT, "max_val": DEFAULT_LIGHTS_FRACTION_RADIANT, "object_name": "LIGHTS.Fraction_Radiant"},
+        "lights_fraction_visible": {"assigned_value": DEFAULT_LIGHTS_FRACTION_VISIBLE, "min_val": DEFAULT_LIGHTS_FRACTION_VISIBLE, "max_val": DEFAULT_LIGHTS_FRACTION_VISIBLE, "object_name": "LIGHTS.Fraction_Visible"},
+        "lights_fraction_replaceable": {"assigned_value": DEFAULT_LIGHTS_FRACTION_REPLACEABLE, "min_val": DEFAULT_LIGHTS_FRACTION_REPLACEABLE, "max_val": DEFAULT_LIGHTS_FRACTION_REPLACEABLE, "object_name": "LIGHTS.Fraction_Replaceable"},
+        "equip_fraction_radiant": {"assigned_value": DEFAULT_EQUIP_FRACTION_RADIANT, "min_val": DEFAULT_EQUIP_FRACTION_RADIANT, "max_val": DEFAULT_EQUIP_FRACTION_RADIANT, "object_name": "ELECTRICEQUIPMENT.Fraction_Radiant"},
+        "equip_fraction_lost": {"assigned_value": DEFAULT_EQUIP_FRACTION_LOST, "min_val": DEFAULT_EQUIP_FRACTION_LOST, "max_val": DEFAULT_EQUIP_FRACTION_LOST, "object_name": "ELECTRICEQUIPMENT.Fraction_Lost"}
+    }
+
+    if calibration_stage not in lighting_lookup: # Should have been caught by the default, but defensive check
+        print(f"[DEBUG assign_light_params] CRITICAL FALLBACK (Stage): calibration_stage '{calibration_stage}' (even after potential default) is NOT in lighting_lookup. Using FULL_FALLBACK_DICT.")
+        if assigned_log is not None: assigned_log[building_id] = FULL_FALLBACK_DICT
+        print(f"--- [END DEBUG assign_lighting_parameters for bldg_id {building_id} - CRITICAL STAGE FALLBACK] ---")
+        return FULL_FALLBACK_DICT
+        
     stage_dict = lighting_lookup[calibration_stage]
+    print(f"[DEBUG assign_light_params] Using calibration_stage: '{calibration_stage}'. Stage_dict keys: {list(stage_dict.keys()) if isinstance(stage_dict, dict) else 'Not a dict'}")
 
-    # Normalise and strip inputs
-    if building_category.lower() == "residential":
+    # Normalise and strip inputs (as per your original file)
+    _original_building_category = building_category
+    if building_category.lower() == "residential": # Note: your original file had `if building_category.lower() == ...` which could error if building_category is None
         building_category = "Residential"
-    elif building_category.lower() == "non_residential":
+    elif building_category.lower() == "non_residential": # Same potential error if None
         building_category = "Non-Residential"
+    # Safer normalization:
+    # if building_category: # Check if building_category is not None or empty
+    #     if building_category.lower() == "residential":
+    #         building_category = "Residential"
+    #     elif building_category.lower() == "non_residential":
+    #         building_category = "Non-Residential"
+    # For now, using your structure, assuming building_category is a valid string from get_building_category_and_subtype
+    print(f"[DEBUG assign_light_params] Category after normalization: '{building_category}' (was '{_original_building_category}')")
+    
+    _original_sub_type = sub_type
+    sub_type = sub_type.strip() if sub_type else "" # This is good
+    print(f"[DEBUG assign_light_params] Sub_type after strip: '{sub_type}' (was '{_original_sub_type}') (len: {len(sub_type)})")
 
-    sub_type = sub_type.strip() if sub_type else ""
-
-    # (C) Navigate to the sub_type dictionary or fallback to "defaults"
-    if building_category not in stage_dict:
-        # Fallback block
-        fallback = {
-            "lights_wm2": {
-                "assigned_value": DEFAULT_LIGHTING_WM2,
-                "min_val": DEFAULT_LIGHTING_WM2,
-                "max_val": DEFAULT_LIGHTING_WM2,
-                "object_name": "LIGHTS"
-            },
-            "parasitic_wm2": {
-                "assigned_value": DEFAULT_PARASITIC_WM2,
-                "min_val": DEFAULT_PARASITIC_WM2,
-                "max_val": DEFAULT_PARASITIC_WM2,
-                "object_name": "ELECTRICEQUIPMENT"
-            },
-            "tD": {
-                "assigned_value": DEFAULT_TD,
-                "min_val": DEFAULT_TD,
-                "max_val": DEFAULT_TD,
-                "object_name": "LIGHTS_SCHEDULE"
-            },
-            "tN": {
-                "assigned_value": DEFAULT_TN,
-                "min_val": DEFAULT_TN,
-                "max_val": DEFAULT_TN,
-                "object_name": "LIGHTS_SCHEDULE"
-            },
-            "lights_fraction_radiant": {
-                "assigned_value": 0.7,
-                "min_val": 0.7,
-                "max_val": 0.7,
-                "object_name": "LIGHTS.Fraction_Radiant"
-            },
-            "lights_fraction_visible": {
-                "assigned_value": 0.2,
-                "min_val": 0.2,
-                "max_val": 0.2,
-                "object_name": "LIGHTS.Fraction_Visible"
-            },
-            "lights_fraction_replaceable": {
-                "assigned_value": 1.0,
-                "min_val": 1.0,
-                "max_val": 1.0,
-                "object_name": "LIGHTS.Fraction_Replaceable"
-            },
-            "equip_fraction_radiant": {
-                "assigned_value": 0.0,
-                "min_val": 0.0,
-                "max_val": 0.0,
-                "object_name": "ELECTRICEQUIPMENT.Fraction_Radiant"
-            },
-            "equip_fraction_lost": {
-                "assigned_value": 1.0,
-                "min_val": 1.0,
-                "max_val": 1.0,
-                "object_name": "ELECTRICEQUIPMENT.Fraction_Lost"
-            }
-        }
-        if assigned_log is not None:
-            assigned_log[building_id] = fallback
-        return fallback
-
-    # Otherwise, retrieve the param_dict for that building_category/sub_type
+    # (C) Navigate to the sub_type dictionary or fallback
+    param_dict = None # Initialize to be safe
+    if not isinstance(stage_dict, dict) or building_category not in stage_dict:
+        print(f"[DEBUG assign_light_params] FALLBACK (C1 - category): building_category '{building_category}' not in stage_dict for stage '{calibration_stage}' (or stage_dict is not a dict: {type(stage_dict)}). Returning FULL_FALLBACK_DICT.")
+        if assigned_log is not None: assigned_log[building_id] = FULL_FALLBACK_DICT
+        print(f"--- [END DEBUG assign_lighting_parameters for bldg_id {building_id} - FALLBACK C1] ---")
+        return FULL_FALLBACK_DICT
+    
     cat_dict = stage_dict[building_category]
-    if sub_type not in cat_dict:
-        fallback = {
-            "lights_wm2": {
-                "assigned_value": DEFAULT_LIGHTING_WM2,
-                "min_val": DEFAULT_LIGHTING_WM2,
-                "max_val": DEFAULT_LIGHTING_WM2,
-                "object_name": "LIGHTS",
-            },
-            "parasitic_wm2": {
-                "assigned_value": DEFAULT_PARASITIC_WM2,
-                "min_val": DEFAULT_PARASITIC_WM2,
-                "max_val": DEFAULT_PARASITIC_WM2,
-                "object_name": "ELECTRICEQUIPMENT",
-            },
-            "tD": {
-                "assigned_value": DEFAULT_TD,
-                "min_val": DEFAULT_TD,
-                "max_val": DEFAULT_TD,
-                "object_name": "LIGHTS_SCHEDULE",
-            },
-            "tN": {
-                "assigned_value": DEFAULT_TN,
-                "min_val": DEFAULT_TN,
-                "max_val": DEFAULT_TN,
-                "object_name": "LIGHTS_SCHEDULE",
-            },
-            "lights_fraction_radiant": {
-                "assigned_value": 0.7,
-                "min_val": 0.7,
-                "max_val": 0.7,
-                "object_name": "LIGHTS.Fraction_Radiant",
-            },
-            "lights_fraction_visible": {
-                "assigned_value": 0.2,
-                "min_val": 0.2,
-                "max_val": 0.2,
-                "object_name": "LIGHTS.Fraction_Visible",
-            },
-            "lights_fraction_replaceable": {
-                "assigned_value": 1.0,
-                "min_val": 1.0,
-                "max_val": 1.0,
-                "object_name": "LIGHTS.Fraction_Replaceable",
-            },
-            "equip_fraction_radiant": {
-                "assigned_value": 0.0,
-                "min_val": 0.0,
-                "max_val": 0.0,
-                "object_name": "ELECTRICEQUIPMENT.Fraction_Radiant",
-            },
-            "equip_fraction_lost": {
-                "assigned_value": 1.0,
-                "min_val": 1.0,
-                "max_val": 1.0,
-                "object_name": "ELECTRICEQUIPMENT.Fraction_Lost",
-            },
-        }
-        if assigned_log is not None:
-            assigned_log[building_id] = fallback
-        return fallback
+    print(f"[DEBUG assign_light_params] Found cat_dict for '{building_category}'. Sub-type keys in cat_dict: {list(cat_dict.keys()) if isinstance(cat_dict, dict) else 'Not a dict'}")
 
+    if not isinstance(cat_dict, dict) or sub_type not in cat_dict:
+        print(f"[DEBUG assign_light_params] FALLBACK (C2 - sub_type): sub_type '{sub_type}' not in cat_dict for category '{building_category}' (or cat_dict is not a dict: {type(cat_dict)}). Returning FULL_FALLBACK_DICT.")
+        if isinstance(cat_dict, dict): print(f"   Expected one of: {list(cat_dict.keys())}")
+        if assigned_log is not None: assigned_log[building_id] = FULL_FALLBACK_DICT
+        print(f"--- [END DEBUG assign_lighting_parameters for bldg_id {building_id} - FALLBACK C2] ---")
+        return FULL_FALLBACK_DICT
+        
     param_dict = cat_dict[sub_type]
+    if not isinstance(param_dict, dict):
+        print(f"[DEBUG assign_light_params] FALLBACK (C3 - param_dict type): param_dict for '{sub_type}' is not a dictionary (type: {type(param_dict)}). Returning FULL_FALLBACK_DICT.")
+        if assigned_log is not None: assigned_log[building_id] = FULL_FALLBACK_DICT
+        print(f"--- [END DEBUG assign_lighting_parameters for bldg_id {building_id} - FALLBACK C3] ---")
+        return FULL_FALLBACK_DICT
 
-    # (D) Extract default ranges
-    lights_rng    = param_dict.get("LIGHTS_WM2_range", (DEFAULT_LIGHTING_WM2, DEFAULT_LIGHTING_WM2))
-    parasitic_rng = param_dict.get("PARASITIC_WM2_range", (DEFAULT_PARASITIC_WM2, DEFAULT_PARASITIC_WM2))
-    tD_rng        = param_dict.get("tD_range", (DEFAULT_TD, DEFAULT_TD))
-    tN_rng        = param_dict.get("tN_range", (DEFAULT_TN, DEFAULT_TN))
+    print(f"[DEBUG assign_light_params] SUCCESS: Found param_dict for sub_type '{sub_type}'. Keys: {list(param_dict.keys())}")
 
-    lights_fraction_radiant_rng     = param_dict.get("lights_fraction_radiant_range", (0.7, 0.7))
-    lights_fraction_visible_rng     = param_dict.get("lights_fraction_visible_range", (0.2, 0.2))
-    lights_fraction_replace_rng     = param_dict.get("lights_fraction_replaceable_range", (1.0, 1.0))
+    # (D) Extract default ranges from found param_dict or constants if key missing in param_dict
+    # These will be the starting point before overrides.
+    lights_rng      = param_dict.get("LIGHTS_WM2_range", (DEFAULT_LIGHTING_WM2, DEFAULT_LIGHTING_WM2))
+    parasitic_rng   = param_dict.get("PARASITIC_WM2_range", (DEFAULT_PARASITIC_WM2, DEFAULT_PARASITIC_WM2))
+    tD_rng          = param_dict.get("tD_range", (DEFAULT_TD, DEFAULT_TD))
+    tN_rng          = param_dict.get("tN_range", (DEFAULT_TN, DEFAULT_TN))
+    lights_fraction_radiant_rng     = param_dict.get("lights_fraction_radiant_range", (DEFAULT_LIGHTS_FRACTION_RADIANT, DEFAULT_LIGHTS_FRACTION_RADIANT))
+    lights_fraction_visible_rng     = param_dict.get("lights_fraction_visible_range", (DEFAULT_LIGHTS_FRACTION_VISIBLE, DEFAULT_LIGHTS_FRACTION_VISIBLE))
+    lights_fraction_replace_rng     = param_dict.get("lights_fraction_replaceable_range", (DEFAULT_LIGHTS_FRACTION_REPLACEABLE, DEFAULT_LIGHTS_FRACTION_REPLACEABLE))
+    equip_fraction_radiant_rng      = param_dict.get("equip_fraction_radiant_range", (DEFAULT_EQUIP_FRACTION_RADIANT, DEFAULT_EQUIP_FRACTION_RADIANT))
+    equip_fraction_lost_rng         = param_dict.get("equip_fraction_lost_range", (DEFAULT_EQUIP_FRACTION_LOST, DEFAULT_EQUIP_FRACTION_LOST))
 
-    equip_fraction_radiant_rng = param_dict.get("equip_fraction_radiant_range", (0.0, 0.0))
-    equip_fraction_lost_rng    = param_dict.get("equip_fraction_lost_range", (1.0, 1.0))
+    print(f"[DEBUG assign_light_params] Initial ranges from param_dict/defaults (before overrides):")
+    print(f"  LIGHTS_WM2_range: {lights_rng} {'(from param_dict)' if 'LIGHTS_WM2_range' in param_dict else '(default const)'}")
+    print(f"  PARASITIC_WM2_range: {parasitic_rng} {'(from param_dict)' if 'PARASITIC_WM2_range' in param_dict else '(default const)'}")
+    print(f"  tD_range: {tD_rng} {'(from param_dict)' if 'tD_range' in param_dict else '(default const)'}")
+    print(f"  tN_range: {tN_rng} {'(from param_dict)' if 'tN_range' in param_dict else '(default const)'}")
+    print(f"  lights_fraction_radiant_range: {lights_fraction_radiant_rng} {'(from param_dict)' if 'lights_fraction_radiant_range' in param_dict else '(default const)'}")
+    print(f"  lights_fraction_visible_range: {lights_fraction_visible_rng} {'(from param_dict)' if 'lights_fraction_visible_range' in param_dict else '(default const)'}")
+    print(f"  lights_fraction_replaceable_range: {lights_fraction_replace_rng} {'(from param_dict)' if 'lights_fraction_replaceable_range' in param_dict else '(default const)'}")
+    print(f"  equip_fraction_radiant_range: {equip_fraction_radiant_rng} {'(from param_dict)' if 'equip_fraction_radiant_range' in param_dict else '(default const)'}")
+    print(f"  equip_fraction_lost_range: {equip_fraction_lost_rng} {'(from param_dict)' if 'equip_fraction_lost_range' in param_dict else '(default const)'}")
 
     # (E) Find any user overrides that apply
     if user_config is not None:
         matches = find_applicable_overrides(building_id, sub_type, age_range, user_config)
     else:
         matches = []
-
-    # Debug: See which overrides matched
-    print(f"[DEBUG lighting] bldg_id={building_id}, type='{sub_type}', matched overrides => {matches}")
+    
+    # This debug print is already in your code and is useful:
+    print(f"[DEBUG lighting] bldg_id={building_id}, type='{sub_type}', matched overrides => {matches}") # Original debug line
 
     # (F) Override default ranges with user-config
-    for row in matches:
+    if matches:
+        print(f"[DEBUG assign_light_params] Applying {len(matches)} overrides...")
+    for row_idx, row in enumerate(matches):
         pname = row.get("param_name", "").strip().lower()
-        fv = row.get("fixed_value", None)  # optional direct fix
+        fv = row.get("fixed_value", None) 
         mn = row.get("min_val", None)
         mx = row.get("max_val", None)
-
-        # If row has a fixed_value => treat it as (fv, fv)
-        if fv is not None:
-            rng = (float(fv), float(fv))
-        elif mn is not None and mx is not None:
-            rng = (float(mn), float(mx))
+        
+        current_rng = None
+        if fv is not None: current_rng = (float(fv), float(fv))
+        elif mn is not None and mx is not None: current_rng = (float(mn), float(mx))
+        
+        if current_rng:
+            print(f"  [DEBUG assign_light_params] Override {row_idx+1}: param='{pname}', new_range={current_rng}")
+            if pname == "lights_wm2": lights_rng = current_rng
+            elif pname == "parasitic_wm2": parasitic_rng = current_rng
+            elif pname == "td": tD_rng = current_rng
+            elif pname == "tn": tN_rng = current_rng
+            elif pname == "lights_fraction_radiant": lights_fraction_radiant_rng = current_rng
+            elif pname == "lights_fraction_visible": lights_fraction_visible_rng = current_rng
+            elif pname == "lights_fraction_replaceable": lights_fraction_replace_rng = current_rng
+            elif pname == "equip_fraction_radiant": equip_fraction_radiant_rng = current_rng
+            elif pname == "equip_fraction_lost": equip_fraction_lost_rng = current_rng
+            else: print(f"    [DEBUG assign_light_params] Unrecognized param_name '{pname}' in override row.")
         else:
-            rng = None
-
-        if rng:
-            if pname == "lights_wm2":
-                lights_rng = rng
-            elif pname == "parasitic_wm2":
-                parasitic_rng = rng
-            elif pname == "td":
-                tD_rng = rng
-            elif pname == "tn":
-                tN_rng = rng
-            elif pname == "lights_fraction_radiant":
-                lights_fraction_radiant_rng = rng
-            elif pname == "lights_fraction_visible":
-                lights_fraction_visible_rng = rng
-            elif pname == "lights_fraction_replaceable":
-                lights_fraction_replace_rng = rng
-            elif pname == "equip_fraction_radiant":
-                equip_fraction_radiant_rng = rng
-            elif pname == "equip_fraction_lost":
-                equip_fraction_lost_rng = rng
-            # else param_name not recognized => ignore
-
-    # Helper to pick final value from a (min,max) range
-    def pick_val(r):
-        if strategy == "A":   # midpoint
-            return (r[0] + r[1]) / 2.0
-        elif strategy == "B": # random
-            return random.uniform(r[0], r[1])
-        else:
-            # fallback => pick min
-            return r[0]
+            print(f"  [DEBUG assign_light_params] Override {row_idx+1} for '{pname}' skipped (no fixed_value or min/max_val).")
+    
+    if matches: print(f"[DEBUG assign_light_params] Ranges after overrides: lights_rng={lights_rng}, parasitic_rng={parasitic_rng}, etc.")
 
     # (G) Pick final values
-    assigned_lights = pick_val(lights_rng)
-    assigned_paras  = pick_val(parasitic_rng)
-    assigned_tD     = pick_val(tD_rng)
-    assigned_tN     = pick_val(tN_rng)
+    def pick_val(param_name, r): # Added param_name for better logging
+        val = None
+        if strategy == "A": val = (r[0] + r[1]) / 2.0
+        elif strategy == "B": val = random.uniform(r[0], r[1])
+        else: val = r[0]
+        print(f"  [DEBUG assign_light_params] pick_val for '{param_name}': range={r}, strategy='{strategy}', picked={val}")
+        return val
 
-    assigned_lights_frac_rad = pick_val(lights_fraction_radiant_rng)
-    assigned_lights_frac_vis = pick_val(lights_fraction_visible_rng)
-    assigned_lights_frac_rep = pick_val(lights_fraction_replace_rng)
-    assigned_equip_frac_rad  = pick_val(equip_fraction_radiant_rng)
-    assigned_equip_frac_lost = pick_val(equip_fraction_lost_rng)
-
+    assigned_lights = pick_val("lights_wm2", lights_rng)
+    assigned_paras  = pick_val("parasitic_wm2", parasitic_rng)
+    assigned_tD     = pick_val("tD", tD_rng)
+    assigned_tN     = pick_val("tN", tN_rng)
+    assigned_lights_frac_rad = pick_val("lights_fraction_radiant", lights_fraction_radiant_rng)
+    assigned_lights_frac_vis = pick_val("lights_fraction_visible", lights_fraction_visible_rng)
+    assigned_lights_frac_rep = pick_val("lights_fraction_replaceable", lights_fraction_replace_rng)
+    assigned_equip_frac_rad  = pick_val("equip_fraction_radiant", equip_fraction_radiant_rng)
+    assigned_equip_frac_lost = pick_val("equip_fraction_lost", equip_fraction_lost_rng)
+    
     # (H) Build final dict
     assigned = {
-        "lights_wm2": {
-            "assigned_value": assigned_lights,
-            "min_val": lights_rng[0],
-            "max_val": lights_rng[1],
-            "object_name": "LIGHTS"
-        },
-        "parasitic_wm2": {
-            "assigned_value": assigned_paras,
-            "min_val": parasitic_rng[0],
-            "max_val": parasitic_rng[1],
-            "object_name": "ELECTRICEQUIPMENT"
-        },
-        "tD": {
-            "assigned_value": assigned_tD,
-            "min_val": tD_rng[0],
-            "max_val": tD_rng[1],
-            "object_name": "LIGHTS_SCHEDULE"
-        },
-        "tN": {
-            "assigned_value": assigned_tN,
-            "min_val": tN_rng[0],
-            "max_val": tN_rng[1],
-            "object_name": "LIGHTS_SCHEDULE"
-        },
-
-        "lights_fraction_radiant": {
-            "assigned_value": assigned_lights_frac_rad,
-            "min_val": lights_fraction_radiant_rng[0],
-            "max_val": lights_fraction_radiant_rng[1],
-            "object_name": "LIGHTS.Fraction_Radiant"
-        },
-        "lights_fraction_visible": {
-            "assigned_value": assigned_lights_frac_vis,
-            "min_val": lights_fraction_visible_rng[0],
-            "max_val": lights_fraction_visible_rng[1],
-            "object_name": "LIGHTS.Fraction_Visible"
-        },
-        "lights_fraction_replaceable": {
-            "assigned_value": assigned_lights_frac_rep,
-            "min_val": lights_fraction_replace_rng[0],
-            "max_val": lights_fraction_replace_rng[1],
-            "object_name": "LIGHTS.Fraction_Replaceable"
-        },
-
-        "equip_fraction_radiant": {
-            "assigned_value": assigned_equip_frac_rad,
-            "min_val": equip_fraction_radiant_rng[0],
-            "max_val": equip_fraction_radiant_rng[1],
-            "object_name": "ELECTRICEQUIPMENT.Fraction_Radiant"
-        },
-        "equip_fraction_lost": {
-            "assigned_value": assigned_equip_frac_lost,
-            "min_val": equip_fraction_lost_rng[0],
-            "max_val": equip_fraction_lost_rng[1],
-            "object_name": "ELECTRICEQUIPMENT.Fraction_Lost"
-        }
+        "lights_wm2": {"assigned_value": assigned_lights, "min_val": lights_rng[0], "max_val": lights_rng[1], "object_name": "LIGHTS"},
+        "parasitic_wm2": {"assigned_value": assigned_paras, "min_val": parasitic_rng[0], "max_val": parasitic_rng[1], "object_name": "ELECTRICEQUIPMENT"},
+        "tD": {"assigned_value": assigned_tD, "min_val": tD_rng[0], "max_val": tD_rng[1], "object_name": "LIGHTS_SCHEDULE"},
+        "tN": {"assigned_value": assigned_tN, "min_val": tN_rng[0], "max_val": tN_rng[1], "object_name": "LIGHTS_SCHEDULE"},
+        "lights_fraction_radiant": {"assigned_value": assigned_lights_frac_rad, "min_val": lights_fraction_radiant_rng[0], "max_val": lights_fraction_radiant_rng[1], "object_name": "LIGHTS.Fraction_Radiant"},
+        "lights_fraction_visible": {"assigned_value": assigned_lights_frac_vis, "min_val": lights_fraction_visible_rng[0], "max_val": lights_fraction_visible_rng[1], "object_name": "LIGHTS.Fraction_Visible"},
+        "lights_fraction_replaceable": {"assigned_value": assigned_lights_frac_rep, "min_val": lights_fraction_replace_rng[0], "max_val": lights_fraction_replace_rng[1], "object_name": "LIGHTS.Fraction_Replaceable"},
+        "equip_fraction_radiant": {"assigned_value": assigned_equip_frac_rad, "min_val": equip_fraction_radiant_rng[0], "max_val": equip_fraction_radiant_rng[1], "object_name": "ELECTRICEQUIPMENT.Fraction_Radiant"},
+        "equip_fraction_lost": {"assigned_value": assigned_equip_frac_lost, "min_val": equip_fraction_lost_rng[0], "max_val": equip_fraction_lost_rng[1], "object_name": "ELECTRICEQUIPMENT.Fraction_Lost"}
     }
+    print(f"[DEBUG assign_light_params] Final assigned dict structure: {assigned}")
 
     # (I) Optionally store in assigned_log
     if assigned_log is not None:
         assigned_log[building_id] = assigned
-
+    
+    print(f"--- [END DEBUG assign_lighting_parameters for bldg_id {building_id}] ---")
     return assigned
-
 ------------------------------------------------------------
 
 File: D:\Documents\E_Plus_2030_py\idf_objects\Elec\constants.py
@@ -1592,38 +1479,75 @@ lighting_lookup = {
 
 File: D:\Documents\E_Plus_2030_py\idf_objects\Elec\lighting.py
 ============================================================
-# Elec/lighting.py
+# File: D:\Documents\E_Plus_2030_py\idf_objects\Elec\lighting.py
 
 from .assign_lighting_values import assign_lighting_parameters
 from .schedules import create_lighting_schedule, create_parasitic_schedule
 
 def get_building_category_and_subtype(building_row):
-    """
-    Returns (building_category, sub_type) strings based on building_row.
-    Adjust the logic as needed, depending on how your CSV or DB fields
-    are structured.
+    """Return (building_category, sub_type) based on ``building_row``.
 
-    If building_row["building_function"] is something like "Residential"
-    or "Meeting Function", use that as your sub_type.
-    If building_row["building_function"] says "Residential", set building_category="Residential".
-    Otherwise, assume building_category="Non-Residential".
+    ``building_row`` is expected to contain a ``"building_function"`` field
+    with the exact sub-type name used in the lookup tables.  This helper is
+    shared by both the equipment and lighting modules, so we centralise the
+    categorisation logic here.
 
-    Update as necessary for your own classification logic.
+    If ``building_function`` is empty or missing, we fall back to
+    ``("Non-Residential", "Other Use Function")`` so that both modules lookup
+    a defined set of defaults instead of the minimal hard-coded ones.
     """
-    bldg_func = building_row.get("building_function", "").strip()
-    if not bldg_func:
-        # fallback
+    
+    bldg_func_input_original = building_row.get("building_function") 
+    bldg_func_input_stripped = building_row.get("building_function", "").strip()
+    
+    print(f"\n--- [DEBUG get_category_subtype] ---")
+    print(f"[DEBUG get_category_subtype] Input building_row.get('building_function'): '{bldg_func_input_original}'")
+    print(f"[DEBUG get_category_subtype] Stripped bldg_func_input: '{bldg_func_input_stripped}' (len: {len(bldg_func_input_stripped)})")
+
+    if not bldg_func_input_stripped:
+        print(f"[DEBUG get_category_subtype] bldg_func_input is empty. Returning fallback: ('Non-Residential', 'Other Use Function')")
         return ("Non-Residential", "Other Use Function")
 
-    # Example simple logic:
-    if "resid" in bldg_func.lower():
-        building_category = "Residential"
-        sub_type = bldg_func  # e.g. "Residential" or "Corner House"
-    else:
-        building_category = "Non-Residential"
-        sub_type = bldg_func  # e.g. "Office Function", "Meeting Function"
+    sub_type_for_lookup = bldg_func_input_stripped
 
-    return (building_category, sub_type)
+    known_residential_sub_types = {
+        "Apartment",
+        "Corner House",
+        "Detached House",
+        "Terrace or Semi-detached House",
+        "Two-and-a-half-story House",
+    }
+
+    known_non_residential_sub_types = {
+        "Accommodation Function",
+        "Cell Function",
+        "Education Function",
+        "Healthcare Function",
+        "Industrial Function",
+        "Meeting Function",
+        "Office Function",
+        "Other Use Function",
+        "Retail Function",
+        "Sport Function",
+    }
+
+    building_category = None # Initialize to None
+    if sub_type_for_lookup in known_residential_sub_types:
+        building_category = "Residential"
+        print(f"[DEBUG get_category_subtype] Matched '{sub_type_for_lookup}' to known_residential_sub_types.")
+    elif sub_type_for_lookup in known_non_residential_sub_types:
+        building_category = "Non-Residential"
+        print(f"[DEBUG get_category_subtype] Matched '{sub_type_for_lookup}' to known_non_residential_sub_types.")
+    else:
+        print(
+            f"[DEBUG get_category_subtype] WARNING: Unknown building_function '{sub_type_for_lookup}'. "
+            "Defaulting category to Non-Residential."
+        )
+        building_category = "Non-Residential" # Default for unknown types
+
+    print(f"[DEBUG get_category_subtype] Determined: building_category='{building_category}', sub_type_for_lookup='{sub_type_for_lookup}'")
+    print(f"--- [END DEBUG get_category_subtype] ---")
+    return (building_category, sub_type_for_lookup)
 
 
 def add_lights_and_parasitics(
@@ -1649,10 +1573,13 @@ def add_lights_and_parasitics(
     """
 
     # 1) Get building_category / sub_type
-    building_category, sub_type = get_building_category_and_subtype(building_row)
+    building_category, sub_type = get_building_category_and_subtype(building_row) # This will now use the debugged version
 
     # 2) Retrieve lighting parameters
     bldg_id = int(building_row.get("ogc_fid", 0))
+    print(f"\n--- [DEBUG add_lights_and_parasitics for bldg_id {bldg_id}] ---") # Moved print after bldg_id is defined
+    print(f"[DEBUG add_lights_and_parasitics] Received from get_building_category_and_subtype: category='{building_category}', sub_type='{sub_type}'")
+
 
     assigned_dict = assign_lighting_parameters(
         building_id=bldg_id,
@@ -1716,9 +1643,9 @@ def add_lights_and_parasitics(
 
     # Optionally, you can also set eq_obj.Fraction_Visible if needed,
     # but typically for "Parasitic" loads we do not.
-
+    
+    print(f"--- [END DEBUG add_lights_and_parasitics for bldg_id {bldg_id}] ---")
     return lights_obj, eq_obj
-
 ------------------------------------------------------------
 
 File: D:\Documents\E_Plus_2030_py\idf_objects\Elec\schedule_def.py

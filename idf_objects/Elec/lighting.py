@@ -1,61 +1,92 @@
-# Elec/lighting.py
+# File: D:\Documents\E_Plus_2030_py\idf_objects\Elec\lighting.py
 
 from .assign_lighting_values import assign_lighting_parameters
 from .schedules import create_lighting_schedule, create_parasitic_schedule
 
 def get_building_category_and_subtype(building_row):
-    """Return (building_category, sub_type) based on ``building_row``.
-
-    ``building_row`` is expected to contain a ``"building_function"`` field
-    with the exact sub-type name used in the lookup tables.  This helper is
-    shared by both the equipment and lighting modules, so we centralise the
-    categorisation logic here.
-
-    If ``building_function`` is empty or missing, we fall back to
-    ``("Non-Residential", "Other Use Function")`` so that both modules lookup
-    a defined set of defaults instead of the minimal hard-coded ones.
     """
+    Return (building_category, sub_type) based on ``building_row``.
+    It now correctly uses 'residential_type' or 'non_residential_type'
+    based on the value of 'building_function'.
+    """
+    
+    # Get values from the building_row, defaulting to empty strings if keys are missing
+    building_function_val = building_row.get("building_function", "").strip().lower() # Normalize to lowercase for easier comparison
+    residential_type_val = building_row.get("residential_type", "").strip()
+    non_residential_type_val = building_row.get("non_residential_type", "").strip()
 
-    bldg_func_input = building_row.get("building_function", "").strip()
+    print(f"\n--- [DEBUG get_category_subtype] ---")
+    print(f"[DEBUG get_category_subtype] Input building_row.get('building_function'): '{building_row.get('building_function')}' -> processed as '{building_function_val}'")
+    print(f"[DEBUG get_category_subtype] Input building_row.get('residential_type'): '{residential_type_val}'")
+    print(f"[DEBUG get_category_subtype] Input building_row.get('non_residential_type'): '{non_residential_type_val}'")
 
-    if not bldg_func_input:
-        return ("Non-Residential", "Other Use Function")
+    building_category = None
+    sub_type_for_lookup = None
 
-    sub_type_for_lookup = bldg_func_input
+    if building_function_val == "residential":
+        if residential_type_val: # Check if there is a specific residential type
+            building_category = "Residential"
+            sub_type_for_lookup = residential_type_val
+            print(f"[DEBUG get_category_subtype] 'building_function' is 'residential'. Using 'residential_type': '{sub_type_for_lookup}' as sub_type.")
+        else:
+            # building_function is "residential" but residential_type is empty. This is an issue.
+            print(f"[DEBUG get_category_subtype] WARNING: 'building_function' is 'residential' but 'residential_type' is empty.")
+            building_category = "Residential" # Still assume residential
+            sub_type_for_lookup = "Apartment"   # Fallback to a default specific residential type or "Other Use Function" if more appropriate
+            print(f"[DEBUG get_category_subtype] Defaulting to category='{building_category}', sub_type='{sub_type_for_lookup}' due to empty residential_type.")
+            
+    elif building_function_val == "non_residential":
+        if non_residential_type_val: # Check if there is a specific non-residential type
+            building_category = "Non-Residential"
+            sub_type_for_lookup = non_residential_type_val
+            print(f"[DEBUG get_category_subtype] 'building_function' is 'non_residential'. Using 'non_residential_type': '{sub_type_for_lookup}' as sub_type.")
+        else:
+            # building_function is "non_residential" but non_residential_type is empty.
+            print(f"[DEBUG get_category_subtype] WARNING: 'building_function' is 'non_residential' but 'non_residential_type' is empty.")
+            building_category = "Non-Residential" # Still assume non-residential
+            sub_type_for_lookup = "Other Use Function" # Fallback to a default specific non-residential type
+            print(f"[DEBUG get_category_subtype] Defaulting to category='{building_category}', sub_type='{sub_type_for_lookup}' due to empty non_residential_type.")
+            
+    else: # building_function is not "residential" or "non_residential", or it's empty.
+          # This case handles if building_function itself contains the specific sub-type.
+        direct_bldg_func_val = building_row.get("building_function", "").strip() # Use original casing if not "residential"/"non_residential"
+        print(f"[DEBUG get_category_subtype] 'building_function' ('{direct_bldg_func_val}') is not 'residential' or 'non_residential'. Attempting direct categorization of this value.")
+        
+        if not direct_bldg_func_val: # If building_function was empty to begin with
+            print(f"[DEBUG get_category_subtype] 'building_function' is empty. Defaulting to Non-Residential, Other Use Function.")
+            building_category = "Non-Residential"
+            sub_type_for_lookup = "Other Use Function"
+        else:
+            sub_type_for_lookup = direct_bldg_func_val # The value from building_function IS the specific sub-type
+            # Define known types here for this fallback path
+            known_residential_sub_types = {
+                "Apartment", "Corner House", "Detached House",
+                "Terrace or Semi-detached House", "Two-and-a-half-story House",
+            }
+            known_non_residential_sub_types = {
+                "Accommodation Function", "Cell Function", "Education Function",
+                "Healthcare Function", "Industrial Function", "Meeting Function",
+                "Office Function", "Other Use Function", "Retail Function", "Sport Function",
+            }
 
-    known_residential_sub_types = {
-        "Apartment",
-        "Corner House",
-        "Detached House",
-        "Terrace or Semi-detached House",
-        "Two-and-a-half-story House",
-    }
+            if sub_type_for_lookup in known_residential_sub_types:
+                building_category = "Residential"
+                print(f"[DEBUG get_category_subtype] Matched direct building_function '{sub_type_for_lookup}' to known_residential_sub_types.")
+            elif sub_type_for_lookup in known_non_residential_sub_types:
+                building_category = "Non-Residential"
+                print(f"[DEBUG get_category_subtype] Matched direct building_function '{sub_type_for_lookup}' to known_non_residential_sub_types.")
+            else:
+                print(f"[DEBUG get_category_subtype] WARNING: Unknown direct building_function '{sub_type_for_lookup}'. Defaulting category to Non-Residential.")
+                building_category = "Non-Residential" # Default for truly unknown specific types
 
-    known_non_residential_sub_types = {
-        "Accommodation Function",
-        "Cell Function",
-        "Education Function",
-        "Healthcare Function",
-        "Industrial Function",
-        "Meeting Function",
-        "Office Function",
-        "Other Use Function",
-        "Retail Function",
-        "Sport Function",
-    }
-
-    if sub_type_for_lookup in known_residential_sub_types:
-        building_category = "Residential"
-    elif sub_type_for_lookup in known_non_residential_sub_types:
+    # Final safety net if logic above somehow fails to set category or sub_type
+    if not building_category or not sub_type_for_lookup:
+        print(f"[DEBUG get_category_subtype] CRITICAL FALLBACK: Could not determine valid category or sub_type from inputs. Defaulting to Non-Residential, Other Use Function.")
         building_category = "Non-Residential"
-    else:
-        print(
-            f"Warning: Unknown building_function '{sub_type_for_lookup}'. "
-            "Attempting to categorize as Non-Residential. "
-            "Review if fallback values are used for this type."
-        )
-        building_category = "Non-Residential"
+        sub_type_for_lookup = "Other Use Function"
 
+    print(f"[DEBUG get_category_subtype] Final Determined: building_category='{building_category}', sub_type_for_lookup='{sub_type_for_lookup}'")
+    print(f"--- [END DEBUG get_category_subtype] ---")
     return (building_category, sub_type_for_lookup)
 
 
@@ -82,22 +113,24 @@ def add_lights_and_parasitics(
     """
 
     # 1) Get building_category / sub_type
-    building_category, sub_type = get_building_category_and_subtype(building_row)
-
+    building_category, sub_type = get_building_category_and_subtype(building_row) 
+    
     # 2) Retrieve lighting parameters
-    bldg_id = int(building_row.get("ogc_fid", 0))
+    bldg_id = int(building_row.get("ogc_fid", 0)) # Ensure bldg_id is fetched
+    print(f"\n--- [DEBUG add_lights_and_parasitics for bldg_id {bldg_id}] ---") # Moved print to after bldg_id is known
+    print(f"[DEBUG add_lights_and_parasitics] From get_building_category_and_subtype: category='{building_category}', sub_type='{sub_type}'")
 
-    assigned_dict = assign_lighting_parameters(
+
+    assigned_dict = assign_lighting_parameters( 
         building_id=bldg_id,
         building_category=building_category,
         sub_type=sub_type,
-        # Optional:
-        # age_range=building_row.get("age_range", None),
+        age_range=building_row.get("age_range", None), # Pass age_range if available and used by overrides
         calibration_stage=calibration_stage,
         strategy=strategy,
         random_seed=random_seed,
         user_config=user_config,
-        assigned_log=assigned_values_log  # logs the final sub-dict structure
+        assigned_log=assigned_values_log 
     )
 
     # Extract main power densities
@@ -146,8 +179,7 @@ def add_lights_and_parasitics(
     # Apply fraction fields
     eq_obj.Fraction_Radiant = equip_frac_radiant
     eq_obj.Fraction_Lost = equip_frac_lost
-
-    # Optionally, you can also set eq_obj.Fraction_Visible if needed,
-    # but typically for "Parasitic" loads we do not.
-
+    
+    print(f"[DEBUG add_lights_and_parasitics] Successfully created LIGHTS and ELECTRICEQUIPMENT objects for bldg_id {bldg_id}.")
+    print(f"--- [END DEBUG add_lights_and_parasitics for bldg_id {bldg_id}] ---")
     return lights_obj, eq_obj
