@@ -1,3 +1,2855 @@
+File: D:\Documents\E_Plus_2030_py\modification\elec_functions.py
+============================================================
+"""
+elec_functions.py
+
+Provides functions for applying lighting + parasitic equipment parameters
+to an EnergyPlus IDF, analogous to hvac_functions or vent_functions.
+
+Contents:
+  1) create_elec_scenarios(...)
+     - Takes df_lighting with columns [ogc_fid, object_name, param_name, assigned_value, min_val, max_val],
+       generates scenario picks, and writes them to CSV.
+
+  2) apply_building_level_elec(idf, param_dict)
+     - A building-level approach: lumps all lighting/EQ loads into one or two IDF objects (LIGHTS, ELECTRICEQUIPMENT),
+       referencing an existing zone list and referencing "LightsSchedule" or "ParasiticSchedule".
+
+  3) apply_object_level_elec(idf, df_lighting)
+     - A row-by-row approach: reads from a scenario DataFrame and updates each LIGHTS/ELECTRICEQUIPMENT object directly.
+"""
+
+import os
+import random
+import pandas as pd
+
+# ---------------------------------------------------------------------------
+# 1) CREATE ELEC SCENARIOS
+# ---------------------------------------------------------------------------
+def create_elec_scenarios(
+    df_lighting,
+    building_id,
+    num_scenarios=5,
+    picking_method="random_uniform",
+    random_seed=42,
+    scenario_csv_out=None
+):
+    """
+    Generates a scenario-level DataFrame from "assigned_lighting.csv" rows:
+      Each row has: ogc_fid, object_name, param_name, assigned_value, min_val, max_val
+
+    If picking_method=="random_uniform" and min_val < max_val, picks a random float in [min_val, max_val].
+    Otherwise keeps assigned_value as is.
+
+    Final columns in df_scen:
+      scenario_index, ogc_fid, object_name, param_name, param_value,
+      param_min, param_max, picking_method
+
+    If scenario_csv_out is provided, we write it to that CSV.
+
+    Returns:
+      pd.DataFrame: the scenario DataFrame
+    """
+    if random_seed is not None:
+        random.seed(random_seed)
+
+    # filter for the building
+    df_bldg = df_lighting[df_lighting["ogc_fid"] == building_id].copy()
+    if df_bldg.empty:
+        print(f"[create_elec_scenarios] No lighting data found for building {building_id}")
+        return pd.DataFrame()
+
+    scenario_rows = []
+
+    # For each scenario
+    for s in range(num_scenarios):
+        for row in df_bldg.itertuples():
+            obj_name = row.object_name
+            p_name   = row.param_name
+
+            base_val = row.assigned_value
+            p_min    = row.min_val
+            p_max    = row.max_val
+
+            new_val  = pick_value(base_val, p_min, p_max, picking_method)
+
+            scenario_rows.append({
+                "scenario_index":  s,
+                "ogc_fid":         building_id,
+                "object_name":     obj_name,
+                "param_name":      p_name,
+                "param_value":     new_val,
+                "param_min":       p_min,
+                "param_max":       p_max,
+                "picking_method":  picking_method
+            })
+
+    df_scen = pd.DataFrame(scenario_rows)
+
+    if scenario_csv_out:
+        os.makedirs(os.path.dirname(scenario_csv_out), exist_ok=True)
+        df_scen.to_csv(scenario_csv_out, index=False)
+        print(f"[create_elec_scenarios] Wrote scenario file => {scenario_csv_out}")
+
+    return df_scen
+
+
+def pick_value(base_val, p_min, p_max, picking_method):
+    """
+    If picking_method=="random_uniform" and p_min/p_max are numeric and p_min< p_max,
+    pick a random float in [p_min, p_max].
+    Otherwise keep base_val as is.
+    """
+    try:
+        base_float = float(base_val)
+    except:
+        base_float = None
+
+    if picking_method == "random_uniform":
+        try:
+            fmin = float(p_min)
+            fmax = float(p_max)
+            if fmax > fmin:
+                return random.uniform(fmin, fmax)
+        except:
+            pass
+    # fallback
+    return base_val
+
+# ---------------------------------------------------------------------------
+# 2) APPLY BUILDING-LEVEL ELECTRICAL PARAMETERS
+# ---------------------------------------------------------------------------
+def apply_building_level_elec(idf, param_dict, zonelist_name="ALL_ZONES"):
+    """
+    Interprets a dictionary of lighting/electrical parameters, e.g.:
+
+      param_dict = {
+        "lights_wm2": 19.2788535969,
+        "parasitic_wm2": 0.285,
+        "lights_fraction_radiant": 0.7,
+        "lights_fraction_visible": 0.2,
+        "lights_fraction_replaceable": 1.0,
+        "equip_fraction_radiant": 0.0,
+        "equip_fraction_lost": 1.0,
+        "lights_schedule_name": "LightsSchedule",      # <--- optional override
+        "equip_schedule_name": "ParasiticSchedule"     # <--- optional override
+      }
+
+    Then we create or update:
+      - One LIGHTS object for the entire building (via `zonelist_name`).
+      - One ELECTRICEQUIPMENT object for parasitic loads.
+
+    We reference existing schedules (e.g. "LightsSchedule" or "ParasiticSchedule")
+    from the base IDF (instead of "AlwaysOn").
+    """
+
+    # Extract numeric picks
+    lights_wm2          = float(param_dict.get("lights_wm2", 10.0))
+    parasitic_wm2       = float(param_dict.get("parasitic_wm2", 0.285))
+    lights_frac_radiant = float(param_dict.get("lights_fraction_radiant", 0.7))
+    lights_frac_visible = float(param_dict.get("lights_fraction_visible", 0.2))
+    lights_frac_replace = float(param_dict.get("lights_fraction_replaceable", 1.0))
+    lights_frac_return  = float(param_dict.get("lights_fraction_return_air", 0.0))
+    equip_frac_radiant  = float(param_dict.get("equip_fraction_radiant", 0.0))
+    equip_frac_lost     = float(param_dict.get("equip_fraction_lost", 1.0))
+
+    # Which schedules to use (must exist in your base IDF).
+    # If param_dict doesn't have them, we default to "LightsSchedule" / "ParasiticSchedule".
+    lights_sched_name = param_dict.get("lights_schedule_name", "LightsSchedule")
+    equip_sched_name  = param_dict.get("equip_schedule_name",  "ParasiticSchedule")
+
+    print("[ELEC] => Building-level electrical picks:")
+    print(f"  lights_wm2={lights_wm2}, parasitic_wm2={parasitic_wm2}")
+    print(f"  lights_frac_radiant={lights_frac_radiant}, visible={lights_frac_visible}, replaceable={lights_frac_replace}, return_air={lights_frac_return}")
+    print(f"  equip_frac_radiant={equip_frac_radiant}, equip_frac_lost={equip_frac_lost}")
+    print(f"  schedules => lights={lights_sched_name}, equip={equip_sched_name}")
+
+    # Create/update LIGHTS object
+    lights_obj_name = f"Lights_{zonelist_name}"
+    lights_obj = _create_or_update_lights_object(
+        idf=idf,
+        obj_name=lights_obj_name,
+        zone_or_zonelist=zonelist_name,
+        lights_wm2=lights_wm2,
+        frac_radiant=lights_frac_radiant,
+        frac_visible=lights_frac_visible,
+        frac_replace=lights_frac_replace,
+        frac_return=lights_frac_return,
+        lights_schedule_name=lights_sched_name
+    )
+
+    # Create/update ELECTRICEQUIPMENT object
+    equip_obj_name = f"Equip_{zonelist_name}"
+    equip_obj = _create_or_update_equip_object(
+        idf=idf,
+        obj_name=equip_obj_name,
+        zone_or_zonelist=zonelist_name,
+        equip_wm2=parasitic_wm2,
+        frac_radiant=equip_frac_radiant,
+        frac_lost=equip_frac_lost,
+        equip_schedule_name=equip_sched_name
+    )
+
+    return lights_obj, equip_obj
+
+
+def _create_or_update_lights_object(
+    idf,
+    obj_name,
+    zone_or_zonelist="ALL_ZONES",
+    lights_wm2=10.0,
+    frac_radiant=0.7,
+    frac_visible=0.2,
+    frac_replace=1.0,
+    frac_return=0.0,
+    lights_schedule_name="LightsSchedule"
+):
+    """
+    Creates/updates a LIGHTS object with 'Watts/Area' method,
+    referencing an existing schedule (lights_schedule_name).
+    """
+    existing = [
+        lt for lt in idf.idfobjects["LIGHTS"]
+        if lt.Name.upper() == obj_name.upper()
+    ]
+    if existing:
+        lights_obj = existing[0]
+    else:
+        lights_obj = idf.newidfobject("LIGHTS", Name=obj_name)
+
+    # zone or zone list
+    if hasattr(lights_obj, "Zone_or_ZoneList_or_Space_or_SpaceList_Name"):
+        lights_obj.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zone_or_zonelist
+    else:
+        lights_obj.Zone_or_ZoneList_Name = zone_or_zonelist
+
+    # design method
+    lights_obj.Design_Level_Calculation_Method = "Watts/Area"
+    lights_obj.Watts_per_Zone_Floor_Area = lights_wm2
+
+    # use the existing lighting schedule from your base IDF
+    lights_obj.Schedule_Name = lights_schedule_name
+
+    # fractions
+    if hasattr(lights_obj, "Fraction_Radiant"):
+        lights_obj.Fraction_Radiant = frac_radiant
+    if hasattr(lights_obj, "Fraction_Visible"):
+        lights_obj.Fraction_Visible = frac_visible
+    if hasattr(lights_obj, "Fraction_Replaceable"):
+        lights_obj.Fraction_Replaceable = frac_replace
+    if hasattr(lights_obj, "Return_Air_Fraction"):
+        lights_obj.Return_Air_Fraction = frac_return
+
+    return lights_obj
+
+
+def _create_or_update_equip_object(
+    idf,
+    obj_name,
+    zone_or_zonelist="ALL_ZONES",
+    equip_wm2=0.285,
+    frac_radiant=0.0,
+    frac_lost=1.0,
+    equip_schedule_name="ParasiticSchedule"
+):
+    """
+    Creates/updates an ELECTRICEQUIPMENT object with 'Watts/Area' method,
+    referencing an existing schedule (equip_schedule_name).
+    """
+    existing = [
+        eq for eq in idf.idfobjects["ELECTRICEQUIPMENT"]
+        if eq.Name.upper() == obj_name.upper()
+    ]
+    if existing:
+        equip_obj = existing[0]
+    else:
+        equip_obj = idf.newidfobject("ELECTRICEQUIPMENT", Name=obj_name)
+
+    if hasattr(equip_obj, "Zone_or_ZoneList_or_Space_or_SpaceList_Name"):
+        equip_obj.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zone_or_zonelist
+    else:
+        equip_obj.Zone_or_ZoneList_Name = zone_or_zonelist
+
+    equip_obj.Design_Level_Calculation_Method = "Watts/Area"
+    equip_obj.Watts_per_Zone_Floor_Area = equip_wm2
+
+    # use the existing equipment schedule from your base IDF
+    equip_obj.Schedule_Name = equip_schedule_name
+
+    # fraction fields
+    if hasattr(equip_obj, "Fraction_Radiant"):
+        equip_obj.Fraction_Radiant = frac_radiant
+    if hasattr(equip_obj, "Fraction_Lost"):
+        equip_obj.Fraction_Lost = frac_lost
+
+    return equip_obj
+
+# ---------------------------------------------------------------------------
+# 3) APPLY OBJECT-LEVEL ELECTRIC PARAMETERS
+# ---------------------------------------------------------------------------
+def apply_object_level_elec(idf, df_lighting):
+    """
+    Reads a scenario DataFrame with columns:
+      [ogc_fid, object_name, param_name, param_value, param_min, param_max, ...]
+    For each object_name, we parse param_name=>param_value pairs
+    and update or create the corresponding IDF object.
+
+    e.g. assigned_lighting.csv might have:
+      ogc_fid, object_name, param_name, assigned_value, ...
+      4136730, LIGHTS, lights_wm2, 19.2788535969
+      4136730, ELECTRICEQUIPMENT, parasitic_wm2, 0.285
+      4136730, LIGHTS.Fraction_Radiant, lights_fraction_radiant, 0.7
+      ...
+
+    Steps:
+      1) group by object_name
+      2) build a param_dict
+      3) update the IDF object accordingly
+    """
+    object_groups = df_lighting.groupby("object_name")
+
+    for obj_name, group_df in object_groups:
+        print(f"[ELEC] Handling object_name='{obj_name}' with {len(group_df)} rows.")
+        param_dict = {}
+        for row in group_df.itertuples():
+            p_name = row.param_name
+            val    = row.param_value
+            # attempt float
+            try:
+                param_dict[p_name] = float(val)
+            except:
+                param_dict[p_name] = val
+
+        # Decide how to update the IDF object
+        if obj_name.upper() == "LIGHTS":
+            _update_generic_lights_obj(idf, "LIGHTS", param_dict)
+        elif obj_name.upper() == "ELECTRICEQUIPMENT":
+            _update_generic_equip_obj(idf, "ELECTRICEQUIPMENT", param_dict)
+        elif "SCHEDULE" in obj_name.upper():
+            pass  # e.g. "LIGHTS_SCHEDULE": your code for schedule logic
+        else:
+            print(f"[ELEC WARNING] Unknown object_name='{obj_name}', skipping or handle differently.")
+
+
+def _update_generic_lights_obj(idf, obj_name, param_dict):
+    """
+    Example for updating a LIGHTS object named `obj_name`.
+    param_dict might have "lights_wm2", "lights_fraction_radiant", etc.
+    """
+    existing = [lt for lt in idf.idfobjects["LIGHTS"] if lt.Name.upper() == obj_name.upper()]
+    if existing:
+        lights_obj = existing[0]
+    else:
+        lights_obj = idf.newidfobject("LIGHTS", Name=obj_name)
+
+    if "lights_wm2" in param_dict:
+        lights_obj.Design_Level_Calculation_Method = "Watts/Area"
+        lights_obj.Watts_per_Zone_Floor_Area = float(param_dict["lights_wm2"])
+
+    if "lights_fraction_radiant" in param_dict and hasattr(lights_obj, "Fraction_Radiant"):
+        lights_obj.Fraction_Radiant = float(param_dict["lights_fraction_radiant"])
+
+    if "lights_fraction_visible" in param_dict and hasattr(lights_obj, "Fraction_Visible"):
+        lights_obj.Fraction_Visible = float(param_dict["lights_fraction_visible"])
+
+    if "lights_fraction_replaceable" in param_dict and hasattr(lights_obj, "Fraction_Replaceable"):
+        lights_obj.Fraction_Replaceable = float(param_dict["lights_fraction_replaceable"])
+
+    if "lights_fraction_return_air" in param_dict and hasattr(lights_obj, "Return_Air_Fraction"):
+        lights_obj.Return_Air_Fraction = float(param_dict["lights_fraction_return_air"])
+
+
+def _update_generic_equip_obj(idf, obj_name, param_dict):
+    """
+    Example for updating an ELECTRICEQUIPMENT object. param_dict might have:
+      "parasitic_wm2", "equip_fraction_radiant", "equip_fraction_lost", etc.
+    """
+    existing = [eq for eq in idf.idfobjects["ELECTRICEQUIPMENT"] if eq.Name.upper() == obj_name.upper()]
+    if existing:
+        equip_obj = existing[0]
+    else:
+        equip_obj = idf.newidfobject("ELECTRICEQUIPMENT", Name=obj_name)
+
+    if "parasitic_wm2" in param_dict:
+        equip_obj.Design_Level_Calculation_Method = "Watts/Area"
+        equip_obj.Watts_per_Zone_Floor_Area = float(param_dict["parasitic_wm2"])
+
+    if "equip_fraction_radiant" in param_dict and hasattr(equip_obj, "Fraction_Radiant"):
+        equip_obj.Fraction_Radiant = float(param_dict["equip_fraction_radiant"])
+
+    if "equip_fraction_lost" in param_dict and hasattr(equip_obj, "Fraction_Lost"):
+        equip_obj.Fraction_Lost = float(param_dict["equip_fraction_lost"])
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\modification\equipment_functions.py
+============================================================
+"""equipment_functions.py
+
+Provides helper functions for scenario generation and IDF updates for
+building-level electric equipment loads. The overall style mirrors
+``elec_functions.py`` but focuses on generic ELECTRICEQUIPMENT objects
+that are separate from lighting/parasitic loads.
+"""
+
+import os
+import pandas as pd
+from idf_objects.eequip.schedules import create_equipment_schedule
+
+
+# ---------------------------------------------------------------------------
+# 1) CREATE EQUIPMENT SCENARIOS
+# ---------------------------------------------------------------------------
+def create_equipment_scenarios(
+    df_equipment,
+    building_id,
+    num_scenarios=5,
+    picking_method="random_uniform",
+    random_seed=42,
+    scenario_csv_out=None,
+):
+    """Build a scenario DataFrame from ``assigned_equipment.csv`` rows.
+
+    Parameters
+    ----------
+    df_equipment : pd.DataFrame
+        Rows for a single building with columns ``ogc_fid``, ``param_name`` and
+        ``assigned_value``.
+    building_id : int
+        ID of the building we are processing.
+    num_scenarios : int, default 5
+        How many scenario rows to generate.
+    picking_method : str, ignored for now
+        Included for API compatibility.
+    random_seed : int, optional
+        Seed if future extensions use randomness.
+    scenario_csv_out : str, optional
+        Path to write ``scenario_params_equipment.csv``.
+    """
+    if random_seed is not None:
+        import random
+        random.seed(random_seed)
+
+    df_bldg = df_equipment[df_equipment["ogc_fid"] == building_id].copy()
+    if df_bldg.empty:
+        print(f"[create_equipment_scenarios] No equipment data for building {building_id}")
+        return pd.DataFrame()
+
+    rows = []
+    for s in range(num_scenarios):
+        for row in df_bldg.itertuples():
+            rows.append({
+                "scenario_index": s,
+                "ogc_fid": building_id,
+                "param_name": row.param_name,
+                "param_value": row.assigned_value,
+                "param_min": None,
+                "param_max": None,
+                "picking_method": picking_method,
+            })
+    df_scen = pd.DataFrame(rows)
+
+    if scenario_csv_out:
+        os.makedirs(os.path.dirname(scenario_csv_out), exist_ok=True)
+        df_scen.to_csv(scenario_csv_out, index=False)
+        print(f"[create_equipment_scenarios] Wrote => {scenario_csv_out}")
+
+    return df_scen
+
+
+# ---------------------------------------------------------------------------
+# 2) APPLY BUILDING-LEVEL EQUIPMENT PARAMETERS
+# ---------------------------------------------------------------------------
+def apply_building_level_equipment(idf, param_dict, zonelist_name="ALL_ZONES"):
+    """Create or update a single ELECTRICEQUIPMENT object.
+
+    ``param_dict`` typically contains at least ``equip_wm2``. Optional keys
+    ``building_category`` and ``sub_type`` allow schedule generation using
+    :func:`create_equipment_schedule`.
+    """
+    equip_wm2 = float(param_dict.get("equip_wm2", 3.0))
+    bcat = param_dict.get("building_category", "Non-Residential")
+    subtype = param_dict.get("sub_type", "Other Use Function")
+
+    sched_name = create_equipment_schedule(
+        idf,
+        building_category=bcat,
+        sub_type=subtype,
+        schedule_name="EquipSchedule",
+    )
+
+    obj_name = f"Equip_{zonelist_name}"
+    existing = [
+        eq for eq in idf.idfobjects["ELECTRICEQUIPMENT"]
+        if eq.Name.upper() == obj_name.upper()
+    ]
+    equip_obj = existing[0] if existing else idf.newidfobject("ELECTRICEQUIPMENT", Name=obj_name)
+
+    if hasattr(equip_obj, "Zone_or_ZoneList_or_Space_or_SpaceList_Name"):
+        equip_obj.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zonelist_name
+    else:
+        equip_obj.Zone_or_ZoneList_Name = zonelist_name
+
+    equip_obj.Schedule_Name = sched_name
+    equip_obj.Design_Level_Calculation_Method = "Watts/Area"
+    equip_obj.Watts_per_Zone_Floor_Area = equip_wm2
+
+    return equip_obj
+
+
+# ---------------------------------------------------------------------------
+# 3) APPLY OBJECT-LEVEL EQUIPMENT PARAMETERS
+# ---------------------------------------------------------------------------
+def apply_object_level_equipment(idf, df_equipment):
+    """Update ELECTRICEQUIPMENT objects row by row from a scenario DataFrame."""
+    for row in df_equipment.itertuples():
+        obj_name = row.object_name if hasattr(row, "object_name") else "ELECTRICEQUIPMENT"
+        p_name = row.param_name
+        val = row.param_value
+
+        existing = [eq for eq in idf.idfobjects["ELECTRICEQUIPMENT"] if eq.Name.upper() == obj_name.upper()]
+        equip_obj = existing[0] if existing else idf.newidfobject("ELECTRICEQUIPMENT", Name=obj_name)
+
+        if p_name == "equip_wm2":
+            equip_obj.Design_Level_Calculation_Method = "Watts/Area"
+            equip_obj.Watts_per_Zone_Floor_Area = float(val)
+        elif p_name == "Schedule_Name":
+            equip_obj.Schedule_Name = val
+        else:
+            # Generic setter if attribute exists
+            if hasattr(equip_obj, p_name):
+                try:
+                    setattr(equip_obj, p_name, float(val))
+                except Exception:
+                    setattr(equip_obj, p_name, val)
+
+    return
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\modification\main_modifi.py
+============================================================
+"""
+main_modifi.py
+
+Handles the generation of scenario-based IDFs for sensitivity, surrogate, 
+calibration, or any parametric runs.
+
+Workflow Outline:
+  1) Loads "assigned"/"structured" CSV data for HVAC, DHW, Vent, Elec, Fenestration.
+  2) Generates multiple scenario picks (random or other) -> scenario_params_*.csv
+  3) Loads scenario CSVs, loops over scenario_index, applies them to IDFs
+  4) Optionally runs simulations, post-processes, and does validation
+"""
+
+import os
+import pandas as pd
+
+# ---------------------------------------------------------------------------
+# Local modules
+# ---------------------------------------------------------------------------
+from modification.common_utils import (
+    load_assigned_csv,
+    load_scenario_csv,
+    load_idf,
+    save_idf,
+    generate_multiple_param_sets,
+    save_param_scenarios_to_csv
+)
+
+# HVAC
+from modification.hvac_functions import (
+    create_hvac_scenarios,
+    apply_building_level_hvac,
+    apply_zone_level_hvac
+)
+
+# DHW
+from modification.dhw_functions import apply_dhw_params_to_idf
+
+# Elec
+from modification.elec_functions import (
+    create_elec_scenarios,
+    apply_building_level_elec,
+    apply_object_level_elec
+)
+
+# Equipment
+from modification.equipment_functions import (
+    create_equipment_scenarios,
+    apply_building_level_equipment,
+    apply_object_level_equipment,
+)
+
+# Fenestration
+from modification.fenez_functions2 import (
+    create_fenez_scenarios,
+    apply_object_level_fenez
+)
+
+# Vent
+from modification.vent_functions import (
+    create_vent_scenarios,
+    apply_building_level_vent,
+    apply_zone_level_vent
+)
+
+
+def run_modification_workflow(config):
+    """
+    Main orchestration function that:
+      - Loads assigned/structured CSV data for each system (HVAC, DHW, Vent, Elec, Fenez)
+      - Creates multiple scenario picks
+      - Applies them to a base IDF, generating scenario IDFs
+      - Optionally runs simulations, post-process, and validation.
+    """
+    # -----------------------------------------------------------------------
+    # 1) Extract from config
+    # -----------------------------------------------------------------------
+    base_idf_path   = config["base_idf_path"]
+    idd_path        = config["idd_path"]
+    assigned_csvs   = config["assigned_csv"]
+    scenario_csvs   = config["scenario_csv"]
+    building_id     = config["building_id"]
+    num_scenarios   = config["num_scenarios"]
+    picking_method  = config["picking_method"]
+    scale_factor    = config.get("picking_scale_factor", 1.0)
+    output_idf_dir  = config["output_idf_dir"]
+
+    os.makedirs(output_idf_dir, exist_ok=True)
+
+    # -----------------------------------------------------------------------
+    # 2) HVAC CSV (either building+zones or single 'hvac')
+    # -----------------------------------------------------------------------
+    df_hvac_bld_sub = pd.DataFrame()
+    df_hvac_zn_sub  = pd.DataFrame()
+    has_hvac_data   = False
+
+    if "hvac_building" in assigned_csvs and "hvac_zones" in assigned_csvs:
+        path_bld = assigned_csvs["hvac_building"]
+        path_zn  = assigned_csvs["hvac_zones"]
+
+        df_hvac_bld_all = load_assigned_csv(path_bld)
+        df_hvac_zn_all  = load_assigned_csv(path_zn)
+        df_hvac_bld_sub = df_hvac_bld_all[df_hvac_bld_all["ogc_fid"] == building_id].copy()
+        df_hvac_zn_sub  = df_hvac_zn_all[df_hvac_zn_all["ogc_fid"] == building_id].copy()
+        has_hvac_data = True
+    elif "hvac" in assigned_csvs:
+        # single CSV
+        path_hvac_single = assigned_csvs["hvac"]
+        df_hvac_all = load_assigned_csv(path_hvac_single)
+        df_hvac_bld_sub = df_hvac_all[df_hvac_all["ogc_fid"] == building_id].copy()
+        has_hvac_data = True
+
+    # -----------------------------------------------------------------------
+    # 3) DHW
+    # -----------------------------------------------------------------------
+    df_dhw_all = load_assigned_csv(assigned_csvs["dhw"])
+    df_dhw_sub = df_dhw_all[df_dhw_all["ogc_fid"] == building_id].copy()
+
+    # -----------------------------------------------------------------------
+    # 4) Vent (either building+zones or single 'vent')
+    # -----------------------------------------------------------------------
+    df_vent_bld_sub = pd.DataFrame()
+    df_vent_zn_sub  = pd.DataFrame()
+    has_vent_data   = False
+
+    if "vent_building" in assigned_csvs and "vent_zones" in assigned_csvs:
+        vent_bld_path = assigned_csvs["vent_building"]
+        vent_zn_path  = assigned_csvs["vent_zones"]
+        df_vent_bld_all = load_assigned_csv(vent_bld_path)
+        df_vent_zn_all  = load_assigned_csv(vent_zn_path)
+        df_vent_bld_sub = df_vent_bld_all[df_vent_bld_all["ogc_fid"] == building_id].copy()
+        df_vent_zn_sub  = df_vent_zn_all[df_vent_zn_all["ogc_fid"] == building_id].copy()
+        has_vent_data = True
+    elif "vent" in assigned_csvs:
+        vent_single_path = assigned_csvs["vent"]
+        df_vent_all = load_assigned_csv(vent_single_path)
+        df_vent_bld_sub = df_vent_all[df_vent_all["ogc_fid"] == building_id].copy()
+        has_vent_data = True
+
+    # -----------------------------------------------------------------------
+    # 5) Elec
+    # -----------------------------------------------------------------------
+    df_elec_all = load_assigned_csv(assigned_csvs["elec"])
+    df_elec_sub = df_elec_all[df_elec_all["ogc_fid"] == building_id].copy()
+
+    # -----------------------------------------------------------------------
+    # 6) Equipment
+    # -----------------------------------------------------------------------
+    df_equip_all = load_assigned_csv(assigned_csvs["equip"])
+    df_equip_sub = df_equip_all[df_equip_all["ogc_fid"] == building_id].copy()
+
+    # -----------------------------------------------------------------------
+    # 7) Fenestration
+    # -----------------------------------------------------------------------
+    df_fenez_all = load_assigned_csv(assigned_csvs["fenez"])
+    df_fenez_sub = df_fenez_all[df_fenez_all["ogc_fid"] == building_id].copy()
+
+    # -----------------------------------------------------------------------
+    # 7) Generate scenario picks for each system
+    # -----------------------------------------------------------------------
+
+    # 7A) HVAC
+    if has_hvac_data and (not df_hvac_bld_sub.empty or not df_hvac_zn_sub.empty):
+        from modification.hvac_functions import create_hvac_scenarios
+        df_scen_hvac = create_hvac_scenarios(
+            df_building=df_hvac_bld_sub,
+            df_zones=df_hvac_zn_sub,
+            building_id=building_id,
+            num_scenarios=num_scenarios,
+            picking_method=picking_method,
+            random_seed=42,
+            scenario_csv_out=scenario_csvs["hvac"]
+        )
+    else:
+        df_scen_hvac = pd.DataFrame()
+        if "hvac" in assigned_csvs and not df_hvac_bld_sub.empty:
+            hvac_scenarios = generate_multiple_param_sets(
+                df_main_sub=df_hvac_bld_sub,
+                num_sets=num_scenarios,
+                picking_method=picking_method,
+                scale_factor=scale_factor
+            )
+            save_param_scenarios_to_csv(hvac_scenarios, building_id, scenario_csvs["hvac"])
+
+    # 7B) DHW
+    # If you prefer a param_min/param_max approach, import create_dhw_scenarios. 
+    # Otherwise, fallback to generate_multiple_param_sets:
+    from modification.dhw_functions import create_dhw_scenarios
+    df_scen_dhw = create_dhw_scenarios(
+        df_dhw_input=df_dhw_sub,
+        building_id=building_id,
+        num_scenarios=num_scenarios,
+        picking_method=picking_method,
+        random_seed=42,
+        scenario_csv_out=scenario_csvs["dhw"]
+    )
+
+    # If older approach:
+    # dhw_scenarios = generate_multiple_param_sets(df_main_sub=df_dhw_sub, ...)
+    # save_param_scenarios_to_csv(dhw_scenarios, building_id, scenario_csvs["dhw"])
+
+    # 7C) Vent
+    if has_vent_data and (not df_vent_bld_sub.empty or not df_vent_zn_sub.empty):
+        df_scen_vent = create_vent_scenarios(
+            df_building=df_vent_bld_sub,
+            df_zones=df_vent_zn_sub,
+            building_id=building_id,
+            num_scenarios=num_scenarios,
+            picking_method=picking_method,
+            random_seed=42,
+            scenario_csv_out=scenario_csvs["vent"]
+        )
+    else:
+        df_scen_vent = pd.DataFrame()
+
+    # 7D) Elec => "create_elec_scenarios" for param_min/param_max approach
+    df_scen_elec = create_elec_scenarios(
+        df_lighting=df_elec_sub,
+        building_id=building_id,
+        num_scenarios=num_scenarios,
+        picking_method=picking_method,
+        random_seed=42,
+        scenario_csv_out=scenario_csvs["elec"]
+    )
+
+    # 7E) Equipment
+    df_scen_equip = create_equipment_scenarios(
+        df_equipment=df_equip_sub,
+        building_id=building_id,
+        num_scenarios=num_scenarios,
+        picking_method=picking_method,
+        random_seed=42,
+        scenario_csv_out=scenario_csvs["equip"]
+    )
+
+    # 7F) Fenestration
+    df_scen_fenez = create_fenez_scenarios(
+        df_struct_fenez=df_fenez_sub,
+        building_id=building_id,
+        num_scenarios=num_scenarios,
+        picking_method=picking_method,
+        random_seed=42,
+        scenario_csv_out=scenario_csvs["fenez"]
+    )
+
+    # -----------------------------------------------------------------------
+    # 8) Load scenario CSVs back, group by scenario_index
+    # -----------------------------------------------------------------------
+    df_hvac_scen  = load_scenario_csv(scenario_csvs["hvac"])  if os.path.isfile(scenario_csvs["hvac"])  else pd.DataFrame()
+    df_dhw_scen   = load_scenario_csv(scenario_csvs["dhw"])   if os.path.isfile(scenario_csvs["dhw"])   else pd.DataFrame()
+    df_vent_scen  = load_scenario_csv(scenario_csvs["vent"])  if os.path.isfile(scenario_csvs["vent"])  else pd.DataFrame()
+    df_elec_scen  = load_scenario_csv(scenario_csvs["elec"])  if os.path.isfile(scenario_csvs["elec"])  else pd.DataFrame()
+    df_equip_scen = load_scenario_csv(scenario_csvs["equip"]) if os.path.isfile(scenario_csvs["equip"]) else pd.DataFrame()
+    df_fenez_scen = load_scenario_csv(scenario_csvs["fenez"]) if os.path.isfile(scenario_csvs["fenez"]) else pd.DataFrame()
+
+    hvac_groups  = df_hvac_scen.groupby("scenario_index")  if not df_hvac_scen.empty  else None
+    dhw_groups   = df_dhw_scen.groupby("scenario_index")   if not df_dhw_scen.empty   else None
+    vent_groups  = df_vent_scen.groupby("scenario_index")  if not df_vent_scen.empty  else None
+    elec_groups  = df_elec_scen.groupby("scenario_index")  if not df_elec_scen.empty  else None
+    equip_groups = df_equip_scen.groupby("scenario_index") if not df_equip_scen.empty else None
+    fenez_groups = df_fenez_scen.groupby("scenario_index") if not df_fenez_scen.empty else None
+
+    # -----------------------------------------------------------------------
+    # 9) For each scenario, load base IDF, apply parameters, save new IDF
+    # -----------------------------------------------------------------------
+    for i in range(num_scenarios):
+        print(f"\n--- Creating scenario #{i} for building {building_id} ---")
+
+        # 9A) Pull sub-DataFrames
+        hvac_df = hvac_groups.get_group(i) if hvac_groups and i in hvac_groups.groups else pd.DataFrame()
+        dhw_df  = dhw_groups.get_group(i)  if dhw_groups  and i in dhw_groups.groups  else pd.DataFrame()
+        vent_df = vent_groups.get_group(i) if vent_groups and i in vent_groups.groups else pd.DataFrame()
+        elec_df = elec_groups.get_group(i) if elec_groups and i in elec_groups.groups else pd.DataFrame()
+        equip_df = equip_groups.get_group(i) if equip_groups and i in equip_groups.groups else pd.DataFrame()
+        fenez_df= fenez_groups.get_group(i)if fenez_groups and i in fenez_groups.groups else pd.DataFrame()
+
+        # 9B) For HVAC: building-level vs. zone-level
+        hvac_bld_df  = hvac_df[hvac_df["zone_name"].isna()]   if not hvac_df.empty else pd.DataFrame()
+        hvac_zone_df = hvac_df[hvac_df["zone_name"].notna()]  if not hvac_df.empty else pd.DataFrame()
+        hvac_params  = _make_param_dict(hvac_bld_df)
+
+        # 9C) Convert to param dict for DHW
+        dhw_params = _make_param_dict(dhw_df)
+
+        # 9D) Vent building vs. zone
+        vent_bld_df  = vent_df[vent_df["zone_name"].isnull()] if not vent_df.empty else pd.DataFrame()
+        vent_zone_df = vent_df[vent_df["zone_name"].notnull()]if not vent_df.empty else pd.DataFrame()
+        vent_params  = _make_param_dict(vent_bld_df)
+
+        # 9E) Elec => building-level approach or object-level
+        elec_params = _make_param_dict(elec_df)
+
+        # 9F) Equipment
+        equip_params = _make_param_dict(equip_df)
+
+        # 9G) Load base IDF
+        idf = load_idf(base_idf_path, idd_path)
+
+        # 9H) Apply building-level + zone-level HVAC
+        apply_building_level_hvac(idf, hvac_params)
+        apply_zone_level_hvac(idf, hvac_zone_df)
+
+        # 9I) Apply DHW
+        apply_dhw_params_to_idf(idf, dhw_params, suffix=f"Scenario_{i}")
+
+        # 9J) Apply Vent
+        if not vent_bld_df.empty or not vent_zone_df.empty:
+            apply_building_level_vent(idf, vent_params)
+            apply_zone_level_vent(idf, vent_zone_df)
+
+        # 9K) Apply Elec => building-level approach
+        #    Or if you prefer object-level, do apply_object_level_elec(idf, elec_df)
+        if not elec_df.empty:
+            apply_building_level_elec(idf, elec_params, zonelist_name="ALL_ZONES")
+
+        # 9L) Apply Equipment
+        if not equip_df.empty:
+            apply_building_level_equipment(idf, equip_params, zonelist_name="ALL_ZONES")
+
+        # 9M) Apply Fenestration (object-level)
+        apply_object_level_fenez(idf, fenez_df)
+
+        # 9N) Save scenario IDF
+        scenario_idf_name = f"building_{building_id}_scenario_{i}.idf"
+        scenario_idf_path = os.path.join(output_idf_dir, scenario_idf_name)
+        save_idf(idf, scenario_idf_path)
+        print(f"[INFO] Saved scenario IDF: {scenario_idf_path}")
+
+    print("[INFO] All scenario IDFs generated successfully.")
+
+    # -----------------------------------------------------------------------
+    # 10) (Optional) Run Simulations
+    # -----------------------------------------------------------------------
+    if config.get("run_simulations", False):
+        print("\n[INFO] Running simulations for scenario IDFs...")
+        sim_cfg = config.get("simulation_config", {})
+        # your simulate_all(...) or E+ runner here
+        print("[INFO] Simulations complete (placeholder).")
+
+    # -----------------------------------------------------------------------
+    # 11) (Optional) Post-processing
+    # -----------------------------------------------------------------------
+    if config.get("perform_post_process", False):
+        print("[INFO] Performing post-processing merges (placeholder).")
+        ppcfg = config.get("post_process_config", {})
+        # merge_all_results(...)
+        print("[INFO] Post-processing step complete (placeholder).")
+
+    # -----------------------------------------------------------------------
+    # 12) (Optional) Validation
+    # -----------------------------------------------------------------------
+    if config.get("perform_validation", False):
+        print("[INFO] Performing validation on scenario results (placeholder).")
+        val_cfg = config["validation_config"]
+        # run_validation_process(val_cfg)
+        print("[INFO] Validation step complete (placeholder).")
+
+
+def _make_param_dict(df_scenario):
+    """
+    Builds a dict {param_name: value} from a subset DataFrame, handling both
+    'assigned_value' or 'param_value' columns in the scenario CSV.
+
+    We check which column is present. If neither is found, we raise an error.
+    """
+    if df_scenario.empty:
+        return {}
+
+    possible_cols = list(df_scenario.columns)
+    if "assigned_value" in possible_cols:
+        val_col = "assigned_value"
+    elif "param_value" in possible_cols:
+        val_col = "param_value"
+    else:
+        raise AttributeError(
+            "No 'assigned_value' or 'param_value' column found in scenario dataframe! "
+            f"Columns are: {possible_cols}"
+        )
+
+    param_dict = {}
+    for row in df_scenario.itertuples():
+        p_name = row.param_name
+        val    = getattr(row, val_col)
+        # Attempt float
+        try:
+            param_dict[p_name] = float(val)
+        except (ValueError, TypeError):
+            param_dict[p_name] = val
+    return param_dict
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_creation.py
+============================================================
+"""
+idf_creation.py
+
+Handles the creation of EnergyPlus IDF files for a list of buildings,
+plus optional simulation runs and post-processing.
+
+Key functionalities:
+  1) create_idf_for_building(...) builds a single IDF using geomeppy,
+     applying geometry, fenestration, HVAC, etc.
+  2) create_idfs_for_all_buildings(...) loops over multiple buildings,
+     then optionally runs simulations and merges results in one or more ways.
+
+Updated to allow writing logs/results inside a specific job folder via logs_base_dir.
+"""
+
+import os
+import logging
+import pandas as pd
+
+# geomeppy for IDF manipulation
+from geomeppy import IDF
+
+# --- Import your custom submodules ---
+from idf_objects.geomz.building import create_building_with_roof_type
+from idf_objects.fenez.fenestration import add_fenestration
+from idf_objects.fenez.materials import (
+    update_construction_materials,
+    assign_constructions_to_surfaces
+)
+from idf_objects.Elec.lighting import add_lights_and_parasitics
+from idf_objects.eequip.equipment import add_electric_equipment
+from idf_objects.DHW.water_heater import add_dhw_to_idf
+from idf_objects.HVAC.custom_hvac import add_HVAC_Ideal_to_all_zones
+from idf_objects.ventilation.add_ventilation import add_ventilation_to_idf
+from idf_objects.setzone.add_outdoor_air_and_zone_sizing_to_all_zones import add_outdoor_air_and_zone_sizing_to_all_zones
+from idf_objects.tempground.add_ground_temperatures import add_ground_temperatures
+from idf_objects.other.zonelist import create_zonelist
+
+# Output & simulation modules
+from idf_objects.outputdef.assign_output_settings import assign_output_settings
+from idf_objects.outputdef.add_output_definitions import add_output_definitions
+from postproc.merge_results import merge_all_results
+from epw.run_epw_sims import simulate_all
+
+###############################################################################
+# Global Default IDF Config
+# (Override these via environment variables or main_config if needed.)
+###############################################################################
+idf_config = {
+    "iddfile": "EnergyPlus/Energy+.idd",         # Default path to the IDD file
+    "idf_file_path": "EnergyPlus/Minimal.idf",   # Default path to a minimal base IDF
+    "output_dir": "output/output_IDFs"           # Default folder to save generated IDFs
+}
+
+
+def create_idf_for_building(
+    building_row,
+    building_index,
+    scenario="scenario1",
+    calibration_stage="pre_calibration",
+    strategy="B",
+    random_seed=42,
+    # Geometry
+    user_config_geom=None,
+    assigned_geom_log=None,
+    # Lighting
+    user_config_lighting=None,
+    assigned_lighting_log=None,
+    # Electric equipment
+    user_config_equipment=None,
+    assigned_equip_log=None,
+    # DHW
+    user_config_dhw=None,
+    assigned_dhw_log=None,
+    # Fenestration
+    res_data=None,
+    nonres_data=None,
+    assigned_fenez_log=None,
+    # HVAC
+    user_config_hvac=None,
+    assigned_hvac_log=None,
+    # Vent
+    user_config_vent=None,
+    assigned_vent_log=None,
+    # Zone sizing
+    assigned_setzone_log=None,
+    # Ground temps
+    assigned_groundtemp_log=None,
+    # Output definitions
+    output_definitions=None
+):
+    """
+    Build an IDF for a single building, applying geometry, fenestration, lighting,
+    HVAC, ventilation, zone sizing, ground temps, and user overrides.
+
+    Returns
+    -------
+    out_path : str
+        File path to the saved IDF.
+    """
+    # 1) Setup IDF from the minimal template
+    IDF.setiddname(idf_config["iddfile"])
+    idf = IDF(idf_config["idf_file_path"])
+
+    # 2) Basic building object settings
+    building_obj = idf.newidfobject("BUILDING")
+    building_obj.Name = f"Sample_Building_{building_index}"
+
+    orientation = building_row.get("building_orientation", 0.0)
+
+
+
+    # for orientation correction this changed 
+    #if not pd.isna(orientation):
+    #    building_obj.North_Axis = orientation
+
+
+
+
+
+
+    if pd.isna(orientation):
+        orientation = 0.0
+
+    # Apply orientation when creating geometry.  The BUILDING object's
+    # North_Axis is kept at 0 so that the rotated geometry correctly
+    # represents the building's orientation in the world coordinate system.
+    building_obj.North_Axis = 0.0
+
+
+
+
+
+
+
+
+
+    # 3) Create geometry
+    if assigned_geom_log is not None and building_row.get("ogc_fid") not in assigned_geom_log:
+        assigned_geom_log[building_row.get("ogc_fid")] = {}
+
+    edge_types = []
+    for side_col in ["north_side", "east_side", "south_side", "west_side"]:
+        edge_types.append(building_row.get(side_col, "Facade"))
+
+    create_building_with_roof_type(
+        idf=idf,
+        area=building_row.get("area", 100.0),
+        perimeter=building_row.get("perimeter", 40.0),
+        orientation=orientation,
+        building_row=building_row,
+        edge_types=edge_types,
+        calibration_stage=calibration_stage,
+        strategy=strategy,
+        random_seed=random_seed,
+        user_config=user_config_geom,
+        assigned_geom_log=assigned_geom_log
+    )
+
+    # 4) Update materials & constructions
+    construction_map = update_construction_materials(
+        idf=idf,
+        building_row=building_row,
+        building_index=building_index,
+        scenario=scenario,
+        calibration_stage=calibration_stage,
+        strategy=strategy,
+        random_seed=random_seed,
+        user_config_fenez=None,  # not used directly
+        assigned_fenez_log=assigned_fenez_log
+    )
+    assign_constructions_to_surfaces(idf, construction_map)
+
+    # Create zone list for convenience
+    create_zonelist(idf, zonelist_name="ALL_ZONES")
+
+    # 5) Fenestration
+    add_fenestration(
+        idf=idf,
+        building_row=building_row,
+        scenario=scenario,
+        calibration_stage=calibration_stage,
+        strategy=strategy,
+        random_seed=random_seed,
+        res_data=res_data,
+        nonres_data=nonres_data,
+        assigned_fenez_log=assigned_fenez_log
+    )
+
+    # 6) Lighting
+    add_lights_and_parasitics(
+        idf=idf,
+        building_row=building_row,
+        calibration_stage=calibration_stage,
+        strategy=strategy,
+        random_seed=random_seed,
+        user_config=user_config_lighting,
+        assigned_values_log=assigned_lighting_log
+    )
+
+    # 7) Electric equipment
+    add_electric_equipment(
+        idf=idf,
+        building_row=building_row,
+        calibration_stage=calibration_stage,
+        strategy=strategy,
+        random_seed=random_seed,
+        user_config=user_config_equipment,
+        assigned_values_log=assigned_equip_log,
+        zonelist_name="ALL_ZONES",
+    )
+    # 8) DHW
+    add_dhw_to_idf(
+        idf=idf,
+        building_row=building_row,
+        calibration_stage=calibration_stage,
+        strategy=strategy,
+        random_seed=random_seed,
+        name_suffix=f"MyDHW_{building_index}",
+        user_config_dhw=user_config_dhw,
+        assigned_dhw_log=assigned_dhw_log,
+        use_nta=True
+    )
+
+    # 9) HVAC
+    add_HVAC_Ideal_to_all_zones(
+        idf=idf,
+        building_row=building_row,
+        calibration_stage=calibration_stage,
+        strategy=strategy,
+        random_seed=random_seed,
+        user_config_hvac=user_config_hvac,
+        assigned_hvac_log=assigned_hvac_log
+    )
+
+    # 10) Ventilation
+    add_ventilation_to_idf(
+        idf=idf,
+        building_row=building_row,
+        calibration_stage=calibration_stage,
+        strategy=strategy,
+        random_seed=random_seed,
+        user_config_vent=user_config_vent,
+        assigned_vent_log=assigned_vent_log,
+        infiltration_model="weather",
+    )
+
+    # 11) Zone sizing
+    add_outdoor_air_and_zone_sizing_to_all_zones(
+        idf=idf,
+        building_row=building_row,
+        calibration_stage=calibration_stage,
+        strategy=strategy,
+        random_seed=random_seed,
+        assigned_setzone_log=assigned_setzone_log
+    )
+
+    # 12) Ground temperatures
+    add_ground_temperatures(
+        idf=idf,
+        calibration_stage=calibration_stage,
+        strategy=strategy,
+        random_seed=random_seed,
+        assigned_groundtemp_log=assigned_groundtemp_log
+    )
+
+    # 13) Output definitions
+    if output_definitions is None:
+        output_definitions = {
+            "desired_variables": ["Facility Total Electric Demand Power", "Zone Air Temperature"],
+            "desired_meters": ["Electricity:Facility"],
+            "override_variable_frequency": "Hourly",
+            "override_meter_frequency": "Hourly",
+            "include_tables": True,
+            "include_summary": True
+        }
+    out_settings = assign_output_settings(
+        desired_variables=output_definitions.get("desired_variables", []),
+        desired_meters=output_definitions.get("desired_meters", []),
+        override_variable_frequency=output_definitions.get("override_variable_frequency", "Hourly"),
+        override_meter_frequency=output_definitions.get("override_meter_frequency", "Hourly"),
+        include_tables=output_definitions.get("include_tables", True),
+        include_summary=output_definitions.get("include_summary", True)
+    )
+    add_output_definitions(idf, out_settings)
+
+    # 13) Save final IDF
+    os.makedirs(idf_config["output_dir"], exist_ok=True)
+    idf_filename = f"building_{building_index}.idf"
+    out_path = os.path.join(idf_config["output_dir"], idf_filename)
+    idf.save(out_path)
+    print(f"[create_idf_for_building] IDF saved at: {out_path}")
+
+    return out_path
+
+
+def create_idfs_for_all_buildings(
+    df_buildings,
+    scenario="scenario1",
+    calibration_stage="pre_calibration",
+    strategy="B",
+    random_seed=42,
+    # partial user configs
+    user_config_geom=None,
+    user_config_lighting=None,
+    user_config_equipment=None,
+    user_config_dhw=None,
+    res_data=None,
+    nonres_data=None,
+    user_config_hvac=None,
+    user_config_vent=None,
+    user_config_epw=None,  # pass epw config or list if relevant
+    # output definitions
+    output_definitions=None,
+    # simulation & postprocess
+    run_simulations=True,
+    simulate_config=None,
+    post_process=True,
+    post_process_config=None,
+    # NEW: Where to store logs and results
+    logs_base_dir=None
+):
+    """
+    Loops over df_buildings, calls create_idf_for_building for each building,
+    optionally runs E+ simulations in parallel, and merges results if post_process=True.
+
+    If logs_base_dir is provided, all assigned_*.csv and merged results go under that folder
+    (e.g. logs_base_dir/assigned, logs_base_dir/Sim_Results, etc.).
+    """
+    logger = logging.getLogger(__name__)
+
+    # A) Prepare dictionaries to store final picks for each module
+    assigned_geom_log       = {}
+    assigned_lighting_log   = {}
+    assigned_equip_log      = {}
+    assigned_dhw_log        = {}
+    assigned_fenez_log      = {}
+    assigned_hvac_log       = {}
+    assigned_vent_log       = {}
+    assigned_epw_log        = {}
+    assigned_groundtemp_log = {}
+    assigned_setzone_log    = {}
+
+    # B) Create an IDF for each building
+    for idx, row in df_buildings.iterrows():
+        bldg_id = row.get("ogc_fid", idx)
+        logger.info(f"--- Creating IDF for building index {idx}, ogc_fid={bldg_id} ---")
+
+        idf_path = create_idf_for_building(
+            building_row=row,
+            building_index=idx,
+            scenario=scenario,
+            calibration_stage=calibration_stage,
+            strategy=strategy,
+            random_seed=random_seed,
+            # geometry
+            user_config_geom=user_config_geom,
+            assigned_geom_log=assigned_geom_log,
+            # lighting
+            user_config_lighting=user_config_lighting,
+            assigned_lighting_log=assigned_lighting_log,
+            # electric equipment
+            user_config_equipment=user_config_equipment,
+            assigned_equip_log=assigned_equip_log,
+            # DHW
+            user_config_dhw=user_config_dhw,
+            assigned_dhw_log=assigned_dhw_log,
+            # Fenestration
+            res_data=res_data,
+            nonres_data=nonres_data,
+            assigned_fenez_log=assigned_fenez_log,
+            # HVAC
+            user_config_hvac=user_config_hvac,
+            assigned_hvac_log=assigned_hvac_log,
+            # Vent
+            user_config_vent=user_config_vent,
+            assigned_vent_log=assigned_vent_log,
+            # zone sizing
+            assigned_setzone_log=assigned_setzone_log,
+            # ground temps
+            assigned_groundtemp_log=assigned_groundtemp_log,
+            # output definitions
+            output_definitions=output_definitions
+        )
+        # Store the final IDF filename in df_buildings
+        df_buildings.loc[idx, "idf_name"] = os.path.basename(idf_path)
+
+    # C) If we’re told to run simulations
+    if run_simulations:
+        logger.info("[create_idfs_for_all_buildings] => Running simulations ...")
+        if simulate_config is None:
+            simulate_config = {}
+
+        # Decide on a base_output_dir for sim results
+        if logs_base_dir:
+            sim_output_dir = os.path.join(logs_base_dir, "Sim_Results")
+        else:
+            sim_output_dir = simulate_config.get("base_output_dir", "output/Sim_Results")
+
+        idf_directory = idf_config["output_dir"]
+        iddfile       = idf_config["iddfile"]
+
+        simulate_all(
+            df_buildings=df_buildings,
+            idf_directory=idf_directory,
+            iddfile=iddfile,
+            base_output_dir=sim_output_dir,
+            user_config_epw=user_config_epw,
+            assigned_epw_log=assigned_epw_log,
+            num_workers=simulate_config.get("num_workers", 4)
+            # ep_force_overwrite=simulate_config.get("ep_force_overwrite", False)
+        )
+
+    # D) Post-processing
+    if post_process:
+        logger.info("[create_idfs_for_all_buildings] => Post-processing results & writing logs ...")
+
+        if post_process_config is None:
+            post_process_config = {
+                "base_output_dir": "output/Sim_Results",
+                "outputs": [
+                    {
+                        "convert_to_daily": False,
+                        "convert_to_monthly": False,
+                        "aggregator": "none",
+                        "output_csv": "output/results/merged_as_is.csv"
+                    }
+                ]
+            }
+
+        # If logs_base_dir is set, we override base_output_dir
+        if logs_base_dir:
+            post_process_config["base_output_dir"] = os.path.join(logs_base_dir, "Sim_Results")
+
+        base_output_dir = post_process_config.get("base_output_dir", "output/Sim_Results")
+        multiple_outputs = post_process_config.get("outputs", [])
+
+        # Possibly handle multiple post-process outputs
+        for proc_item in multiple_outputs:
+            convert_daily = proc_item.get("convert_to_daily", False)
+            convert_monthly = proc_item.get("convert_to_monthly", False)
+            aggregator = proc_item.get("aggregator", "mean")  # daily aggregator
+            out_csv = proc_item.get("output_csv", "output/results/merged_default.csv")
+
+            # If logs_base_dir is set and the out_csv is still something like "output/results/..."
+            # We can relocate it under logs_base_dir, e.g. logs_base_dir/results
+            # Let's do a check:
+            if logs_base_dir and "output/" in out_csv:
+                # redirect to logs_base_dir
+                # e.g. logs_base_dir/results/merged_default.csv
+                # you can pick your subfolder naming
+                rel_filename = out_csv.split("output/")[-1]  # e.g. results/merged_default.csv
+                out_csv = os.path.join(logs_base_dir, rel_filename)
+
+            # Make sure directory exists
+            os.makedirs(os.path.dirname(out_csv), exist_ok=True)
+
+            # Now merge the results
+            merge_all_results(
+                base_output_dir=base_output_dir,
+                output_csv=out_csv,
+                convert_to_daily=convert_daily,
+                daily_aggregator=aggregator,
+                convert_to_monthly=convert_monthly
+            )
+
+        # Write CSV logs for assigned parameters
+        _write_geometry_csv(assigned_geom_log, logs_base_dir)
+        _write_lighting_csv(assigned_lighting_log, logs_base_dir)
+        _write_equipment_csv(assigned_equip_log, logs_base_dir)
+        _write_fenestration_csv(assigned_fenez_log, logs_base_dir)
+        _write_dhw_csv(assigned_dhw_log, logs_base_dir)
+        _write_hvac_csv(assigned_hvac_log, logs_base_dir)
+        _write_vent_csv(assigned_vent_log, logs_base_dir)
+        # (If needed, also EPW or groundtemp logs, do similarly)
+
+        logger.info("[create_idfs_for_all_buildings] => Done post-processing.")
+
+    return df_buildings  # includes "idf_name" column
+
+
+###############################################################################
+# Internal Helper Functions to Write Assigned Logs
+# -- Now accept logs_base_dir so we can place them in job_output_dir
+###############################################################################
+def _make_assigned_path(filename, logs_base_dir):
+    """Helper to build the path for assigned_*.csv, given logs_base_dir."""
+    if logs_base_dir:
+        assigned_dir = os.path.join(logs_base_dir, "assigned")
+    else:
+        assigned_dir = "output/assigned"
+
+    os.makedirs(assigned_dir, exist_ok=True)
+    return os.path.join(assigned_dir, filename)
+
+
+def _write_geometry_csv(assigned_geom_log, logs_base_dir):
+    rows = []
+    for bldg_id, param_dict in assigned_geom_log.items():
+        for param_name, param_val in param_dict.items():
+            rows.append({
+                "ogc_fid": bldg_id,
+                "param_name": param_name,
+                "assigned_value": param_val
+            })
+    if not rows:
+        return
+    df = pd.DataFrame(rows)
+    out_path = _make_assigned_path("assigned_geometry.csv", logs_base_dir)
+    df.to_csv(out_path, index=False)
+
+
+def _write_lighting_csv(assigned_lighting_log, logs_base_dir):
+    rows = []
+    for bldg_id, param_dict in assigned_lighting_log.items():
+        for param_name, subdict in param_dict.items():
+            assigned_val = subdict.get("assigned_value")
+            min_v = subdict.get("min_val")
+            max_v = subdict.get("max_val")
+            obj_name = subdict.get("object_name", "")
+            rows.append({
+                "ogc_fid": bldg_id,
+                "object_name": obj_name,
+                "param_name": param_name,
+                "assigned_value": assigned_val,
+                "min_val": min_v,
+                "max_val": max_v
+            })
+    if not rows:
+        return
+    df = pd.DataFrame(rows)
+    out_path = _make_assigned_path("assigned_lighting.csv", logs_base_dir)
+    df.to_csv(out_path, index=False)
+
+
+def _write_fenestration_csv(assigned_fenez_log, logs_base_dir):
+    rows = []
+    for bldg_id, param_dict in assigned_fenez_log.items():
+        for key, val in param_dict.items():
+            rows.append({
+                "ogc_fid": bldg_id,
+                "param_name": key,
+                "assigned_value": val
+            })
+    if not rows:
+        return
+    df = pd.DataFrame(rows)
+    out_path = _make_assigned_path("assigned_fenez_params.csv", logs_base_dir)
+    df.to_csv(out_path, index=False)
+
+
+def _write_dhw_csv(assigned_dhw_log, logs_base_dir):
+    rows = []
+    for bldg_id, param_dict in assigned_dhw_log.items():
+        for param_name, param_val in param_dict.items():
+            rows.append({
+                "ogc_fid": bldg_id,
+                "param_name": param_name,
+                "assigned_value": param_val
+            })
+    if not rows:
+        return
+    df = pd.DataFrame(rows)
+    out_path = _make_assigned_path("assigned_dhw_params.csv", logs_base_dir)
+    df.to_csv(out_path, index=False)
+
+
+def _write_hvac_csv(assigned_hvac_log, logs_base_dir):
+    rows = []
+    for bldg_id, param_dict in assigned_hvac_log.items():
+        for param_name, param_val in param_dict.items():
+            rows.append({
+                "ogc_fid": bldg_id,
+                "param_name": param_name,
+                "assigned_value": param_val
+            })
+    if not rows:
+        return
+    df = pd.DataFrame(rows)
+    out_path = _make_assigned_path("assigned_hvac_params.csv", logs_base_dir)
+    df.to_csv(out_path, index=False)
+
+
+def _write_vent_csv(assigned_vent_log, logs_base_dir):
+    rows = []
+    for bldg_id, param_dict in assigned_vent_log.items():
+        for param_name, param_val in param_dict.items():
+            rows.append({
+                "ogc_fid": bldg_id,
+                "param_name": param_name,
+                "assigned_value": param_val
+            })
+    if not rows:
+        return
+    df = pd.DataFrame(rows)
+    out_path = _make_assigned_path("assigned_ventilation.csv", logs_base_dir)
+    df.to_csv(out_path, index=False)
+
+
+def _write_equipment_csv(assigned_equip_log, logs_base_dir):
+    rows = []
+    for bldg_id, param_dict in assigned_equip_log.items():
+        for param_name, param_val in param_dict.items():
+            rows.append({
+                "ogc_fid": bldg_id,
+                "param_name": param_name,
+                "assigned_value": param_val,
+            })
+    if not rows:
+        return
+    df = pd.DataFrame(rows)
+    out_path = _make_assigned_path("assigned_equipment.csv", logs_base_dir)
+    df.to_csv(out_path, index=False)
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\main_modifi.py
+============================================================
+"""
+main_modifi.py
+
+Handles the generation of scenario-based IDFs for sensitivity, surrogate,
+calibration, or any parametric runs, then optionally runs E+ simulation,
+post-processing, and validation in a job-specific folder if provided.
+
+Usage:
+  - Typically invoked from your orchestrator (or command line) with a config dict:
+    {
+      "base_idf_path": "output_IDFs/building_0.idf",
+      "idd_path": "EnergyPlus/Energy+.idd",
+      "assigned_csv": {
+        "hvac_building": "output/assigned/assigned_hvac_building.csv",
+        "hvac_zones": "output/assigned/assigned_hvac_zones.csv",
+        "dhw": "output/assigned/assigned_dhw_params.csv",
+        "vent_build": "output/assigned/assigned_vent_building.csv",
+        "vent_zones": "output/assigned/assigned_vent_zones.csv",
+        "elec": "output/assigned/assigned_lighting.csv",
+        "fenez": "output/assigned/structured_fenez_params.csv"
+      },
+      "scenario_csv": {
+        "hvac": "output/scenarios/scenario_params_hvac.csv",
+        "dhw": "output/scenarios/scenario_params_dhw.csv",
+        "vent": "output/scenarios/scenario_params_vent.csv",
+        "elec": "output/scenarios/scenario_params_elec.csv",
+        "fenez": "output/scenarios/scenario_params_fenez.csv"
+      },
+      "output_idf_dir": "output/scenario_idfs",
+      "building_id": 4136730,
+      "num_scenarios": 5,
+      "picking_method": "random_uniform",
+      "picking_scale_factor": 0.5,
+
+      "run_simulations": true,
+      "simulation_config": {
+        "num_workers": 4,
+        "output_dir": "output/Sim_Results/Scenarios"
+      },
+      "perform_post_process": true,
+      "post_process_config": {
+        "output_csv_as_is": "output/results_scenarioes/merged_as_is_scenarios.csv",
+        "output_csv_daily_mean": "output/results_scenarioes/merged_daily_mean_scenarios.csv"
+      },
+      "perform_validation": true,
+      "validation_config": {
+        "real_data_csv": "data/mock_merged_daily_mean.csv",
+        "sim_data_csv": "output/results_scenarioes/merged_daily_mean_scenarios.csv",
+        "bldg_ranges": { "0": [0,1,2] },
+        "variables_to_compare": [...],
+        "threshold_cv_rmse": 30.0,
+        "skip_plots": true,
+        "output_csv": "scenario_validation_report.csv"
+      },
+
+      "job_output_dir": "/usr/src/app/output/xxxx-uuid"   # (Optional)
+    }
+"""
+
+import os
+import logging
+import pandas as pd
+
+# ---------------------------------------------------------------------------
+# A) Common Utilities
+# ---------------------------------------------------------------------------
+from modification.common_utils import (
+    load_assigned_csv,
+    load_scenario_csv,
+    load_idf,
+    save_idf,
+    generate_multiple_param_sets,
+    save_param_scenarios_to_csv
+)
+
+# ---------------------------------------------------------------------------
+# B) Modules for scenario creation & application
+# ---------------------------------------------------------------------------
+from modification.hvac_functions import (
+    create_hvac_scenarios,
+    apply_building_level_hvac,
+    apply_zone_level_hvac
+)
+from modification.dhw_functions import (
+    create_dhw_scenarios,
+    apply_dhw_params_to_idf
+)
+from modification.vent_functions import (
+    create_vent_scenarios,
+    apply_building_level_vent,
+    apply_zone_level_vent
+)
+from modification.elec_functions import (
+    create_elec_scenarios,
+    apply_building_level_elec,
+    apply_object_level_elec
+)
+from modification.fenez_functions2 import (
+    create_fenez_scenarios,
+    apply_object_level_fenez
+)
+
+# ---------------------------------------------------------------------------
+# C) Simulation + Post-processing + Validation
+# ---------------------------------------------------------------------------
+from epw.run_epw_sims import simulate_all
+from postproc.merge_results import merge_all_results
+from validation.main_validation import run_validation_process
+
+
+def run_all_idfs_in_folder(
+    folder_path: str,
+    iddfile: str,
+    base_output_dir: str,
+    default_lat: float = 52.15,
+    default_lon: float = 4.40,
+    default_year: int = 2020,
+    num_workers: int = 4
+):
+    """
+    Utility function to find .idf files in folder_path and run them with simulate_all(...).
+    Adjust lat/lon/year or load them from a side CSV if needed.
+    """
+    logger = logging.getLogger(__name__)
+    logger.info(f"[run_all_idfs_in_folder] Searching .idf files in {folder_path}")
+
+    if not os.path.isdir(folder_path):
+        logger.warning(f"[run_all_idfs_in_folder] Folder not found => {folder_path}")
+        return
+
+    idf_files = [f for f in os.listdir(folder_path) if f.lower().endswith(".idf")]
+    if not idf_files:
+        logger.warning(f"[run_all_idfs_in_folder] No .idf files in {folder_path} to run.")
+        return
+
+    data_rows = []
+    for idx, idf_name in enumerate(idf_files):
+        data_rows.append({
+            "idf_name": idf_name,
+            "lat": default_lat,
+            "lon": default_lon,
+            "desired_climate_year": default_year,
+            "ogc_fid": idx  # or parse from filename
+        })
+
+    df_scenarios = pd.DataFrame(data_rows)
+    logger.info(f"[run_all_idfs_in_folder] Running {len(df_scenarios)} scenario IDFs with simulate_all...")
+
+    simulate_all(
+        df_buildings=df_scenarios,
+        idf_directory=folder_path,
+        iddfile=iddfile,
+        base_output_dir=base_output_dir,
+        user_config_epw=None,
+        assigned_epw_log=None,
+        num_workers=num_workers
+    )
+    logger.info("[run_all_idfs_in_folder] Simulations triggered.")
+
+
+def run_modification_workflow(config):
+    """
+    Main function for scenario-based IDF creation + optional E+ simulation,
+    post-processing, and validation.
+
+    Steps:
+      1) Resolve folder paths (scenario IDFs, results) based on config + optional job_output_dir.
+      2) Load assigned CSV data (HVAC, DHW, Vent, Elec, Fenez).
+      3) Filter for the chosen building.
+      4) Generate scenario param picks (random or otherwise).
+      5) For each scenario, load a fresh base IDF, apply picks, save scenario IDF.
+      6) (Optional) run E+ sims for these scenario IDFs, then post-process, then validate.
+
+    :param config: dict
+    :return: None
+    """
+    logger = logging.getLogger(__name__)
+    logger.info("[MODIFICATION] Starting scenario-based workflow...")
+
+    # -----------------------------------------------------------------------
+    # 1) Extract config parts & resolve paths
+    # -----------------------------------------------------------------------
+    base_idf_path   = config["base_idf_path"]
+    idd_path        = config["idd_path"]
+    assigned_csvs   = config["assigned_csv"]
+    scenario_csvs   = config["scenario_csv"]
+    building_id     = config["building_id"]
+    num_scenarios   = config["num_scenarios"]
+    picking_method  = config["picking_method"]
+    scale_factor    = config.get("picking_scale_factor", 1.0)
+
+    # The user might specify something like "output/scenario_idfs" or just "scenario_idfs".
+    scenario_idf_dir = config.get("output_idf_dir", "output/scenario_idfs")
+
+    # Also we have simulation, post-processing, and validation flags:
+    run_sims        = config.get("run_simulations", False)
+    sim_cfg         = config.get("simulation_config", {})
+    do_postproc     = config.get("perform_post_process", False)
+    postproc_cfg    = config.get("post_process_config", {})
+    do_validation   = config.get("perform_validation", False)
+    validation_cfg  = config.get("validation_config", {})
+
+    # If "job_output_dir" is provided, make scenario_idf_dir relative to it (if it's not absolute).
+    job_output_dir = config.get("job_output_dir")  # optional
+    if job_output_dir and not os.path.isabs(scenario_idf_dir):
+        scenario_idf_dir = os.path.join(job_output_dir, scenario_idf_dir)
+    os.makedirs(scenario_idf_dir, exist_ok=True)
+
+    logger.info(f"[MODIFICATION] Scenario IDFs will be placed in: {scenario_idf_dir}")
+
+    # -----------------------------------------------------------------------
+    # 2) Load assigned CSV data
+    # -----------------------------------------------------------------------
+    # HVAC
+    df_hvac_bld = None
+    df_hvac_zn  = None
+    if "hvac_building" in assigned_csvs and "hvac_zones" in assigned_csvs:
+        df_hvac_bld = load_assigned_csv(assigned_csvs["hvac_building"])
+        df_hvac_zn  = load_assigned_csv(assigned_csvs["hvac_zones"])
+    elif "hvac" in assigned_csvs:
+        df_hvac_bld = load_assigned_csv(assigned_csvs["hvac"])
+
+    # DHW
+    df_dhw = load_assigned_csv(assigned_csvs["dhw"]) if "dhw" in assigned_csvs else None
+
+    # Vent
+    df_vent_bld = None
+    df_vent_zn  = None
+    if "vent_build" in assigned_csvs and "vent_zones" in assigned_csvs:
+        df_vent_bld = load_assigned_csv(assigned_csvs["vent_build"])
+        df_vent_zn  = load_assigned_csv(assigned_csvs["vent_zones"])
+    elif "vent" in assigned_csvs:
+        df_vent_bld = load_assigned_csv(assigned_csvs["vent"])
+
+    # Elec
+    df_elec  = load_assigned_csv(assigned_csvs["elec"])  if "elec"  in assigned_csvs else None
+
+    # Fenestration
+    df_fenez = load_assigned_csv(assigned_csvs["fenez"]) if "fenez" in assigned_csvs else None
+
+    # -----------------------------------------------------------------------
+    # 3) Filter data for this building
+    # -----------------------------------------------------------------------
+    def filter_for_building(df):
+        if df is not None and not df.empty:
+            return df[df["ogc_fid"] == building_id].copy()
+        return pd.DataFrame()
+
+    df_hvac_bld_sub = filter_for_building(df_hvac_bld)
+    df_hvac_zn_sub  = filter_for_building(df_hvac_zn)
+    df_dhw_sub      = filter_for_building(df_dhw)
+    df_vent_bld_sub = filter_for_building(df_vent_bld)
+    df_vent_zn_sub  = filter_for_building(df_vent_zn)
+    df_elec_sub     = filter_for_building(df_elec)
+    df_fenez_sub    = filter_for_building(df_fenez)
+
+    # -----------------------------------------------------------------------
+    # 4) Generate scenario picks (random or otherwise)
+    # -----------------------------------------------------------------------
+    # HVAC
+    if not df_hvac_bld_sub.empty:
+        if not df_hvac_zn_sub.empty:
+            # multi-step scenario creation for building & zone
+            create_hvac_scenarios(
+                df_building=df_hvac_bld_sub,
+                df_zones=df_hvac_zn_sub,
+                building_id=building_id,
+                num_scenarios=num_scenarios,
+                picking_method=picking_method,
+                random_seed=42,
+                scenario_csv_out=scenario_csvs["hvac"]
+            )
+        else:
+            hvac_scen = generate_multiple_param_sets(
+                df_main_sub=df_hvac_bld_sub,
+                num_sets=num_scenarios,
+                picking_method=picking_method,
+                scale_factor=scale_factor
+            )
+            save_param_scenarios_to_csv(hvac_scen, building_id, scenario_csvs["hvac"])
+
+    # DHW
+    if not df_dhw_sub.empty:
+        create_dhw_scenarios(
+            df_dhw_input=df_dhw_sub,
+            building_id=building_id,
+            num_scenarios=num_scenarios,
+            picking_method=picking_method,
+            random_seed=42,
+            scenario_csv_out=scenario_csvs["dhw"]
+        )
+
+    # Vent
+    if not df_vent_bld_sub.empty or not df_vent_zn_sub.empty:
+        create_vent_scenarios(
+            df_building=df_vent_bld_sub,
+            df_zones=df_vent_zn_sub,
+            building_id=building_id,
+            num_scenarios=num_scenarios,
+            picking_method=picking_method,
+            random_seed=42,
+            scenario_csv_out=scenario_csvs["vent"]
+        )
+
+    # Elec
+    if not df_elec_sub.empty:
+        create_elec_scenarios(
+            df_lighting=df_elec_sub,
+            building_id=building_id,
+            num_scenarios=num_scenarios,
+            picking_method=picking_method,
+            random_seed=42,
+            scenario_csv_out=scenario_csvs["elec"]
+        )
+
+    # Fenestration
+    if not df_fenez_sub.empty:
+        create_fenez_scenarios(
+            df_struct_fenez=df_fenez_sub,
+            building_id=building_id,
+            num_scenarios=num_scenarios,
+            picking_method=picking_method,
+            random_seed=42,
+            scenario_csv_out=scenario_csvs["fenez"]
+        )
+
+    # -----------------------------------------------------------------------
+    # 5) Load scenario CSV => group by scenario_index
+    # -----------------------------------------------------------------------
+    def safe_load_scenario(csv_path):
+        if os.path.isfile(csv_path):
+            return load_scenario_csv(csv_path)
+        return pd.DataFrame()
+
+    df_hvac_scen  = safe_load_scenario(scenario_csvs["hvac"])
+    df_dhw_scen   = safe_load_scenario(scenario_csvs["dhw"])
+    df_vent_scen  = safe_load_scenario(scenario_csvs["vent"])
+    df_elec_scen  = safe_load_scenario(scenario_csvs["elec"])
+    df_fenez_scen = safe_load_scenario(scenario_csvs["fenez"])
+
+    hvac_groups  = df_hvac_scen.groupby("scenario_index")  if not df_hvac_scen.empty  else None
+    dhw_groups   = df_dhw_scen.groupby("scenario_index")   if not df_dhw_scen.empty   else None
+    vent_groups  = df_vent_scen.groupby("scenario_index")  if not df_vent_scen.empty  else None
+    elec_groups  = df_elec_scen.groupby("scenario_index")  if not df_elec_scen.empty  else None
+    fenez_groups = df_fenez_scen.groupby("scenario_index") if not df_fenez_scen.empty else None
+
+    # -----------------------------------------------------------------------
+    # 6) For each scenario, load base IDF, apply parameters, save new IDF
+    # -----------------------------------------------------------------------
+    for i in range(num_scenarios):
+        logger.info(f"[MODIFICATION] => Creating scenario #{i} for building {building_id}")
+
+        hvac_df   = hvac_groups.get_group(i) if hvac_groups and i in hvac_groups.groups else pd.DataFrame()
+        dhw_df    = dhw_groups.get_group(i)  if dhw_groups  and i in dhw_groups.groups  else pd.DataFrame()
+        vent_df   = vent_groups.get_group(i) if vent_groups and i in vent_groups.groups else pd.DataFrame()
+        elec_df   = elec_groups.get_group(i) if elec_groups and i in elec_groups.groups else pd.DataFrame()
+        fenez_df  = fenez_groups.get_group(i)if fenez_groups and i in fenez_groups.groups else pd.DataFrame()
+
+        hvac_bld_df   = hvac_df[hvac_df["zone_name"].isna()]
+        hvac_zone_df  = hvac_df[hvac_df["zone_name"].notna()]
+        hvac_params   = _make_param_dict(hvac_bld_df)
+
+        dhw_params    = _make_param_dict(dhw_df)
+
+        vent_bld_df   = vent_df[vent_df["zone_name"].isnull()]
+        vent_zone_df  = vent_df[vent_df["zone_name"].notnull()]
+        vent_params   = _make_param_dict(vent_bld_df)
+
+        elec_params   = _make_param_dict(elec_df)
+
+        # Load base IDF
+        idf = load_idf(base_idf_path, idd_path)
+
+        # Apply HVAC
+        apply_building_level_hvac(idf, hvac_params)
+        apply_zone_level_hvac(idf, hvac_zone_df)
+
+        # Apply DHW
+        apply_dhw_params_to_idf(idf, dhw_params, suffix=f"Scenario_{i}")
+
+        # Apply Vent
+        if not vent_bld_df.empty or not vent_zone_df.empty:
+            apply_building_level_vent(idf, vent_params)
+            apply_zone_level_vent(idf, vent_zone_df)
+
+        # Apply Elec => building-level or object-level
+        if not elec_df.empty:
+            apply_building_level_elec(idf, elec_params, zonelist_name="ALL_ZONES")
+            # or use apply_object_level_elec(idf, elec_df) if you prefer
+
+        # Apply Fenestration => object-level
+        apply_object_level_fenez(idf, fenez_df)
+
+        # Save scenario IDF
+        scenario_idf_name = f"building_{building_id}_scenario_{i}.idf"
+        scenario_idf_path = os.path.join(scenario_idf_dir, scenario_idf_name)
+        save_idf(idf, scenario_idf_path)
+        logger.info(f"[MODIFICATION] Saved scenario IDF => {scenario_idf_path}")
+
+    logger.info("[MODIFICATION] All scenario IDFs generated successfully.")
+
+    # -----------------------------------------------------------------------
+    # 7) (Optional) Simulations
+    # -----------------------------------------------------------------------
+    if run_sims:
+        logger.info("[MODIFICATION] Running E+ simulations for all scenario IDFs.")
+        base_sim_dir = sim_cfg.get("output_dir", "output/Sim_Results/Scenarios")
+
+        # if job_output_dir is given, we can make the sim results go inside it, too:
+        if job_output_dir and not os.path.isabs(base_sim_dir):
+            base_sim_dir = os.path.join(job_output_dir, base_sim_dir)
+        os.makedirs(base_sim_dir, exist_ok=True)
+
+        num_workers  = sim_cfg.get("num_workers", 4)
+
+        run_all_idfs_in_folder(
+            folder_path=scenario_idf_dir,
+            iddfile=idd_path,
+            base_output_dir=base_sim_dir,
+            default_lat=52.15,
+            default_lon=4.40,
+            default_year=2020,
+            num_workers=num_workers
+        )
+
+    # -----------------------------------------------------------------------
+    # 8) (Optional) Post-processing
+    # -----------------------------------------------------------------------
+    if do_postproc:
+        logger.info("[MODIFICATION] Performing post-processing merges.")
+
+        base_sim_dir = sim_cfg.get("output_dir", "output/Sim_Results/Scenarios")
+        if job_output_dir and not os.path.isabs(base_sim_dir):
+            base_sim_dir = os.path.join(job_output_dir, base_sim_dir)
+
+        output_csv_as_is = postproc_cfg.get("output_csv_as_is", "")
+        output_csv_daily_mean = postproc_cfg.get("output_csv_daily_mean", "")
+
+        # Build full paths inside job_output_dir if they are relative
+        if output_csv_as_is:
+            if job_output_dir and not os.path.isabs(output_csv_as_is):
+                output_csv_as_is = os.path.join(job_output_dir, output_csv_as_is)
+            os.makedirs(os.path.dirname(output_csv_as_is), exist_ok=True)
+
+            merge_all_results(
+                base_output_dir=base_sim_dir,
+                output_csv=output_csv_as_is,
+                convert_to_daily=False,
+                convert_to_monthly=False
+            )
+
+        if output_csv_daily_mean:
+            if job_output_dir and not os.path.isabs(output_csv_daily_mean):
+                output_csv_daily_mean = os.path.join(job_output_dir, output_csv_daily_mean)
+            os.makedirs(os.path.dirname(output_csv_daily_mean), exist_ok=True)
+
+            merge_all_results(
+                base_output_dir=base_sim_dir,
+                output_csv=output_csv_daily_mean,
+                convert_to_daily=True,
+                daily_aggregator="mean",
+                convert_to_monthly=False
+            )
+
+        logger.info("[MODIFICATION] Post-processing step complete.")
+
+    # -----------------------------------------------------------------------
+    # 9) (Optional) Validation
+    # -----------------------------------------------------------------------
+    if do_validation:
+        logger.info("[MODIFICATION] Performing scenario validation with config => %s", validation_cfg)
+
+        # If the validation config references CSV paths that might be relative,
+        # you could also adjust them to be inside job_output_dir here if desired.
+        # e.g.:
+        # real_csv = validation_cfg.get("real_data_csv", "")
+        # if job_output_dir and not os.path.isabs(real_csv):
+        #     real_csv = os.path.join(job_output_dir, real_csv)
+        # validation_cfg["real_data_csv"] = real_csv
+
+        run_validation_process(validation_cfg)
+        logger.info("[MODIFICATION] Validation step complete.")
+
+
+def _make_param_dict(df_scenario):
+    """
+    Builds a dict {param_name: value} from the scenario DataFrame columns,
+    checking 'assigned_value' or 'param_value'.
+    """
+    if df_scenario.empty:
+        return {}
+
+    cols = df_scenario.columns.tolist()
+    if "assigned_value" in cols:
+        val_col = "assigned_value"
+    elif "param_value" in cols:
+        val_col = "param_value"
+    else:
+        raise AttributeError(
+            "No 'assigned_value' or 'param_value' column found in scenario dataframe! "
+            f"Columns are: {cols}"
+        )
+
+    result = {}
+    for row in df_scenario.itertuples():
+        p_name = row.param_name
+        raw_val = getattr(row, val_col)
+        try:
+            result[p_name] = float(raw_val)
+        except (ValueError, TypeError):
+            result[p_name] = raw_val
+    return result
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\orchestrator.py
+============================================================
+"""
+orchestrator.py
+
+Orchestrates the entire EnergyPlus workflow using a job-specific subfolder
+for config files and a job-specific folder in /output for results.
+
+Steps:
+  1. Retrieve 'job_id' from job_config (set by job_manager or app).
+  2. Form an output directory: <OUTPUT_DIR>/<job_id>.
+  3. Load main_config.json from user_configs/<job_id>.
+  4. Merge with posted_data["main_config"] if present.
+  5. Apply Excel overrides, JSON overrides, create IDFs, run sims, etc.
+  6. If scenario modification is enabled, override paths so scenario IDFs/results
+     stay in the same job folder, then run scenario-based modifications.
+  7. Perform structuring (e.g., flatten assigned CSVs) if requested.
+  8. Perform global validation, sensitivity, surrogate, calibration if requested;
+     patch any relative CSV paths to be inside the job folder (unless "data/").
+  9. Zip & email final results if mail_user.json is present.
+  10. Respect any cancel_event from job_manager.
+"""
+
+import os
+import json
+import logging
+import threading
+import pandas as pd
+
+# Splitting / deep-merge
+from splitter import deep_merge_dicts
+
+# DB loading if needed
+from database_handler import load_buildings_from_db
+
+# Excel overrides
+from excel_overrides import (
+    override_dhw_lookup_from_excel_file,
+    override_epw_lookup_from_excel_file,
+    override_lighting_lookup_from_excel_file,
+    override_hvac_lookup_from_excel_file,
+    override_vent_lookup_from_excel_file
+)
+
+# Fenestration config
+from idf_objects.fenez.fenez_config_manager import build_fenez_config
+
+# IDF creation
+import idf_creation
+from idf_creation import create_idfs_for_all_buildings
+
+# Scenario modification
+from main_modifi import run_modification_workflow
+
+# Validation
+from validation.main_validation import run_validation_process
+
+# Sensitivity / Surrogate / Calibration
+from cal.unified_sensitivity import run_sensitivity_analysis
+from cal.unified_surrogate import (
+    load_scenario_params as sur_load_scenario_params,
+    pivot_scenario_params,
+    load_sim_results,
+    aggregate_results,
+    merge_params_with_results,
+    build_and_save_surrogate
+)
+from cal.unified_calibration import run_unified_calibration
+
+# Zip & email
+from zip_and_mail import zip_user_output, send_results_email
+
+from cleanup_old_jobs import cleanup_old_results
+
+
+class WorkflowCanceled(Exception):
+    """Custom exception used to stop the workflow if a cancel_event is set."""
+    pass
+
+
+def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None):
+    """
+    Orchestrates the entire E+ workflow using a job-specific subfolder for config JSON,
+    plus a job-specific output folder for results.
+
+    Args:
+        job_config (dict): includes:
+            {
+              "job_id": "<unique_id_for_this_job>",
+              "job_subfolder": "user_configs/<job_id>",
+              "posted_data": {...} (optional),
+              ...
+            }
+        cancel_event (threading.Event): If set, we gracefully exit early.
+
+    Raises:
+        WorkflowCanceled if cancel_event is set mid-way.
+
+    Returns:
+        None (logs extensively, optionally zips/emails final results).
+    """
+    logger = logging.getLogger(__name__)
+    logger.info("=== Starting orchestrate_workflow ===")
+
+    # -------------------------------------------------------------------------
+    # 0) Identify job_id, define check_canceled
+    # -------------------------------------------------------------------------
+    job_id = job_config.get("job_id", "unknown_job_id")
+    logger.info(f"[INFO] Orchestrator for job_id={job_id}")
+
+    def check_canceled():
+        """Raise WorkflowCanceled if cancel_event is set."""
+        if cancel_event and cancel_event.is_set():
+            logger.warning("=== CANCEL event detected. Stopping workflow. ===")
+            raise WorkflowCanceled("Workflow was canceled by user request.")
+
+    # -------------------------------------------------------------------------
+    # 1) Identify the user_configs folder (where main_config.json resides)
+    # -------------------------------------------------------------------------
+    user_configs_folder = job_config.get("job_subfolder")
+    if not user_configs_folder or not os.path.isdir(user_configs_folder):
+        logger.error(f"[ERROR] job_subfolder not found or invalid => {user_configs_folder}")
+        return
+
+    # -------------------------------------------------------------------------
+    # 2) Build an output directory for this job under OUTPUT_DIR
+    #    e.g. /usr/src/app/output/<job_id>
+    # -------------------------------------------------------------------------
+    env_out_dir = os.environ.get("OUTPUT_DIR", "/usr/src/app/output")
+    job_output_dir = os.path.join(env_out_dir, job_id)
+    os.makedirs(job_output_dir, exist_ok=True)
+    logger.info(f"[INFO] Using job-specific output folder: {job_output_dir}")
+
+    # -------------------------------------------------------------------------
+    # 3) Load main_config.json from user_configs/<job_id>
+    # -------------------------------------------------------------------------
+    main_config_path = os.path.join(user_configs_folder, "main_config.json")
+    if not os.path.isfile(main_config_path):
+        logger.error(f"[ERROR] Cannot find main_config.json at {main_config_path}")
+        return
+
+    with open(main_config_path, "r") as f:
+        existing_config_raw = json.load(f)
+    main_config = existing_config_raw.get("main_config", {})
+    logger.info(f"[INFO] Loaded existing main_config from {main_config_path}.")
+
+    # Merge posted_data["main_config"] if present
+    posted_data = job_config.get("posted_data", {})
+    if "main_config" in posted_data:
+        logger.info("[INFO] Deep merging posted_data['main_config'] into main_config.")
+        deep_merge_dicts(main_config, posted_data["main_config"])
+        # optionally re-save
+        with open(main_config_path, "w") as f:
+            json.dump({"main_config": main_config}, f, indent=2)
+
+    # -------------------------------------------------------------------------
+    # 4) Extract sub-sections from main_config
+    # -------------------------------------------------------------------------
+    check_canceled()
+    paths_dict       = main_config.get("paths", {})
+    excel_flags      = main_config.get("excel_overrides", {})
+    user_flags       = main_config.get("user_config_overrides", {})
+    def_dicts        = main_config.get("default_dicts", {})
+    structuring_cfg  = main_config.get("structuring", {})
+    modification_cfg = main_config.get("modification", {})
+    validation_cfg   = main_config.get("validation", {})
+    sens_cfg         = main_config.get("sensitivity", {})
+    sur_cfg          = main_config.get("surrogate", {})
+    cal_cfg          = main_config.get("calibration", {})
+
+    # IDF creation block
+    idf_cfg = main_config.get("idf_creation", {})
+    perform_idf_creation = idf_cfg.get("perform_idf_creation", False)
+    scenario             = idf_cfg.get("scenario", "scenario1")
+    calibration_stage    = idf_cfg.get("calibration_stage", "pre_calibration")
+    strategy             = idf_cfg.get("strategy", "B")
+    random_seed          = idf_cfg.get("random_seed", 42)
+    run_simulations      = idf_cfg.get("run_simulations", True)
+    simulate_config      = idf_cfg.get("simulate_config", {})
+    post_process         = idf_cfg.get("post_process", True)
+    post_process_config  = idf_cfg.get("post_process_config", {})
+    output_definitions   = idf_cfg.get("output_definitions", {})
+    use_database         = main_config.get("use_database", False)
+    db_filter            = main_config.get("db_filter", {})
+    filter_by            = main_config.get("filter_by")  # if using DB
+
+    # -------------------------------------------------------------------------
+    # 5) Possibly override idf_creation.idf_config from env, then force IDFs
+    #    to go in <job_output_dir>/output_IDFs
+    # -------------------------------------------------------------------------
+    check_canceled()
+
+    env_idd_path = os.environ.get("IDD_PATH")
+    if env_idd_path:
+        idf_creation.idf_config["iddfile"] = env_idd_path
+    env_base_idf = os.environ.get("BASE_IDF_PATH")
+    if env_base_idf:
+        idf_creation.idf_config["idf_file_path"] = env_base_idf
+
+    job_idf_dir = os.path.join(job_output_dir, "output_IDFs")
+    os.makedirs(job_idf_dir, exist_ok=True)
+    idf_creation.idf_config["output_dir"] = job_idf_dir
+
+    # If user explicitly set these in main_config, override again
+    if "iddfile" in idf_cfg:
+        idf_creation.idf_config["iddfile"] = idf_cfg["iddfile"]
+    if "idf_file_path" in idf_cfg:
+        idf_creation.idf_config["idf_file_path"] = idf_cfg["idf_file_path"]
+
+    if "output_idf_dir" in idf_cfg:
+        subfolder = idf_cfg["output_idf_dir"]  # e.g. "output_IDFs"
+        full_dir = os.path.join(job_output_dir, subfolder)
+        idf_creation.idf_config["output_dir"] = full_dir
+    else:
+        idf_creation.idf_config["output_dir"] = os.path.join(job_output_dir, "output_IDFs")
+
+    # -------------------------------------------------------------------------
+    # 6) Setup default dictionaries
+    # -------------------------------------------------------------------------
+    base_res_data    = def_dicts.get("res_data", {})
+    base_nonres_data = def_dicts.get("nonres_data", {})
+    dhw_lookup       = def_dicts.get("dhw", {})
+    epw_lookup       = def_dicts.get("epw", [])
+    lighting_lookup  = def_dicts.get("lighting", {})
+    hvac_lookup      = def_dicts.get("hvac", {})
+    vent_lookup      = def_dicts.get("vent", {})
+
+    # -------------------------------------------------------------------------
+    # 7) Apply Excel overrides if flags are set
+    # -------------------------------------------------------------------------
+    check_canceled()
+
+    updated_res_data, updated_nonres_data = build_fenez_config(
+        base_res_data=base_res_data,
+        base_nonres_data=base_nonres_data,
+        excel_path=paths_dict.get("fenez_excel", ""),
+        do_excel_override=excel_flags.get("override_fenez_excel", False),
+        user_fenez_overrides=[]
+    )
+
+    if excel_flags.get("override_dhw_excel", False):
+        dhw_lookup = override_dhw_lookup_from_excel_file(
+            dhw_excel_path=paths_dict.get("dhw_excel", ""),
+            default_dhw_lookup=dhw_lookup,
+            override_dhw_flag=True
+        )
+
+    if excel_flags.get("override_epw_excel", False):
+        epw_lookup = override_epw_lookup_from_excel_file(
+            epw_excel_path=paths_dict.get("epw_excel", ""),
+            epw_lookup=epw_lookup,
+            override_epw_flag=True
+        )
+
+    if excel_flags.get("override_lighting_excel", False):
+        lighting_lookup = override_lighting_lookup_from_excel_file(
+            lighting_excel_path=paths_dict.get("lighting_excel", ""),
+            lighting_lookup=lighting_lookup,
+            override_lighting_flag=True
+        )
+
+    if excel_flags.get("override_hvac_excel", False):
+        hvac_lookup = override_hvac_lookup_from_excel_file(
+            hvac_excel_path=paths_dict.get("hvac_excel", ""),
+            hvac_lookup=hvac_lookup,
+            override_hvac_flag=True
+        )
+
+    if excel_flags.get("override_vent_excel", False):
+        vent_lookup = override_vent_lookup_from_excel_file(
+            vent_excel_path=paths_dict.get("vent_excel", ""),
+            vent_lookup=vent_lookup,
+            override_vent_flag=True
+        )
+
+    # -------------------------------------------------------------------------
+    # 8) JSON overrides from user_configs/<job_id> if user_flags are set
+    # -------------------------------------------------------------------------
+    check_canceled()
+
+    def safe_load_subjson(fname, key):
+        """
+        Loads user_configs/<job_id>/fname if it exists, returns data.get(key).
+        """
+        full_path = os.path.join(user_configs_folder, fname)
+        if os.path.isfile(full_path):
+            try:
+                with open(full_path, "r") as ff:
+                    data = json.load(ff)
+                return data.get(key)
+            except Exception as e:
+                logger.error(f"[ERROR] loading {fname} => {e}")
+        return None
+
+    # Fenestration
+    user_fenez_data = []
+    if user_flags.get("override_fenez_json", False):
+        loaded = safe_load_subjson("fenestration.json", "fenestration")
+        if loaded:
+            user_fenez_data = loaded
+
+    updated_res_data, updated_nonres_data = build_fenez_config(
+        base_res_data=updated_res_data,
+        base_nonres_data=updated_nonres_data,
+        excel_path="",
+        do_excel_override=False,
+        user_fenez_overrides=user_fenez_data
+    )
+
+    # DHW
+    user_config_dhw = None
+    if user_flags.get("override_dhw_json", False):
+        user_config_dhw = safe_load_subjson("dhw.json", "dhw")
+
+    # EPW
+    user_config_epw = []
+    if user_flags.get("override_epw_json", False):
+        e = safe_load_subjson("epw.json", "epw")
+        if e:
+            user_config_epw = e
+
+    # Lighting
+    user_config_lighting = None
+    if user_flags.get("override_lighting_json", False):
+        user_config_lighting = safe_load_subjson("lighting.json", "lighting")
+
+    # HVAC
+    user_config_hvac = None
+    if user_flags.get("override_hvac_json", False):
+        user_config_hvac = safe_load_subjson("hvac.json", "hvac")
+
+    # Vent
+    user_config_vent = []
+    if user_flags.get("override_vent_json", False):
+        v = safe_load_subjson("vent.json", "vent")
+        if v:
+            user_config_vent = v
+
+    # Geometry
+    geom_data = {}
+    if user_flags.get("override_geometry_json", False):
+        g = safe_load_subjson("geometry.json", "geometry")
+        if g:
+            geom_data["geometry"] = g
+
+    # Shading
+    shading_data = {}
+    if user_flags.get("override_shading_json", False):
+        s = safe_load_subjson("shading.json", "shading")
+        if s:
+            shading_data["shading"] = s
+
+    # -------------------------------------------------------------------------
+    # 9) IDF creation
+    # -------------------------------------------------------------------------
+    check_canceled()
+    df_buildings = pd.DataFrame()
+
+    if perform_idf_creation:
+        logger.info("[INFO] IDF creation is ENABLED.")
+
+        # a) Load building data
+        if use_database:
+            logger.info("[INFO] Loading building data from DB.")
+            if not filter_by:
+                raise ValueError("[ERROR] 'filter_by' must be specified when 'use_database' is True.")
+            df_buildings = load_buildings_from_db(db_filter, filter_by)
+
+            # Optionally save the raw DB buildings
+            extracted_csv_path = os.path.join(job_output_dir, "extracted_buildings.csv")
+            df_buildings.to_csv(extracted_csv_path, index=False)
+            logger.info(f"[INFO] Saved extracted buildings to {extracted_csv_path}")
+
+        else:
+            bldg_data_path = paths_dict.get("building_data", "")
+            if os.path.isfile(bldg_data_path):
+                df_buildings = pd.read_csv(bldg_data_path)
+            else:
+                logger.warning(f"[WARN] building_data CSV not found => {bldg_data_path}")
+
+        # b) Create IDFs & (optionally) run sims in job folder
+        df_buildings = create_idfs_for_all_buildings(
+            df_buildings=df_buildings,
+            scenario=scenario,
+            calibration_stage=calibration_stage,
+            strategy=strategy,
+            random_seed=random_seed,
+            user_config_geom=geom_data.get("geometry", []),
+            user_config_lighting=user_config_lighting,
+            user_config_dhw=user_config_dhw,
+            res_data=updated_res_data,
+            nonres_data=updated_nonres_data,
+            user_config_hvac=user_config_hvac,
+            user_config_vent=user_config_vent,
+            user_config_epw=user_config_epw,
+            output_definitions=output_definitions,
+            run_simulations=run_simulations,
+            simulate_config=simulate_config,
+            post_process=post_process,
+            post_process_config=post_process_config,
+            logs_base_dir=job_output_dir
+        )
+
+        # === Store the mapping (ogc_fid -> idf_name) so we can look it up later ===
+        idf_map_csv = os.path.join(job_output_dir, "extracted_idf_buildings.csv")
+        df_buildings.to_csv(idf_map_csv, index=False)
+        logger.info(f"[INFO] Wrote building -> IDF map to {idf_map_csv}")
+
+    else:
+        logger.info("[INFO] Skipping IDF creation.")
+
+    # -------------------------------------------------------------------------
+    # 10) Perform structuring if requested
+    # -------------------------------------------------------------------------
+    check_canceled()
+    if structuring_cfg.get("perform_structuring", False):
+        logger.info("[INFO] Performing structuring ...")
+
+        # Example: Fenestration
+        from idf_objects.structuring.fenestration_structuring import transform_fenez_log_to_structured_with_ranges
+        fenez_conf = structuring_cfg.get("fenestration", {})
+        fenez_in   = fenez_conf.get("csv_in",  "assigned/assigned_fenez_params.csv")
+        fenez_out  = fenez_conf.get("csv_out", "assigned/structured_fenez_params.csv")
+
+        if not os.path.isabs(fenez_in):
+            fenez_in = os.path.join(job_output_dir, fenez_in)
+        if not os.path.isabs(fenez_out):
+            fenez_out = os.path.join(job_output_dir, fenez_out)
+
+        if os.path.isfile(fenez_in):
+            transform_fenez_log_to_structured_with_ranges(csv_input=fenez_in, csv_output=fenez_out)
+        else:
+            logger.warning(f"[STRUCTURING] Fenestration input CSV not found => {fenez_in}")
+
+        # Example: DHW
+        from idf_objects.structuring.dhw_structuring import transform_dhw_log_to_structured
+        dhw_conf = structuring_cfg.get("dhw", {})
+        dhw_in   = dhw_conf.get("csv_in",  "assigned/assigned_dhw_params.csv")
+        dhw_out  = dhw_conf.get("csv_out", "assigned/structured_dhw_params.csv")
+
+        if not os.path.isabs(dhw_in):
+            dhw_in = os.path.join(job_output_dir, dhw_in)
+        if not os.path.isabs(dhw_out):
+            dhw_out = os.path.join(job_output_dir, dhw_out)
+
+        if os.path.isfile(dhw_in):
+            transform_dhw_log_to_structured(dhw_in, dhw_out)
+        else:
+            logger.warning(f"[STRUCTURING] DHW input CSV not found => {dhw_in}")
+
+        # Example: HVAC flatten
+        from idf_objects.structuring.flatten_hvac import flatten_hvac_data, parse_assigned_value as parse_hvac
+        hvac_conf = structuring_cfg.get("hvac", {})
+        hvac_in   = hvac_conf.get("csv_in",  "assigned/assigned_hvac_params.csv")
+        hvac_bld  = hvac_conf.get("build_out", "assigned/assigned_hvac_building.csv")
+        hvac_zone = hvac_conf.get("zone_out",  "assigned/assigned_hvac_zones.csv")
+
+        if not os.path.isabs(hvac_in):
+            hvac_in = os.path.join(job_output_dir, hvac_in)
+        if not os.path.isabs(hvac_bld):
+            hvac_bld = os.path.join(job_output_dir, hvac_bld)
+        if not os.path.isabs(hvac_zone):
+            hvac_zone = os.path.join(job_output_dir, hvac_zone)
+
+        if os.path.isfile(hvac_in):
+            df_hvac = pd.read_csv(hvac_in)
+            df_hvac["assigned_value"] = df_hvac["assigned_value"].apply(parse_hvac)
+            flatten_hvac_data(
+                df_input=df_hvac,
+                out_build_csv=hvac_bld,
+                out_zone_csv=hvac_zone
+            )
+        else:
+            logger.warning(f"[STRUCTURING] HVAC input CSV not found => {hvac_in}")
+
+        # Example: Vent flatten
+        from idf_objects.structuring.flatten_assigned_vent import flatten_ventilation_data, parse_assigned_value as parse_vent
+        vent_conf = structuring_cfg.get("vent", {})
+        vent_in   = vent_conf.get("csv_in", "assigned/assigned_ventilation.csv")
+        vent_bld  = vent_conf.get("build_out", "assigned/assigned_vent_building.csv")
+        vent_zone = vent_conf.get("zone_out", "assigned/assigned_vent_zones.csv")
+
+        if not os.path.isabs(vent_in):
+            vent_in = os.path.join(job_output_dir, vent_in)
+        if not os.path.isabs(vent_bld):
+            vent_bld = os.path.join(job_output_dir, vent_bld)
+        if not os.path.isabs(vent_zone):
+            vent_zone = os.path.join(job_output_dir, vent_zone)
+
+        if os.path.isfile(vent_in):
+            df_vent = pd.read_csv(vent_in)
+            df_vent["assigned_value"] = df_vent["assigned_value"].apply(parse_vent)
+            flatten_ventilation_data(
+                df_input=df_vent,
+                out_build_csv=vent_bld,
+                out_zone_csv=vent_zone
+            )
+        else:
+            logger.warning(f"[STRUCTURING] Vent input CSV not found => {vent_in}")
+
+    else:
+        logger.info("[INFO] Skipping structuring.")
+
+    # -------------------------------------------------------------------------
+    # 11) Scenario Modification
+    # -------------------------------------------------------------------------
+    check_canceled()
+    if modification_cfg.get("perform_modification", False):
+        logger.info("[INFO] Scenario modification is ENABLED.")
+
+        mod_cfg = modification_cfg["modify_config"]
+
+        # 1) Ensure scenario IDFs go to <job_output_dir>/scenario_idfs
+        scenario_idf_dir = os.path.join(job_output_dir, "scenario_idfs")
+        os.makedirs(scenario_idf_dir, exist_ok=True)
+        mod_cfg["output_idf_dir"] = scenario_idf_dir
+
+        # 2) Ensure scenario sims => <job_output_dir>/Sim_Results/Scenarios
+        if "simulation_config" in mod_cfg:
+            sim_out = os.path.join(job_output_dir, "Sim_Results", "Scenarios")
+            os.makedirs(sim_out, exist_ok=True)
+            mod_cfg["simulation_config"]["output_dir"] = sim_out
+
+        # 3) Post-process => <job_output_dir>/results_scenarioes
+        if "post_process_config" in mod_cfg:
+            ppcfg = mod_cfg["post_process_config"]
+            as_is_csv = os.path.join(job_output_dir, "results_scenarioes", "merged_as_is_scenarios.csv")
+            daily_csv = os.path.join(job_output_dir, "results_scenarioes", "merged_daily_mean_scenarios.csv")
+            os.makedirs(os.path.dirname(as_is_csv), exist_ok=True)
+            os.makedirs(os.path.dirname(daily_csv), exist_ok=True)
+            ppcfg["output_csv_as_is"] = as_is_csv
+            ppcfg["output_csv_daily_mean"] = daily_csv
+
+        # 4) Fix assigned_csv paths
+        assigned_csv_dict = mod_cfg.get("assigned_csv", {})
+        for key, rel_path in assigned_csv_dict.items():
+            assigned_csv_dict[key] = os.path.join(job_output_dir, rel_path)
+
+        # 5) Fix scenario_csv paths
+        scenario_csv_dict = mod_cfg.get("scenario_csv", {})
+        for key, rel_path in scenario_csv_dict.items():
+            scenario_csv_dict[key] = os.path.join(job_output_dir, rel_path)
+
+        # ----------------------------------------------------------------------
+        # NEW LOGIC: pick the base_idf_path from building_id automatically
+        # ----------------------------------------------------------------------
+        # The user sets "building_id" in the config, e.g. 20233330
+        building_id = mod_cfg["building_id"]
+
+        # We need the CSV that was saved right after create_idfs_for_all_buildings(...)
+        idf_map_csv = os.path.join(job_output_dir, "extracted_idf_buildings.csv")
+        if not os.path.isfile(idf_map_csv):
+            raise FileNotFoundError(
+                f"Cannot find building->IDF map CSV at {idf_map_csv}. "
+                f"Did you skip 'perform_idf_creation'?"
+            )
+
+        # Read the mapping: each row has "ogc_fid" and "idf_name"
+        df_idf_map = pd.read_csv(idf_map_csv)
+        row_match = df_idf_map.loc[df_idf_map["ogc_fid"] == building_id]
+
+        if row_match.empty:
+            raise ValueError(
+                f"No building found for building_id={building_id} in {idf_map_csv}"
+            )
+
+        # e.g. "building_0.idf", "building_16.idf", "building_16_ba62d0.idf", etc.
+        idf_filename = row_match.iloc[0]["idf_name"]
+
+        # Build the full path to that IDF in output_IDFs
+        base_idf_path = os.path.join(job_output_dir, "output_IDFs", idf_filename)
+        mod_cfg["base_idf_path"] = base_idf_path
+        logger.info(f"[INFO] Auto-selected base IDF => {base_idf_path}")
+        # ----------------------------------------------------------------------
+
+        # Finally, run the scenario workflow
+        run_modification_workflow(mod_cfg)
+    else:
+        logger.info("[INFO] Skipping scenario modification.")
+
+
+    # -------------------------------------------------------------------------
+    # 12) Helper to handle patching CSVs that are "relative" but not "data/".
+    # -------------------------------------------------------------------------
+    def patch_if_relative(csv_path: str):
+        """
+        1) If absolute, return as-is.
+        2) If starts with 'data/', interpret as /usr/src/app/data/... (no job folder).
+        3) Else, join with job_output_dir.
+        """
+        if not csv_path:
+            return csv_path
+        if os.path.isabs(csv_path):
+            return csv_path
+        if csv_path.startswith("data/"):
+            return os.path.join("/usr/src/app", csv_path)
+        return os.path.join(job_output_dir, csv_path)
+
+    # -------------------------------------------------------------------------
+    # 13) Global Validation
+    # -------------------------------------------------------------------------
+        # (A) Validation - BASE
+    # -------------------------------------------------------------------------
+    check_canceled()
+    base_validation_cfg = main_config.get("validation_base", {})
+    if base_validation_cfg.get("perform_validation", False):
+        logger.info("[INFO] BASE Validation is ENABLED.")
+        val_conf = base_validation_cfg["config"]
+
+        # Patch relative paths
+        sim_csv = val_conf.get("sim_data_csv")
+        if sim_csv:
+            val_conf["sim_data_csv"] = patch_if_relative(sim_csv)
+
+        real_csv = val_conf.get("real_data_csv")
+        if real_csv:
+            val_conf["real_data_csv"] = patch_if_relative(real_csv)
+
+        out_csv = val_conf.get("output_csv")
+        if out_csv:
+            val_conf["output_csv"] = patch_if_relative(out_csv)
+
+        # Now run the validation
+        run_validation_process(val_conf)
+    else:
+        logger.info("[INFO] Skipping BASE validation or not requested.")
+
+    # (B) Validation - SCENARIOS
+    # -------------------------------------------------------------------------
+    check_canceled()
+    scenario_validation_cfg = main_config.get("validation_scenarios", {})
+    if scenario_validation_cfg.get("perform_validation", False):
+        logger.info("[INFO] SCENARIO Validation is ENABLED.")
+        val_conf = scenario_validation_cfg["config"]
+
+        # Patch relative paths
+        sim_csv = val_conf.get("sim_data_csv")
+        if sim_csv:
+            val_conf["sim_data_csv"] = patch_if_relative(sim_csv)
+
+        real_csv = val_conf.get("real_data_csv")
+        if real_csv:
+            val_conf["real_data_csv"] = patch_if_relative(real_csv)
+
+        out_csv = val_conf.get("output_csv")
+        if out_csv:
+            val_conf["output_csv"] = patch_if_relative(out_csv)
+
+        # Now run the validation
+        run_validation_process(val_conf)
+    else:
+        logger.info("[INFO] Skipping SCENARIO validation or not requested.")
+
+
+    # -------------------------------------------------------------------------
+    # 14) Sensitivity Analysis
+    # -------------------------------------------------------------------------
+    check_canceled()
+    if sens_cfg.get("perform_sensitivity", False):
+        logger.info("[INFO] Sensitivity Analysis is ENABLED.")
+
+        scenario_folder = sens_cfg.get("scenario_folder", "")
+        sens_cfg["scenario_folder"] = patch_if_relative(scenario_folder)
+
+        results_csv = sens_cfg.get("results_csv", "")
+        sens_cfg["results_csv"] = patch_if_relative(results_csv)
+
+        out_csv = sens_cfg.get("output_csv", "sensitivity_output.csv")
+        sens_cfg["output_csv"] = patch_if_relative(out_csv)
+
+        run_sensitivity_analysis(
+            scenario_folder=sens_cfg["scenario_folder"],
+            method=sens_cfg["method"],
+            results_csv=sens_cfg.get("results_csv", ""),
+            target_variable=sens_cfg.get("target_variable", []),
+            output_csv=sens_cfg.get("output_csv", "sensitivity_output.csv"),
+            n_morris_trajectories=sens_cfg.get("n_morris_trajectories", 10),
+            num_levels=sens_cfg.get("num_levels", 4),
+            n_sobol_samples=sens_cfg.get("n_sobol_samples", 128)
+        )
+    else:
+        logger.info("[INFO] Skipping sensitivity analysis.")
+
+    # -------------------------------------------------------------------------
+    # 15) Surrogate Modeling
+    # -------------------------------------------------------------------------
+    check_canceled()
+    if sur_cfg.get("perform_surrogate", False):
+        logger.info("[INFO] Surrogate Modeling is ENABLED.")
+
+        scenario_folder = sur_cfg.get("scenario_folder", "")
+        sur_cfg["scenario_folder"] = patch_if_relative(scenario_folder)
+
+        results_csv = sur_cfg.get("results_csv", "")
+        sur_cfg["results_csv"] = patch_if_relative(results_csv)
+
+        model_out = sur_cfg.get("model_out", "")
+        sur_cfg["model_out"] = patch_if_relative(model_out)
+
+        cols_out = sur_cfg.get("cols_out", "")
+        sur_cfg["cols_out"] = patch_if_relative(cols_out)
+
+        target_var = sur_cfg["target_variable"]
+        test_size  = sur_cfg["test_size"]
+
+        df_scen = sur_load_scenario_params(sur_cfg["scenario_folder"])
+        pivot_df = pivot_scenario_params(df_scen)
+
+        df_sim = load_sim_results(sur_cfg["results_csv"])
+        df_agg = aggregate_results(df_sim)
+        merged_df = merge_params_with_results(pivot_df, df_agg, target_var)
+
+        rf_model, trained_cols = build_and_save_surrogate(
+            df_data=merged_df,
+            target_col=target_var,
+            model_out_path=sur_cfg["model_out"],
+            columns_out_path=sur_cfg["cols_out"],
+            test_size=test_size,
+            random_state=42
+        )
+        if rf_model:
+            logger.info("[INFO] Surrogate model built & saved.")
+        else:
+            logger.warning("[WARN] Surrogate modeling failed or insufficient data.")
+    else:
+        logger.info("[INFO] Skipping surrogate modeling.")
+
+    # -------------------------------------------------------------------------
+    # 16) Calibration
+    # -------------------------------------------------------------------------
+    check_canceled()
+    if cal_cfg.get("perform_calibration", False):
+        logger.info("[INFO] Calibration is ENABLED.")
+
+        scen_folder = cal_cfg.get("scenario_folder", "")
+        cal_cfg["scenario_folder"] = patch_if_relative(scen_folder)
+
+        real_csv = cal_cfg.get("real_data_csv", "")
+        cal_cfg["real_data_csv"] = patch_if_relative(real_csv)
+
+        sur_model_path = cal_cfg.get("surrogate_model_path", "")
+        cal_cfg["surrogate_model_path"] = patch_if_relative(sur_model_path)
+
+        sur_cols_path = cal_cfg.get("surrogate_columns_path", "")
+        cal_cfg["surrogate_columns_path"] = patch_if_relative(sur_cols_path)
+
+        hist_csv = cal_cfg.get("output_history_csv", "")
+        cal_cfg["output_history_csv"] = patch_if_relative(hist_csv)
+
+        best_params_folder = cal_cfg.get("best_params_folder", "")
+        cal_cfg["best_params_folder"] = patch_if_relative(best_params_folder)
+
+        run_unified_calibration(cal_cfg)
+    else:
+        logger.info("[INFO] Skipping calibration.")
+
+    # -------------------------------------------------------------------------
+    # 17) Zip & Email final results, if mail_user.json present
+    # -------------------------------------------------------------------------
+    try:
+        mail_user_path = os.path.join(user_configs_folder, "mail_user.json")
+        if os.path.isfile(mail_user_path):
+            with open(mail_user_path, "r") as f:
+                mail_info = json.load(f)
+
+            mail_user_list = mail_info.get("mail_user", [])
+            if len(mail_user_list) > 0:
+                first_user = mail_user_list[0]
+                recipient_email = first_user.get("email", "")
+                if recipient_email:
+                    zip_path = zip_user_output(job_output_dir)
+                    send_results_email(zip_path, recipient_email)
+                    logger.info(f"[INFO] Emailed zip {zip_path} to {recipient_email}")
+                else:
+                    logger.warning("[WARN] mail_user.json => missing 'email'")
+            else:
+                logger.warning("[WARN] mail_user.json => 'mail_user' list is empty.")
+        else:
+            logger.info("[INFO] No mail_user.json found, skipping email.")
+    except Exception as e:
+        logger.error(f"[ERROR] Zipping/Emailing results failed => {e}")
+
+    # -------------------------------------------------------------------------
+    # LAST STEP: (Optional) Call the cleanup function
+    # -------------------------------------------------------------------------
+    try:
+        cleanup_old_results()  # This will remove any job folder older than MAX_AGE_HOURS
+    except Exception as e:
+        logger.error(f"[CLEANUP ERROR] => {e}")
+
+    logger.info("=== End of orchestrate_workflow ===")
+
+------------------------------------------------------------
+
 File: D:\Documents\E_Plus_2030_py\idf_objects\eequip\assign_equip_values.py
 ============================================================
 # File: D:\Documents\E_Plus_2030_py\idf_objects\eequip\assign_equip_values.py
@@ -164,19 +3016,16 @@ def assign_equipment_parameters(
         print(f"  [DEBUG assign_equip_params] pick_val for '{param_name}': range={r}, strategy='{current_strategy}', picked={val}")
         return val
 
-    assigned = {
-        "equip_wm2": pick_val("equip_wm2", equip_rng, strategy),
-        "tD": pick_val("tD", tD_rng, strategy),
-        "tN": pick_val("tN", tN_rng, strategy)
-    }
-    print(f"[DEBUG assign_equip_params] Values after pick_val (pre-sanity): {assigned}")
+    assigned_equip = max(0.0, float(pick_val("equip_wm2", equip_rng, strategy)))
+    assigned_tD    = max(0.0, float(pick_val("tD", tD_rng, strategy)))
+    assigned_tN    = max(0.0, float(pick_val("tN", tN_rng, strategy)))
 
-    # Basic sanity checks so negative values or obviously unrealistic
-    # picks do not slip through.
-    assigned["equip_wm2"] = max(0.0, float(assigned["equip_wm2"]))
-    assigned["tD"] = max(0.0, float(assigned["tD"]))
-    assigned["tN"] = max(0.0, float(assigned["tN"]))
-    print(f"[DEBUG assign_equip_params] Final assigned values (post-sanity): {assigned}")
+    assigned = {
+        "equip_wm2": {"assigned_value": assigned_equip, "min_val": equip_rng[0], "max_val": equip_rng[1], "object_name": "ELECTRICEQUIPMENT"},
+        "tD": {"assigned_value": assigned_tD, "min_val": tD_rng[0], "max_val": tD_rng[1], "object_name": "ELECTRICEQUIPMENT_SCHEDULE"},
+        "tN": {"assigned_value": assigned_tN, "min_val": tN_rng[0], "max_val": tN_rng[1], "object_name": "ELECTRICEQUIPMENT_SCHEDULE"}
+    }
+    print(f"[DEBUG assign_equip_params] Final assigned values: {assigned}")
 
     # 6) Optional logging of both the picks and underlying ranges
     if assigned_log is not None:
@@ -376,7 +3225,7 @@ def add_electric_equipment(
         assigned_log=assigned_values_log,
     )
 
-    equip_wm2 = picks["equip_wm2"]
+    equip_wm2 = picks["equip_wm2"]["assigned_value"]
 
     sched_name = create_equipment_schedule(
         idf,
@@ -727,8 +3576,8 @@ from .lighting_lookup import lighting_lookup
 from .constants import ( # Ensure all DEFAULT constants are imported
     DEFAULT_LIGHTING_WM2, DEFAULT_PARASITIC_WM2, DEFAULT_TD, DEFAULT_TN,
     DEFAULT_LIGHTS_FRACTION_RADIANT, DEFAULT_LIGHTS_FRACTION_VISIBLE,
-    DEFAULT_LIGHTS_FRACTION_REPLACEABLE, DEFAULT_EQUIP_FRACTION_RADIANT,
-    DEFAULT_EQUIP_FRACTION_LOST
+    DEFAULT_LIGHTS_FRACTION_REPLACEABLE, DEFAULT_LIGHTS_FRACTION_RETURN_AIR,
+    DEFAULT_EQUIP_FRACTION_RADIANT, DEFAULT_EQUIP_FRACTION_LOST
 )
 from .overrides_helper import find_applicable_overrides # Assuming this helper function exists and is correct
 
@@ -773,6 +3622,7 @@ def assign_lighting_parameters(
         "lights_fraction_radiant": {"assigned_value": DEFAULT_LIGHTS_FRACTION_RADIANT, "min_val": DEFAULT_LIGHTS_FRACTION_RADIANT, "max_val": DEFAULT_LIGHTS_FRACTION_RADIANT, "object_name": "LIGHTS.Fraction_Radiant"},
         "lights_fraction_visible": {"assigned_value": DEFAULT_LIGHTS_FRACTION_VISIBLE, "min_val": DEFAULT_LIGHTS_FRACTION_VISIBLE, "max_val": DEFAULT_LIGHTS_FRACTION_VISIBLE, "object_name": "LIGHTS.Fraction_Visible"},
         "lights_fraction_replaceable": {"assigned_value": DEFAULT_LIGHTS_FRACTION_REPLACEABLE, "min_val": DEFAULT_LIGHTS_FRACTION_REPLACEABLE, "max_val": DEFAULT_LIGHTS_FRACTION_REPLACEABLE, "object_name": "LIGHTS.Fraction_Replaceable"},
+        "lights_fraction_return_air": {"assigned_value": DEFAULT_LIGHTS_FRACTION_RETURN_AIR, "min_val": DEFAULT_LIGHTS_FRACTION_RETURN_AIR, "max_val": DEFAULT_LIGHTS_FRACTION_RETURN_AIR, "object_name": "LIGHTS.Return_Air_Fraction"},
         "equip_fraction_radiant": {"assigned_value": DEFAULT_EQUIP_FRACTION_RADIANT, "min_val": DEFAULT_EQUIP_FRACTION_RADIANT, "max_val": DEFAULT_EQUIP_FRACTION_RADIANT, "object_name": "ELECTRICEQUIPMENT.Fraction_Radiant"},
         "equip_fraction_lost": {"assigned_value": DEFAULT_EQUIP_FRACTION_LOST, "min_val": DEFAULT_EQUIP_FRACTION_LOST, "max_val": DEFAULT_EQUIP_FRACTION_LOST, "object_name": "ELECTRICEQUIPMENT.Fraction_Lost"}
     }
@@ -841,6 +3691,7 @@ def assign_lighting_parameters(
     lights_fraction_radiant_rng     = param_dict.get("lights_fraction_radiant_range", (DEFAULT_LIGHTS_FRACTION_RADIANT, DEFAULT_LIGHTS_FRACTION_RADIANT))
     lights_fraction_visible_rng     = param_dict.get("lights_fraction_visible_range", (DEFAULT_LIGHTS_FRACTION_VISIBLE, DEFAULT_LIGHTS_FRACTION_VISIBLE))
     lights_fraction_replace_rng     = param_dict.get("lights_fraction_replaceable_range", (DEFAULT_LIGHTS_FRACTION_REPLACEABLE, DEFAULT_LIGHTS_FRACTION_REPLACEABLE))
+    lights_fraction_return_air_rng  = param_dict.get("lights_fraction_return_air_range", (DEFAULT_LIGHTS_FRACTION_RETURN_AIR, DEFAULT_LIGHTS_FRACTION_RETURN_AIR))
     equip_fraction_radiant_rng      = param_dict.get("equip_fraction_radiant_range", (DEFAULT_EQUIP_FRACTION_RADIANT, DEFAULT_EQUIP_FRACTION_RADIANT))
     equip_fraction_lost_rng         = param_dict.get("equip_fraction_lost_range", (DEFAULT_EQUIP_FRACTION_LOST, DEFAULT_EQUIP_FRACTION_LOST))
 
@@ -852,6 +3703,7 @@ def assign_lighting_parameters(
     print(f"  lights_fraction_radiant_range: {lights_fraction_radiant_rng} {'(from param_dict)' if 'lights_fraction_radiant_range' in param_dict else '(default const)'}")
     print(f"  lights_fraction_visible_range: {lights_fraction_visible_rng} {'(from param_dict)' if 'lights_fraction_visible_range' in param_dict else '(default const)'}")
     print(f"  lights_fraction_replaceable_range: {lights_fraction_replace_rng} {'(from param_dict)' if 'lights_fraction_replaceable_range' in param_dict else '(default const)'}")
+    print(f"  lights_fraction_return_air_range: {lights_fraction_return_air_rng} {'(from param_dict)' if 'lights_fraction_return_air_range' in param_dict else '(default const)'}")
     print(f"  equip_fraction_radiant_range: {equip_fraction_radiant_rng} {'(from param_dict)' if 'equip_fraction_radiant_range' in param_dict else '(default const)'}")
     print(f"  equip_fraction_lost_range: {equip_fraction_lost_rng} {'(from param_dict)' if 'equip_fraction_lost_range' in param_dict else '(default const)'}")
 
@@ -886,6 +3738,7 @@ def assign_lighting_parameters(
             elif pname == "lights_fraction_radiant": lights_fraction_radiant_rng = current_rng
             elif pname == "lights_fraction_visible": lights_fraction_visible_rng = current_rng
             elif pname == "lights_fraction_replaceable": lights_fraction_replace_rng = current_rng
+            elif pname == "lights_fraction_return_air": lights_fraction_return_air_rng = current_rng
             elif pname == "equip_fraction_radiant": equip_fraction_radiant_rng = current_rng
             elif pname == "equip_fraction_lost": equip_fraction_lost_rng = current_rng
             else: print(f"    [DEBUG assign_light_params] Unrecognized param_name '{pname}' in override row.")
@@ -910,6 +3763,7 @@ def assign_lighting_parameters(
     assigned_lights_frac_rad = pick_val("lights_fraction_radiant", lights_fraction_radiant_rng)
     assigned_lights_frac_vis = pick_val("lights_fraction_visible", lights_fraction_visible_rng)
     assigned_lights_frac_rep = pick_val("lights_fraction_replaceable", lights_fraction_replace_rng)
+    assigned_lights_frac_ret = pick_val("lights_fraction_return_air", lights_fraction_return_air_rng)
     assigned_equip_frac_rad  = pick_val("equip_fraction_radiant", equip_fraction_radiant_rng)
     assigned_equip_frac_lost = pick_val("equip_fraction_lost", equip_fraction_lost_rng)
     
@@ -922,6 +3776,7 @@ def assign_lighting_parameters(
         "lights_fraction_radiant": {"assigned_value": assigned_lights_frac_rad, "min_val": lights_fraction_radiant_rng[0], "max_val": lights_fraction_radiant_rng[1], "object_name": "LIGHTS.Fraction_Radiant"},
         "lights_fraction_visible": {"assigned_value": assigned_lights_frac_vis, "min_val": lights_fraction_visible_rng[0], "max_val": lights_fraction_visible_rng[1], "object_name": "LIGHTS.Fraction_Visible"},
         "lights_fraction_replaceable": {"assigned_value": assigned_lights_frac_rep, "min_val": lights_fraction_replace_rng[0], "max_val": lights_fraction_replace_rng[1], "object_name": "LIGHTS.Fraction_Replaceable"},
+        "lights_fraction_return_air": {"assigned_value": assigned_lights_frac_ret, "min_val": lights_fraction_return_air_rng[0], "max_val": lights_fraction_return_air_rng[1], "object_name": "LIGHTS.Return_Air_Fraction"},
         "equip_fraction_radiant": {"assigned_value": assigned_equip_frac_rad, "min_val": equip_fraction_radiant_rng[0], "max_val": equip_fraction_radiant_rng[1], "object_name": "ELECTRICEQUIPMENT.Fraction_Radiant"},
         "equip_fraction_lost": {"assigned_value": assigned_equip_frac_lost, "min_val": equip_fraction_lost_rng[0], "max_val": equip_fraction_lost_rng[1], "object_name": "ELECTRICEQUIPMENT.Fraction_Lost"}
     }
@@ -958,6 +3813,7 @@ DEFAULT_TN = 300
 DEFAULT_LIGHTS_FRACTION_RADIANT = 0.7
 DEFAULT_LIGHTS_FRACTION_VISIBLE = 0.2
 DEFAULT_LIGHTS_FRACTION_REPLACEABLE = 1.0
+DEFAULT_LIGHTS_FRACTION_RETURN_AIR = 0.0
 
 DEFAULT_EQUIP_FRACTION_RADIANT = 0.0
 DEFAULT_EQUIP_FRACTION_LOST = 1.0
@@ -1001,13 +3857,58 @@ lighting_lookup = {
                 "lights_fraction_radiant_range": (0.7, 0.7),
                 "lights_fraction_visible_range": (0.2, 0.2),
                 "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
                 "equip_fraction_radiant_range": (0.0, 0.0),
                 "equip_fraction_lost_range": (1.0, 1.0),
             },
-            "Apartment": { "LIGHTS_WM2_range": (0.0,0.0), "PARASITIC_WM2_range": (0.0,0.0), "tD_range": (0,0), "tN_range": (0,0), "lights_fraction_radiant_range": (0.7,0.7), "lights_fraction_visible_range": (0.2,0.2), "lights_fraction_replaceable_range": (1.0,1.0), "equip_fraction_radiant_range": (0.0,0.0), "equip_fraction_lost_range": (1.0,1.0)},
-            "Terrace or Semi-detached House": { "LIGHTS_WM2_range": (0.0,0.0), "PARASITIC_WM2_range": (0.0,0.0), "tD_range": (0,0), "tN_range": (0,0), "lights_fraction_radiant_range": (0.7,0.7), "lights_fraction_visible_range": (0.2,0.2), "lights_fraction_replaceable_range": (1.0,1.0), "equip_fraction_radiant_range": (0.0,0.0), "equip_fraction_lost_range": (1.0,1.0)},
-            "Detached House": { "LIGHTS_WM2_range": (0.0,0.0), "PARASITIC_WM2_range": (0.0,0.0), "tD_range": (0,0), "tN_range": (0,0), "lights_fraction_radiant_range": (0.7,0.7), "lights_fraction_visible_range": (0.2,0.2), "lights_fraction_replaceable_range": (1.0,1.0), "equip_fraction_radiant_range": (0.0,0.0), "equip_fraction_lost_range": (1.0,1.0)},
-            "Two-and-a-half-story House": { "LIGHTS_WM2_range": (0.0,0.0), "PARASITIC_WM2_range": (0.0,0.0), "tD_range": (0,0), "tN_range": (0,0), "lights_fraction_radiant_range": (0.7,0.7), "lights_fraction_visible_range": (0.2,0.2), "lights_fraction_replaceable_range": (1.0,1.0), "equip_fraction_radiant_range": (0.0,0.0), "equip_fraction_lost_range": (1.0,1.0)}
+            "Apartment": {
+                "LIGHTS_WM2_range": (0.0, 0.0),
+                "PARASITIC_WM2_range": (0.0, 0.0),
+                "tD_range": (0, 0),
+                "tN_range": (0, 0),
+                "lights_fraction_radiant_range": (0.7, 0.7),
+                "lights_fraction_visible_range": (0.2, 0.2),
+                "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
+                "equip_fraction_radiant_range": (0.0, 0.0),
+                "equip_fraction_lost_range": (1.0, 1.0),
+            },
+            "Terrace or Semi-detached House": {
+                "LIGHTS_WM2_range": (0.0, 0.0),
+                "PARASITIC_WM2_range": (0.0, 0.0),
+                "tD_range": (0, 0),
+                "tN_range": (0, 0),
+                "lights_fraction_radiant_range": (0.7, 0.7),
+                "lights_fraction_visible_range": (0.2, 0.2),
+                "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
+                "equip_fraction_radiant_range": (0.0, 0.0),
+                "equip_fraction_lost_range": (1.0, 1.0),
+            },
+            "Detached House": {
+                "LIGHTS_WM2_range": (0.0, 0.0),
+                "PARASITIC_WM2_range": (0.0, 0.0),
+                "tD_range": (0, 0),
+                "tN_range": (0, 0),
+                "lights_fraction_radiant_range": (0.7, 0.7),
+                "lights_fraction_visible_range": (0.2, 0.2),
+                "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
+                "equip_fraction_radiant_range": (0.0, 0.0),
+                "equip_fraction_lost_range": (1.0, 1.0),
+            },
+            "Two-and-a-half-story House": {
+                "LIGHTS_WM2_range": (0.0, 0.0),
+                "PARASITIC_WM2_range": (0.0, 0.0),
+                "tD_range": (0, 0),
+                "tN_range": (0, 0),
+                "lights_fraction_radiant_range": (0.7, 0.7),
+                "lights_fraction_visible_range": (0.2, 0.2),
+                "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
+                "equip_fraction_radiant_range": (0.0, 0.0),
+                "equip_fraction_lost_range": (1.0, 1.0),
+            }
         },
 
         # ===============================
@@ -1022,8 +3923,9 @@ lighting_lookup = {
                 "lights_fraction_radiant_range": (0.6, 0.7),
                 "lights_fraction_visible_range": (0.2, 0.25),
                 "lights_fraction_replaceable_range": (1.0, 1.0),
-                "equip_fraction_radiant_range": (0.0, 0.0), # Parasitic equip heat gain
-                "equip_fraction_lost_range": (0.0, 0.0),    # Assume parasitic heat contributes to zone
+                "lights_fraction_return_air_range": (0.0, 0.0),
+                "equip_fraction_radiant_range": (0.0, 0.0),
+                "equip_fraction_lost_range": (1.0, 1.0),
             },
             "Retail Function": { # General ambient lighting; display can be extra or averaged in
                 "LIGHTS_WM2_range": (6.0, 12.0),   # Lowered significantly
@@ -1033,6 +3935,7 @@ lighting_lookup = {
                 "lights_fraction_radiant_range": (0.6, 0.7),
                 "lights_fraction_visible_range": (0.2, 0.25),
                 "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
                 "equip_fraction_radiant_range": (0.0, 0.0),
                 "equip_fraction_lost_range": (0.0, 0.0),
             },
@@ -1044,6 +3947,7 @@ lighting_lookup = {
                 "lights_fraction_radiant_range": (0.6, 0.7),
                 "lights_fraction_visible_range": (0.2, 0.25),
                 "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
                 "equip_fraction_radiant_range": (0.0, 0.0),
                 "equip_fraction_lost_range": (0.0, 0.0),
             },
@@ -1055,6 +3959,7 @@ lighting_lookup = {
                 "lights_fraction_radiant_range": (0.6, 0.7),
                 "lights_fraction_visible_range": (0.2, 0.25),
                 "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
                 "equip_fraction_radiant_range": (0.0, 0.0),
                 "equip_fraction_lost_range": (0.0, 0.0),
             },
@@ -1066,6 +3971,7 @@ lighting_lookup = {
                 "lights_fraction_radiant_range": (0.6, 0.7),
                 "lights_fraction_visible_range": (0.2, 0.25),
                 "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
                 "equip_fraction_radiant_range": (0.0, 0.0),
                 "equip_fraction_lost_range": (0.0, 0.0),
             },
@@ -1077,6 +3983,7 @@ lighting_lookup = {
                 "lights_fraction_radiant_range": (0.5, 0.6),
                 "lights_fraction_visible_range": (0.25, 0.3),
                 "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
                 "equip_fraction_radiant_range": (0.0, 0.0),
                 "equip_fraction_lost_range": (0.0, 0.0),
             },
@@ -1088,6 +3995,7 @@ lighting_lookup = {
                 "lights_fraction_radiant_range": (0.7, 0.7),
                 "lights_fraction_visible_range": (0.2, 0.2),
                 "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
                 "equip_fraction_radiant_range": (0.0, 0.0),
                 "equip_fraction_lost_range": (0.0, 0.0),
             },
@@ -1099,6 +4007,7 @@ lighting_lookup = {
                 "lights_fraction_radiant_range": (0.5, 0.6),
                 "lights_fraction_visible_range": (0.25, 0.3),
                 "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
                 "equip_fraction_radiant_range": (0.0, 0.0),
                 "equip_fraction_lost_range": (0.0, 0.0),
             },
@@ -1110,6 +4019,7 @@ lighting_lookup = {
                 "lights_fraction_radiant_range": (0.7, 0.7),
                 "lights_fraction_visible_range": (0.2, 0.2),
                 "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
                 "equip_fraction_radiant_range": (0.0, 0.0),
                 "equip_fraction_lost_range": (0.0, 0.0),
             },
@@ -1121,6 +4031,7 @@ lighting_lookup = {
                 "lights_fraction_radiant_range": (0.7, 0.7),
                 "lights_fraction_visible_range": (0.2, 0.2),
                 "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
                 "equip_fraction_radiant_range": (0.0, 0.0),
                 "equip_fraction_lost_range": (0.0, 0.0),
             }
@@ -1131,24 +4042,188 @@ lighting_lookup = {
         # determined by actual calibration efforts.
         # The structure from your original file is maintained as a placeholder.
         "Residential": {
-            "Corner House": {"LIGHTS_WM2_range": (0.0,0.0), "PARASITIC_WM2_range": (0.0,0.0), "tD_range": (0,0), "tN_range": (0,0), "lights_fraction_radiant_range": (0.7,0.7), "lights_fraction_visible_range": (0.2,0.2), "lights_fraction_replaceable_range": (1.0,1.0), "equip_fraction_radiant_range": (0.0,0.0), "equip_fraction_lost_range": (1.0,1.0)},
-            "Apartment": {"LIGHTS_WM2_range": (0.0,0.0), "PARASITIC_WM2_range": (0.0,0.0), "tD_range": (0,0), "tN_range": (0,0), "lights_fraction_radiant_range": (0.7,0.7), "lights_fraction_visible_range": (0.2,0.2), "lights_fraction_replaceable_range": (1.0,1.0), "equip_fraction_radiant_range": (0.0,0.0), "equip_fraction_lost_range": (1.0,1.0)},
-            "Terrace or Semi-detached House": {"LIGHTS_WM2_range": (0.0,0.0), "PARASITIC_WM2_range": (0.0,0.0), "tD_range": (0,0), "tN_range": (0,0), "lights_fraction_radiant_range": (0.7,0.7), "lights_fraction_visible_range": (0.2,0.2), "lights_fraction_replaceable_range": (1.0,1.0), "equip_fraction_radiant_range": (0.0,0.0), "equip_fraction_lost_range": (1.0,1.0)},
-            "Detached House": {"LIGHTS_WM2_range": (0.0,0.0), "PARASITIC_WM2_range": (0.0,0.0), "tD_range": (0,0), "tN_range": (0,0), "lights_fraction_radiant_range": (0.7,0.7), "lights_fraction_visible_range": (0.2,0.2), "lights_fraction_replaceable_range": (1.0,1.0), "equip_fraction_radiant_range": (0.0,0.0), "equip_fraction_lost_range": (1.0,1.0)},
-            "Two-and-a-half-story House": {"LIGHTS_WM2_range": (0.0,0.0), "PARASITIC_WM2_range": (0.0,0.0), "tD_range": (0,0), "tN_range": (0,0), "lights_fraction_radiant_range": (0.7,0.7), "lights_fraction_visible_range": (0.2,0.2), "lights_fraction_replaceable_range": (1.0,1.0), "equip_fraction_radiant_range": (0.0,0.0), "equip_fraction_lost_range": (1.0,1.0)}
+            "Corner House": {
+                "LIGHTS_WM2_range": (0.0, 0.0),
+                "PARASITIC_WM2_range": (0.0, 0.0),
+                "tD_range": (0, 0),
+                "tN_range": (0, 0),
+                "lights_fraction_radiant_range": (0.7, 0.7),
+                "lights_fraction_visible_range": (0.2, 0.2),
+                "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
+                "equip_fraction_radiant_range": (0.0, 0.0),
+                "equip_fraction_lost_range": (1.0, 1.0),
+            },
+            "Apartment": {
+                "LIGHTS_WM2_range": (0.0, 0.0),
+                "PARASITIC_WM2_range": (0.0, 0.0),
+                "tD_range": (0, 0),
+                "tN_range": (0, 0),
+                "lights_fraction_radiant_range": (0.7, 0.7),
+                "lights_fraction_visible_range": (0.2, 0.2),
+                "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
+                "equip_fraction_radiant_range": (0.0, 0.0),
+                "equip_fraction_lost_range": (1.0, 1.0),
+            },
+            "Terrace or Semi-detached House": {
+                "LIGHTS_WM2_range": (0.0, 0.0),
+                "PARASITIC_WM2_range": (0.0, 0.0),
+                "tD_range": (0, 0),
+                "tN_range": (0, 0),
+                "lights_fraction_radiant_range": (0.7, 0.7),
+                "lights_fraction_visible_range": (0.2, 0.2),
+                "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
+                "equip_fraction_radiant_range": (0.0, 0.0),
+                "equip_fraction_lost_range": (1.0, 1.0),
+            },
+            "Detached House": {
+                "LIGHTS_WM2_range": (0.0, 0.0),
+                "PARASITIC_WM2_range": (0.0, 0.0),
+                "tD_range": (0, 0),
+                "tN_range": (0, 0),
+                "lights_fraction_radiant_range": (0.7, 0.7),
+                "lights_fraction_visible_range": (0.2, 0.2),
+                "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
+                "equip_fraction_radiant_range": (0.0, 0.0),
+                "equip_fraction_lost_range": (1.0, 1.0),
+            },
+            "Two-and-a-half-story House": {
+                "LIGHTS_WM2_range": (0.0, 0.0),
+                "PARASITIC_WM2_range": (0.0, 0.0),
+                "tD_range": (0, 0),
+                "tN_range": (0, 0),
+                "lights_fraction_radiant_range": (0.7, 0.7),
+                "lights_fraction_visible_range": (0.2, 0.2),
+                "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
+                "equip_fraction_radiant_range": (0.0, 0.0),
+                "equip_fraction_lost_range": (1.0, 1.0),
+            }
         },
-        "Non-Residential": { # Copying one example, others would follow similar calibrated pattern
-            "Office Function": {"LIGHTS_WM2_range": (5.0,5.0), "PARASITIC_WM2_range": (0.1,0.1), "tD_range": (2300,2300), "tN_range": (150,150), "lights_fraction_radiant_range": (0.6,0.6), "lights_fraction_visible_range": (0.25,0.25), "lights_fraction_replaceable_range": (1.0,1.0), "equip_fraction_radiant_range": (0.0,0.0), "equip_fraction_lost_range": (0.0,0.0)},
-            # ... other non-residential types should be filled with actual calibrated values ...
-            "Meeting Function": {"LIGHTS_WM2_range": (6.0,6.0), "PARASITIC_WM2_range": (0.1,0.1), "tD_range": (2000,2000), "tN_range": (200,200), "lights_fraction_radiant_range": (0.6,0.6), "lights_fraction_visible_range": (0.25,0.25), "lights_fraction_replaceable_range": (1.0,1.0), "equip_fraction_radiant_range": (0.0,0.0), "equip_fraction_lost_range": (0.0,0.0)},
-            "Healthcare Function": {"LIGHTS_WM2_range": (7.0,7.0), "PARASITIC_WM2_range": (0.2,0.2), "tD_range": (4000,4000), "tN_range": (600,600), "lights_fraction_radiant_range": (0.65,0.65), "lights_fraction_visible_range": (0.22,0.22), "lights_fraction_replaceable_range": (1.0,1.0), "equip_fraction_radiant_range": (0.0,0.0), "equip_fraction_lost_range": (0.0,0.0)},
-            "Sport Function": {"LIGHTS_WM2_range": (9.0,9.0), "PARASITIC_WM2_range": (0.2,0.2), "tD_range": (2200,2200), "tN_range": (550,550), "lights_fraction_radiant_range": (0.55,0.55), "lights_fraction_visible_range": (0.28,0.28), "lights_fraction_replaceable_range": (1.0,1.0), "equip_fraction_radiant_range": (0.0,0.0), "equip_fraction_lost_range": (0.0,0.0)},
-            "Cell Function": {"LIGHTS_WM2_range": (5.0,5.0), "PARASITIC_WM2_range": (0.1,0.1), "tD_range": (7000,7000), "tN_range": (7000,7000), "lights_fraction_radiant_range": (0.7,0.7), "lights_fraction_visible_range": (0.2,0.2), "lights_fraction_replaceable_range": (1.0,1.0), "equip_fraction_radiant_range": (0.0,0.0), "equip_fraction_lost_range": (0.0,0.0)},
-            "Retail Function": {"LIGHTS_WM2_range": (10.0,10.0), "PARASITIC_WM2_range": (0.2,0.2), "tD_range": (3200,3200), "tN_range": (250,250), "lights_fraction_radiant_range": (0.65,0.65), "lights_fraction_visible_range": (0.22,0.22), "lights_fraction_replaceable_range": (1.0,1.0), "equip_fraction_radiant_range": (0.0,0.0), "equip_fraction_lost_range": (0.0,0.0)},
-            "Industrial Function": {"LIGHTS_WM2_range": (7.0,7.0), "PARASITIC_WM2_range": (0.1,0.1), "tD_range": (3000,3000), "tN_range": (150,150), "lights_fraction_radiant_range": (0.55,0.55), "lights_fraction_visible_range": (0.28,0.28), "lights_fraction_replaceable_range": (1.0,1.0), "equip_fraction_radiant_range": (0.0,0.0), "equip_fraction_lost_range": (0.0,0.0)},
-            "Accommodation Function": {"LIGHTS_WM2_range": (4.0,4.0), "PARASITIC_WM2_range": (0.1,0.1), "tD_range": (2000,2000), "tN_range": (3500,3500), "lights_fraction_radiant_range": (0.7,0.7), "lights_fraction_visible_range": (0.2,0.2), "lights_fraction_replaceable_range": (1.0,1.0), "equip_fraction_radiant_range": (0.0,0.0), "equip_fraction_lost_range": (0.0,0.0)},
-            "Education Function": {"LIGHTS_WM2_range": (4.0,4.0), "PARASITIC_WM2_range": (0.1,0.1), "tD_range": (1600,1600), "tN_range": (60,60), "lights_fraction_radiant_range": (0.65,0.65), "lights_fraction_visible_range": (0.22,0.22), "lights_fraction_replaceable_range": (1.0,1.0), "equip_fraction_radiant_range": (0.0,0.0), "equip_fraction_lost_range": (0.0,0.0)},
-            "Other Use Function": {"LIGHTS_WM2_range": (6.0,6.0), "PARASITIC_WM2_range": (0.15,0.15), "tD_range": (2200,2200), "tN_range": (150,150), "lights_fraction_radiant_range": (0.7,0.7), "lights_fraction_visible_range": (0.2,0.2), "lights_fraction_replaceable_range": (1.0,1.0), "equip_fraction_radiant_range": (0.0,0.0), "equip_fraction_lost_range": (0.0,0.0)}
+        "Non-Residential": {
+            "Meeting Function": {
+                "LIGHTS_WM2_range": (17.0, 17.0),
+                "PARASITIC_WM2_range": (0.285, 0.285),
+                "tD_range": (2200, 2200),
+                "tN_range": (300, 300),
+                "lights_fraction_radiant_range": (0.7, 0.7),
+                "lights_fraction_visible_range": (0.2, 0.2),
+                "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
+                "equip_fraction_radiant_range": (0.0, 0.0),
+                "equip_fraction_lost_range": (1.0, 1.0),
+            },
+            "Healthcare Function": {
+                "LIGHTS_WM2_range": (18.0, 18.0),
+                "PARASITIC_WM2_range": (0.29, 0.29),
+                "tD_range": (4000, 4000),
+                "tN_range": (1000, 1000),
+                "lights_fraction_radiant_range": (0.7, 0.7),
+                "lights_fraction_visible_range": (0.2, 0.2),
+                "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
+                "equip_fraction_radiant_range": (0.0, 0.0),
+                "equip_fraction_lost_range": (1.0, 1.0),
+            },
+            "Sport Function": {
+                "LIGHTS_WM2_range": (17.0, 17.0),
+                "PARASITIC_WM2_range": (0.285, 0.285),
+                "tD_range": (2200, 2200),
+                "tN_range": (800, 800),
+                "lights_fraction_radiant_range": (0.7, 0.7),
+                "lights_fraction_visible_range": (0.2, 0.2),
+                "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
+                "equip_fraction_radiant_range": (0.0, 0.0),
+                "equip_fraction_lost_range": (1.0, 1.0),
+            },
+            "Cell Function": {
+                "LIGHTS_WM2_range": (17.0, 17.0),
+                "PARASITIC_WM2_range": (0.285, 0.285),
+                "tD_range": (4000, 4000),
+                "tN_range": (1000, 1000),
+                "lights_fraction_radiant_range": (0.7, 0.7),
+                "lights_fraction_visible_range": (0.2, 0.2),
+                "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
+                "equip_fraction_radiant_range": (0.0, 0.0),
+                "equip_fraction_lost_range": (1.0, 1.0),
+            },
+            "Retail Function": {
+                "LIGHTS_WM2_range": (30.0, 30.0),
+                "PARASITIC_WM2_range": (0.285, 0.285),
+                "tD_range": (2700, 2700),
+                "tN_range": (400, 400),
+                "lights_fraction_radiant_range": (0.7, 0.7),
+                "lights_fraction_visible_range": (0.2, 0.2),
+                "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
+                "equip_fraction_radiant_range": (0.0, 0.0),
+                "equip_fraction_lost_range": (1.0, 1.0),
+            },
+            "Industrial Function": {
+                "LIGHTS_WM2_range": (17.0, 17.0),
+                "PARASITIC_WM2_range": (0.285, 0.285),
+                "tD_range": (2200, 2200),
+                "tN_range": (300, 300),
+                "lights_fraction_radiant_range": (0.7, 0.7),
+                "lights_fraction_visible_range": (0.2, 0.2),
+                "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
+                "equip_fraction_radiant_range": (0.0, 0.0),
+                "equip_fraction_lost_range": (1.0, 1.0),
+            },
+            "Accommodation Function": {
+                "LIGHTS_WM2_range": (17.0, 17.0),
+                "PARASITIC_WM2_range": (0.285, 0.285),
+                "tD_range": (4000, 4000),
+                "tN_range": (1000, 1000),
+                "lights_fraction_radiant_range": (0.7, 0.7),
+                "lights_fraction_visible_range": (0.2, 0.2),
+                "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
+                "equip_fraction_radiant_range": (0.0, 0.0),
+                "equip_fraction_lost_range": (1.0, 1.0),
+            },
+            "Office Function": {
+                "LIGHTS_WM2_range": (16.0, 16.0),
+                "PARASITIC_WM2_range": (0.285, 0.285),
+                "tD_range": (2200, 2200),
+                "tN_range": (300, 300),
+                "lights_fraction_radiant_range": (0.7, 0.7),
+                "lights_fraction_visible_range": (0.2, 0.2),
+                "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
+                "equip_fraction_radiant_range": (0.0, 0.0),
+                "equip_fraction_lost_range": (1.0, 1.0),
+            },
+            "Education Function": {
+                "LIGHTS_WM2_range": (15.0, 15.0),
+                "PARASITIC_WM2_range": (0.285, 0.285),
+                "tD_range": (1600, 1600),
+                "tN_range": (300, 300),
+                "lights_fraction_radiant_range": (0.7, 0.7),
+                "lights_fraction_visible_range": (0.2, 0.2),
+                "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
+                "equip_fraction_radiant_range": (0.0, 0.0),
+                "equip_fraction_lost_range": (1.0, 1.0),
+            },
+            "Other Use Function": {
+                "LIGHTS_WM2_range": (16.0, 16.0),
+                "PARASITIC_WM2_range": (0.285, 0.285),
+                "tD_range": (2200, 2200),
+                "tN_range": (300, 300),
+                "lights_fraction_radiant_range": (0.7, 0.7),
+                "lights_fraction_visible_range": (0.2, 0.2),
+                "lights_fraction_replaceable_range": (1.0, 1.0),
+                "lights_fraction_return_air_range": (0.0, 0.0),
+                "equip_fraction_radiant_range": (0.0, 0.0),
+                "equip_fraction_lost_range": (1.0, 1.0),
+            }
         }
     }
 }
@@ -1326,6 +4401,9 @@ def add_lights_and_parasitics(
     lights_frac_radiant = assigned_dict["lights_fraction_radiant"]["assigned_value"]
     lights_frac_visible = assigned_dict["lights_fraction_visible"]["assigned_value"]
     lights_frac_replace = assigned_dict["lights_fraction_replaceable"]["assigned_value"]
+    lights_frac_return  = assigned_dict["lights_fraction_return_air"]["assigned_value"]
+
+    # Extract fraction parameters for EQUIPMENT
     equip_frac_radiant = assigned_dict["equip_fraction_radiant"]["assigned_value"]
     equip_frac_lost = assigned_dict["equip_fraction_lost"]["assigned_value"]
 
@@ -1343,6 +4421,8 @@ def add_lights_and_parasitics(
     lights_obj.Fraction_Radiant = lights_frac_radiant
     lights_obj.Fraction_Visible = lights_frac_visible
     lights_obj.Fraction_Replaceable = lights_frac_replace
+    if hasattr(lights_obj, "Return_Air_Fraction"):
+        lights_obj.Return_Air_Fraction = lights_frac_return
 
     eq_obj = idf.newidfobject("ELECTRICEQUIPMENT")
     eq_obj.Name = f"Parasitic_{zonelist_name}"
