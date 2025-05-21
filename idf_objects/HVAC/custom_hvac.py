@@ -118,7 +118,7 @@ def add_HVAC_Ideal_to_all_zones(
         # stl_frac.Unit_Type = "Dimensionless" # Optional
 
     # --- 4) Create Default Control Type Schedule (if needed) ---
-    # This schedule tells the thermostat to use Dual Setpoints (Control Type 4)
+    # This schedule tells the thermostat to use Dual Setpoints (Control Type 1)
     control_type_sched_name = "ZONE_CONTROL_TYPE_SCHEDULE" # Use underscore for safety
     ctrl_sched = idf.getobject("SCHEDULE:COMPACT", control_type_sched_name.upper())
     if not ctrl_sched:
@@ -129,7 +129,7 @@ def add_HVAC_Ideal_to_all_zones(
         # --- FIX from previous analysis: Correct field format ---
         ctrl_sched.Field_1 = "Through: 12/31"  # No comma
         ctrl_sched.Field_2 = "For: AllDays"     # No comma
-        ctrl_sched.Field_3 = "Until: 24:00,4;"  # Control Type 4 (Dual Setpoint), Semicolon at end
+        ctrl_sched.Field_3 = "Until: 24:00,1;"  # Control Type 1 (Dual Setpoint), Semicolon at end
     else:
         print(f"[Custom HVAC Info] Found existing schedule: {control_type_sched_name}")
         # Optionally verify/update its fields here if needed
@@ -282,9 +282,9 @@ def add_HVAC_Ideal_to_all_zones(
         ideal.Maximum_Total_Cooling_Capacity = "Autosize"
 
         # Optional: Dehumidification/Humidification Control
-        ideal.Dehumidification_Control_Type = "ConstantSupplyHumidityRatio" # Or None, Humidistat, etc.
+        ideal.Dehumidification_Control_Type = "None" # Or None, Humidistat, etc.
         # ideal.Cooling_Sensible_Heat_Ratio = 0.7 # Example if needed
-        ideal.Humidification_Control_Type = "ConstantSupplyHumidityRatio" # Or None, Humidistat
+        ideal.Humidification_Control_Type = "None " # Or None, Humidistat
         # ideal.Design_Specification_Outdoor_Air_Object_Name = "" # Can link DSOA if needed
 
         # Optional: Economizer / Heat Recovery (Usually 'None' for basic Ideal Loads)
