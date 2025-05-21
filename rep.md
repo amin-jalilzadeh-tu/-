@@ -1054,11 +1054,14 @@ As soon as a row fails any present check (`building_id`, `building_type`, or `ag
 
 #### 2) Which `param_name` Values Can Be Overridden?
 
-From `assign_equipment_parameters()`, the code looks for these three `param_name` fields:
+From `assign_equipment_parameters()`, the code looks for these `param_name` fields:
 
 1. `equip_wm2` → overrides the range for `equip_rng`.
 2. `tD` → overrides the range for `tD_rng`.
 3. `tN` → overrides the range for `tN_rng`.
+4. `equip_fraction_latent` → overrides the range for the latent fraction.
+5. `equip_fraction_radiant` → overrides the range for the radiant fraction.
+6. `equip_fraction_lost` → overrides the range for the lost fraction.
 
 ---
 

@@ -111,6 +111,9 @@ def apply_building_level_equipment(idf, param_dict, zonelist_name="ALL_ZONES"):
     :func:`create_equipment_schedule`.
     """
     equip_wm2 = float(param_dict.get("equip_wm2", 3.0))
+    frac_latent = param_dict.get("equip_fraction_latent")
+    frac_radiant = param_dict.get("equip_fraction_radiant")
+    frac_lost = param_dict.get("equip_fraction_lost")
     bcat = param_dict.get("building_category", "Non-Residential")
     subtype = param_dict.get("sub_type", "Other Use Function")
 
@@ -136,6 +139,12 @@ def apply_building_level_equipment(idf, param_dict, zonelist_name="ALL_ZONES"):
     equip_obj.Schedule_Name = sched_name
     equip_obj.Design_Level_Calculation_Method = "Watts/Area"
     equip_obj.Watts_per_Zone_Floor_Area = equip_wm2
+    if frac_latent is not None and hasattr(equip_obj, "Fraction_Latent"):
+        equip_obj.Fraction_Latent = float(frac_latent)
+    if frac_radiant is not None and hasattr(equip_obj, "Fraction_Radiant"):
+        equip_obj.Fraction_Radiant = float(frac_radiant)
+    if frac_lost is not None and hasattr(equip_obj, "Fraction_Lost"):
+        equip_obj.Fraction_Lost = float(frac_lost)
 
     return equip_obj
 
@@ -158,6 +167,12 @@ def apply_object_level_equipment(idf, df_equipment):
             equip_obj.Watts_per_Zone_Floor_Area = float(val)
         elif p_name == "Schedule_Name":
             equip_obj.Schedule_Name = val
+        elif p_name == "equip_fraction_latent" and hasattr(equip_obj, "Fraction_Latent"):
+            equip_obj.Fraction_Latent = float(val)
+        elif p_name == "equip_fraction_radiant" and hasattr(equip_obj, "Fraction_Radiant"):
+            equip_obj.Fraction_Radiant = float(val)
+        elif p_name == "equip_fraction_lost" and hasattr(equip_obj, "Fraction_Lost"):
+            equip_obj.Fraction_Lost = float(val)
         else:
             # Generic setter if attribute exists
             if hasattr(equip_obj, p_name):
