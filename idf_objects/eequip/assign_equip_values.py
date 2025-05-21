@@ -3,6 +3,11 @@
 import random
 from .equip_lookup import equip_lookup
 from .overrides_helper import find_applicable_overrides # if you use override logic
+from idf_objects.Elec.constants import (
+    DEFAULT_EQUIP_FRACTION_LATENT,
+    DEFAULT_EQUIP_FRACTION_RADIANT,
+    DEFAULT_EQUIP_FRACTION_LOST,
+)
 
 def assign_equipment_parameters(
     building_id: int,
@@ -45,10 +50,16 @@ def assign_equipment_parameters(
     equip_rng_default = (3.0, 3.0)
     tD_rng_default    = (500, 500)
     tN_rng_default    = (200, 200)
+    frac_latent_default  = (DEFAULT_EQUIP_FRACTION_LATENT, DEFAULT_EQUIP_FRACTION_LATENT)
+    frac_radiant_default = (DEFAULT_EQUIP_FRACTION_RADIANT, DEFAULT_EQUIP_FRACTION_RADIANT)
+    frac_lost_default    = (DEFAULT_EQUIP_FRACTION_LOST, DEFAULT_EQUIP_FRACTION_LOST)
 
     equip_rng = equip_rng_default
     tD_rng    = tD_rng_default
     tN_rng    = tN_rng_default
+    frac_latent_rng  = frac_latent_default
+    frac_radiant_rng = frac_radiant_default
+    frac_lost_rng    = frac_lost_default
     
     lookup_successful = False
 
@@ -89,15 +100,24 @@ def assign_equipment_parameters(
                     equip_rng = param_dict.get("EQUIP_WM2_range", equip_rng_default)
                     tD_rng    = param_dict.get("tD_range", tD_rng_default)
                     tN_rng    = param_dict.get("tN_range", tN_rng_default)
+                    frac_latent_rng  = param_dict.get("EQUIP_FRACTION_LATENT_range", frac_latent_default)
+                    frac_radiant_rng = param_dict.get("EQUIP_FRACTION_RADIANT_range", frac_radiant_default)
+                    frac_lost_rng    = param_dict.get("EQUIP_FRACTION_LOST_range", frac_lost_default)
                     
                     if "EQUIP_WM2_range" not in param_dict: print(f"   [DEBUG assign_equip_params] Note: EQUIP_WM2_range missing in param_dict for '{sub_type}', used default {equip_rng_default}.")
                     if "tD_range" not in param_dict: print(f"   [DEBUG assign_equip_params] Note: tD_range missing in param_dict for '{sub_type}', used default {tD_rng_default}.")
                     if "tN_range" not in param_dict: print(f"   [DEBUG assign_equip_params] Note: tN_range missing in param_dict for '{sub_type}', used default {tN_rng_default}.")
+                    if "EQUIP_FRACTION_LATENT_range" not in param_dict: print(f"   [DEBUG assign_equip_params] Note: EQUIP_FRACTION_LATENT_range missing in param_dict for '{sub_type}', used default {frac_latent_default}.")
+                    if "EQUIP_FRACTION_RADIANT_range" not in param_dict: print(f"   [DEBUG assign_equip_params] Note: EQUIP_FRACTION_RADIANT_range missing in param_dict for '{sub_type}', used default {frac_radiant_default}.")
+                    if "EQUIP_FRACTION_LOST_range" not in param_dict: print(f"   [DEBUG assign_equip_params] Note: EQUIP_FRACTION_LOST_range missing in param_dict for '{sub_type}', used default {frac_lost_default}.")
 
     print(f"[DEBUG assign_equip_params] Ranges status after lookup (lookup_successful={lookup_successful}):")
     print(f"  equip_rng: {equip_rng}")
     print(f"  tD_rng: {tD_rng}")
     print(f"  tN_rng: {tN_rng}")
+    print(f"  frac_latent_rng: {frac_latent_rng}")
+    print(f"  frac_radiant_rng: {frac_radiant_rng}")
+    print(f"  frac_lost_rng: {frac_lost_rng}")
 
     # 3) Find override rows
     matches = [] # Ensure matches is defined
@@ -140,10 +160,19 @@ def assign_equipment_parameters(
         elif pname == "tN":
             tN_rng = (float(mn), float(mx))
             print(f"    Updated tN_rng to: {tN_rng}")
+        elif pname == "equip_fraction_latent":
+            frac_latent_rng = (float(mn), float(mx))
+            print(f"    Updated frac_latent_rng to: {frac_latent_rng}")
+        elif pname == "equip_fraction_radiant":
+            frac_radiant_rng = (float(mn), float(mx))
+            print(f"    Updated frac_radiant_rng to: {frac_radiant_rng}")
+        elif pname == "equip_fraction_lost":
+            frac_lost_rng = (float(mn), float(mx))
+            print(f"    Updated frac_lost_rng to: {frac_lost_rng}")
         else:
             print(f"    [DEBUG assign_equip_params] Unrecognized param_name '{pname}' in override row.")
-    
-    if matches: print(f"[DEBUG assign_equip_params] Ranges after potential overrides: equip_rng={equip_rng}, tD_rng={tD_rng}, tN_rng={tN_rng}")
+
+    if matches: print(f"[DEBUG assign_equip_params] Ranges after potential overrides: equip_rng={equip_rng}, tD_rng={tD_rng}, tN_rng={tN_rng}, frac_latent_rng={frac_latent_rng}, frac_radiant_rng={frac_radiant_rng}, frac_lost_rng={frac_lost_rng}")
 
     # 5) Strategy to pick final values
     def pick_val(param_name, r, current_strategy): # Added param_name and strategy for better logging
@@ -162,14 +191,20 @@ def assign_equipment_parameters(
         print(f"  [DEBUG assign_equip_params] pick_val for '{param_name}': range={r}, strategy='{current_strategy}', picked={val}")
         return val
 
-    assigned_equip = max(0.0, float(pick_val("equip_wm2", equip_rng, strategy)))
-    assigned_tD    = max(0.0, float(pick_val("tD", tD_rng, strategy)))
-    assigned_tN    = max(0.0, float(pick_val("tN", tN_rng, strategy)))
+    assigned_equip   = max(0.0, float(pick_val("equip_wm2", equip_rng, strategy)))
+    assigned_tD      = max(0.0, float(pick_val("tD", tD_rng, strategy)))
+    assigned_tN      = max(0.0, float(pick_val("tN", tN_rng, strategy)))
+    assigned_frac_latent  = max(0.0, float(pick_val("equip_fraction_latent", frac_latent_rng, strategy)))
+    assigned_frac_radiant = max(0.0, float(pick_val("equip_fraction_radiant", frac_radiant_rng, strategy)))
+    assigned_frac_lost    = max(0.0, float(pick_val("equip_fraction_lost", frac_lost_rng, strategy)))
 
     assigned = {
         "equip_wm2": {"assigned_value": assigned_equip, "min_val": equip_rng[0], "max_val": equip_rng[1], "object_name": "ELECTRICEQUIPMENT"},
         "tD": {"assigned_value": assigned_tD, "min_val": tD_rng[0], "max_val": tD_rng[1], "object_name": "ELECTRICEQUIPMENT_SCHEDULE"},
-        "tN": {"assigned_value": assigned_tN, "min_val": tN_rng[0], "max_val": tN_rng[1], "object_name": "ELECTRICEQUIPMENT_SCHEDULE"}
+        "tN": {"assigned_value": assigned_tN, "min_val": tN_rng[0], "max_val": tN_rng[1], "object_name": "ELECTRICEQUIPMENT_SCHEDULE"},
+        "equip_fraction_latent": {"assigned_value": assigned_frac_latent, "min_val": frac_latent_rng[0], "max_val": frac_latent_rng[1], "object_name": "ELECTRICEQUIPMENT.Fraction_Latent"},
+        "equip_fraction_radiant": {"assigned_value": assigned_frac_radiant, "min_val": frac_radiant_rng[0], "max_val": frac_radiant_rng[1], "object_name": "ELECTRICEQUIPMENT.Fraction_Radiant"},
+        "equip_fraction_lost": {"assigned_value": assigned_frac_lost, "min_val": frac_lost_rng[0], "max_val": frac_lost_rng[1], "object_name": "ELECTRICEQUIPMENT.Fraction_Lost"}
     }
     print(f"[DEBUG assign_equip_params] Final assigned values: {assigned}")
 
@@ -181,6 +216,9 @@ def assign_equipment_parameters(
                 "equip_wm2": equip_rng,
                 "tD": tD_rng,
                 "tN": tN_rng,
+                "equip_fraction_latent": frac_latent_rng,
+                "equip_fraction_radiant": frac_radiant_rng,
+                "equip_fraction_lost": frac_lost_rng,
             },
             "lookup_successful": lookup_successful, # Added for insight
             "overrides_applied_count": len(matches) # Added for insight

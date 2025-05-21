@@ -63,6 +63,9 @@ def add_electric_equipment(
     )
 
     equip_wm2 = picks["equip_wm2"]["assigned_value"]
+    frac_latent = picks.get("equip_fraction_latent", {}).get("assigned_value")
+    frac_radiant = picks.get("equip_fraction_radiant", {}).get("assigned_value")
+    frac_lost = picks.get("equip_fraction_lost", {}).get("assigned_value")
 
     sched_name = create_equipment_schedule(
         idf,
@@ -77,6 +80,12 @@ def add_electric_equipment(
     eq_obj.Schedule_Name = sched_name
     eq_obj.Design_Level_Calculation_Method = "Watts/Area"
     eq_obj.Watts_per_Zone_Floor_Area = equip_wm2
+    if frac_latent is not None and hasattr(eq_obj, "Fraction_Latent"):
+        eq_obj.Fraction_Latent = frac_latent
+    if frac_radiant is not None and hasattr(eq_obj, "Fraction_Radiant"):
+        eq_obj.Fraction_Radiant = frac_radiant
+    if frac_lost is not None and hasattr(eq_obj, "Fraction_Lost"):
+        eq_obj.Fraction_Lost = frac_lost
     
     print(f"[DEBUG add_electric_equipment] Successfully created ELECTRICEQUIPMENT object for bldg_id {bldg_id} with equip_wm2 = {equip_wm2}.")
     print(f"--- [END DEBUG add_electric_equipment for bldg_id {bldg_id}] ---")

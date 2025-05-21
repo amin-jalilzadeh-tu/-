@@ -23,6 +23,7 @@ DEFAULT_LIGHTS_FRACTION_RETURN_AIR = 0.0
 
 DEFAULT_EQUIP_FRACTION_RADIANT = 0.0
 DEFAULT_EQUIP_FRACTION_LOST = 1.0
+DEFAULT_EQUIP_FRACTION_LATENT = 0.0
 
 # You can import & use these defaults in assign_lighting_values.py
 # or wherever you handle fraction parameters.
