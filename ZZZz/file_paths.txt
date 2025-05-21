@@ -1,3 +1,9 @@
+D:\Documents\E_Plus_2030_py\modification\elec_functions.py
+D:\Documents\E_Plus_2030_py\modification\equipment_functions.py
+D:\Documents\E_Plus_2030_py\modification\main_modifi.py
+D:\Documents\E_Plus_2030_py\idf_creation.py
+D:\Documents\E_Plus_2030_py\main_modifi.py
+D:\Documents\E_Plus_2030_py\orchestrator.py
 D:\Documents\E_Plus_2030_py\idf_objects\eequip\assign_equip_values.py
 D:\Documents\E_Plus_2030_py\idf_objects\eequip\equip_lookup.py
 D:\Documents\E_Plus_2030_py\idf_objects\eequip\equipment.py
