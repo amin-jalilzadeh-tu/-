@@ -47,7 +47,8 @@ def add_electric_equipment(
 
     picks = assign_equipment_parameters(
         building_id=bldg_id,
-        building_type=sub_type,
+        building_category=building_category,
+        sub_type=sub_type,
         age_range=None,
         calibration_stage=calibration_stage,
         strategy=strategy,
