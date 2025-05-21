@@ -162,19 +162,16 @@ def assign_equipment_parameters(
         print(f"  [DEBUG assign_equip_params] pick_val for '{param_name}': range={r}, strategy='{current_strategy}', picked={val}")
         return val
 
-    assigned = {
-        "equip_wm2": pick_val("equip_wm2", equip_rng, strategy),
-        "tD": pick_val("tD", tD_rng, strategy),
-        "tN": pick_val("tN", tN_rng, strategy)
-    }
-    print(f"[DEBUG assign_equip_params] Values after pick_val (pre-sanity): {assigned}")
+    assigned_equip = max(0.0, float(pick_val("equip_wm2", equip_rng, strategy)))
+    assigned_tD    = max(0.0, float(pick_val("tD", tD_rng, strategy)))
+    assigned_tN    = max(0.0, float(pick_val("tN", tN_rng, strategy)))
 
-    # Basic sanity checks so negative values or obviously unrealistic
-    # picks do not slip through.
-    assigned["equip_wm2"] = max(0.0, float(assigned["equip_wm2"]))
-    assigned["tD"] = max(0.0, float(assigned["tD"]))
-    assigned["tN"] = max(0.0, float(assigned["tN"]))
-    print(f"[DEBUG assign_equip_params] Final assigned values (post-sanity): {assigned}")
+    assigned = {
+        "equip_wm2": {"assigned_value": assigned_equip, "min_val": equip_rng[0], "max_val": equip_rng[1], "object_name": "ELECTRICEQUIPMENT"},
+        "tD": {"assigned_value": assigned_tD, "min_val": tD_rng[0], "max_val": tD_rng[1], "object_name": "ELECTRICEQUIPMENT_SCHEDULE"},
+        "tN": {"assigned_value": assigned_tN, "min_val": tN_rng[0], "max_val": tN_rng[1], "object_name": "ELECTRICEQUIPMENT_SCHEDULE"}
+    }
+    print(f"[DEBUG assign_equip_params] Final assigned values: {assigned}")
 
     # 6) Optional logging of both the picks and underlying ranges
     if assigned_log is not None:
