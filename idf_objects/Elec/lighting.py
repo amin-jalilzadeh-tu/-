@@ -62,7 +62,8 @@ def add_lights_and_parasitics(
 
     assigned_dict = assign_lighting_parameters(
         building_id=bldg_id,
-        building_type=sub_type,
+        building_category=building_category,
+        sub_type=sub_type,
         # Optional:
         # age_range=building_row.get("age_range", None),
         calibration_stage=calibration_stage,
