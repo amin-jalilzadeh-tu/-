@@ -6,7 +6,8 @@ from .overrides_helper import find_applicable_overrides  # if you use override l
 
 def assign_equipment_parameters(
     building_id: int,
-    building_type: str,
+    building_category: str,
+    sub_type: str,
     age_range=None,
     calibration_stage: str = "pre_calibration",
     strategy: str = "A",
@@ -15,12 +16,25 @@ def assign_equipment_parameters(
     assigned_log: dict = None     # optional dictionary to store final picks
 ):
     """
-    Returns a dict with "equip_wm2", "tD", "tN", etc. for electric equipment.
+    Returns a dict with ``equip_wm2``, ``tD`` and ``tN`` picks for electric
+    equipment.  ``building_category`` should be either "Residential" or
+    "Non-Residential" while ``sub_type`` is the more specific building
+    function (e.g. "Corner House", "Office Function").
+
+    Category strings are normalised ("residential" → "Residential") before
+    lookup so overrides are more forgiving.
+
+    The optional ``assigned_log`` receives a structure containing both the final
+    values and the ranges they were drawn from, allowing downstream
+    inspection.
 
     Steps:
-      1) Check calibration_stage in equip_lookup; else fallback to "pre_calibration".
-      2) Get the dictionary for building_type (if missing => pick some default).
-      3) If user_config is provided, find all matching override rows for (building_id, building_type, age_range).
+      1) Check ``calibration_stage`` in ``equip_lookup``; else fallback to
+         ``pre_calibration``.
+      2) Navigate to ``equip_lookup[calibration_stage][building_category][sub_type]``
+         to get default ranges. If any key is missing, use a minimal fallback.
+      3) If ``user_config`` is provided, find all matching override rows for
+         ``(building_id, sub_type, age_range)``.
       4) For each matching row, override the param's range (min_val, max_val).
       5) Pick final value from the resulting range using 'strategy':
          - A => midpoint
@@ -32,26 +46,42 @@ def assign_equipment_parameters(
     if random_seed is not None:
         random.seed(random_seed)
 
+    # Normalize category strings so that lookups are consistent
+    if building_category:
+        bt_low = building_category.lower()
+        if bt_low == "residential":
+            building_category = "Residential"
+        elif bt_low == "non_residential":
+            building_category = "Non-Residential"
+
+    sub_type = sub_type.strip() if sub_type else ""
+
     # 1) Grab the stage dictionary or fallback
     if calibration_stage not in equip_lookup:
         calibration_stage = "pre_calibration"
     stage_dict = equip_lookup[calibration_stage]
 
-    # 2) Fallback if building_type not found
-    if building_type not in stage_dict:
+    # 2) Navigate to the sub-type dictionary or fallback
+    if building_category not in stage_dict:
         # Minimal fallback approach
         equip_rng = (3.0, 3.0)
         tD_rng    = (500, 500)
         tN_rng    = (200, 200)
     else:
-        param_dict = stage_dict[building_type]
-        equip_rng = param_dict.get("EQUIP_WM2_range", (3.0, 3.0))
-        tD_rng    = param_dict.get("tD_range", (500, 500))
-        tN_rng    = param_dict.get("tN_range", (200, 200))
+        cat_dict = stage_dict[building_category]
+        if sub_type not in cat_dict:
+            equip_rng = (3.0, 3.0)
+            tD_rng    = (500, 500)
+            tN_rng    = (200, 200)
+        else:
+            param_dict = cat_dict[sub_type]
+            equip_rng = param_dict.get("EQUIP_WM2_range", (3.0, 3.0))
+            tD_rng    = param_dict.get("tD_range", (500, 500))
+            tN_rng    = param_dict.get("tN_range", (200, 200))
 
     # 3) Find override rows
     if user_config is not None:
-        matches = find_applicable_overrides(building_id, building_type, age_range, user_config)
+        matches = find_applicable_overrides(building_id, sub_type, age_range, user_config)
     else:
         matches = []
 
@@ -85,8 +115,22 @@ def assign_equipment_parameters(
         "tN": pick_val(tN_rng)
     }
 
-    # 6) Optional logging
+    # Basic sanity checks so negative values or obviously unrealistic
+    # picks do not slip through. You can adapt the thresholds to your
+    # own domain knowledge.
+    assigned["equip_wm2"] = max(0.0, assigned["equip_wm2"])
+    assigned["tD"] = max(0.0, assigned["tD"])
+    assigned["tN"] = max(0.0, assigned["tN"])
+
+    # 6) Optional logging of both the picks and underlying ranges
     if assigned_log is not None:
-        assigned_log[building_id] = assigned
+        assigned_log[building_id] = {
+            "assigned": assigned,
+            "ranges": {
+                "equip_wm2": equip_rng,
+                "tD": tD_rng,
+                "tN": tN_rng,
+            },
+        }
 
     return assigned

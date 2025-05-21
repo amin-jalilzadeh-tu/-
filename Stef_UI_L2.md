@@ -210,6 +210,7 @@ If columns are missing, display a red error:
 | ----------: | ----------------: | --------: | ----------------: | ----------: | ------: | ------: |
 |     (blank) |     "residential" | scenario1 | infiltration_base |             |     1.2 |     1.5 |
 |      111222 |     "residential" | scenario1 |       system_type |         "D" |   (N/A) |   (N/A) |
+|     (blank) |     (blank) | scenario1 | infiltration_model | "weather" |   (N/A) |   (N/A) |
 
 [ + Add Row ]
 

@@ -241,7 +241,8 @@ def create_idf_for_building(
         strategy=strategy,
         random_seed=random_seed,
         user_config_vent=user_config_vent,
-        assigned_vent_log=assigned_vent_log
+        assigned_vent_log=assigned_vent_log,
+        infiltration_model="weather",
     )
 
     # 11) Zone sizing

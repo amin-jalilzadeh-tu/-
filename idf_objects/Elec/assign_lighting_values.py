@@ -15,7 +15,8 @@ from .overrides_helper import find_applicable_overrides
 
 def assign_lighting_parameters(
     building_id: int,
-    building_type: str,
+    building_category: str,
+    sub_type: str,
     age_range=None,
     calibration_stage: str = "pre_calibration",
     strategy: str = "A",
@@ -25,8 +26,8 @@ def assign_lighting_parameters(
 ):
     """
     Determines final lighting parameters for a given building,
-    merging any user overrides from `lighting.json` with default 
-    ranges found in lighting_lookup[calibration_stage][building_type].
+    merging any user overrides from ``lighting.json`` with defaults
+    stored under ``lighting_lookup[calibration_stage][building_category][sub_type]``.
 
     The returned dict has keys like "lights_wm2", "parasitic_wm2", 
     "tD", "tN", "lights_fraction_radiant", etc. Each key maps to a
@@ -39,9 +40,11 @@ def assign_lighting_parameters(
       }
 
     Steps:
-      1) Identify default ranges from `lighting_lookup[calibration_stage][building_type]`.
-         If building_type not found, fallback to constants.
-      2) If user_config is provided, find all rows that match (building_id, building_type, age_range).
+      1) Identify default ranges from
+         ``lighting_lookup[calibration_stage][building_category][sub_type]``.
+         If not found, fallback to constants.
+      2) If user_config is provided, find all rows that match
+         (building_id, sub_type, age_range).
       3) Override the relevant ranges with those rows (either fixed_value => (v,v) or min_val/max_val).
       4) Pick the final assigned value from the resulting range using strategy:
          - "A" => midpoint
@@ -54,8 +57,10 @@ def assign_lighting_parameters(
     ----------
     building_id : int
         Unique identifier for the building (e.g. ogc_fid).
-    building_type : str
-        A string matching the keys in lighting_lookup[stage], e.g. "Residential" or "Non-Residential".
+    building_category : str
+        "Residential" or "Non-Residential".
+    sub_type : str
+        Specific building function (e.g. "Corner House", "Office Function").
     age_range : str, optional
         If you want to filter overrides by age_range.
     calibration_stage : str, default "pre_calibration"
@@ -101,16 +106,16 @@ def assign_lighting_parameters(
         calibration_stage = "pre_calibration"
     stage_dict = lighting_lookup[calibration_stage]
 
-    # Convert building_type to a consistent case if needed, e.g. "Residential" => "Residential"
-    # and "non_residential" => "Non-Residential" if that's your dictionary's exact key.
-    # Example:
-    if building_type.lower() == "residential":
-        building_type = "Residential"
-    elif building_type.lower() == "non_residential":
-        building_type = "Non-Residential"
+    # Normalise and strip inputs
+    if building_category.lower() == "residential":
+        building_category = "Residential"
+    elif building_category.lower() == "non_residential":
+        building_category = "Non-Residential"
 
-    # (C) If building_type not in the stage dict => fallback to "defaults"
-    if building_type not in stage_dict:
+    sub_type = sub_type.strip() if sub_type else ""
+
+    # (C) Navigate to the sub_type dictionary or fallback to "defaults"
+    if building_category not in stage_dict:
         # Fallback block
         fallback = {
             "lights_wm2": {
@@ -172,8 +177,70 @@ def assign_lighting_parameters(
             assigned_log[building_id] = fallback
         return fallback
 
-    # Otherwise, retrieve the param_dict for that building_type
-    param_dict = stage_dict[building_type]
+    # Otherwise, retrieve the param_dict for that building_category/sub_type
+    cat_dict = stage_dict[building_category]
+    if sub_type not in cat_dict:
+        fallback = {
+            "lights_wm2": {
+                "assigned_value": DEFAULT_LIGHTING_WM2,
+                "min_val": DEFAULT_LIGHTING_WM2,
+                "max_val": DEFAULT_LIGHTING_WM2,
+                "object_name": "LIGHTS",
+            },
+            "parasitic_wm2": {
+                "assigned_value": DEFAULT_PARASITIC_WM2,
+                "min_val": DEFAULT_PARASITIC_WM2,
+                "max_val": DEFAULT_PARASITIC_WM2,
+                "object_name": "ELECTRICEQUIPMENT",
+            },
+            "tD": {
+                "assigned_value": DEFAULT_TD,
+                "min_val": DEFAULT_TD,
+                "max_val": DEFAULT_TD,
+                "object_name": "LIGHTS_SCHEDULE",
+            },
+            "tN": {
+                "assigned_value": DEFAULT_TN,
+                "min_val": DEFAULT_TN,
+                "max_val": DEFAULT_TN,
+                "object_name": "LIGHTS_SCHEDULE",
+            },
+            "lights_fraction_radiant": {
+                "assigned_value": 0.7,
+                "min_val": 0.7,
+                "max_val": 0.7,
+                "object_name": "LIGHTS.Fraction_Radiant",
+            },
+            "lights_fraction_visible": {
+                "assigned_value": 0.2,
+                "min_val": 0.2,
+                "max_val": 0.2,
+                "object_name": "LIGHTS.Fraction_Visible",
+            },
+            "lights_fraction_replaceable": {
+                "assigned_value": 1.0,
+                "min_val": 1.0,
+                "max_val": 1.0,
+                "object_name": "LIGHTS.Fraction_Replaceable",
+            },
+            "equip_fraction_radiant": {
+                "assigned_value": 0.0,
+                "min_val": 0.0,
+                "max_val": 0.0,
+                "object_name": "ELECTRICEQUIPMENT.Fraction_Radiant",
+            },
+            "equip_fraction_lost": {
+                "assigned_value": 1.0,
+                "min_val": 1.0,
+                "max_val": 1.0,
+                "object_name": "ELECTRICEQUIPMENT.Fraction_Lost",
+            },
+        }
+        if assigned_log is not None:
+            assigned_log[building_id] = fallback
+        return fallback
+
+    param_dict = cat_dict[sub_type]
 
     # (D) Extract default ranges
     lights_rng    = param_dict.get("LIGHTS_WM2_range", (DEFAULT_LIGHTING_WM2, DEFAULT_LIGHTING_WM2))
@@ -190,12 +257,12 @@ def assign_lighting_parameters(
 
     # (E) Find any user overrides that apply
     if user_config is not None:
-        matches = find_applicable_overrides(building_id, building_type, age_range, user_config)
+        matches = find_applicable_overrides(building_id, sub_type, age_range, user_config)
     else:
         matches = []
 
     # Debug: See which overrides matched
-    print(f"[DEBUG lighting] bldg_id={building_id}, type='{building_type}', matched overrides => {matches}")
+    print(f"[DEBUG lighting] bldg_id={building_id}, type='{sub_type}', matched overrides => {matches}")
 
     # (F) Override default ranges with user-config
     for row in matches:

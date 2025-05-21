@@ -1465,6 +1465,7 @@ The code in `assign_ventilation_values.py` checks for these `param_name` keys an
 | `hrv_eff`                    | numeric, single/range  | Sensible heat recovery efficiency (0‒1) if the system is “D” (balanced with HRV).                                                                        |
 | `infiltration_schedule_name` | string                 | Override the infiltration schedule (e.g., “AlwaysOnSched”, “VentSched_NightOnly”, etc.). Must be given as `fixed_value`. This schedule is predefined. |
 | `ventilation_schedule_name`  | string                 | Override the main ventilation schedule name. Must be given as `fixed_value`. This schedule is predefined.                                                 |
+| `infiltration_model`         | string                 | Choose `"constant"` for a fixed flow or `"weather"` to scale infiltration with typical ΔT and wind. |
 
 ##### Examples of `fixed_value` vs. `min_val/max_val`
 
@@ -1540,7 +1541,8 @@ The code in `assign_ventilation_values.py` checks for these `param_name` keys an
         "f_ctrl",
         "hrv_eff",
         "infiltration_schedule_name",
-        "ventilation_schedule_name"
+        "ventilation_schedule_name",
+        "infiltration_model"
       ],
       "description": "Which ventilation parameter to override."
     },
@@ -1593,6 +1595,10 @@ Below is a sample array of ventilation overrides showing different matching rule
     "fixed_value": "WorkHoursSched"
   },
   {
+    "param_name": "infiltration_model",
+    "fixed_value": "weather"
+  },
+  {
     "param_name": "f_ctrl",
     "min_val": 0.75,
     "max_val": 0.80
@@ -1602,8 +1608,9 @@ Below is a sample array of ventilation overrides showing different matching rule
 
 - **1st row:** applies to `pre_calibration` + `scenario1` only, overrides `infiltration_base` to a numeric range (1.2–1.5).
 - **2nd row:** requires `building_function="residential"` + `age_range="1992 - 2005"`. It forces `system_type="D"`.
-- **3rd row:** requires exactly `building_id=111222`, `scenario="scenario1"`, and `calibration_stage="post_calibration"`. Sets the ventilation schedule name to `"WorkHoursSched"`.
-- **4th row:** universal (no building fields). It overrides `f_ctrl` everywhere to a range 0.75–0.80, unless a more specific row also matches.
+- **3rd row:** sets `infiltration_model="weather"` for all matching buildings.
+- **4th row:** requires exactly `building_id=111222`, `scenario="scenario1"`, and `calibration_stage="post_calibration"`. Sets the ventilation schedule name to `"WorkHoursSched"`.
+- **5th row:** universal (no building fields). It overrides `f_ctrl` everywhere to a range 0.75–0.80, unless a more specific row also matches.
 
 ---
 
