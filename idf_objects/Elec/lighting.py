@@ -4,32 +4,59 @@ from .assign_lighting_values import assign_lighting_parameters
 from .schedules import create_lighting_schedule, create_parasitic_schedule
 
 def get_building_category_and_subtype(building_row):
-    """
-    Returns (building_category, sub_type) strings based on building_row.
-    Adjust the logic as needed, depending on how your CSV or DB fields
-    are structured.
+    """Return (building_category, sub_type) based on ``building_row``.
 
-    If building_row["building_function"] is something like "Residential"
-    or "Meeting Function", use that as your sub_type.
-    If building_row["building_function"] says "Residential", set building_category="Residential".
-    Otherwise, assume building_category="Non-Residential".
+    ``building_row`` is expected to contain a ``"building_function"`` field
+    with the exact sub-type name used in the lookup tables.  This helper is
+    shared by both the equipment and lighting modules, so we centralise the
+    categorisation logic here.
 
-    Update as necessary for your own classification logic.
+    If ``building_function`` is empty or missing, we fall back to
+    ``("Non-Residential", "Other Use Function")`` so that both modules lookup
+    a defined set of defaults instead of the minimal hard-coded ones.
     """
-    bldg_func = building_row.get("building_function", "").strip()
-    if not bldg_func:
-        # fallback
+
+    bldg_func_input = building_row.get("building_function", "").strip()
+
+    if not bldg_func_input:
         return ("Non-Residential", "Other Use Function")
 
-    # Example simple logic:
-    if "resid" in bldg_func.lower():
-        building_category = "Residential"
-        sub_type = bldg_func  # e.g. "Residential" or "Corner House"
-    else:
-        building_category = "Non-Residential"
-        sub_type = bldg_func  # e.g. "Office Function", "Meeting Function"
+    sub_type_for_lookup = bldg_func_input
 
-    return (building_category, sub_type)
+    known_residential_sub_types = {
+        "Apartment",
+        "Corner House",
+        "Detached House",
+        "Terrace or Semi-detached House",
+        "Two-and-a-half-story House",
+    }
+
+    known_non_residential_sub_types = {
+        "Accommodation Function",
+        "Cell Function",
+        "Education Function",
+        "Healthcare Function",
+        "Industrial Function",
+        "Meeting Function",
+        "Office Function",
+        "Other Use Function",
+        "Retail Function",
+        "Sport Function",
+    }
+
+    if sub_type_for_lookup in known_residential_sub_types:
+        building_category = "Residential"
+    elif sub_type_for_lookup in known_non_residential_sub_types:
+        building_category = "Non-Residential"
+    else:
+        print(
+            f"Warning: Unknown building_function '{sub_type_for_lookup}'. "
+            "Attempting to categorize as Non-Residential. "
+            "Review if fallback values are used for this type."
+        )
+        building_category = "Non-Residential"
+
+    return (building_category, sub_type_for_lookup)
 
 
 def add_lights_and_parasitics(
