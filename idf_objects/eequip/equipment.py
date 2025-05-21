@@ -62,7 +62,7 @@ def add_electric_equipment(
         assigned_log=assigned_values_log,
     )
 
-    equip_wm2 = picks["equip_wm2"]
+    equip_wm2 = picks["equip_wm2"]["assigned_value"]
 
     sched_name = create_equipment_schedule(
         idf,

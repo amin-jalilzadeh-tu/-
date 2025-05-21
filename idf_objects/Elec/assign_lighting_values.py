@@ -5,8 +5,8 @@ from .lighting_lookup import lighting_lookup
 from .constants import ( # Ensure all DEFAULT constants are imported
     DEFAULT_LIGHTING_WM2, DEFAULT_PARASITIC_WM2, DEFAULT_TD, DEFAULT_TN,
     DEFAULT_LIGHTS_FRACTION_RADIANT, DEFAULT_LIGHTS_FRACTION_VISIBLE,
-    DEFAULT_LIGHTS_FRACTION_REPLACEABLE, DEFAULT_EQUIP_FRACTION_RADIANT,
-    DEFAULT_EQUIP_FRACTION_LOST
+    DEFAULT_LIGHTS_FRACTION_REPLACEABLE, DEFAULT_LIGHTS_FRACTION_RETURN_AIR,
+    DEFAULT_EQUIP_FRACTION_RADIANT, DEFAULT_EQUIP_FRACTION_LOST
 )
 from .overrides_helper import find_applicable_overrides # Assuming this helper function exists and is correct
 
@@ -51,6 +51,7 @@ def assign_lighting_parameters(
         "lights_fraction_radiant": {"assigned_value": DEFAULT_LIGHTS_FRACTION_RADIANT, "min_val": DEFAULT_LIGHTS_FRACTION_RADIANT, "max_val": DEFAULT_LIGHTS_FRACTION_RADIANT, "object_name": "LIGHTS.Fraction_Radiant"},
         "lights_fraction_visible": {"assigned_value": DEFAULT_LIGHTS_FRACTION_VISIBLE, "min_val": DEFAULT_LIGHTS_FRACTION_VISIBLE, "max_val": DEFAULT_LIGHTS_FRACTION_VISIBLE, "object_name": "LIGHTS.Fraction_Visible"},
         "lights_fraction_replaceable": {"assigned_value": DEFAULT_LIGHTS_FRACTION_REPLACEABLE, "min_val": DEFAULT_LIGHTS_FRACTION_REPLACEABLE, "max_val": DEFAULT_LIGHTS_FRACTION_REPLACEABLE, "object_name": "LIGHTS.Fraction_Replaceable"},
+        "lights_fraction_return_air": {"assigned_value": DEFAULT_LIGHTS_FRACTION_RETURN_AIR, "min_val": DEFAULT_LIGHTS_FRACTION_RETURN_AIR, "max_val": DEFAULT_LIGHTS_FRACTION_RETURN_AIR, "object_name": "LIGHTS.Return_Air_Fraction"},
         "equip_fraction_radiant": {"assigned_value": DEFAULT_EQUIP_FRACTION_RADIANT, "min_val": DEFAULT_EQUIP_FRACTION_RADIANT, "max_val": DEFAULT_EQUIP_FRACTION_RADIANT, "object_name": "ELECTRICEQUIPMENT.Fraction_Radiant"},
         "equip_fraction_lost": {"assigned_value": DEFAULT_EQUIP_FRACTION_LOST, "min_val": DEFAULT_EQUIP_FRACTION_LOST, "max_val": DEFAULT_EQUIP_FRACTION_LOST, "object_name": "ELECTRICEQUIPMENT.Fraction_Lost"}
     }
@@ -119,6 +120,7 @@ def assign_lighting_parameters(
     lights_fraction_radiant_rng     = param_dict.get("lights_fraction_radiant_range", (DEFAULT_LIGHTS_FRACTION_RADIANT, DEFAULT_LIGHTS_FRACTION_RADIANT))
     lights_fraction_visible_rng     = param_dict.get("lights_fraction_visible_range", (DEFAULT_LIGHTS_FRACTION_VISIBLE, DEFAULT_LIGHTS_FRACTION_VISIBLE))
     lights_fraction_replace_rng     = param_dict.get("lights_fraction_replaceable_range", (DEFAULT_LIGHTS_FRACTION_REPLACEABLE, DEFAULT_LIGHTS_FRACTION_REPLACEABLE))
+    lights_fraction_return_air_rng  = param_dict.get("lights_fraction_return_air_range", (DEFAULT_LIGHTS_FRACTION_RETURN_AIR, DEFAULT_LIGHTS_FRACTION_RETURN_AIR))
     equip_fraction_radiant_rng      = param_dict.get("equip_fraction_radiant_range", (DEFAULT_EQUIP_FRACTION_RADIANT, DEFAULT_EQUIP_FRACTION_RADIANT))
     equip_fraction_lost_rng         = param_dict.get("equip_fraction_lost_range", (DEFAULT_EQUIP_FRACTION_LOST, DEFAULT_EQUIP_FRACTION_LOST))
 
@@ -130,6 +132,7 @@ def assign_lighting_parameters(
     print(f"  lights_fraction_radiant_range: {lights_fraction_radiant_rng} {'(from param_dict)' if 'lights_fraction_radiant_range' in param_dict else '(default const)'}")
     print(f"  lights_fraction_visible_range: {lights_fraction_visible_rng} {'(from param_dict)' if 'lights_fraction_visible_range' in param_dict else '(default const)'}")
     print(f"  lights_fraction_replaceable_range: {lights_fraction_replace_rng} {'(from param_dict)' if 'lights_fraction_replaceable_range' in param_dict else '(default const)'}")
+    print(f"  lights_fraction_return_air_range: {lights_fraction_return_air_rng} {'(from param_dict)' if 'lights_fraction_return_air_range' in param_dict else '(default const)'}")
     print(f"  equip_fraction_radiant_range: {equip_fraction_radiant_rng} {'(from param_dict)' if 'equip_fraction_radiant_range' in param_dict else '(default const)'}")
     print(f"  equip_fraction_lost_range: {equip_fraction_lost_rng} {'(from param_dict)' if 'equip_fraction_lost_range' in param_dict else '(default const)'}")
 
@@ -164,6 +167,7 @@ def assign_lighting_parameters(
             elif pname == "lights_fraction_radiant": lights_fraction_radiant_rng = current_rng
             elif pname == "lights_fraction_visible": lights_fraction_visible_rng = current_rng
             elif pname == "lights_fraction_replaceable": lights_fraction_replace_rng = current_rng
+            elif pname == "lights_fraction_return_air": lights_fraction_return_air_rng = current_rng
             elif pname == "equip_fraction_radiant": equip_fraction_radiant_rng = current_rng
             elif pname == "equip_fraction_lost": equip_fraction_lost_rng = current_rng
             else: print(f"    [DEBUG assign_light_params] Unrecognized param_name '{pname}' in override row.")
@@ -188,6 +192,7 @@ def assign_lighting_parameters(
     assigned_lights_frac_rad = pick_val("lights_fraction_radiant", lights_fraction_radiant_rng)
     assigned_lights_frac_vis = pick_val("lights_fraction_visible", lights_fraction_visible_rng)
     assigned_lights_frac_rep = pick_val("lights_fraction_replaceable", lights_fraction_replace_rng)
+    assigned_lights_frac_ret = pick_val("lights_fraction_return_air", lights_fraction_return_air_rng)
     assigned_equip_frac_rad  = pick_val("equip_fraction_radiant", equip_fraction_radiant_rng)
     assigned_equip_frac_lost = pick_val("equip_fraction_lost", equip_fraction_lost_rng)
     
@@ -200,6 +205,7 @@ def assign_lighting_parameters(
         "lights_fraction_radiant": {"assigned_value": assigned_lights_frac_rad, "min_val": lights_fraction_radiant_rng[0], "max_val": lights_fraction_radiant_rng[1], "object_name": "LIGHTS.Fraction_Radiant"},
         "lights_fraction_visible": {"assigned_value": assigned_lights_frac_vis, "min_val": lights_fraction_visible_rng[0], "max_val": lights_fraction_visible_rng[1], "object_name": "LIGHTS.Fraction_Visible"},
         "lights_fraction_replaceable": {"assigned_value": assigned_lights_frac_rep, "min_val": lights_fraction_replace_rng[0], "max_val": lights_fraction_replace_rng[1], "object_name": "LIGHTS.Fraction_Replaceable"},
+        "lights_fraction_return_air": {"assigned_value": assigned_lights_frac_ret, "min_val": lights_fraction_return_air_rng[0], "max_val": lights_fraction_return_air_rng[1], "object_name": "LIGHTS.Return_Air_Fraction"},
         "equip_fraction_radiant": {"assigned_value": assigned_equip_frac_rad, "min_val": equip_fraction_radiant_rng[0], "max_val": equip_fraction_radiant_rng[1], "object_name": "ELECTRICEQUIPMENT.Fraction_Radiant"},
         "equip_fraction_lost": {"assigned_value": assigned_equip_frac_lost, "min_val": equip_fraction_lost_rng[0], "max_val": equip_fraction_lost_rng[1], "object_name": "ELECTRICEQUIPMENT.Fraction_Lost"}
     }

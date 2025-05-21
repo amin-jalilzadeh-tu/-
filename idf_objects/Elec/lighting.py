@@ -168,6 +168,9 @@ def add_lights_and_parasitics(
     lights_frac_radiant = assigned_dict["lights_fraction_radiant"]["assigned_value"]
     lights_frac_visible = assigned_dict["lights_fraction_visible"]["assigned_value"]
     lights_frac_replace = assigned_dict["lights_fraction_replaceable"]["assigned_value"]
+    lights_frac_return  = assigned_dict["lights_fraction_return_air"]["assigned_value"]
+
+    # Extract fraction parameters for EQUIPMENT
     equip_frac_radiant = assigned_dict["equip_fraction_radiant"]["assigned_value"]
     equip_frac_lost = assigned_dict["equip_fraction_lost"]["assigned_value"]
 
@@ -185,6 +188,8 @@ def add_lights_and_parasitics(
     lights_obj.Fraction_Radiant = lights_frac_radiant
     lights_obj.Fraction_Visible = lights_frac_visible
     lights_obj.Fraction_Replaceable = lights_frac_replace
+    if hasattr(lights_obj, "Return_Air_Fraction"):
+        lights_obj.Return_Air_Fraction = lights_frac_return
 
     eq_obj = idf.newidfobject("ELECTRICEQUIPMENT")
     eq_obj.Name = f"Parasitic_{zonelist_name}"

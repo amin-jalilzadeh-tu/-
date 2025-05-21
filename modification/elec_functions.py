@@ -147,6 +147,7 @@ def apply_building_level_elec(idf, param_dict, zonelist_name="ALL_ZONES"):
     lights_frac_radiant = float(param_dict.get("lights_fraction_radiant", 0.7))
     lights_frac_visible = float(param_dict.get("lights_fraction_visible", 0.2))
     lights_frac_replace = float(param_dict.get("lights_fraction_replaceable", 1.0))
+    lights_frac_return  = float(param_dict.get("lights_fraction_return_air", 0.0))
     equip_frac_radiant  = float(param_dict.get("equip_fraction_radiant", 0.0))
     equip_frac_lost     = float(param_dict.get("equip_fraction_lost", 1.0))
 
@@ -157,7 +158,7 @@ def apply_building_level_elec(idf, param_dict, zonelist_name="ALL_ZONES"):
 
     print("[ELEC] => Building-level electrical picks:")
     print(f"  lights_wm2={lights_wm2}, parasitic_wm2={parasitic_wm2}")
-    print(f"  lights_frac_radiant={lights_frac_radiant}, visible={lights_frac_visible}, replaceable={lights_frac_replace}")
+    print(f"  lights_frac_radiant={lights_frac_radiant}, visible={lights_frac_visible}, replaceable={lights_frac_replace}, return_air={lights_frac_return}")
     print(f"  equip_frac_radiant={equip_frac_radiant}, equip_frac_lost={equip_frac_lost}")
     print(f"  schedules => lights={lights_sched_name}, equip={equip_sched_name}")
 
@@ -171,6 +172,7 @@ def apply_building_level_elec(idf, param_dict, zonelist_name="ALL_ZONES"):
         frac_radiant=lights_frac_radiant,
         frac_visible=lights_frac_visible,
         frac_replace=lights_frac_replace,
+        frac_return=lights_frac_return,
         lights_schedule_name=lights_sched_name
     )
 
@@ -197,6 +199,7 @@ def _create_or_update_lights_object(
     frac_radiant=0.7,
     frac_visible=0.2,
     frac_replace=1.0,
+    frac_return=0.0,
     lights_schedule_name="LightsSchedule"
 ):
     """
@@ -232,6 +235,8 @@ def _create_or_update_lights_object(
         lights_obj.Fraction_Visible = frac_visible
     if hasattr(lights_obj, "Fraction_Replaceable"):
         lights_obj.Fraction_Replaceable = frac_replace
+    if hasattr(lights_obj, "Return_Air_Fraction"):
+        lights_obj.Return_Air_Fraction = frac_return
 
     return lights_obj
 
@@ -347,6 +352,9 @@ def _update_generic_lights_obj(idf, obj_name, param_dict):
 
     if "lights_fraction_replaceable" in param_dict and hasattr(lights_obj, "Fraction_Replaceable"):
         lights_obj.Fraction_Replaceable = float(param_dict["lights_fraction_replaceable"])
+
+    if "lights_fraction_return_air" in param_dict and hasattr(lights_obj, "Return_Air_Fraction"):
+        lights_obj.Return_Air_Fraction = float(param_dict["lights_fraction_return_air"])
 
 
 def _update_generic_equip_obj(idf, obj_name, param_dict):
