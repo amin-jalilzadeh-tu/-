@@ -1841,7 +1841,9 @@ def update_construction_materials(
     Notes
     -----
     - The newly created Constructions (CEILING1C, Ext_Walls1C, Window1C, etc.)
-      can be referenced when you set surfaces or WWR.
+      can be referenced when you set surfaces or WWR. These fallback
+      constructions now first look for element-specific materials before
+      defaulting to the top-level material.
     - If you have many building surfaces, you'll typically call
       'assign_constructions_to_surfaces(...)' afterwards to match them properly.
     """
@@ -2007,31 +2009,53 @@ def update_construction_materials(
         if assigned_fenez_log and building_id is not None and win_name:
             assigned_fenez_log[building_id]["fenez_top_window_material_name"] = win_name
 
-    # Create fallback Constructions (CEILING1C, Ext_Walls1C, etc.)
-    if opq_name:
-        c_ceil = idf.newidfobject("CONSTRUCTION")
-        c_ceil.Name = "CEILING1C"
-        c_ceil.Outside_Layer = opq_name
+        # Create fallback Constructions (CEILING1C, Ext_Walls1C, etc.).
+    # These now mirror the per-element lookups and use a sub-element material
+    # first before falling back to the top-level opaque material.
 
-        c_ext = idf.newidfobject("CONSTRUCTION")
-        c_ext.Name = "Ext_Walls1C"
-        c_ext.Outside_Layer = opq_name
+    def _layer_for_fallback(elem_key):
+        mat = elements_data.get(elem_key, {}).get("material_opaque")
+        if mat:
+            return create_opaque_material(idf, mat, mat.get("Name", f"{elem_key}_Mat"))
+        return opq_name
 
-        c_intw = idf.newidfobject("CONSTRUCTION")
-        c_intw.Name = "Int_Walls1C"
-        c_intw.Outside_Layer = opq_name
+    ceil_layer = _layer_for_fallback("flat_roof")
+    ext_layer = _layer_for_fallback("exterior_wall")
+    intw_layer = _layer_for_fallback("interior_wall")
+    roof_layer = _layer_for_fallback("flat_roof")
+    grnd_layer = _layer_for_fallback("ground_floor")
+    ifloor_layer = _layer_for_fallback("inter_floor")
 
-        c_roof = idf.newidfobject("CONSTRUCTION")
-        c_roof.Name = "Roof1C"
-        c_roof.Outside_Layer = opq_name
+    if any([ceil_layer, ext_layer, intw_layer, roof_layer, grnd_layer, ifloor_layer]):
+        if ceil_layer:
+            c_ceil = idf.newidfobject("CONSTRUCTION")
+            c_ceil.Name = "CEILING1C"
+            c_ceil.Outside_Layer = ceil_layer
 
-        c_grnd = idf.newidfobject("CONSTRUCTION")
-        c_grnd.Name = "GroundFloor1C"
-        c_grnd.Outside_Layer = opq_name
+        if ext_layer:
+            c_ext = idf.newidfobject("CONSTRUCTION")
+            c_ext.Name = "Ext_Walls1C"
+            c_ext.Outside_Layer = ext_layer
 
-        c_ifloor = idf.newidfobject("CONSTRUCTION")
-        c_ifloor.Name = "IntFloor1C"
-        c_ifloor.Outside_Layer = opq_name
+        if intw_layer:
+            c_intw = idf.newidfobject("CONSTRUCTION")
+            c_intw.Name = "Int_Walls1C"
+            c_intw.Outside_Layer = intw_layer
+
+        if roof_layer:
+            c_roof = idf.newidfobject("CONSTRUCTION")
+            c_roof.Name = "Roof1C"
+            c_roof.Outside_Layer = roof_layer
+
+        if grnd_layer:
+            c_grnd = idf.newidfobject("CONSTRUCTION")
+            c_grnd.Name = "GroundFloor1C"
+            c_grnd.Outside_Layer = grnd_layer
+
+        if ifloor_layer:
+            c_ifloor = idf.newidfobject("CONSTRUCTION")
+            c_ifloor.Name = "IntFloor1C"
+            c_ifloor.Outside_Layer = ifloor_layer
 
     if win_name:
         c_win = idf.newidfobject("CONSTRUCTION")
