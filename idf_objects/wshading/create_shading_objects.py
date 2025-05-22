@@ -108,40 +108,33 @@ def add_shading_objects(
             if "slat_beam_solar_transmittance" in shading_params:
                 blind_mat.Slat_Beam_Solar_Transmittance = shading_params["slat_beam_solar_transmittance"]
             if "slat_beam_solar_reflectance" in shading_params:
-
-              val = shading_params["slat_beam_solar_reflectance"]
-                blind_mat.Front_Side_Slat_Beam_Solar_Reflectance = val
-                blind_mat.Back_Side_Slat_Beam_Solar_Reflectance = val
+                blind_mat.Front_Side_Slat_Beam_Solar_Reflectance = shading_params["slat_beam_solar_reflectance"]
+                blind_mat.Back_Side_Slat_Beam_Solar_Reflectance = shading_params["slat_beam_solar_reflectance"]
             if "slat_diffuse_solar_transmittance" in shading_params:
                 blind_mat.Slat_Diffuse_Solar_Transmittance = shading_params["slat_diffuse_solar_transmittance"]
             if "slat_diffuse_solar_reflectance" in shading_params:
-                val = shading_params["slat_diffuse_solar_reflectance"]
-                blind_mat.Front_Side_Slat_Diffuse_Solar_Reflectance = val
-                blind_mat.Back_Side_Slat_Diffuse_Solar_Reflectance = val
+                blind_mat.Front_Side_Slat_Diffuse_Solar_Reflectance = shading_params["slat_diffuse_solar_reflectance"]
+                blind_mat.Back_Side_Slat_Diffuse_Solar_Reflectance = shading_params["slat_diffuse_solar_reflectance"]
             if "slat_beam_visible_transmittance" in shading_params:
                 blind_mat.Slat_Beam_Visible_Transmittance = shading_params["slat_beam_visible_transmittance"]
             if "slat_beam_visible_reflectance" in shading_params:
-                val = shading_params["slat_beam_visible_reflectance"]
-                blind_mat.Front_Side_Slat_Beam_Visible_Reflectance = val
-                blind_mat.Back_Side_Slat_Beam_Visible_Reflectance = val
+                blind_mat.Front_Side_Slat_Beam_Visible_Reflectance = shading_params["slat_beam_visible_reflectance"]
+                blind_mat.Back_Side_Slat_Beam_Visible_Reflectance = shading_params["slat_beam_visible_reflectance"]
             if "slat_diffuse_visible_transmittance" in shading_params:
                 blind_mat.Slat_Diffuse_Visible_Transmittance = shading_params["slat_diffuse_visible_transmittance"]
             if "slat_diffuse_visible_reflectance" in shading_params:
-                val = shading_params["slat_diffuse_visible_reflectance"]
-                blind_mat.Front_Side_Slat_Diffuse_Visible_Reflectance = val
-                blind_mat.Back_Side_Slat_Diffuse_Visible_Reflectance = val
+                blind_mat.Front_Side_Slat_Diffuse_Visible_Reflectance = shading_params["slat_diffuse_visible_reflectance"]
+                blind_mat.Back_Side_Slat_Diffuse_Visible_Reflectance = shading_params["slat_diffuse_visible_reflectance"]
             if "slat_ir_transmittance" in shading_params:
                 blind_mat.Slat_Infrared_Hemispherical_Transmittance = shading_params["slat_ir_transmittance"]
             if "slat_ir_emissivity" in shading_params:
-                val = shading_params["slat_ir_emissivity"]
-                blind_mat.Front_Side_Slat_Infrared_Hemispherical_Emissivity = val
-                blind_mat.Back_Side_Slat_Infrared_Hemispherical_Emissivity = val
-
+                blind_mat.Front_Side_Slat_Infrared_Hemispherical_Emissivity = shading_params["slat_ir_emissivity"]
+                blind_mat.Back_Side_Slat_Infrared_Hemispherical_Emissivity = shading_params["slat_ir_emissivity"]
 
             # 3) If dynamic shading => create or reference a schedule
             #    For example, if we want a schedule that changes slat angle or availability:
             #    We'll illustrate a simple static case here.
-            shading_ctrl = idf.newidfobject("WINDOWSHADINGCONTROL")
+            shading_ctrl = idf.newidfobject("WINDOWPROPERTY:SHADINGCONTROL")
             shading_ctrl.Name = f"ShadingCtrl_{window_id}"
             shading_ctrl.Shading_Type = "Blind"
             shading_ctrl.Shading_Device_Material_Name = blind_mat.Name
