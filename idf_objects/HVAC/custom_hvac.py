@@ -289,7 +289,13 @@ def add_HVAC_Ideal_to_all_zones(
 
         # Optional: Economizer / Heat Recovery
         ideal.Outdoor_Air_Economizer_Type = "FixedDryBulb"
-        ideal.Economizer_Maximum_Limit_Dry_Bulb_Temperature = 18  # DegC
+        if hasattr(ideal, "Economizer_Maximum_Limit_Dry_Bulb_Temperature"):
+            ideal.Economizer_Maximum_Limit_Dry_Bulb_Temperature = 18  # DegC
+        else:
+            print(
+                f"[Custom HVAC Warning] IdealLoads object '{ideal.Name}' does not "
+                "support 'Economizer_Maximum_Limit_Dry_Bulb_Temperature'."
+            )
         ideal.Heat_Recovery_Type = "None"
 
 
