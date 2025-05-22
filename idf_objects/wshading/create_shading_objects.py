@@ -198,8 +198,15 @@ def add_shading_objects(
                     blind_mat.Back_Side_Slat_Infrared_Hemispherical_Emissivity = shading_params.get("back_side_slat_ir_emissivity", sir_em)
                     
                     # --- Standard Optional Fields for WindowMaterial:Blind ---
-                    if "blind_to_glass_distance" in shading_params: # E+ Field: Distance_between_Slat_and_Glazing
-                        blind_mat.Distance_between_Slat_and_Glazing = shading_params["blind_to_glass_distance"]
+                    if "blind_to_glass_distance" in shading_params:  # E+ Field: Blind to Glass Distance
+                        # eppy uses the IDD field name with underscores. Earlier
+                        # versions of this code attempted to use the
+                        # ``Distance_between_Slat_and_Glazing`` attribute which
+                        # does not exist in the EnergyPlus IDD and caused
+                        # ``BadEPFieldError``.  The correct attribute name that
+                        # corresponds to the "Blind to Glass Distance" field in
+                        # the IDD is ``Blind_to_Glass_Distance``.
+                        blind_mat.Blind_to_Glass_Distance = shading_params["blind_to_glass_distance"]
                     
                     # E+ Field: Slat_Opening_Multiplier. Uses 'slat_opening_multiplier' from updated lookup/params.
                     # Default to 0.5 if not found, which was in the IDF.
