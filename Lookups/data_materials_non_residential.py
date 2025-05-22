@@ -14,7 +14,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (0.5, 0.5),
             "U_value_range": (2.0, 2.0),
-            "material_opaque_lookup": 'NR_ExtWall_U2.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -64,7 +64,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (0.5, 0.5),
             "U_value_range": (2.0, 2.0),
-            "material_opaque_lookup": 'NR_ExtWall_U2.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -114,7 +114,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -164,7 +164,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -214,7 +214,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -264,7 +264,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -314,7 +314,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -364,7 +364,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -414,7 +414,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -464,7 +464,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -514,7 +514,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (1.43, 1.43),
             "U_value_range": (0.7, 0.7),
-            "material_opaque_lookup": 'NR_ExtWall_U0.7',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -564,7 +564,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (1.43, 1.43),
             "U_value_range": (0.7, 0.7),
-            "material_opaque_lookup": 'NR_ExtWall_U0.7',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -614,7 +614,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (1.67, 1.67),
             "U_value_range": (0.6, 0.6),
-            "material_opaque_lookup": 'NR_ExtWall_U0.6',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -664,7 +664,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (1.67, 1.67),
             "U_value_range": (0.6, 0.6),
-            "material_opaque_lookup": 'NR_ExtWall_U0.6',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -714,7 +714,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -764,7 +764,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -814,7 +814,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -864,7 +864,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -914,7 +914,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -964,7 +964,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -1014,7 +1014,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -1064,7 +1064,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -1114,7 +1114,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (5.0, 5.0),
             "U_value_range": (0.2, 0.2),
-            "material_opaque_lookup": 'NR_ExtWall_U0.2',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -1164,7 +1164,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (5.0, 5.0),
             "U_value_range": (0.2, 0.2),
-            "material_opaque_lookup": 'NR_ExtWall_U0.2',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -1214,7 +1214,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (0.33, 0.33),
             "U_value_range": (3.0, 3.0),
-            "material_opaque_lookup": 'NR_ExtWall_U3.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -1264,7 +1264,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (0.33, 0.33),
             "U_value_range": (3.0, 3.0),
-            "material_opaque_lookup": 'NR_ExtWall_U3.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -1314,7 +1314,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (0.4, 0.4),
             "U_value_range": (2.5, 2.5),
-            "material_opaque_lookup": 'NR_ExtWall_U2.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -1364,7 +1364,7 @@ non_residential_materials_data = {
             "area_m2": 700.0,
             "R_value_range": (0.4, 0.4),
             "U_value_range": (2.5, 2.5),
-            "material_opaque_lookup": 'NR_ExtWall_U2.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 250.0,
@@ -1414,7 +1414,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (0.5, 0.5),
             "U_value_range": (2.0, 2.0),
-            "material_opaque_lookup": 'NR_ExtWall_U2.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -1464,7 +1464,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (0.5, 0.5),
             "U_value_range": (2.0, 2.0),
-            "material_opaque_lookup": 'NR_ExtWall_U2.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -1514,7 +1514,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -1564,7 +1564,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -1614,7 +1614,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -1664,7 +1664,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -1714,7 +1714,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -1764,7 +1764,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -1814,7 +1814,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -1864,7 +1864,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -1914,7 +1914,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (1.43, 1.43),
             "U_value_range": (0.7, 0.7),
-            "material_opaque_lookup": 'NR_ExtWall_U0.7',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -1964,7 +1964,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (1.43, 1.43),
             "U_value_range": (0.7, 0.7),
-            "material_opaque_lookup": 'NR_ExtWall_U0.7',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -2014,7 +2014,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (1.67, 1.67),
             "U_value_range": (0.6, 0.6),
-            "material_opaque_lookup": 'NR_ExtWall_U0.6',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -2064,7 +2064,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (1.67, 1.67),
             "U_value_range": (0.6, 0.6),
-            "material_opaque_lookup": 'NR_ExtWall_U0.6',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -2114,7 +2114,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -2164,7 +2164,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -2214,7 +2214,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -2264,7 +2264,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -2314,7 +2314,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -2364,7 +2364,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -2414,7 +2414,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -2464,7 +2464,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -2514,7 +2514,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (5.0, 5.0),
             "U_value_range": (0.2, 0.2),
-            "material_opaque_lookup": 'NR_ExtWall_U0.2',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -2564,7 +2564,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (5.0, 5.0),
             "U_value_range": (0.2, 0.2),
-            "material_opaque_lookup": 'NR_ExtWall_U0.2',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -2614,7 +2614,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (0.33, 0.33),
             "U_value_range": (3.0, 3.0),
-            "material_opaque_lookup": 'NR_ExtWall_U3.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -2664,7 +2664,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (0.33, 0.33),
             "U_value_range": (3.0, 3.0),
-            "material_opaque_lookup": 'NR_ExtWall_U3.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -2714,7 +2714,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (0.4, 0.4),
             "U_value_range": (2.5, 2.5),
-            "material_opaque_lookup": 'NR_ExtWall_U2.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -2764,7 +2764,7 @@ non_residential_materials_data = {
             "area_m2": 714.0,
             "R_value_range": (0.4, 0.4),
             "U_value_range": (2.5, 2.5),
-            "material_opaque_lookup": 'NR_ExtWall_U2.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 267.0,
@@ -2814,7 +2814,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (0.5, 0.5),
             "U_value_range": (2.0, 2.0),
-            "material_opaque_lookup": 'NR_ExtWall_U2.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -2864,7 +2864,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (0.5, 0.5),
             "U_value_range": (2.0, 2.0),
-            "material_opaque_lookup": 'NR_ExtWall_U2.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -2914,7 +2914,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -2964,7 +2964,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -3014,7 +3014,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -3064,7 +3064,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -3114,7 +3114,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -3164,7 +3164,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -3214,7 +3214,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -3264,7 +3264,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -3314,7 +3314,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (1.43, 1.43),
             "U_value_range": (0.7, 0.7),
-            "material_opaque_lookup": 'NR_ExtWall_U0.7',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -3364,7 +3364,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (1.43, 1.43),
             "U_value_range": (0.7, 0.7),
-            "material_opaque_lookup": 'NR_ExtWall_U0.7',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -3414,7 +3414,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (1.67, 1.67),
             "U_value_range": (0.6, 0.6),
-            "material_opaque_lookup": 'NR_ExtWall_U0.6',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -3464,7 +3464,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (1.67, 1.67),
             "U_value_range": (0.6, 0.6),
-            "material_opaque_lookup": 'NR_ExtWall_U0.6',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -3514,7 +3514,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -3564,7 +3564,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -3614,7 +3614,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -3664,7 +3664,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -3714,7 +3714,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -3764,7 +3764,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -3814,7 +3814,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -3864,7 +3864,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -3914,7 +3914,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (5.0, 5.0),
             "U_value_range": (0.2, 0.2),
-            "material_opaque_lookup": 'NR_ExtWall_U0.2',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -3964,7 +3964,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (5.0, 5.0),
             "U_value_range": (0.2, 0.2),
-            "material_opaque_lookup": 'NR_ExtWall_U0.2',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -4014,7 +4014,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (0.33, 0.33),
             "U_value_range": (3.0, 3.0),
-            "material_opaque_lookup": 'NR_ExtWall_U3.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -4064,7 +4064,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (0.33, 0.33),
             "U_value_range": (3.0, 3.0),
-            "material_opaque_lookup": 'NR_ExtWall_U3.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -4114,7 +4114,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (0.4, 0.4),
             "U_value_range": (2.5, 2.5),
-            "material_opaque_lookup": 'NR_ExtWall_U2.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -4164,7 +4164,7 @@ non_residential_materials_data = {
             "area_m2": 1050.0,
             "R_value_range": (0.4, 0.4),
             "U_value_range": (2.5, 2.5),
-            "material_opaque_lookup": 'NR_ExtWall_U2.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 750.0,
@@ -4214,7 +4214,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (0.5, 0.5),
             "U_value_range": (2.0, 2.0),
-            "material_opaque_lookup": 'NR_ExtWall_U2.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -4264,7 +4264,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (0.5, 0.5),
             "U_value_range": (2.0, 2.0),
-            "material_opaque_lookup": 'NR_ExtWall_U2.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -4314,7 +4314,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -4364,7 +4364,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -4414,7 +4414,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -4464,7 +4464,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -4514,7 +4514,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -4564,7 +4564,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -4614,7 +4614,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -4664,7 +4664,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -4714,7 +4714,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (1.43, 1.43),
             "U_value_range": (0.7, 0.7),
-            "material_opaque_lookup": 'NR_ExtWall_U0.7',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -4764,7 +4764,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (1.43, 1.43),
             "U_value_range": (0.7, 0.7),
-            "material_opaque_lookup": 'NR_ExtWall_U0.7',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -4814,7 +4814,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (1.67, 1.67),
             "U_value_range": (0.6, 0.6),
-            "material_opaque_lookup": 'NR_ExtWall_U0.6',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -4864,7 +4864,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (1.67, 1.67),
             "U_value_range": (0.6, 0.6),
-            "material_opaque_lookup": 'NR_ExtWall_U0.6',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -4914,7 +4914,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -4964,7 +4964,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -5014,7 +5014,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -5064,7 +5064,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -5114,7 +5114,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -5164,7 +5164,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -5214,7 +5214,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -5264,7 +5264,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -5314,7 +5314,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (5.0, 5.0),
             "U_value_range": (0.2, 0.2),
-            "material_opaque_lookup": 'NR_ExtWall_U0.2',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -5364,7 +5364,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (5.0, 5.0),
             "U_value_range": (0.2, 0.2),
-            "material_opaque_lookup": 'NR_ExtWall_U0.2',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -5414,7 +5414,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (0.33, 0.33),
             "U_value_range": (3.0, 3.0),
-            "material_opaque_lookup": 'NR_ExtWall_U3.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -5464,7 +5464,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (0.33, 0.33),
             "U_value_range": (3.0, 3.0),
-            "material_opaque_lookup": 'NR_ExtWall_U3.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -5514,7 +5514,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (0.4, 0.4),
             "U_value_range": (2.5, 2.5),
-            "material_opaque_lookup": 'NR_ExtWall_U2.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -5564,7 +5564,7 @@ non_residential_materials_data = {
             "area_m2": 1200.0,
             "R_value_range": (0.4, 0.4),
             "U_value_range": (2.5, 2.5),
-            "material_opaque_lookup": 'NR_ExtWall_U2.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1000.0,
@@ -5614,7 +5614,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (0.5, 0.5),
             "U_value_range": (2.0, 2.0),
-            "material_opaque_lookup": 'NR_ExtWall_U2.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -5664,7 +5664,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (0.5, 0.5),
             "U_value_range": (2.0, 2.0),
-            "material_opaque_lookup": 'NR_ExtWall_U2.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -5714,7 +5714,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -5764,7 +5764,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -5814,7 +5814,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -5864,7 +5864,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -5914,7 +5914,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -5964,7 +5964,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -6014,7 +6014,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -6064,7 +6064,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -6114,7 +6114,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (1.43, 1.43),
             "U_value_range": (0.7, 0.7),
-            "material_opaque_lookup": 'NR_ExtWall_U0.7',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -6164,7 +6164,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (1.43, 1.43),
             "U_value_range": (0.7, 0.7),
-            "material_opaque_lookup": 'NR_ExtWall_U0.7',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -6214,7 +6214,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (1.67, 1.67),
             "U_value_range": (0.6, 0.6),
-            "material_opaque_lookup": 'NR_ExtWall_U0.6',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -6264,7 +6264,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (1.67, 1.67),
             "U_value_range": (0.6, 0.6),
-            "material_opaque_lookup": 'NR_ExtWall_U0.6',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -6314,7 +6314,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -6364,7 +6364,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -6414,7 +6414,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -6464,7 +6464,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -6514,7 +6514,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -6564,7 +6564,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -6614,7 +6614,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -6664,7 +6664,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -6714,7 +6714,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (5.0, 5.0),
             "U_value_range": (0.2, 0.2),
-            "material_opaque_lookup": 'NR_ExtWall_U0.2',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -6764,7 +6764,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (5.0, 5.0),
             "U_value_range": (0.2, 0.2),
-            "material_opaque_lookup": 'NR_ExtWall_U0.2',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -6814,7 +6814,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (0.33, 0.33),
             "U_value_range": (3.0, 3.0),
-            "material_opaque_lookup": 'NR_ExtWall_U3.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -6864,7 +6864,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (0.33, 0.33),
             "U_value_range": (3.0, 3.0),
-            "material_opaque_lookup": 'NR_ExtWall_U3.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -6914,7 +6914,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (0.4, 0.4),
             "U_value_range": (2.5, 2.5),
-            "material_opaque_lookup": 'NR_ExtWall_U2.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -6964,7 +6964,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (0.4, 0.4),
             "U_value_range": (2.5, 2.5),
-            "material_opaque_lookup": 'NR_ExtWall_U2.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2000.0,
@@ -7014,7 +7014,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (0.5, 0.5),
             "U_value_range": (2.0, 2.0),
-            "material_opaque_lookup": 'NR_ExtWall_U2.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -7064,7 +7064,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (0.5, 0.5),
             "U_value_range": (2.0, 2.0),
-            "material_opaque_lookup": 'NR_ExtWall_U2.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -7114,7 +7114,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -7164,7 +7164,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -7214,7 +7214,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -7264,7 +7264,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -7314,7 +7314,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -7364,7 +7364,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -7414,7 +7414,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -7464,7 +7464,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -7514,7 +7514,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (1.43, 1.43),
             "U_value_range": (0.7, 0.7),
-            "material_opaque_lookup": 'NR_ExtWall_U0.7',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -7564,7 +7564,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (1.43, 1.43),
             "U_value_range": (0.7, 0.7),
-            "material_opaque_lookup": 'NR_ExtWall_U0.7',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -7614,7 +7614,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (1.67, 1.67),
             "U_value_range": (0.6, 0.6),
-            "material_opaque_lookup": 'NR_ExtWall_U0.6',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -7664,7 +7664,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (1.67, 1.67),
             "U_value_range": (0.6, 0.6),
-            "material_opaque_lookup": 'NR_ExtWall_U0.6',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -7714,7 +7714,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -7764,7 +7764,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -7814,7 +7814,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -7864,7 +7864,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -7914,7 +7914,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -7964,7 +7964,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -8014,7 +8014,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -8064,7 +8064,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -8114,7 +8114,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (5.0, 5.0),
             "U_value_range": (0.2, 0.2),
-            "material_opaque_lookup": 'NR_ExtWall_U0.2',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -8164,7 +8164,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (5.0, 5.0),
             "U_value_range": (0.2, 0.2),
-            "material_opaque_lookup": 'NR_ExtWall_U0.2',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -8214,7 +8214,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (0.33, 0.33),
             "U_value_range": (3.0, 3.0),
-            "material_opaque_lookup": 'NR_ExtWall_U3.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -8264,7 +8264,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (0.33, 0.33),
             "U_value_range": (3.0, 3.0),
-            "material_opaque_lookup": 'NR_ExtWall_U3.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -8314,7 +8314,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (0.4, 0.4),
             "U_value_range": (2.5, 2.5),
-            "material_opaque_lookup": 'NR_ExtWall_U2.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -8364,7 +8364,7 @@ non_residential_materials_data = {
             "area_m2": 1800.0,
             "R_value_range": (0.4, 0.4),
             "U_value_range": (2.5, 2.5),
-            "material_opaque_lookup": 'NR_ExtWall_U2.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1500.0,
@@ -8414,7 +8414,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (0.5, 0.5),
             "U_value_range": (2.0, 2.0),
-            "material_opaque_lookup": 'NR_ExtWall_U2.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -8464,7 +8464,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (0.5, 0.5),
             "U_value_range": (2.0, 2.0),
-            "material_opaque_lookup": 'NR_ExtWall_U2.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -8514,7 +8514,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -8564,7 +8564,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -8614,7 +8614,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -8664,7 +8664,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -8714,7 +8714,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -8764,7 +8764,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -8814,7 +8814,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -8864,7 +8864,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -8914,7 +8914,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (1.43, 1.43),
             "U_value_range": (0.7, 0.7),
-            "material_opaque_lookup": 'NR_ExtWall_U0.7',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -8964,7 +8964,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (1.43, 1.43),
             "U_value_range": (0.7, 0.7),
-            "material_opaque_lookup": 'NR_ExtWall_U0.7',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -9014,7 +9014,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (1.67, 1.67),
             "U_value_range": (0.6, 0.6),
-            "material_opaque_lookup": 'NR_ExtWall_U0.6',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -9064,7 +9064,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (1.67, 1.67),
             "U_value_range": (0.6, 0.6),
-            "material_opaque_lookup": 'NR_ExtWall_U0.6',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -9114,7 +9114,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -9164,7 +9164,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -9214,7 +9214,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -9264,7 +9264,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -9314,7 +9314,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -9364,7 +9364,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -9414,7 +9414,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -9464,7 +9464,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -9514,7 +9514,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (5.0, 5.0),
             "U_value_range": (0.2, 0.2),
-            "material_opaque_lookup": 'NR_ExtWall_U0.2',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -9564,7 +9564,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (5.0, 5.0),
             "U_value_range": (0.2, 0.2),
-            "material_opaque_lookup": 'NR_ExtWall_U0.2',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -9614,7 +9614,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (0.33, 0.33),
             "U_value_range": (3.0, 3.0),
-            "material_opaque_lookup": 'NR_ExtWall_U3.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -9664,7 +9664,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (0.33, 0.33),
             "U_value_range": (3.0, 3.0),
-            "material_opaque_lookup": 'NR_ExtWall_U3.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -9714,7 +9714,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (0.4, 0.4),
             "U_value_range": (2.5, 2.5),
-            "material_opaque_lookup": 'NR_ExtWall_U2.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -9764,7 +9764,7 @@ non_residential_materials_data = {
             "area_m2": 1500.0,
             "R_value_range": (0.4, 0.4),
             "U_value_range": (2.5, 2.5),
-            "material_opaque_lookup": 'NR_ExtWall_U2.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 500.0,
@@ -9814,7 +9814,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (0.5, 0.5),
             "U_value_range": (2.0, 2.0),
-            "material_opaque_lookup": 'NR_ExtWall_U2.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -9864,7 +9864,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (0.5, 0.5),
             "U_value_range": (2.0, 2.0),
-            "material_opaque_lookup": 'NR_ExtWall_U2.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -9914,7 +9914,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -9964,7 +9964,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -10014,7 +10014,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -10064,7 +10064,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -10114,7 +10114,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -10164,7 +10164,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -10214,7 +10214,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -10264,7 +10264,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -10314,7 +10314,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (1.43, 1.43),
             "U_value_range": (0.7, 0.7),
-            "material_opaque_lookup": 'NR_ExtWall_U0.7',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -10364,7 +10364,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (1.43, 1.43),
             "U_value_range": (0.7, 0.7),
-            "material_opaque_lookup": 'NR_ExtWall_U0.7',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -10414,7 +10414,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (1.67, 1.67),
             "U_value_range": (0.6, 0.6),
-            "material_opaque_lookup": 'NR_ExtWall_U0.6',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -10464,7 +10464,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (1.67, 1.67),
             "U_value_range": (0.6, 0.6),
-            "material_opaque_lookup": 'NR_ExtWall_U0.6',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -10514,7 +10514,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -10564,7 +10564,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -10614,7 +10614,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -10664,7 +10664,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -10714,7 +10714,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -10764,7 +10764,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -10814,7 +10814,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -10864,7 +10864,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -10914,7 +10914,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (5.0, 5.0),
             "U_value_range": (0.2, 0.2),
-            "material_opaque_lookup": 'NR_ExtWall_U0.2',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -10964,7 +10964,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (5.0, 5.0),
             "U_value_range": (0.2, 0.2),
-            "material_opaque_lookup": 'NR_ExtWall_U0.2',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -11014,7 +11014,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (0.33, 0.33),
             "U_value_range": (3.0, 3.0),
-            "material_opaque_lookup": 'NR_ExtWall_U3.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -11064,7 +11064,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (0.33, 0.33),
             "U_value_range": (3.0, 3.0),
-            "material_opaque_lookup": 'NR_ExtWall_U3.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -11114,7 +11114,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (0.4, 0.4),
             "U_value_range": (2.5, 2.5),
-            "material_opaque_lookup": 'NR_ExtWall_U2.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -11164,7 +11164,7 @@ non_residential_materials_data = {
             "area_m2": 600.0,
             "R_value_range": (0.4, 0.4),
             "U_value_range": (2.5, 2.5),
-            "material_opaque_lookup": 'NR_ExtWall_U2.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 400.0,
@@ -11214,7 +11214,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (0.5, 0.5),
             "U_value_range": (2.0, 2.0),
-            "material_opaque_lookup": 'NR_ExtWall_U2.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -11264,7 +11264,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (0.5, 0.5),
             "U_value_range": (2.0, 2.0),
-            "material_opaque_lookup": 'NR_ExtWall_U2.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -11314,7 +11314,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -11364,7 +11364,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -11414,7 +11414,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -11464,7 +11464,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -11514,7 +11514,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -11564,7 +11564,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -11614,7 +11614,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -11664,7 +11664,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -11714,7 +11714,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (1.43, 1.43),
             "U_value_range": (0.7, 0.7),
-            "material_opaque_lookup": 'NR_ExtWall_U0.7',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -11764,7 +11764,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (1.43, 1.43),
             "U_value_range": (0.7, 0.7),
-            "material_opaque_lookup": 'NR_ExtWall_U0.7',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -11814,7 +11814,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (1.67, 1.67),
             "U_value_range": (0.6, 0.6),
-            "material_opaque_lookup": 'NR_ExtWall_U0.6',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -11864,7 +11864,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (1.67, 1.67),
             "U_value_range": (0.6, 0.6),
-            "material_opaque_lookup": 'NR_ExtWall_U0.6',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -11914,7 +11914,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -11964,7 +11964,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -12014,7 +12014,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -12064,7 +12064,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -12114,7 +12114,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -12164,7 +12164,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -12214,7 +12214,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -12264,7 +12264,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -12314,7 +12314,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (5.0, 5.0),
             "U_value_range": (0.2, 0.2),
-            "material_opaque_lookup": 'NR_ExtWall_U0.2',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -12364,7 +12364,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (5.0, 5.0),
             "U_value_range": (0.2, 0.2),
-            "material_opaque_lookup": 'NR_ExtWall_U0.2',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -12414,7 +12414,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (0.33, 0.33),
             "U_value_range": (3.0, 3.0),
-            "material_opaque_lookup": 'NR_ExtWall_U3.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -12464,7 +12464,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (0.33, 0.33),
             "U_value_range": (3.0, 3.0),
-            "material_opaque_lookup": 'NR_ExtWall_U3.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -12514,7 +12514,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (0.4, 0.4),
             "U_value_range": (2.5, 2.5),
-            "material_opaque_lookup": 'NR_ExtWall_U2.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -12564,7 +12564,7 @@ non_residential_materials_data = {
             "area_m2": 900.0,
             "R_value_range": (0.4, 0.4),
             "U_value_range": (2.5, 2.5),
-            "material_opaque_lookup": 'NR_ExtWall_U2.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 1200.0,
@@ -12614,7 +12614,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (0.5, 0.5),
             "U_value_range": (2.0, 2.0),
-            "material_opaque_lookup": 'NR_ExtWall_U2.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -12664,7 +12664,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (0.5, 0.5),
             "U_value_range": (2.0, 2.0),
-            "material_opaque_lookup": 'NR_ExtWall_U2.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -12714,7 +12714,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -12764,7 +12764,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -12814,7 +12814,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -12864,7 +12864,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (0.67, 0.67),
             "U_value_range": (1.5, 1.5),
-            "material_opaque_lookup": 'NR_ExtWall_U1.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -12914,7 +12914,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -12964,7 +12964,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -13014,7 +13014,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -13064,7 +13064,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (1.0, 1.0),
             "U_value_range": (1.0, 1.0),
-            "material_opaque_lookup": 'NR_ExtWall_U1.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -13114,7 +13114,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (1.43, 1.43),
             "U_value_range": (0.7, 0.7),
-            "material_opaque_lookup": 'NR_ExtWall_U0.7',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -13164,7 +13164,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (1.43, 1.43),
             "U_value_range": (0.7, 0.7),
-            "material_opaque_lookup": 'NR_ExtWall_U0.7',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -13214,7 +13214,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (1.67, 1.67),
             "U_value_range": (0.6, 0.6),
-            "material_opaque_lookup": 'NR_ExtWall_U0.6',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -13264,7 +13264,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (1.67, 1.67),
             "U_value_range": (0.6, 0.6),
-            "material_opaque_lookup": 'NR_ExtWall_U0.6',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -13314,7 +13314,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -13364,7 +13364,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -13414,7 +13414,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -13464,7 +13464,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.4, 0.4),
-            "material_opaque_lookup": 'NR_ExtWall_U0.4',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -13514,7 +13514,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -13564,7 +13564,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -13614,7 +13614,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -13664,7 +13664,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (3.33, 3.33),
             "U_value_range": (0.3, 0.3),
-            "material_opaque_lookup": 'NR_ExtWall_U0.3',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -13714,7 +13714,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (5.0, 5.0),
             "U_value_range": (0.2, 0.2),
-            "material_opaque_lookup": 'NR_ExtWall_U0.2',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -13764,7 +13764,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (5.0, 5.0),
             "U_value_range": (0.2, 0.2),
-            "material_opaque_lookup": 'NR_ExtWall_U0.2',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -13814,7 +13814,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (0.33, 0.33),
             "U_value_range": (3.0, 3.0),
-            "material_opaque_lookup": 'NR_ExtWall_U3.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -13864,7 +13864,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (0.33, 0.33),
             "U_value_range": (3.0, 3.0),
-            "material_opaque_lookup": 'NR_ExtWall_U3.0',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -13914,7 +13914,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (0.4, 0.4),
             "U_value_range": (2.5, 2.5),
-            "material_opaque_lookup": 'NR_ExtWall_U2.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,
@@ -13964,7 +13964,7 @@ non_residential_materials_data = {
             "area_m2": 2000.0,
             "R_value_range": (0.4, 0.4),
             "U_value_range": (2.5, 2.5),
-            "material_opaque_lookup": 'NR_ExtWall_U2.5',
+            "material_opaque_lookup": '100 mm common brick',
         },
         "flat_roof": {
             "area_m2": 2500.0,

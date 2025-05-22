@@ -1514,7 +1514,7 @@ residential_materials_data = {
             "area_m2": 25.33,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 25.33,
@@ -1564,7 +1564,7 @@ residential_materials_data = {
             "area_m2": 25.33,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 25.33,
@@ -1614,7 +1614,7 @@ residential_materials_data = {
             "area_m2": 25.33,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 25.33,
@@ -1664,7 +1664,7 @@ residential_materials_data = {
             "area_m2": 25.33,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 25.33,
@@ -1714,7 +1714,7 @@ residential_materials_data = {
             "area_m2": 25.33,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 25.33,
@@ -1764,7 +1764,7 @@ residential_materials_data = {
             "area_m2": 25.33,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 25.33,
@@ -1814,7 +1814,7 @@ residential_materials_data = {
             "area_m2": 25.33,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 25.33,
@@ -1864,7 +1864,7 @@ residential_materials_data = {
             "area_m2": 25.33,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 25.33,
@@ -1914,7 +1914,7 @@ residential_materials_data = {
             "area_m2": 25.33,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 25.33,
@@ -1964,7 +1964,7 @@ residential_materials_data = {
             "area_m2": 25.33,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 25.33,
@@ -2014,7 +2014,7 @@ residential_materials_data = {
             "area_m2": 21.96,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 21.96,
@@ -2064,7 +2064,7 @@ residential_materials_data = {
             "area_m2": 21.96,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 21.96,
@@ -2114,7 +2114,7 @@ residential_materials_data = {
             "area_m2": 21.96,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 21.96,
@@ -2164,7 +2164,7 @@ residential_materials_data = {
             "area_m2": 21.96,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 21.96,
@@ -2214,7 +2214,7 @@ residential_materials_data = {
             "area_m2": 21.96,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 21.96,
@@ -2264,7 +2264,7 @@ residential_materials_data = {
             "area_m2": 21.96,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 21.96,
@@ -2314,7 +2314,7 @@ residential_materials_data = {
             "area_m2": 21.96,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 21.96,
@@ -2364,7 +2364,7 @@ residential_materials_data = {
             "area_m2": 21.96,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 21.96,
@@ -2414,7 +2414,7 @@ residential_materials_data = {
             "area_m2": 21.96,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 21.96,
@@ -2464,7 +2464,7 @@ residential_materials_data = {
             "area_m2": 21.96,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 21.96,
@@ -5014,7 +5014,7 @@ residential_materials_data = {
             "area_m2": 103.6,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 76.15,
@@ -5064,7 +5064,7 @@ residential_materials_data = {
             "area_m2": 103.6,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 76.15,
@@ -5114,7 +5114,7 @@ residential_materials_data = {
             "area_m2": 103.6,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 76.15,
@@ -5164,7 +5164,7 @@ residential_materials_data = {
             "area_m2": 103.6,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 76.15,
@@ -5214,7 +5214,7 @@ residential_materials_data = {
             "area_m2": 103.6,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 76.15,
@@ -5264,7 +5264,7 @@ residential_materials_data = {
             "area_m2": 103.6,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 76.15,
@@ -5314,7 +5314,7 @@ residential_materials_data = {
             "area_m2": 103.6,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 76.15,
@@ -5364,7 +5364,7 @@ residential_materials_data = {
             "area_m2": 103.6,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 76.15,
@@ -5414,7 +5414,7 @@ residential_materials_data = {
             "area_m2": 103.6,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 76.15,
@@ -5464,7 +5464,7 @@ residential_materials_data = {
             "area_m2": 103.6,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 76.15,
@@ -5514,7 +5514,7 @@ residential_materials_data = {
             "area_m2": 110.98,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 69.6,
@@ -5564,7 +5564,7 @@ residential_materials_data = {
             "area_m2": 110.98,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 69.6,
@@ -5614,7 +5614,7 @@ residential_materials_data = {
             "area_m2": 110.98,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 69.6,
@@ -5664,7 +5664,7 @@ residential_materials_data = {
             "area_m2": 110.98,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 69.6,
@@ -5714,7 +5714,7 @@ residential_materials_data = {
             "area_m2": 110.98,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 69.6,
@@ -5764,7 +5764,7 @@ residential_materials_data = {
             "area_m2": 110.98,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 69.6,
@@ -5814,7 +5814,7 @@ residential_materials_data = {
             "area_m2": 110.98,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 69.6,
@@ -5864,7 +5864,7 @@ residential_materials_data = {
             "area_m2": 110.98,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 69.6,
@@ -5914,7 +5914,7 @@ residential_materials_data = {
             "area_m2": 110.98,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 69.6,
@@ -5964,7 +5964,7 @@ residential_materials_data = {
             "area_m2": 110.98,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 69.6,
@@ -8514,7 +8514,7 @@ residential_materials_data = {
             "area_m2": 133.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 135.55,
@@ -8564,7 +8564,7 @@ residential_materials_data = {
             "area_m2": 133.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 135.55,
@@ -8614,7 +8614,7 @@ residential_materials_data = {
             "area_m2": 133.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 135.55,
@@ -8664,7 +8664,7 @@ residential_materials_data = {
             "area_m2": 133.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 135.55,
@@ -8714,7 +8714,7 @@ residential_materials_data = {
             "area_m2": 133.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 135.55,
@@ -8764,7 +8764,7 @@ residential_materials_data = {
             "area_m2": 133.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 135.55,
@@ -8814,7 +8814,7 @@ residential_materials_data = {
             "area_m2": 133.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 135.55,
@@ -8864,7 +8864,7 @@ residential_materials_data = {
             "area_m2": 133.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 135.55,
@@ -8914,7 +8914,7 @@ residential_materials_data = {
             "area_m2": 133.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 135.55,
@@ -8964,7 +8964,7 @@ residential_materials_data = {
             "area_m2": 133.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 135.55,
@@ -9014,7 +9014,7 @@ residential_materials_data = {
             "area_m2": 152.78,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 133.2,
@@ -9064,7 +9064,7 @@ residential_materials_data = {
             "area_m2": 152.78,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 133.2,
@@ -9114,7 +9114,7 @@ residential_materials_data = {
             "area_m2": 152.78,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 133.2,
@@ -9164,7 +9164,7 @@ residential_materials_data = {
             "area_m2": 152.78,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 133.2,
@@ -9214,7 +9214,7 @@ residential_materials_data = {
             "area_m2": 152.78,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 133.2,
@@ -9264,7 +9264,7 @@ residential_materials_data = {
             "area_m2": 152.78,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 133.2,
@@ -9314,7 +9314,7 @@ residential_materials_data = {
             "area_m2": 152.78,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 133.2,
@@ -9364,7 +9364,7 @@ residential_materials_data = {
             "area_m2": 152.78,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 133.2,
@@ -9414,7 +9414,7 @@ residential_materials_data = {
             "area_m2": 152.78,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 133.2,
@@ -9464,7 +9464,7 @@ residential_materials_data = {
             "area_m2": 152.78,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 133.2,
@@ -9514,7 +9514,7 @@ residential_materials_data = {
             "area_m2": 152.78,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 143.51,
@@ -9564,7 +9564,7 @@ residential_materials_data = {
             "area_m2": 152.78,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 143.51,
@@ -9614,7 +9614,7 @@ residential_materials_data = {
             "area_m2": 152.78,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 143.51,
@@ -9664,7 +9664,7 @@ residential_materials_data = {
             "area_m2": 152.78,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 143.51,
@@ -9714,7 +9714,7 @@ residential_materials_data = {
             "area_m2": 152.78,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 143.51,
@@ -9764,7 +9764,7 @@ residential_materials_data = {
             "area_m2": 152.78,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 143.51,
@@ -9814,7 +9814,7 @@ residential_materials_data = {
             "area_m2": 152.78,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 143.51,
@@ -9864,7 +9864,7 @@ residential_materials_data = {
             "area_m2": 152.78,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 143.51,
@@ -9914,7 +9914,7 @@ residential_materials_data = {
             "area_m2": 152.78,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 143.51,
@@ -9964,7 +9964,7 @@ residential_materials_data = {
             "area_m2": 152.78,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 143.51,
@@ -12014,7 +12014,7 @@ residential_materials_data = {
             "area_m2": 46.38,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 68.33,
@@ -12064,7 +12064,7 @@ residential_materials_data = {
             "area_m2": 46.38,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 68.33,
@@ -12114,7 +12114,7 @@ residential_materials_data = {
             "area_m2": 46.38,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 68.33,
@@ -12164,7 +12164,7 @@ residential_materials_data = {
             "area_m2": 46.38,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 68.33,
@@ -12214,7 +12214,7 @@ residential_materials_data = {
             "area_m2": 46.38,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 68.33,
@@ -12264,7 +12264,7 @@ residential_materials_data = {
             "area_m2": 46.38,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 68.33,
@@ -12314,7 +12314,7 @@ residential_materials_data = {
             "area_m2": 46.38,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 68.33,
@@ -12364,7 +12364,7 @@ residential_materials_data = {
             "area_m2": 46.38,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 68.33,
@@ -12414,7 +12414,7 @@ residential_materials_data = {
             "area_m2": 46.38,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 68.33,
@@ -12464,7 +12464,7 @@ residential_materials_data = {
             "area_m2": 46.38,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 68.33,
@@ -12514,7 +12514,7 @@ residential_materials_data = {
             "area_m2": 41.11,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 61.67,
@@ -12564,7 +12564,7 @@ residential_materials_data = {
             "area_m2": 41.11,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 61.67,
@@ -12614,7 +12614,7 @@ residential_materials_data = {
             "area_m2": 41.11,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 61.67,
@@ -12664,7 +12664,7 @@ residential_materials_data = {
             "area_m2": 41.11,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 61.67,
@@ -12714,7 +12714,7 @@ residential_materials_data = {
             "area_m2": 41.11,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 61.67,
@@ -12764,7 +12764,7 @@ residential_materials_data = {
             "area_m2": 41.11,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 61.67,
@@ -12814,7 +12814,7 @@ residential_materials_data = {
             "area_m2": 41.11,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 61.67,
@@ -12864,7 +12864,7 @@ residential_materials_data = {
             "area_m2": 41.11,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 61.67,
@@ -12914,7 +12914,7 @@ residential_materials_data = {
             "area_m2": 41.11,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 61.67,
@@ -12964,7 +12964,7 @@ residential_materials_data = {
             "area_m2": 41.11,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 61.67,
@@ -14014,7 +14014,7 @@ residential_materials_data = {
             "area_m2": 103.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.14,
@@ -14064,7 +14064,7 @@ residential_materials_data = {
             "area_m2": 103.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.14,
@@ -14114,7 +14114,7 @@ residential_materials_data = {
             "area_m2": 103.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.14,
@@ -14164,7 +14164,7 @@ residential_materials_data = {
             "area_m2": 103.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.14,
@@ -14214,7 +14214,7 @@ residential_materials_data = {
             "area_m2": 103.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.14,
@@ -14264,7 +14264,7 @@ residential_materials_data = {
             "area_m2": 103.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.14,
@@ -14314,7 +14314,7 @@ residential_materials_data = {
             "area_m2": 103.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.14,
@@ -14364,7 +14364,7 @@ residential_materials_data = {
             "area_m2": 103.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.14,
@@ -14414,7 +14414,7 @@ residential_materials_data = {
             "area_m2": 103.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.14,
@@ -14464,7 +14464,7 @@ residential_materials_data = {
             "area_m2": 103.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.14,
@@ -15514,7 +15514,7 @@ residential_materials_data = {
             "area_m2": 103.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.14,
@@ -15564,7 +15564,7 @@ residential_materials_data = {
             "area_m2": 103.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.14,
@@ -15614,7 +15614,7 @@ residential_materials_data = {
             "area_m2": 103.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.14,
@@ -15664,7 +15664,7 @@ residential_materials_data = {
             "area_m2": 103.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.14,
@@ -15714,7 +15714,7 @@ residential_materials_data = {
             "area_m2": 103.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.14,
@@ -15764,7 +15764,7 @@ residential_materials_data = {
             "area_m2": 103.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.14,
@@ -15814,7 +15814,7 @@ residential_materials_data = {
             "area_m2": 103.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.14,
@@ -15864,7 +15864,7 @@ residential_materials_data = {
             "area_m2": 103.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.14,
@@ -15914,7 +15914,7 @@ residential_materials_data = {
             "area_m2": 103.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.14,
@@ -15964,7 +15964,7 @@ residential_materials_data = {
             "area_m2": 103.3,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.14,
@@ -16014,7 +16014,7 @@ residential_materials_data = {
             "area_m2": 109.66,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.3,
@@ -16064,7 +16064,7 @@ residential_materials_data = {
             "area_m2": 109.66,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.3,
@@ -16114,7 +16114,7 @@ residential_materials_data = {
             "area_m2": 109.66,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.3,
@@ -16164,7 +16164,7 @@ residential_materials_data = {
             "area_m2": 109.66,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.3,
@@ -16214,7 +16214,7 @@ residential_materials_data = {
             "area_m2": 109.66,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.3,
@@ -16264,7 +16264,7 @@ residential_materials_data = {
             "area_m2": 109.66,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.3,
@@ -16314,7 +16314,7 @@ residential_materials_data = {
             "area_m2": 109.66,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.3,
@@ -16364,7 +16364,7 @@ residential_materials_data = {
             "area_m2": 109.66,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.3,
@@ -16414,7 +16414,7 @@ residential_materials_data = {
             "area_m2": 109.66,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.3,
@@ -16464,7 +16464,7 @@ residential_materials_data = {
             "area_m2": 109.66,
             "R_value_range": (2.5, 2.5),
             "U_value_range": (0.37, 0.37),
-            "material_opaque_lookup": 'ExtWall_R2.5',
+            "material_opaque_lookup": 'Concrete_200mm',
         },
         "flat_roof": {
             "area_m2": 84.3,

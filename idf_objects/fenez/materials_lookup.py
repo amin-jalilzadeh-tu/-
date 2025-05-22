@@ -25,7 +25,7 @@ material_lookup = {
         'Thermal_Absorptance_range': (0.891, 0.909),
         'Solar_Absorptance_range': (0.693, 0.707),
         'Visible_Absorptance_range': (0.693, 0.707),
-    },
+    }, 
     'Concrete_200mm': {
         'obj_type': 'MATERIAL',
         'Name': 'Concrete_200mm',
