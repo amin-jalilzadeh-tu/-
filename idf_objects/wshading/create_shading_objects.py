@@ -108,23 +108,28 @@ def add_shading_objects(
             if "slat_beam_solar_transmittance" in shading_params:
                 blind_mat.Slat_Beam_Solar_Transmittance = shading_params["slat_beam_solar_transmittance"]
             if "slat_beam_solar_reflectance" in shading_params:
-                blind_mat.Slat_Beam_Solar_Reflectance = shading_params["slat_beam_solar_reflectance"]
+                blind_mat.Front_Side_Slat_Beam_Solar_Reflectance = shading_params["slat_beam_solar_reflectance"]
+                blind_mat.Back_Side_Slat_Beam_Solar_Reflectance = shading_params["slat_beam_solar_reflectance"]
             if "slat_diffuse_solar_transmittance" in shading_params:
                 blind_mat.Slat_Diffuse_Solar_Transmittance = shading_params["slat_diffuse_solar_transmittance"]
             if "slat_diffuse_solar_reflectance" in shading_params:
-                blind_mat.Slat_Diffuse_Solar_Reflectance = shading_params["slat_diffuse_solar_reflectance"]
+                blind_mat.Front_Side_Slat_Diffuse_Solar_Reflectance = shading_params["slat_diffuse_solar_reflectance"]
+                blind_mat.Back_Side_Slat_Diffuse_Solar_Reflectance = shading_params["slat_diffuse_solar_reflectance"]
             if "slat_beam_visible_transmittance" in shading_params:
                 blind_mat.Slat_Beam_Visible_Transmittance = shading_params["slat_beam_visible_transmittance"]
             if "slat_beam_visible_reflectance" in shading_params:
-                blind_mat.Slat_Beam_Visible_Reflectance = shading_params["slat_beam_visible_reflectance"]
+                blind_mat.Front_Side_Slat_Beam_Visible_Reflectance = shading_params["slat_beam_visible_reflectance"]
+                blind_mat.Back_Side_Slat_Beam_Visible_Reflectance = shading_params["slat_beam_visible_reflectance"]
             if "slat_diffuse_visible_transmittance" in shading_params:
                 blind_mat.Slat_Diffuse_Visible_Transmittance = shading_params["slat_diffuse_visible_transmittance"]
             if "slat_diffuse_visible_reflectance" in shading_params:
-                blind_mat.Slat_Diffuse_Visible_Reflectance = shading_params["slat_diffuse_visible_reflectance"]
+                blind_mat.Front_Side_Slat_Diffuse_Visible_Reflectance = shading_params["slat_diffuse_visible_reflectance"]
+                blind_mat.Back_Side_Slat_Diffuse_Visible_Reflectance = shading_params["slat_diffuse_visible_reflectance"]
             if "slat_ir_transmittance" in shading_params:
                 blind_mat.Slat_IR_Transmittance = shading_params["slat_ir_transmittance"]
             if "slat_ir_emissivity" in shading_params:
-                blind_mat.Slat_IR_Emissivity = shading_params["slat_ir_emissivity"]
+                blind_mat.Front_Side_Slat_Infrared_Hemispherical_Emissivity = shading_params["slat_ir_emissivity"]
+                blind_mat.Back_Side_Slat_Infrared_Hemispherical_Emissivity = shading_params["slat_ir_emissivity"]
 
             # 3) If dynamic shading => create or reference a schedule
             #    For example, if we want a schedule that changes slat angle or availability:
