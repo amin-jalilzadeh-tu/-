@@ -126,7 +126,7 @@ def add_shading_objects(
                 blind_mat.Front_Side_Slat_Diffuse_Visible_Reflectance = shading_params["slat_diffuse_visible_reflectance"]
                 blind_mat.Back_Side_Slat_Diffuse_Visible_Reflectance = shading_params["slat_diffuse_visible_reflectance"]
             if "slat_ir_transmittance" in shading_params:
-                blind_mat.Slat_IR_Transmittance = shading_params["slat_ir_transmittance"]
+                blind_mat.Slat_Infrared_Hemispherical_Transmittance = shading_params["slat_ir_transmittance"]
             if "slat_ir_emissivity" in shading_params:
                 blind_mat.Front_Side_Slat_Infrared_Hemispherical_Emissivity = shading_params["slat_ir_emissivity"]
                 blind_mat.Back_Side_Slat_Infrared_Hemispherical_Emissivity = shading_params["slat_ir_emissivity"]
