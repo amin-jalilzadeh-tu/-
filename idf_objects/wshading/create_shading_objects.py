@@ -208,10 +208,22 @@ def add_shading_objects(
                         # the IDD is ``Blind_to_Glass_Distance``.
                         blind_mat.Blind_to_Glass_Distance = shading_params["blind_to_glass_distance"]
                     
-                    # E+ Field: Slat_Opening_Multiplier. Uses 'slat_opening_multiplier' from updated lookup/params.
-                    # Default to 0.5 if not found, which was in the IDF.
-                    slat_opening_mult = shading_params.get("slat_opening_multiplier", 0.5) 
-                    blind_mat.Slat_Opening_Multiplier = slat_opening_mult
+                    # E+ Fields: Blind Top/Bottom/Left/Right Opening Multipliers
+                    # These are optional and control the fractional openings at
+                    # each edge of the blind. Default values mirror the EnergyPlus
+                    # defaults used in the standalone example script.
+                    blind_mat.Blind_Top_Opening_Multiplier = shading_params.get(
+                        "blind_top_opening_multiplier", 0.5
+                    )
+                    blind_mat.Blind_Bottom_Opening_Multiplier = shading_params.get(
+                        "blind_bottom_opening_multiplier", 0.0
+                    )
+                    blind_mat.Blind_Left_Side_Opening_Multiplier = shading_params.get(
+                        "blind_left_side_opening_multiplier", 0.5
+                    )
+                    blind_mat.Blind_Right_Side_Opening_Multiplier = shading_params.get(
+                        "blind_right_side_opening_multiplier", 0.5
+                    )
                     
                     # Minimum_Output_Signal and Maximum_Output_Signal are not typically set directly unless complex control.
                     # The fields "Minimum Slat Angle" and "Maximum Slat Angle" are NOT part of WindowMaterial:Blind.
