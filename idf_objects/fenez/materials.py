@@ -157,13 +157,23 @@ def update_construction_materials(
 
     def create_opaque_material(idf_obj, mat_data, mat_name):
         """
-        Create a MATERIAL or MATERIAL:NOMASS in the IDF with the given name
-        and properties from mat_data. Returns the new object's name or None.
+        Create or update a MATERIAL or MATERIAL:NOMASS in the IDF with the
+        given name and properties from ``mat_data``.  Existing objects with the
+        same name are removed first to avoid EnergyPlus duplicate name errors.
+
+        Returns the new object's name or ``None``.
         """
         if not mat_data or "obj_type" not in mat_data:
             return None
 
         mat_type = mat_data["obj_type"].upper()
+
+        # Remove any existing object with this name first
+        if mat_type in ["MATERIAL", "MATERIAL:NOMASS"]:
+            for obj in idf_obj.idfobjects[mat_type]:
+                if obj.Name == mat_name:
+                    idf_obj.removeidfobject(obj)
+
         if mat_type == "MATERIAL":
             mat_obj = idf_obj.newidfobject("MATERIAL")
             mat_obj.Name = mat_name  # Use the exact name from the lookup/dict
@@ -198,6 +208,13 @@ def update_construction_materials(
             return None
 
         wtype = mat_data["obj_type"].upper()
+
+        # Remove existing object with this name first
+        if wtype in ["WINDOWMATERIAL:GLAZING", "WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM"]:
+            for obj in idf_obj.idfobjects[wtype]:
+                if obj.Name == mat_name:
+                    idf_obj.removeidfobject(obj)
+
         if wtype == "WINDOWMATERIAL:GLAZING":
             wmat = idf_obj.newidfobject("WINDOWMATERIAL:GLAZING")
             wmat.Name = mat_name
