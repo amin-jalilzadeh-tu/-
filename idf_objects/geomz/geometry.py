@@ -49,6 +49,17 @@ def polygon_area(poly):
         area += x[i] * y[j] - x[j] * y[i]
     return abs(area) / 2.0
 
+def polygon_area_signed(poly):
+    """Return signed area in XY plane (positive => CCW, negative => CW)."""
+    x = [p[0] for p in poly]
+    y = [p[1] for p in poly]
+    n = len(poly)
+    area = 0.0
+    for i in range(n):
+        j = (i + 1) % n
+        area += x[i] * y[j] - x[j] * y[i]
+    return area / 2.0
+
 def inward_offset_polygon(A, B, C, D, depth):
     """
     Inward offset of rectangle ABCD by depth, returning [A2,B2,C2,D2] or None if invalid.
