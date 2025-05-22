@@ -1,3 +1,2193 @@
+File: D:\Documents\E_Plus_2030_py\idf_objects\geomz
+============================================================
+Error reading file: [Errno 13] Permission denied: 'D:\\Documents\\E_Plus_2030_py\\idf_objects\\geomz'
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_objects\geomz\assign_geometry_values.py
+============================================================
+# geomz/assign_geometry_values.py
+
+import random
+from .geometry_lookup import geometry_lookup
+from .geometry_overrides_from_excel import pick_geom_params_from_rules
+
+
+def find_geom_overrides(building_id, building_type, user_config):
+    """
+    Returns any matching rows from user_config for the given building_id / building_type.
+    Each override can define:
+      - building_id (exact match, if provided)
+      - building_type (exact match, if provided)
+      - param_name in ["perimeter_depth", "has_core"]
+      - min_val, max_val (for numeric overrides)
+      - fixed_value (for boolean or "lock" numeric)
+    """
+    matches = []
+    for row in (user_config or []):
+        # Match building_id if specified
+        if "building_id" in row:
+            if row["building_id"] != building_id:
+                continue
+        # Match building_type if specified
+        if "building_type" in row:
+            if row["building_type"] != building_type:
+                continue
+        matches.append(row)
+    return matches
+
+
+def pick_val_with_range(
+    rng_tuple,
+    strategy="A",
+    log_dict=None,      # e.g. assigned_geom_log[bldg_id]
+    param_name=None
+):
+    """
+    rng_tuple = (min_val, max_val)
+    strategy  = "A" => midpoint
+                "B" => random uniform
+                else => pick min_val
+    log_dict  => dictionary for logging (if not None)
+    param_name=> e.g. "perimeter_depth"
+
+    We log both the range and the final chosen value:
+       log_dict["perimeter_depth_range"] = (2.0, 3.0)
+       log_dict["perimeter_depth"]       = 2.45
+    """
+    min_v, max_v = rng_tuple
+
+    if strategy == "A":         # midpoint
+        chosen = (min_v + max_v) / 2.0
+    elif strategy == "B":       # random uniform
+        chosen = random.uniform(min_v, max_v)
+    else:
+        chosen = min_v          # fallback => min
+
+    if log_dict is not None and param_name is not None:
+        log_dict[f"{param_name}_range"] = (min_v, max_v)
+        log_dict[param_name] = chosen
+
+    return chosen
+
+
+def assign_geometry_values(
+    building_row,
+    calibration_stage="pre_calibration",
+    strategy="A",
+    random_seed=None,
+    user_config=None,         # optional list of partial overrides from JSON
+    assigned_geom_log=None,   # dictionary for logging
+    excel_rules=None          # optional excel-based geometry rules
+):
+    """
+    1) Identify building_function => "residential" or "non_residential".
+    2) Identify sub-type => read "residential_type" or "non_residential_type".
+    3) Start from geometry_lookup[ building_function ][ sub_type ][ calibration_stage ] => param_dict
+       e.g. { "perimeter_depth_range": (2.0,3.0), "has_core": False }
+    4) If excel_rules => override further (pick_geom_params_from_rules(...)).
+    5) If user_config => partial override for "perimeter_depth" or "has_core".
+       - If param_name="perimeter_depth" with min_val & max_val => update perimeter_depth_range.
+         If "fixed_value":true => interpret it as (min_val, min_val) => no randomness.
+       - If param_name="has_core" and fixed_value => set has_core = that boolean
+    6) We pick final perimeter_depth using pick_val_with_range(...).
+    7) Return a dictionary => {"perimeter_depth": X, "has_core": Y}.
+    8) Log final picks (and numeric range) in assigned_geom_log if provided.
+    """
+
+    # optional reproducibility
+    if random_seed is not None:
+        random.seed(random_seed)
+
+    bldg_id        = building_row.get("ogc_fid", 0)
+    bldg_function  = building_row.get("building_function", "residential").lower()
+    area           = building_row.get("area", 100.0)
+    perimeter      = building_row.get("perimeter", 40.0)
+
+    # 1) get sub-type
+    if bldg_function == "residential":
+        sub_type = building_row.get("residential_type", "Two-and-a-half-story House")
+        dict_for_function = geometry_lookup.get("residential", {}).get(sub_type, {})
+    else:
+        sub_type = building_row.get("non_residential_type", "Office Function")
+        dict_for_function = geometry_lookup.get("non_residential", {}).get(sub_type, {})
+
+    # 2) if calibration_stage not found => fallback
+    if calibration_stage not in dict_for_function:
+        param_dict = {
+            "perimeter_depth_range": (2.0, 3.0),
+            "has_core": False
+        }
+    else:
+        param_dict = dict_for_function[calibration_stage]
+
+    # Start with these defaults
+    perimeter_depth_range = param_dict.get("perimeter_depth_range", (2.0, 3.0))
+    has_core_default      = param_dict.get("has_core", False)
+
+    # 3) If excel_rules => apply
+    if excel_rules:
+        rule_result = pick_geom_params_from_rules(
+            building_function=bldg_function,
+            building_type=sub_type,
+            area=area,
+            perimeter=perimeter,
+            all_rules=excel_rules,
+            calibration_stage=calibration_stage
+        )
+        if rule_result:
+            perimeter_depth_range = rule_result["perimeter_depth_range"]
+            core_val = rule_result["has_core_override"]
+            if core_val is not None:
+                has_core_default = core_val
+
+    # 4) Check user_config partial overrides
+    matched_rows = []
+    if user_config:
+        matched_rows = find_geom_overrides(bldg_id, sub_type, user_config)
+
+    for row in matched_rows:
+        pname = row.get("param_name", "")
+        if pname == "perimeter_depth":
+            mn = row.get("min_val")
+            mx = row.get("max_val")
+            if mn is not None and mx is not None:
+                # If "fixed_value": true => make it (mn, mn)
+                if row.get("fixed_value") is True:
+                    perimeter_depth_range = (mn, mn)
+                else:
+                    perimeter_depth_range = (mn, mx)
+
+        elif pname == "has_core":
+            val = row.get("fixed_value")
+            if val is not None:
+                has_core_default = bool(val)
+
+    # 5) Logging dict
+    if assigned_geom_log is not None and bldg_id not in assigned_geom_log:
+        assigned_geom_log[bldg_id] = {}
+    log_dict = assigned_geom_log[bldg_id] if assigned_geom_log and bldg_id else None
+
+    # 6) Pick final perimeter_depth
+    perimeter_depth = pick_val_with_range(
+        rng_tuple=perimeter_depth_range,
+        strategy=strategy,
+        log_dict=log_dict,
+        param_name="perimeter_depth"
+    )
+
+    # 7) has_core => store directly
+    if log_dict is not None:
+        log_dict["has_core"] = has_core_default
+
+    # 8) Return final dictionary
+    result = {
+        "perimeter_depth": perimeter_depth,
+        "has_core": has_core_default
+    }
+    return result
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_objects\geomz\building.py
+============================================================
+# geomz/building.py
+
+from .assign_geometry_values import assign_geometry_values
+from .geometry import compute_dimensions_from_area_perimeter, create_building_base_polygon
+from .zoning import create_zones_with_perimeter_depth, link_surfaces
+import math
+import pandas as pd
+
+def create_building_with_roof_type(
+    idf,
+    area,
+    perimeter,
+    orientation,
+    building_row,
+    edge_types,
+    wall_height=None,
+    roof_slope_axis='length',
+    ridge_position=0.5,
+    calibration_stage="pre_calibration",
+    strategy="A",
+    random_seed=None,
+    user_config=None,
+    assigned_geom_log=None,
+    excel_rules=None
+):
+    """
+    Create building geometry in the IDF, multi-floor, optionally perimeter+core.
+    Now includes logic to link each new floor's Floor to the old floor's Ceiling.
+    """
+
+     # --------------------------------------------------------------------
+    # 1) Safely read gem_hoogte (float) and num_floors (int), with defaults
+    # --------------------------------------------------------------------
+    raw_hoogte = building_row.get("gem_hoogte", 3)  # default 3
+    if pd.isna(raw_hoogte) or raw_hoogte is None:
+        gem_hoogte = 3.0
+    else:
+        try:
+            gem_hoogte = float(raw_hoogte)
+        except ValueError:
+            # In case it's a weird string
+            gem_hoogte = 3.0
+
+    # Safely get num_floors as an int
+    raw_floors = building_row.get("gem_bouwlagen", 1)  # default 1
+    if pd.isna(raw_floors) or raw_floors is None:
+        num_floors = 1
+    else:
+        try:
+            # Round or floor/ceil as needed
+            num_floors = int(round(float(raw_floors)))
+        except ValueError:
+            # In case it's a weird string
+            num_floors = 1
+
+    # Guard against zero or negative floors
+    if num_floors < 1:
+        num_floors = 1
+
+
+
+
+
+
+    # ------------------------------------------------
+    # Approach A: Reconcile total height & floors
+    # ------------------------------------------------
+    bldg_func = building_row.get("building_function", "").lower()
+
+    # Decide typical min/max floor heights per function
+    if "residential" in bldg_func:
+        typical_floor_height_min = 2.5
+        typical_floor_height_max = 4.0
+    else:
+        # e.g. non-res might allow taller floors
+        typical_floor_height_min = 3.0
+        typical_floor_height_max = 6.0
+
+    # implied floor height
+    implied_floor_height = gem_hoogte / num_floors
+
+    # If each floor is taller than max => increase floors
+    if implied_floor_height > typical_floor_height_max:
+        new_floors = int(round(gem_hoogte / typical_floor_height_max))
+        if new_floors < 1:
+            new_floors = 1
+        num_floors = new_floors
+
+    # Recompute after possible update above
+    implied_floor_height = gem_hoogte / num_floors
+
+    # If each floor is shorter than min => reduce floors (only if floors>1)
+    if implied_floor_height < typical_floor_height_min and num_floors > 1:
+        new_floors = int(round(gem_hoogte / typical_floor_height_min))
+        if new_floors < 1:
+            new_floors = 1
+        num_floors = new_floors
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    if wall_height is None:
+        if gem_hoogte is not None:
+            total_height = gem_hoogte
+        else:
+            total_height = 3.0 * num_floors
+        wall_height = total_height / num_floors
+
+    # 2) Determine geometry parameters (perimeter_depth, has_core) from dictionary + overrides
+    geom_params = assign_geometry_values(
+        building_row=building_row,
+        calibration_stage=calibration_stage,
+        strategy=strategy,
+        random_seed=random_seed,
+        user_config=user_config,
+        assigned_geom_log=assigned_geom_log,
+        excel_rules=excel_rules
+    )
+    perimeter_depth = geom_params["perimeter_depth"]
+    has_core = geom_params["has_core"]
+
+    # 3) Rectangle dimensions from area & perimeter
+    width, length = compute_dimensions_from_area_perimeter(area, perimeter)
+
+    # 4) Create base polygon for ground floor
+    A0, B0, C0, D0 = create_building_base_polygon(width, length, orientation)
+    base_poly_0 = [A0, B0, C0, D0]
+
+    # 5) Create each floor in a loop
+    floors_zones = {}
+    current_base_poly = base_poly_0
+
+    prev_floor_zones = None  # Will store the zone surfaces from the previous floor
+    for floor_i in range(1, num_floors + 1):
+        # "Ground" for 1st floor, else "Internal"
+        floor_type = "Ground" if floor_i == 1 else "Internal"
+        is_top_floor = (floor_i == num_floors)
+
+        # Create zones for this floor (could be single or perimeter+core)
+        zones_data = create_zones_with_perimeter_depth(
+            idf=idf,
+            floor_i=floor_i,
+            base_poly=current_base_poly,
+            wall_height=wall_height,
+            edge_types=edge_types,
+            perimeter_depth=perimeter_depth,
+            floor_type=floor_type,
+            has_core=has_core,
+            is_top_floor=is_top_floor
+        )
+        floors_zones[floor_i] = zones_data
+
+        # -------------------------------------------------------
+        #  LINK THIS FLOOR’S "FLOOR" SURFACES TO PREV FLOOR’S "CEILING" SURFACES
+        # -------------------------------------------------------
+        if floor_i > 1 and prev_floor_zones:
+            # We'll do a basic approach: match zone names in sorted order
+            old_zone_names = sorted(prev_floor_zones.keys())
+            new_zone_names = sorted(zones_data.keys())
+
+            for oz, nz in zip(old_zone_names, new_zone_names):
+                old_zone_surfs = prev_floor_zones[oz][3]  # (bpoly, tpoly, surf_list) => index 3
+                new_zone_surfs = zones_data[nz][3]
+
+                # find the "Ceiling" in old zone
+                old_ceiling = None
+                for srf in old_zone_surfs:
+                    if srf.Name.endswith("_Ceiling") or srf.Name.endswith("_Roof"):
+                        # If the old floor was not top floor, we expect a "Ceiling"
+                        # If the old floor was top floor (?), it might be a "Roof" -- but typically that wouldn't stack
+                        old_ceiling = srf
+                        break
+
+                # find the "Floor" in new zone
+                new_floor = new_zone_surfs[0]  # typically index=0 is the Floor object from create_zone_surfaces
+
+                # If found both, link them (interzone conduction)
+                if old_ceiling and new_floor:
+                    link_surfaces(new_floor, old_ceiling)
+
+        prev_floor_zones = zones_data
+
+        # shift the base polygon upward by wall_height for the next floor
+        current_base_poly = [(p[0], p[1], p[2] + wall_height) for p in current_base_poly]
+
+    # (Optional) if you want to add pitched roof logic, do it after the top floor is created
+    return floors_zones
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_objects\geomz\geometry.py
+============================================================
+import math
+from math import sqrt, radians, cos, sin
+
+def rotate_point(px, py, pz, orientation_rad):
+    x_new = cos(orientation_rad) * px - sin(orientation_rad) * py
+    y_new = sin(orientation_rad) * px + cos(orientation_rad) * py
+    return (x_new, y_new, pz)
+
+def compute_dimensions_from_area_perimeter(area, perimeter):
+    """
+    Solve for width (w) and length (l) using area (A) and perimeter (P):
+      w = A / (P/4)
+      l = A / w
+    """
+    if perimeter <= 0:
+        raise ValueError("Perimeter must be positive.")
+    if area <= 0:
+        raise ValueError("Area must be positive.")
+    width = area / (perimeter / 4.0)
+    length = area / width
+    return width, length
+
+def create_building_base_polygon(width, length, orientation):
+    """
+    Return 4 points in XY plane for a rectangle, rotate them by orientation degrees.
+    """
+    A = (0, 0, 0)
+    B = (width, 0, 0)
+    C = (width, length, 0)
+    D = (0, length, 0)
+
+    if orientation != 0:
+        orientation_rad = radians(orientation)
+        A = rotate_point(*A, orientation_rad)
+        B = rotate_point(*B, orientation_rad)
+        C = rotate_point(*C, orientation_rad)
+        D = rotate_point(*D, orientation_rad)
+
+    return A, B, C, D
+
+def polygon_area(poly):
+    """Compute area in XY plane via Shoelace formula."""
+    x = [p[0] for p in poly]
+    y = [p[1] for p in poly]
+    n = len(poly)
+    area = 0.0
+    for i in range(n):
+        j = (i + 1) % n
+        area += x[i] * y[j] - x[j] * y[i]
+    return abs(area) / 2.0
+
+def polygon_area_signed(poly):
+    """Return signed area in XY plane (positive => CCW, negative => CW)."""
+    x = [p[0] for p in poly]
+    y = [p[1] for p in poly]
+    n = len(poly)
+    area = 0.0
+    for i in range(n):
+        j = (i + 1) % n
+        area += x[i] * y[j] - x[j] * y[i]
+    return area / 2.0
+
+def inward_offset_polygon(A, B, C, D, depth):
+    """
+    Inward offset of rectangle ABCD by depth, returning [A2,B2,C2,D2] or None if invalid.
+    """
+    def edge_offset(P1, P2, dist):
+        vx = P2[0] - P1[0]
+        vy = P2[1] - P1[1]
+        length = sqrt(vx*vx + vy*vy)
+        nx = -vy / length
+        ny = vx / length
+        return [
+            (P1[0] + nx*dist, P1[1] + ny*dist, P1[2]),
+            (P2[0] + nx*dist, P2[1] + ny*dist, P2[2])
+        ]
+
+    def line_intersect(p1, p2, p3, p4):
+        x1, y1 = p1[0], p1[1]
+        x2, y2 = p2[0], p2[1]
+        x3, y3 = p3[0], p3[1]
+        x4, y4 = p4[0], p4[1]
+        denom = (y4 - y3)*(x2 - x1) - (x4 - x3)*(y2 - y1)
+        if abs(denom) < 1e-12:
+            return None
+        ua = ((x4 - x3)*(y1 - y3) - (y4 - y3)*(x1 - x3)) / denom
+        X = x1 + ua*(x2 - x1)
+        Y = y1 + ua*(y2 - y1)
+        return (X, Y, p1[2])
+
+    front_line = edge_offset(A, B, depth)
+    right_line = edge_offset(B, C, depth)
+    rear_line = edge_offset(C, D, depth)
+    left_line = edge_offset(D, A, depth)
+
+    A2 = line_intersect(front_line[0], front_line[1], left_line[0], left_line[1])
+    B2 = line_intersect(front_line[0], front_line[1], right_line[0], right_line[1])
+    C2 = line_intersect(rear_line[0], rear_line[1], right_line[0], right_line[1])
+    D2 = line_intersect(rear_line[0], rear_line[1], left_line[0], left_line[1])
+
+    if A2 and B2 and C2 and D2:
+        return [A2, B2, C2, D2]
+    else:
+        return None
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_objects\geomz\zoning.py
+============================================================
+# D:\Documents\E_Plus_2030_py\geomz\zoning.py
+# --------------------------------------------------------------------------
+# This module handles the creation of zones (perimeter + core or single)
+# for each floor in a building, plus optional interzone linking. 
+# --------------------------------------------------------------------------
+
+from .geometry import polygon_area, polygon_area_signed, inward_offset_polygon
+
+def link_surfaces(surface_a, surface_b):
+    """
+    Cross-link two surfaces as interzone partitions:
+      1) Both Outside_Boundary_Condition = "Surface"
+      2) Each references the other's name
+
+    This is used for:
+      - Perimeter zone to core zone partitions
+      - Floor-to-ceiling linking between stories (in building.py)
+    """
+    surface_a.Outside_Boundary_Condition = "Surface"
+    surface_b.Outside_Boundary_Condition = "Surface"
+    surface_a.Outside_Boundary_Condition_Object = surface_b.Name
+    surface_b.Outside_Boundary_Condition_Object = surface_a.Name
+
+
+def create_zone_surfaces(
+    idf,
+    zone_name,
+    base_poly,
+    wall_height,
+    floor_bc,
+    wall_bcs,
+    is_top_floor
+):
+    """
+    Create a rectangular zone (Floor, 4 Walls, and a Roof or Ceiling).
+
+    Parameters
+    ----------
+    idf : geomeppy.IDF
+        The IDF to which we add surfaces.
+    zone_name : str
+        Name of the new Zone object (e.g. "Zone1", "Zone2_Core", etc.).
+    base_poly : list of (x,y,z)
+        4 corner points (in order) for the zone’s base polygon.
+    wall_height : float
+        Height of the walls for this floor (e.g. 2.5 m).
+    floor_bc : str
+        Boundary Condition for the floor (e.g. "Ground", "Adiabatic", "Outdoors").
+    wall_bcs : list of str or dict
+        4 items for the wall boundary conditions (one per edge).
+        If a dict, e.g. {"bc": "Surface", "adj_surf_name": "..."},
+        we can store info for cross-linking. If just a string, e.g. "Outdoors" or "Adiabatic".
+    is_top_floor : bool
+        If True => create a roof with Outdoors, else => a ceiling with "Adiabatic" (or a placeholder
+        that can later be changed to "Surface" if linking to the floor above).
+
+    Returns
+    -------
+    (zone_name, base_poly, top_poly, created_surfaces)
+      zone_name        : str
+      base_poly        : list of points (x,y,z) for the floor polygon
+      top_poly         : list of points (x,y,z) for the upper polygon (floor + wall_height)
+      created_surfaces : list of BUILDINGSURFACE:DETAILED objects created
+    """
+    zone = idf.newidfobject("ZONE")
+    zone.Name = zone_name
+
+    created_surfaces = []
+
+    # ===== Floor =====
+    floor_surf = idf.newidfobject("BUILDINGSURFACE:DETAILED")
+    floor_surf.Name = f"{zone_name}_Floor"
+    floor_surf.Surface_Type = "Floor"
+    floor_surf.Zone_Name = zone_name
+    floor_surf.Outside_Boundary_Condition = floor_bc
+
+    # If we have "Outdoors", we set SunExposed, WindExposed; else NoSun/NoWind
+    if floor_bc.lower() == "outdoors":
+        floor_surf.Sun_Exposure = "SunExposed"
+        floor_surf.Wind_Exposure = "WindExposed"
+    else:
+        floor_surf.Sun_Exposure = "NoSun"
+        floor_surf.Wind_Exposure = "NoWind"
+
+    # Ensure floor normal faces downward (Tilt ~180)
+    from .geometry import polygon_area_signed
+    if polygon_area_signed(base_poly) > 0:
+        floor_coords = base_poly[::-1]
+    else:
+        floor_coords = base_poly
+    floor_surf.setcoords(floor_coords)
+    created_surfaces.append(floor_surf)
+
+    # ===== Walls =====
+    # The top polygon is base_poly + wall_height in Z
+    top_poly = [(p[0], p[1], p[2] + wall_height) for p in base_poly]
+    if polygon_area_signed(base_poly) < 0:
+        top_poly_for_roof = top_poly[::-1]
+    else:
+        top_poly_for_roof = top_poly
+    for i in range(4):
+        p1 = base_poly[i]
+        p2 = base_poly[(i + 1) % 4]
+        p1t = top_poly[i]
+        p2t = top_poly[(i + 1) % 4]
+
+        wall_coords = [p1, p2, p2t, p1t]
+        wall_obj = idf.newidfobject("BUILDINGSURFACE:DETAILED")
+        wall_obj.Name = f"{zone_name}_Wall_{i}"
+        wall_obj.Surface_Type = "Wall"
+        wall_obj.Zone_Name = zone_name
+
+        bc_info = wall_bcs[i]
+        if isinstance(bc_info, dict):
+            # If bc_info is a dict => can specify 'bc' and optionally 'adj_surf_name'
+            bc_str = bc_info.get("bc", "Adiabatic")
+            wall_obj.Outside_Boundary_Condition = bc_str
+            if bc_str.lower() == "outdoors":
+                wall_obj.Sun_Exposure = "SunExposed"
+                wall_obj.Wind_Exposure = "WindExposed"
+            else:
+                wall_obj.Sun_Exposure = "NoSun"
+                wall_obj.Wind_Exposure = "NoWind"
+
+            # If "Surface", optionally set the adjacent surface name
+            if bc_str.lower() == "surface":
+                adj_name = bc_info.get("adj_surf_name", "")
+                wall_obj.Outside_Boundary_Condition_Object = adj_name
+        else:
+            # bc_info is just a string
+            wall_obj.Outside_Boundary_Condition = bc_info
+            if bc_info.lower() == "outdoors":
+                wall_obj.Sun_Exposure = "SunExposed"
+                wall_obj.Wind_Exposure = "WindExposed"
+            else:
+                wall_obj.Sun_Exposure = "NoSun"
+                wall_obj.Wind_Exposure = "NoWind"
+
+        wall_obj.setcoords(wall_coords)
+        created_surfaces.append(wall_obj)
+
+    # ===== Ceiling or Roof =====
+    if is_top_floor:
+        # For top floors, we create a roof surface with "Outdoors"
+        top_surf = idf.newidfobject("BUILDINGSURFACE:DETAILED")
+        top_surf.Name = f"{zone_name}_Roof"
+        top_surf.Surface_Type = "Roof"
+        top_surf.Zone_Name = zone_name
+        top_surf.Outside_Boundary_Condition = "Outdoors"
+        top_surf.Sun_Exposure = "SunExposed"
+        top_surf.Wind_Exposure = "WindExposed"
+        top_surf.setcoords(top_poly_for_roof)
+        created_surfaces.append(top_surf)
+    else:
+        # For intermediate floors, we typically do "Ceiling" with "Adiabatic"
+        # so it can be changed to "Surface" if we link it to the floor above.
+        top_surf = idf.newidfobject("BUILDINGSURFACE:DETAILED")
+        top_surf.Name = f"{zone_name}_Ceiling"
+        top_surf.Surface_Type = "Ceiling"
+        top_surf.Zone_Name = zone_name
+        top_surf.Outside_Boundary_Condition = "Adiabatic"
+        top_surf.Sun_Exposure = "NoSun"
+        top_surf.Wind_Exposure = "NoWind"
+        top_surf.setcoords(top_poly_for_roof)
+        created_surfaces.append(top_surf)
+
+    # Return a 4-tuple: (zone_name, base_poly, top_poly, created_surfaces)
+    return (zone_name, base_poly, top_poly, created_surfaces)
+
+
+def create_zones_with_perimeter_depth(
+    idf,
+    floor_i,
+    base_poly,
+    wall_height,
+    edge_types,
+    perimeter_depth,
+    floor_type,
+    has_core,
+    is_top_floor
+):
+    """
+    Create multiple zones (4 perimeter + 1 core) or a single zone if no core.
+    Then explicitly cross-link perimeter-to-core surfaces.
+
+    Returns
+    -------
+    dict : { zone_name => (zname, bpoly, tpoly, list_of_surfaces) }
+
+    Explanation:
+      - "floor_type" can be "Ground" for the 1st floor (so floor BC="Ground"), or "Internal" for higher floors (so floor BC="Adiabatic" initially).
+      - "edge_types" might be ["facade", "shared", ...], each mapping to "Outdoors" or "Adiabatic".
+      - "has_core" => if True, we do perimeter+core. Otherwise, a single zone.
+
+    The final dict has keys = zone_name ("Zone1", "Zone1_Core", etc.),
+    each mapping to a tuple of 4 items: (zname, base_poly, top_poly, surfs_list).
+    That means index [3] is the list of surfaces, so we can do zone_data[zname][3]
+    in building.py.
+    """
+    def edge_to_bc(e):
+        """
+        Convert textual edge label to an EnergyPlus BC string:
+          - "facade" => "Outdoors"
+          - "shared" => "Adiabatic"
+          - anything else => "Outdoors"
+        """
+        e_lower = e.lower().strip()
+        if e_lower == "facade":
+            return "Outdoors"
+        elif e_lower == "shared":
+            return "Adiabatic"
+        else:
+            return "Outdoors"
+
+    zone_data = {}
+
+    # Decide the floor boundary condition
+    if floor_type.lower() == "ground":
+        floor_bc = "Ground"
+    else:
+        # For intermediate floors, we temporarily set "Adiabatic"
+        # The code in building.py can link surfaces for multi-story conduction.
+        floor_bc = "Adiabatic"
+
+    # Try to offset the polygon inward for a core
+    A, B, C, D = base_poly
+    inner_poly = None
+    if has_core:
+        inner_poly = inward_offset_polygon(A, B, C, D, perimeter_depth)
+        if inner_poly:
+            A2, B2, C2, D2 = inner_poly
+            # Check if that offset polygon is large enough
+            if polygon_area([A2, B2, C2, D2]) < 1e-3:
+                inner_poly = None  # not valid => discard
+
+    # ================= Single-Zone Case =================
+    if not inner_poly:
+        # Means no valid core => only one zone
+        wall_bcs = [edge_to_bc(e) for e in edge_types]
+        zname, bpoly, tpoly, surfs = create_zone_surfaces(
+            idf,
+            f"Zone{floor_i}",
+            base_poly,
+            wall_height,
+            floor_bc,
+            wall_bcs,
+            is_top_floor
+        )
+        # Store 4 items => so we can do zone_data[zname][3] = surfaces later
+        zone_data[zname] = (zname, bpoly, tpoly, surfs)
+        return zone_data
+
+    # ================= Perimeter + Core Case =================
+    A2, B2, C2, D2 = inner_poly
+
+    # We'll create 4 perimeter zones + 1 core zone
+
+    # 1) Front perimeter
+    front_bc = edge_to_bc(edge_types[0])
+    front_base = [A, B, B2, A2]
+    # We define the perimeter->core edge as the 3rd wall => "Surface"
+    front_walls = [front_bc, "Adiabatic", "Surface", "Adiabatic"]
+    zf, fbpoly, ftpoly, fsurfs = create_zone_surfaces(
+        idf,
+        f"Zone{floor_i}_FrontPerimeter",
+        front_base,
+        wall_height,
+        floor_bc,
+        front_walls,
+        is_top_floor
+    )
+    zone_data[zf] = (zf, fbpoly, ftpoly, fsurfs)
+
+    # 2) Right perimeter
+    right_bc = edge_to_bc(edge_types[1])
+    right_base = [B, C, C2, B2]
+    right_walls = [right_bc, "Adiabatic", "Surface", "Adiabatic"]
+    zr, rbpoly, rtpoly, rsurfs = create_zone_surfaces(
+        idf,
+        f"Zone{floor_i}_RightPerimeter",
+        right_base,
+        wall_height,
+        floor_bc,
+        right_walls,
+        is_top_floor
+    )
+    zone_data[zr] = (zr, rbpoly, rtpoly, rsurfs)
+
+    # 3) Rear perimeter
+    rear_bc = edge_to_bc(edge_types[2])
+    rear_base = [C, D, D2, C2]
+    rear_walls = [rear_bc, "Adiabatic", "Surface", "Adiabatic"]
+    zre, rebpoly, retpoly, resurfs = create_zone_surfaces(
+        idf,
+        f"Zone{floor_i}_RearPerimeter",
+        rear_base,
+        wall_height,
+        floor_bc,
+        rear_walls,
+        is_top_floor
+    )
+    zone_data[zre] = (zre, rebpoly, retpoly, resurfs)
+
+    # 4) Left perimeter
+    left_bc = edge_to_bc(edge_types[3])
+    left_base = [D, A, A2, D2]
+    left_walls = [left_bc, "Adiabatic", "Surface", "Adiabatic"]
+    zl, lbpoly, ltpoly, lsurfs = create_zone_surfaces(
+        idf,
+        f"Zone{floor_i}_LeftPerimeter",
+        left_base,
+        wall_height,
+        floor_bc,
+        left_walls,
+        is_top_floor
+    )
+    zone_data[zl] = (zl, lbpoly, ltpoly, lsurfs)
+
+    # 5) Core
+    #
+    # Use the inner polygon with the same order so we can map walls directly
+    core_poly = [A2, B2, C2, D2]
+    # All edges => "Surface" bc
+    core_bc = ["Surface", "Surface", "Surface", "Surface"]
+    zc, cbpoly, ctpoly, csurfs = create_zone_surfaces(
+        idf,
+        f"Zone{floor_i}_Core",
+        core_poly,
+        wall_height,
+        floor_bc,
+        core_bc,
+        is_top_floor
+    )
+    zone_data[zc] = (zc, cbpoly, ctpoly, csurfs)
+
+    # ===================== Cross-Linking Perimeter->Core =====================
+    #
+    # We assume:
+    #  - The perimeter zone "Wall_2" (index=2 => array position=3 in the surfaces array) 
+    #    is the interior partition to the core.
+    #  - The matching core zone side is "Wall_x", using the same polygon order so
+    #    each shared edge has opposite orientation.
+
+    def get_wall(surfs, wall_idx):
+        """
+        For surfs array: 
+          index 0 => Floor, 
+          index 1..4 => Walls, 
+          index 5 => Ceiling/Roof
+        So the perimeter interior wall (index=2) => surfs[1+2] => surfs[3].
+        """
+        return surfs[1 + wall_idx]
+
+    # front perimeter interior => index=2 => surfs[3]
+    front_interior = get_wall(fsurfs, 2)
+    right_interior = get_wall(rsurfs, 2)
+    rear_interior  = get_wall(resurfs, 2)
+    left_interior  = get_wall(lsurfs, 2)
+
+    # Map each perimeter interior wall to the opposing core wall
+    #   - front perimeter => core wall_0
+    #   - right perimeter => core wall_1
+    #   - rear perimeter  => core wall_2
+    #   - left perimeter  => core wall_3
+    core_wall_front = get_wall(csurfs, 0)
+    core_wall_right = get_wall(csurfs, 1)
+    core_wall_rear  = get_wall(csurfs, 2)
+    core_wall_left  = get_wall(csurfs, 3)
+
+    link_surfaces(front_interior, core_wall_front)
+    link_surfaces(right_interior, core_wall_right)
+    link_surfaces(rear_interior, core_wall_rear)
+    link_surfaces(left_interior, core_wall_left)
+
+    return zone_data
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_objects\fenez\assign_fenestration_values.py
+============================================================
+"""
+assign_fenestration_values.py
+
+Provides a function to determine the final WWR (window-to-wall ratio)
+for a given building, referencing a final fenestration dictionary
+that already includes Excel + JSON overrides.
+
+Usage Example:
+    final_wwr, wwr_range_used = assign_fenestration_parameters(
+        building_row=row,
+        scenario="scenario1",
+        calibration_stage="pre_calibration",
+        strategy="B",
+        random_seed=42,
+        res_data=updated_res_data,
+        nonres_data=updated_nonres_data,
+        use_computed_wwr=False,
+        include_doors_in_wwr=False
+    )
+"""
+
+import random
+from .materials_config import compute_wwr
+
+def assign_fenestration_parameters(
+    building_row,
+    scenario="scenario1",
+    calibration_stage="pre_calibration",
+    strategy="B",
+    random_seed=None,
+    res_data=None,
+    nonres_data=None,
+    use_computed_wwr=False,
+    include_doors_in_wwr=False
+):
+    """
+    Determine the final WWR for this building. If use_computed_wwr=False,
+    we look up a wwr_range from the final dictionaries and pick a value
+    (randomly or midpoint, depending on 'strategy').
+
+    If use_computed_wwr=True, we compute the ratio from sub-element areas
+    (windows, doors if include_doors_in_wwr=True) vs. external_wall area.
+
+    Parameters
+    ----------
+    building_row : dict or pandas.Series
+        Must have building_function, age_range, possibly building_type, etc.
+    scenario : str
+        e.g. "scenario1"
+    calibration_stage : str
+        e.g. "pre_calibration"
+    strategy : str
+        "A" => pick midpoint from the wwr_range
+        "B" => pick random uniform in the wwr_range
+        ...
+    random_seed : int
+        For reproducible random picks if strategy="B".
+    res_data, nonres_data : dict
+        Final fenestration dictionaries that incorporate Excel & user JSON overrides.
+        Each key in these dicts is (bldg_type, age_range, scenario, calibration_stage).
+    use_computed_wwr : bool
+        If True, compute WWR by summing sub-element areas (windows, doors if
+        include_doors_in_wwr=True) vs. external_wall area from the data dicts.
+    include_doors_in_wwr : bool
+        If True, add door area to the fenestration area when computing WWR.
+
+    Returns
+    -------
+    (final_wwr, wwr_range_used) : (float, tuple or None)
+        The numeric WWR (0.0–1.0) and the range that was used (or None if computed).
+    """
+    if random_seed is not None:
+        random.seed(random_seed)
+
+    # A) Determine if building is residential or non_residential
+    bldg_func = str(building_row.get("building_function", "residential")).lower()
+    if bldg_func == "residential":
+        fenez_dict = res_data
+        bldg_type  = str(building_row.get("residential_type", "")).strip()
+    else:
+        fenez_dict = nonres_data
+        bldg_type  = str(building_row.get("non_residential_type", "")).strip()
+
+    age_range = str(building_row.get("age_range", "2015 and later"))
+    scen = str(scenario)
+    stage = str(calibration_stage)
+
+    dict_key = (bldg_type, age_range, scen, stage)
+
+    # B) If the user wants to compute WWR from sub-element areas
+    if use_computed_wwr:
+        # We can attempt to see if sub-element data exists in the dictionary,
+        # or we can compute from the building_row if it has area columns.
+        if not fenez_dict or dict_key not in fenez_dict:
+            # fallback => compute from building_row if possible
+            computed_val = compute_wwr_from_row(building_row, include_doors_in_wwr)
+            return computed_val, None
+
+        # If the dict_key is found, it might have an "elements" subdict
+        entry = fenez_dict[dict_key]
+        elements_subdict = entry.get("elements", {})
+        final_wwr = compute_wwr(elements_subdict, include_doors=include_doors_in_wwr)
+        return final_wwr, None
+
+    # C) If not computing from sub-elements, then we pick from wwr_range
+    if not fenez_dict or dict_key not in fenez_dict:
+        # fallback => wwr=0.3, range=(0.3,0.3)
+        return 0.30, (0.30, 0.30)
+
+    entry = fenez_dict[dict_key]
+    wwr_range = entry.get("wwr_range", (0.2, 0.3))
+
+    min_v, max_v = wwr_range
+    if min_v == max_v:
+        final_wwr = min_v
+    else:
+        if strategy == "B":
+            final_wwr = random.uniform(min_v, max_v)
+        else:
+            # strategy="A" => midpoint by default
+            final_wwr = (min_v + max_v) / 2.0
+
+    return final_wwr, wwr_range
+
+
+def compute_wwr_from_row(building_row, include_doors_in_wwr=False):
+    """
+    Alternate fallback if you want to directly read building_row
+    to compute the ratio of window_area / external_wall_area,
+    including door_area if flagged.
+
+    Returns a float WWR in [0,1].
+    """
+    # Example usage if your building_row has columns:
+    # 'window_area_m2', 'exterior_wall_area_m2', 'door_area_m2'
+    ext_wall_area = building_row.get("exterior_wall_area_m2", 100.0)
+    if ext_wall_area <= 0:
+        return 0.0
+
+    window_area = building_row.get("window_area_m2", 0.0)
+    if include_doors_in_wwr:
+        door_area = building_row.get("door_area_m2", 0.0)
+        window_area += door_area
+
+    return window_area / ext_wall_area
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_objects\fenez\fenestration.py
+============================================================
+"""
+fenestration.py
+
+Handles the creation or updating of fenestration (windows, etc.) in a geomeppy IDF.
+It references final fenestration dictionaries (res_data, nonres_data) that
+already incorporate Excel + user JSON overrides.
+
+Key function: add_fenestration(...)
+"""
+
+import pandas as pd
+from geomeppy import IDF as GeppyIDF
+from .assign_fenestration_values import assign_fenestration_parameters
+
+
+def add_fenestration(
+    idf,
+    building_row,
+    scenario="scenario1",
+    calibration_stage="pre_calibration",
+    strategy="B",
+    random_seed=None,
+    res_data=None,
+    nonres_data=None,
+    assigned_fenez_log=None,
+    use_computed_wwr=False,
+    include_doors_in_wwr=False
+):
+    """
+    Adds fenestration to the given IDF for the specified building_row.
+
+    Steps:
+      1) Determine building function => use 'res_data' or 'nonres_data'.
+      2) Call 'assign_fenestration_parameters(...)' to get final WWR or computed WWR.
+      3) Remove existing fenestration surfaces (FENESTRATIONSURFACE:DETAILED).
+      4) Use geomeppy 'idf.set_wwr(...)' to add windows with the final WWR.
+         By default, references a construction "Window1C" (ensure it exists in materials).
+      5) Log picks & new fenestration object names in 'assigned_fenez_log' if provided.
+
+    Parameters
+    ----------
+    idf : geomeppy.IDF
+        The IDF to modify.
+    building_row : dict or Series
+        Contains building attributes like ogc_fid, building_function, age_range, orientation, etc.
+    scenario, calibration_stage, strategy : str
+        For passing to the assignment logic or logging.
+    random_seed : int
+        For reproducible random picks in the WWR range.
+    res_data : dict
+        Final fenestration dictionary for residential (Excel + user JSON merged).
+    nonres_data : dict
+        Final fenestration dictionary for non-res (Excel + user JSON merged).
+    assigned_fenez_log : dict
+        A place to store assigned picks for CSV logging later.
+    use_computed_wwr : bool
+        If True, compute WWR from sub-element areas (windows, doors, etc.)
+        rather than from the dictionary's wwr_range.
+    include_doors_in_wwr : bool
+        If True, door area is counted as fenestration in the WWR ratio.
+    """
+
+    # 1) Determine final WWR (and WWR range used)
+    wwr, wwr_range_used = assign_fenestration_parameters(
+        building_row=building_row,
+        scenario=scenario,
+        calibration_stage=calibration_stage,
+        strategy=strategy,
+        random_seed=random_seed,
+        res_data=res_data,
+        nonres_data=nonres_data,
+        use_computed_wwr=use_computed_wwr,
+        include_doors_in_wwr=include_doors_in_wwr
+    )
+
+    # 2) Log final picks
+    bldg_id = building_row.get("ogc_fid", None)
+    if assigned_fenez_log and bldg_id is not None:
+        if bldg_id not in assigned_fenez_log:
+            assigned_fenez_log[bldg_id] = {}
+        assigned_fenez_log[bldg_id]["fenez_final_wwr"] = wwr
+        if wwr_range_used is not None:
+            assigned_fenez_log[bldg_id]["fenez_wwr_range_used"] = wwr_range_used
+
+    # 3) Remove existing fenestration surfaces
+    fen_objects = idf.idfobjects["FENESTRATIONSURFACE:DETAILED"]
+    del fen_objects[:]  # clear them all
+
+    # 4) Use geomeppy to create new window surfaces for each exterior wall
+    #    The default or fallback construction name is "Window1C".
+    #    Make sure your updated materials/constructions code has created "Window1C" or a suitable name.
+    GeppyIDF.set_wwr(idf, wwr=wwr, construction="Window1C")
+
+    # 5) Optional: Log fenestration object names
+    new_fens = idf.idfobjects["FENESTRATIONSURFACE:DETAILED"]
+    if assigned_fenez_log and bldg_id is not None and new_fens:
+        # store the new fenestration object names
+        assigned_fenez_log[bldg_id]["fenez_fenestration_objects"] = [
+            fen.Name for fen in new_fens
+        ]
+
+    print(f"[add_fenestration] Building: {bldg_id} => WWR={wwr:.3f}, used Window1C")
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_objects\fenez\fenez_config_manager.py
+============================================================
+"""
+fenez_config_manager.py
+
+Manages the final fenestration configuration by merging:
+ 1) base dictionaries (res + nonres),
+ 2) Excel overrides (optional),
+ 3) user JSON overrides (optional).
+
+Returns final dictionaries used in fenestration/material assignment.
+"""
+
+import copy
+import pandas as pd
+
+# Example of an Excel override import (if you use it):
+# from idf_objects.fenez.dict_override_excel import override_dictionaries_from_excel
+
+
+def build_fenez_config(
+    base_res_data: dict,
+    base_nonres_data: dict,
+    excel_path: str = None,
+    do_excel_override: bool = False,
+    user_fenez_overrides=None
+):
+    """
+    Builds the final fenestration configuration (residential & non-res)
+    by merging:
+
+      1) base_res_data, base_nonres_data (the "default" dictionaries).
+      2) Excel overrides (if do_excel_override=True and excel_path provided).
+      3) User overrides from fenestration.json (a list of override rules).
+
+    Returns (final_res_data, final_nonres_data).
+
+    Parameters
+    ----------
+    base_res_data : dict
+        Your default dictionary for residential fenestration/materials.
+    base_nonres_data : dict
+        Your default dictionary for non-res fenestration/materials.
+    excel_path : str
+        Path to the Excel file with fenestration overrides (if any).
+    do_excel_override : bool
+        If True, apply the Excel overrides first (if excel_path is valid).
+    user_fenez_overrides : list or None
+        A list of overrides from fenestration.json, e.g.:
+        [
+          {
+            "building_id": 4136730,
+            "building_function": "residential",
+            "age_range": "1992 - 2005",
+            "scenario": "scenario1",
+            "param_name": "wwr",
+            "min_val": 0.25,
+            "max_val": 0.30
+          },
+          ...
+        ]
+    """
+    # 1) Copy the base dictionaries so we don't mutate originals
+    final_res_data = copy.deepcopy(base_res_data)
+    final_nonres_data = copy.deepcopy(base_nonres_data)
+
+    # 2) If requested, apply Excel overrides (optional)
+    if do_excel_override and excel_path and len(excel_path.strip()) > 0:
+        # Uncomment/adjust if you implement 'override_dictionaries_from_excel'
+        # final_res_data, final_nonres_data = override_dictionaries_from_excel(
+        #     excel_path=excel_path,
+        #     default_res_data=final_res_data,
+        #     default_nonres_data=final_nonres_data,
+        #     default_roughness="MediumRough",
+        #     fallback_wwr_range=(0.2, 0.3)
+        # )
+        pass  # Remove this if you have the actual Excel override function
+
+    # 3) Then apply user JSON overrides (if any)
+    if user_fenez_overrides:
+        final_res_data, final_nonres_data = apply_user_fenez_overrides(
+            final_res_data,
+            final_nonres_data,
+            user_fenez_overrides
+        )
+
+    return final_res_data, final_nonres_data
+
+
+def apply_user_fenez_overrides(final_res_data, final_nonres_data, user_fenez_list):
+    """
+    Applies user-defined overrides from fenestration.json to the in-memory dictionaries.
+
+    Each item in `user_fenez_list` might look like:
+      {
+        "building_id": 4136730,
+        "building_function": "residential",
+        "age_range": "1992 - 2005",
+        "scenario": "scenario1",
+        "calibration_stage": "pre_calibration",  # optional
+        "param_name": "wwr",
+        "fixed_value": 0.28
+      }
+    or:
+      {
+        "building_function": "non_residential",
+        "age_range": "2015 and later",
+        "scenario": "scenario1",
+        "param_name": "roof_r_value",
+        "min_val": 3.0,
+        "max_val": 3.5
+      }
+
+    We interpret 'param_name' to decide what to override: wwr, roof_r_value, etc.
+    Then we set either a fixed_value or a (min_val, max_val) range in final_res_data/nonres_data.
+    """
+    for rule in user_fenez_list:
+        bfunc   = str(rule.get("building_function", "")).lower()
+        btype   = str(rule.get("building_type", ""))  # could also come from "residential_type"
+        age_rng = str(rule.get("age_range", "2015 and later"))
+        scen    = str(rule.get("scenario", "scenario1"))
+        stage   = str(rule.get("calibration_stage", "pre_calibration"))
+        p_name  = rule.get("param_name", "").lower()
+
+        # Decide which dict to modify
+        if bfunc == "residential":
+            data_dict = final_res_data
+        else:
+            data_dict = final_nonres_data
+
+        dict_key = (btype, age_rng, scen, stage)
+        if dict_key not in data_dict:
+            # If the combination doesn't exist, create an entry with some default
+            data_dict[dict_key] = {
+                "roughness": "MediumRough",
+                "wwr_range": (0.2, 0.3),
+                "elements": {}  # so we can store sub-element data if needed
+            }
+
+        # Extract override values
+        fixed_val = rule.get("fixed_value")
+        min_val   = rule.get("min_val")
+        max_val   = rule.get("max_val")
+
+        # Now interpret param_name
+        if p_name == "wwr":
+            # If there's a fixed_value, store range=(fixed_val, fixed_val).
+            if fixed_val is not None:
+                data_dict[dict_key]["wwr_range"] = (fixed_val, fixed_val)
+            elif min_val is not None and max_val is not None:
+                data_dict[dict_key]["wwr_range"] = (min_val, max_val)
+
+        elif p_name == "roof_r_value":
+            # For example, override the "flat_roof" -> "R_value_range"
+            if "flat_roof" not in data_dict[dict_key]:
+                data_dict[dict_key]["flat_roof"] = {}
+            if fixed_val is not None:
+                data_dict[dict_key]["flat_roof"]["R_value_range"] = (fixed_val, fixed_val)
+            elif min_val is not None and max_val is not None:
+                data_dict[dict_key]["flat_roof"]["R_value_range"] = (min_val, max_val)
+
+        elif p_name == "wall_u_value":
+            # Example override for "exterior_wall" -> "U_value_range"
+            if "exterior_wall" not in data_dict[dict_key]:
+                data_dict[dict_key]["exterior_wall"] = {}
+            if fixed_val is not None:
+                data_dict[dict_key]["exterior_wall"]["U_value_range"] = (fixed_val, fixed_val)
+            elif min_val is not None and max_val is not None:
+                data_dict[dict_key]["exterior_wall"]["U_value_range"] = (min_val, max_val)
+
+        elif p_name == "door_u_value":
+            if "doors" not in data_dict[dict_key]:
+                data_dict[dict_key]["doors"] = {}
+            if fixed_val is not None:
+                data_dict[dict_key]["doors"]["U_value_range"] = (fixed_val, fixed_val)
+            elif min_val is not None and max_val is not None:
+                data_dict[dict_key]["doors"]["U_value_range"] = (min_val, max_val)
+
+        # Add more param_names as needed for your use cases
+
+        # If your override logic depends on building_id specifically, you might
+        # store separate keys or treat it differently. Typically, overrides
+        # go by (bldg_type, age_range, scenario, stage) unless you want per-bldg logic.
+
+    return final_res_data, final_nonres_data
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_objects\fenez\materials.py
+============================================================
+"""
+materials.py
+
+This module handles:
+ 1) Creating new MATERIAL & CONSTRUCTION objects in the IDF
+    (including window materials).
+ 2) Storing logs of the final picks (and any range fields) in assigned_fenez_log
+    for possible CSV or JSON output.
+ 3) Optionally reassigning surfaces to the newly created constructions.
+
+Key functions:
+  - update_construction_materials(...)
+  - assign_constructions_to_surfaces(...)
+"""
+
+from geomeppy import IDF
+from .materials_config import get_extended_materials_data
+
+def _store_material_picks(assigned_fenez_log, building_id, label, mat_data):
+    """
+    A helper to store final material picks (and any range fields) in
+    assigned_fenez_log[building_id].
+
+    'label' might be "top_opq", "top_win", or "exterior_wall_opq", etc.
+
+    We flatten the dict so each key becomes:
+       f"fenez_{label}.{key}" => value
+
+    Example:
+      label == "top_opq"
+      mat_data == {
+         "obj_type": "MATERIAL",
+         "Thickness": 0.2,
+         "Thickness_range": (0.15, 0.25),
+         ...
+      }
+      We store:
+        assigned_fenez_log[building_id]["fenez_top_opq.obj_type"] = "MATERIAL"
+        assigned_fenez_log[building_id]["fenez_top_opq.Thickness_range"] = (0.15, 0.25)
+      etc.
+    """
+    if not mat_data or not assigned_fenez_log:
+        return
+
+    if building_id not in assigned_fenez_log:
+        assigned_fenez_log[building_id] = {}
+
+    for k, v in mat_data.items():
+        assigned_fenez_log[building_id][f"fenez_{label}.{k}"] = v
+
+
+def update_construction_materials(
+    idf,
+    building_row,
+    building_index=None,
+    scenario="scenario1",
+    calibration_stage="pre_calibration",
+    strategy="A",
+    random_seed=None,
+    user_config_fenez=None,
+    assigned_fenez_log=None
+):
+    """
+    1) Calls get_extended_materials_data(...) => returns a dict with final picks
+       (including sub-element R/U and range fields, plus top-level materials).
+    2) Removes all existing Materials & Constructions from the IDF (clean slate).
+    3) Creates new Opaque & Window materials => including top-level fallback
+       so geometry references remain valid.
+    4) Creates distinct sub-element-based materials & constructions (e.g. "exterior_wall_Construction").
+    5) Logs assigned final picks (and ranges) into assigned_fenez_log if provided.
+
+    Returns
+    -------
+    construction_map : dict
+        Maps sub-element name => construction name
+        (e.g. {"exterior_wall": "exterior_wall_Construction", ...}).
+
+    Notes
+    -----
+    - The newly created Constructions (CEILING1C, Ext_Walls1C, Window1C, etc.)
+      can be referenced when you set surfaces or WWR. These fallback
+      constructions now first look for element-specific materials before
+      defaulting to the top-level material.
+    - If you have many building surfaces, you'll typically call
+      'assign_constructions_to_surfaces(...)' afterwards to match them properly.
+    """
+
+    # 1) Determine building_id for logging
+    building_id = building_row.get("ogc_fid", None)
+    if building_id is None:
+        building_id = building_index
+
+    # 2) Retrieve extended materials data (with overrides)
+    data = get_extended_materials_data(
+        building_function=building_row.get("building_function", "residential"),
+        building_type=(
+            building_row.get("residential_type", "")
+            if building_row.get("building_function", "").lower() == "residential"
+            else building_row.get("non_residential_type", "")
+        ),
+        age_range=building_row.get("age_range", "2015 and later"),
+        scenario=scenario,
+        calibration_stage=calibration_stage,
+        strategy=strategy,
+        random_seed=random_seed,
+        user_config_fenez=user_config_fenez
+    )
+
+    mat_opq = data.get("material_opaque", None)
+    mat_win = data.get("material_window", None)
+    elements_data = data.get("elements", {})
+
+    # 2b) If logging final picks + ranges, store them now
+    if assigned_fenez_log is not None and building_id is not None:
+        if building_id not in assigned_fenez_log:
+            assigned_fenez_log[building_id] = {}
+        # Log top-level data: "roughness", "wwr_range_used", "wwr", etc.
+        for top_key in ["roughness", "wwr_range_used", "wwr"]:
+            if top_key in data:
+                assigned_fenez_log[building_id][f"fenez_{top_key}"] = data[top_key]
+
+        # Also store the top-level opaque/window material details
+        _store_material_picks(assigned_fenez_log, building_id, "top_opq", mat_opq)
+        _store_material_picks(assigned_fenez_log, building_id, "top_win", mat_win)
+
+        # For each sub-element, store final picks + ranges
+        for elem_name, elem_data in elements_data.items():
+            if "R_value" in elem_data:
+                assigned_fenez_log[building_id][f"fenez_{elem_name}_R_value"] = elem_data["R_value"]
+            if "R_value_range_used" in elem_data:
+                assigned_fenez_log[building_id][f"fenez_{elem_name}_R_value_range_used"] = elem_data["R_value_range_used"]
+
+            if "U_value" in elem_data:
+                assigned_fenez_log[building_id][f"fenez_{elem_name}_U_value"] = elem_data["U_value"]
+            if "U_value_range_used" in elem_data:
+                assigned_fenez_log[building_id][f"fenez_{elem_name}_U_value_range_used"] = elem_data["U_value_range_used"]
+
+            if "area_m2" in elem_data:
+                assigned_fenez_log[building_id][f"fenez_{elem_name}_area_m2"] = elem_data["area_m2"]
+
+            # Now store the sub-element's opaque & window material dict
+            opq_sub = elem_data.get("material_opaque", None)
+            win_sub = elem_data.get("material_window", None)
+            _store_material_picks(assigned_fenez_log, building_id, f"{elem_name}_opq", opq_sub)
+            _store_material_picks(assigned_fenez_log, building_id, f"{elem_name}_win", win_sub)
+
+    # 3) Remove existing Materials & Constructions from the IDF
+    for obj_type in [
+        "MATERIAL",
+        "MATERIAL:NOMASS",
+        "WINDOWMATERIAL:GLAZING",
+        "WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM",
+        "CONSTRUCTION"
+    ]:
+        for obj in idf.idfobjects[obj_type][:]:
+            idf.removeidfobject(obj)
+
+    def create_opaque_material(idf_obj, mat_data, mat_name):
+        """
+        Create or update a MATERIAL or MATERIAL:NOMASS in the IDF with the
+        given name and properties from ``mat_data``.  Existing objects with the
+        same name are removed first to avoid EnergyPlus duplicate name errors.
+
+        Returns the new object's name or ``None``.
+        """
+        if not mat_data or "obj_type" not in mat_data:
+            return None
+
+        mat_type = mat_data["obj_type"].upper()
+
+        # Remove any existing object with this name first
+        if mat_type in ["MATERIAL", "MATERIAL:NOMASS"]:
+            for obj in idf_obj.idfobjects[mat_type]:
+                if obj.Name == mat_name:
+                    idf_obj.removeidfobject(obj)
+
+        if mat_type == "MATERIAL":
+            mat_obj = idf_obj.newidfobject("MATERIAL")
+            mat_obj.Name = mat_name  # Use the exact name from the lookup/dict
+            mat_obj.Roughness = mat_data.get("Roughness", "MediumRough")
+            mat_obj.Thickness = mat_data.get("Thickness", 0.1)
+            mat_obj.Conductivity = mat_data.get("Conductivity", 1.0)
+            mat_obj.Density = mat_data.get("Density", 2000.0)
+            mat_obj.Specific_Heat = mat_data.get("Specific_Heat", 900.0)
+            mat_obj.Thermal_Absorptance = mat_data.get("Thermal_Absorptance", 0.9)
+            mat_obj.Solar_Absorptance   = mat_data.get("Solar_Absorptance", 0.7)
+            mat_obj.Visible_Absorptance = mat_data.get("Visible_Absorptance", 0.7)
+            return mat_obj.Name
+
+        elif mat_type == "MATERIAL:NOMASS":
+            mat_obj = idf_obj.newidfobject("MATERIAL:NOMASS")
+            mat_obj.Name = mat_name  # Use the exact name from the lookup/dict
+            mat_obj.Roughness = mat_data.get("Roughness", "MediumRough")
+            mat_obj.Thermal_Resistance = mat_data.get("Thermal_Resistance", 0.5)
+            mat_obj.Thermal_Absorptance = mat_data.get("Thermal_Absorptance", 0.9)
+            mat_obj.Solar_Absorptance   = mat_data.get("Solar_Absorptance", 0.7)
+            mat_obj.Visible_Absorptance = mat_data.get("Visible_Absorptance", 0.7)
+            return mat_obj.Name
+
+        return None
+
+    def create_window_material(idf_obj, mat_data, mat_name):
+        """
+        Create a window material (GLAZING or SIMPLEGLAZINGSYSTEM) with mat_data.
+        Returns the new object's name or None.
+        """
+        if not mat_data or "obj_type" not in mat_data:
+            return None
+
+        wtype = mat_data["obj_type"].upper()
+
+        # Remove existing object with this name first
+        if wtype in ["WINDOWMATERIAL:GLAZING", "WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM"]:
+            for obj in idf_obj.idfobjects[wtype]:
+                if obj.Name == mat_name:
+                    idf_obj.removeidfobject(obj)
+
+        if wtype == "WINDOWMATERIAL:GLAZING":
+            wmat = idf_obj.newidfobject("WINDOWMATERIAL:GLAZING")
+            wmat.Name = mat_name
+            wmat.Optical_Data_Type = mat_data.get("Optical_Data_Type", "SpectralAverage")
+            wmat.Thickness = mat_data.get("Thickness", 0.003)
+            wmat.Solar_Transmittance_at_Normal_Incidence = mat_data.get("Solar_Transmittance", 0.77)
+            wmat.Front_Side_Solar_Reflectance_at_Normal_Incidence = mat_data.get("Front_Solar_Reflectance", 0.07)
+            wmat.Back_Side_Solar_Reflectance_at_Normal_Incidence  = mat_data.get("Back_Solar_Reflectance", 0.07)
+            wmat.Visible_Transmittance_at_Normal_Incidence        = mat_data.get("Visible_Transmittance", 0.86)
+            wmat.Front_Side_Visible_Reflectance_at_Normal_Incidence = mat_data.get("Front_Visible_Reflectance", 0.07)
+            wmat.Back_Side_Visible_Reflectance_at_Normal_Incidence  = mat_data.get("Back_Visible_Reflectance", 0.07)
+            wmat.Infrared_Transmittance_at_Normal_Incidence         = mat_data.get("IR_Transmittance", 0.0)
+            wmat.Front_Side_Infrared_Hemispherical_Emissivity       = mat_data.get("Front_IR_Emissivity", 0.84)
+            wmat.Back_Side_Infrared_Hemispherical_Emissivity        = mat_data.get("Back_IR_Emissivity", 0.84)
+            wmat.Conductivity = mat_data.get("Conductivity", 1.0)
+            wmat.Dirt_Correction_Factor_for_Solar_and_Visible_Transmittance = mat_data.get("Dirt_Correction_Factor", 1.0)
+            wmat.Solar_Diffusing = mat_data.get("Solar_Diffusing", "No")
+            return wmat.Name
+
+        elif wtype == "WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM":
+            wmat = idf_obj.newidfobject("WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM")
+            wmat.Name = mat_name
+            # If your code includes a derived U_value or SHGC, set them here:
+            u_val  = mat_data.get("U_value", 2.9)
+            shgc   = mat_data.get("SHGC", 0.6)
+            vt     = mat_data.get("Visible_Transmittance", 0.7)  # if you store one
+            wmat.UFactor = u_val
+            wmat.Solar_Heat_Gain_Coefficient = shgc
+            wmat.Visible_Transmittance = vt
+            return wmat.Name
+
+        return None
+
+    # 4) Create top-level fallback Materials & Constructions
+    opq_name = None
+    if mat_opq:
+        # Use the dictionary's own "Name" if present
+        name_from_dict = mat_opq.get("Name", "TopOpaqueMaterialFallback")
+        opq_name = create_opaque_material(idf, mat_opq, name_from_dict)
+        if assigned_fenez_log and building_id is not None and opq_name:
+            assigned_fenez_log[building_id]["fenez_top_opaque_material_name"] = opq_name
+
+    win_name = None
+    if mat_win:
+        # Use the dictionary's own "Name" if present
+        name_from_dict = mat_win.get("Name", "TopWindowMaterialFallback")
+        win_name = create_window_material(idf, mat_win, name_from_dict)
+        if assigned_fenez_log and building_id is not None and win_name:
+            assigned_fenez_log[building_id]["fenez_top_window_material_name"] = win_name
+
+    # Create fallback Constructions (CEILING1C, Ext_Walls1C, etc.).
+    # Each construction uses the element-specific material when available,
+    # otherwise it falls back to the top-level opaque material.
+    # Avoid creating duplicate materials by caching.
+
+    created_layers = {}
+    if opq_name:
+        created_layers[opq_name] = opq_name
+
+    def _layer_for_fallback(elem_key):
+        """
+        If we have a sub-element material, use its lookup name.
+        Otherwise fallback to the top-level opq_name.
+        """
+        mat = elements_data.get(elem_key, {}).get("material_opaque")
+        if not mat:
+            return opq_name  # fallback
+
+        name = mat.get("Name", f"{elem_key}_Mat")
+        if name not in created_layers:
+            created_layers[name] = create_opaque_material(idf, mat, name)
+        return created_layers[name]
+
+    ceil_layer = _layer_for_fallback("flat_roof")
+    ext_layer  = _layer_for_fallback("exterior_wall")
+    intw_layer = _layer_for_fallback("interior_wall")
+    roof_layer = _layer_for_fallback("flat_roof")   # same as ceil_layer in this example
+    grnd_layer = _layer_for_fallback("ground_floor")
+    ifloor_layer = _layer_for_fallback("inter_floor")
+
+    # If any of these exist, create the fallback 1C constructions
+    # (CEILING1C, Ext_Walls1C, Int_Walls1C, etc.)
+    if any([ceil_layer, ext_layer, intw_layer, roof_layer, grnd_layer, ifloor_layer]):
+        if ceil_layer:
+            c_ceil = idf.newidfobject("CONSTRUCTION")
+            c_ceil.Name = "CEILING1C"
+            c_ceil.Outside_Layer = ceil_layer
+
+        if ext_layer:
+            c_ext = idf.newidfobject("CONSTRUCTION")
+            c_ext.Name = "Ext_Walls1C"
+            c_ext.Outside_Layer = ext_layer
+
+        if intw_layer:
+            c_intw = idf.newidfobject("CONSTRUCTION")
+            c_intw.Name = "Int_Walls1C"
+            c_intw.Outside_Layer = intw_layer
+
+        if roof_layer:
+            c_roof = idf.newidfobject("CONSTRUCTION")
+            c_roof.Name = "Roof1C"
+            c_roof.Outside_Layer = roof_layer
+
+        if grnd_layer:
+            c_grnd = idf.newidfobject("CONSTRUCTION")
+            c_grnd.Name = "GroundFloor1C"
+            c_grnd.Outside_Layer = grnd_layer
+
+        if ifloor_layer:
+            c_ifloor = idf.newidfobject("CONSTRUCTION")
+            c_ifloor.Name = "IntFloor1C"
+            c_ifloor.Outside_Layer = ifloor_layer
+
+    # Create a fallback Window1C construction if top-level window name exists
+    if win_name:
+        c_win = idf.newidfobject("CONSTRUCTION")
+        c_win.Name = "Window1C"
+        c_win.Outside_Layer = win_name
+        if assigned_fenez_log and building_id is not None:
+            assigned_fenez_log[building_id]["fenez_window1C_construction"] = c_win.Name
+
+    # 5) Create sub-element-based Materials & Constructions
+    construction_map = {}
+    for elem_name, elem_data in elements_data.items():
+        mat_opq_sub = elem_data.get("material_opaque", None)
+        mat_win_sub = elem_data.get("material_window", None)
+
+        opq_sub_name = None
+        win_sub_name = None
+
+        # For the sub-element's opaque material, use its actual "Name" from the dictionary
+        if mat_opq_sub:
+            sub_opq_name = mat_opq_sub.get("Name", f"{elem_name}_OpaqueMat")
+            opq_sub_name = create_opaque_material(idf, mat_opq_sub, sub_opq_name)
+            if assigned_fenez_log and building_id is not None and opq_sub_name:
+                assigned_fenez_log[building_id][f"fenez_{elem_name}_opq_material_name"] = opq_sub_name
+
+        # For the sub-element's window material
+        if mat_win_sub:
+            sub_win_name = mat_win_sub.get("Name", f"{elem_name}_WindowMat")
+            win_sub_name = create_window_material(idf, mat_win_sub, sub_win_name)
+            if assigned_fenez_log and building_id is not None and win_sub_name:
+                assigned_fenez_log[building_id][f"fenez_{elem_name}_win_material_name"] = win_sub_name
+
+        # create new Opaque Construction for the sub-element
+        if opq_sub_name:
+            c_sub = idf.newidfobject("CONSTRUCTION")
+            c_sub.Name = f"{elem_name}_Construction"
+            c_sub.Outside_Layer = opq_sub_name
+            construction_map[elem_name] = c_sub.Name
+
+            if assigned_fenez_log and building_id is not None:
+                assigned_fenez_log[building_id][f"fenez_{elem_name}_construction_name"] = c_sub.Name
+
+        # create a separate window construction if we have a window material
+        if win_sub_name:
+            c_sub_win = idf.newidfobject("CONSTRUCTION")
+            c_sub_win.Name = f"{elem_name}_WindowConst"
+            c_sub_win.Outside_Layer = win_sub_name
+            construction_map[f"{elem_name}_window"] = c_sub_win.Name
+
+            if assigned_fenez_log and building_id is not None:
+                assigned_fenez_log[building_id][f"fenez_{elem_name}_window_construction_name"] = c_sub_win.Name
+
+    print("[update_construction_materials] => Created fallback top-level constructions (CEILING1C, etc.).")
+    print("[update_construction_materials] => Created sub-element-based constructions:")
+    for k, v in construction_map.items():
+        print(f"   {k} => {v}")
+
+    return construction_map
+
+
+def assign_constructions_to_surfaces(idf, construction_map):
+    """
+    Assign each BUILDINGSURFACE:DETAILED to a suitable construction name
+    based on sub-element keys, surface type, boundary condition, etc.
+
+    construction_map: e.g.
+      {
+        "exterior_wall": "exterior_wall_Construction",
+        "exterior_wall_window": "exterior_wall_WindowConst",
+        "ground_floor": "ground_floor_Construction",
+        ...
+      }
+
+    Typically, you'll call this after update_construction_materials(...).
+
+    Example usage:
+        c_map = update_construction_materials(...)
+        assign_constructions_to_surfaces(idf, c_map)
+    """
+    for surface in idf.idfobjects["BUILDINGSURFACE:DETAILED"]:
+        s_type = surface.Surface_Type.upper()
+        bc = surface.Outside_Boundary_Condition.upper()
+
+        if s_type == "WALL":
+            if bc == "OUTDOORS":
+                # If sub-element 'exterior_wall' is in the map, use it; otherwise fallback
+                if "exterior_wall" in construction_map:
+                    surface.Construction_Name = construction_map["exterior_wall"]
+                else:
+                    surface.Construction_Name = "Ext_Walls1C"
+            elif bc in ["SURFACE", "ADIABATIC"]:
+                if "interior_wall" in construction_map:
+                    surface.Construction_Name = construction_map["interior_wall"]
+                else:
+                    surface.Construction_Name = "Int_Walls1C"
+            else:
+                # fallback
+                surface.Construction_Name = "Ext_Walls1C"
+
+        elif s_type in ["ROOF", "CEILING"]:
+            if bc == "OUTDOORS":
+                if "flat_roof" in construction_map:
+                    surface.Construction_Name = construction_map["flat_roof"]
+                else:
+                    surface.Construction_Name = "Roof1C"
+            elif bc in ["ADIABATIC", "SURFACE"]:
+                if "inter_floor" in construction_map:
+                    surface.Construction_Name = construction_map["inter_floor"]
+                else:
+                    surface.Construction_Name = "IntFloor1C"
+            else:
+                surface.Construction_Name = "Roof1C"
+
+        elif s_type == "FLOOR":
+            if bc == "GROUND":
+                if "ground_floor" in construction_map:
+                    surface.Construction_Name = construction_map["ground_floor"]
+                else:
+                    surface.Construction_Name = "GroundFloor1C"
+            elif bc in ["SURFACE", "ADIABATIC"]:
+                if "inter_floor" in construction_map:
+                    surface.Construction_Name = construction_map["inter_floor"]
+                else:
+                    surface.Construction_Name = "IntFloor1C"
+            else:
+                surface.Construction_Name = "GroundFloor1C"
+
+        else:
+            # fallback
+            surface.Construction_Name = "Ext_Walls1C"
+
+    # Now fenestrations
+    for fen in idf.idfobjects["FENESTRATIONSURFACE:DETAILED"]:
+        # If there's a sub-element key "windows" or "exterior_wall_window"
+        # in the construction_map, assign it. Otherwise fallback to "Window1C".
+        if "windows" in construction_map:
+            fen.Construction_Name = construction_map["windows"]
+        else:
+            # If you have e.g. "exterior_wall_window" in the map, you can do:
+            # if "exterior_wall_window" in construction_map:
+            #     fen.Construction_Name = construction_map["exterior_wall_window"]
+            # else: fallback
+            fen.Construction_Name = "Window1C"
+
+    print("[assign_constructions_to_surfaces] => Surfaces assigned via sub-element logic.")
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_objects\fenez\materials_config.py
+============================================================
+"""
+fenez/materials_config.py
+
+Contains logic for picking final material properties from ranges,
+including references to material_lookup for different obj_types (MATERIAL,
+MATERIAL:NOMASS, WINDOWMATERIAL:GLAZING, WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM, etc.).
+
+Key functions:
+    - pick_val(...)
+    - assign_material_from_lookup(...)
+    - get_extended_materials_data(...)
+    - compute_wwr(...)
+"""
+
+import random
+
+# Update these imports to match your actual file locations:
+from Lookups.data_materials_residential import residential_materials_data
+from Lookups.data_materials_non_residential import non_residential_materials_data
+from .materials_lookup import material_lookup
+
+
+###############################################################################
+#    pick_val(...) & assign_material_from_lookup(...) helper functions
+###############################################################################
+
+def pick_val(rng, strategy="A"):
+    """
+    Helper to pick a single float from a numeric range (min_val, max_val).
+    If rng=(x,x), returns x.
+    If strategy="A", picks the midpoint. If "B", picks random uniform.
+    Otherwise, fallback to min_val.
+
+    Parameters
+    ----------
+    rng : tuple of (float, float)
+        (min_val, max_val).
+    strategy : str
+        "A" => midpoint, "B" => random uniform, etc.
+
+    Returns
+    -------
+    A float in [min_val, max_val], or None if invalid.
+    """
+    if not rng or len(rng) < 2:
+        return None
+    min_val, max_val = rng
+    if min_val is None and max_val is None:
+        return None
+    if min_val is not None and max_val is not None:
+        if min_val == max_val:
+            return min_val
+        if strategy == "A":
+            return (min_val + max_val) / 2.0
+        elif strategy == "B":
+            return random.uniform(min_val, max_val)
+        else:
+            # fallback => pick min
+            return min_val
+    # If one side is None, fallback to the other
+    return min_val if min_val is not None else max_val
+
+
+def assign_material_from_lookup(mat_def: dict, strategy="A"):
+    """
+    Takes a dict from material_lookup (which has fields like "Thickness_range",
+    "Conductivity_range", etc.) and returns a *copy* with final numeric picks assigned.
+
+    The function modifies keys like "Thickness", "Conductivity", "Thermal_Resistance",
+    etc., based on the strategy for picking from each _range.
+
+    Returns the updated dict.
+    """
+    final_mat = dict(mat_def)  # shallow copy to preserve original
+    obj_type = final_mat["obj_type"].upper()
+
+    # Some materials have thickness & conductivity ranges
+    thick_rng = final_mat.get("Thickness_range", None)
+    cond_rng  = final_mat.get("Conductivity_range", None)
+
+    if obj_type == "MATERIAL":
+        # Mass-based opaque
+        final_mat["Thickness"] = pick_val(thick_rng, strategy)
+        final_mat["Conductivity"] = pick_val(cond_rng, strategy)
+        final_mat["Density"] = pick_val(final_mat.get("Density_range", (2300, 2300)), strategy)
+        final_mat["Specific_Heat"] = pick_val(final_mat.get("Specific_Heat_range", (900, 900)), strategy)
+        final_mat["Thermal_Absorptance"] = pick_val(final_mat.get("Thermal_Absorptance_range", (0.9, 0.9)), strategy)
+        final_mat["Solar_Absorptance"]   = pick_val(final_mat.get("Solar_Absorptance_range", (0.7, 0.7)), strategy)
+        final_mat["Visible_Absorptance"] = pick_val(final_mat.get("Visible_Absorptance_range", (0.7, 0.7)), strategy)
+
+    elif obj_type == "MATERIAL:NOMASS":
+        # No-mass => thermal_resistance
+        r_rng = final_mat.get("Thermal_Resistance_range", None)
+        final_mat["Thermal_Resistance"] = pick_val(r_rng, strategy)
+        final_mat["Thermal_Absorptance"] = pick_val(final_mat.get("Thermal_Absorptance_range", (0.9, 0.9)), strategy)
+        final_mat["Solar_Absorptance"]   = pick_val(final_mat.get("Solar_Absorptance_range", (0.7, 0.7)), strategy)
+        final_mat["Visible_Absorptance"] = pick_val(final_mat.get("Visible_Absorptance_range", (0.7, 0.7)), strategy)
+
+    elif obj_type == "WINDOWMATERIAL:GLAZING":
+        # Typical single/multi-pane window material
+        final_mat["Thickness"] = pick_val(thick_rng, strategy)
+        final_mat["Solar_Transmittance"] = pick_val(
+            final_mat.get("Solar_Transmittance_range", (0.76, 0.76)),
+            strategy
+        )
+        final_mat["Front_Solar_Reflectance"] = pick_val(
+            final_mat.get("Front_Solar_Reflectance_range", (0.07, 0.07)),
+            strategy
+        )
+        final_mat["Back_Solar_Reflectance"]  = pick_val(
+            final_mat.get("Back_Solar_Reflectance_range", (0.07, 0.07)),
+            strategy
+        )
+        final_mat["Visible_Transmittance"]   = pick_val(
+            final_mat.get("Visible_Transmittance_range", (0.86, 0.86)),
+            strategy
+        )
+        final_mat["Front_Visible_Reflectance"] = pick_val(
+            final_mat.get("Front_Visible_Reflectance_range", (0.06, 0.06)),
+            strategy
+        )
+        final_mat["Back_Visible_Reflectance"]  = pick_val(
+            final_mat.get("Back_Visible_Reflectance_range", (0.06, 0.06)),
+            strategy
+        )
+        final_mat["Front_IR_Emissivity"]       = pick_val(
+            final_mat.get("Front_IR_Emissivity_range", (0.84, 0.84)),
+            strategy
+        )
+        final_mat["Back_IR_Emissivity"]        = pick_val(
+            final_mat.get("Back_IR_Emissivity_range", (0.84, 0.84)),
+            strategy
+        )
+        final_mat["Conductivity"]              = pick_val(cond_rng, strategy)
+        final_mat["Dirt_Correction_Factor"]    = pick_val(
+            final_mat.get("Dirt_Correction_Factor_range", (1.0, 1.0)),
+            strategy
+        )
+        # IR_Transmittance often 0 => if stored, keep as is
+
+    elif obj_type == "WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM":
+        # For simple glazing, you typically just set U-factor, SHGC, Visible Transmittance in E+.
+        # We'll just pick from the provided ranges if present:
+        final_mat["SHGC"] = pick_val(final_mat.get("SHGC_range", (0.40, 0.40)), strategy)
+        # If "Optical_Data_Type" is stored as a numeric range for some reason, pick it:
+        opt_dat = final_mat.get("Optical_Data_Type", None)
+        # This might be a numeric or fixed string; handle gracefully:
+        if isinstance(opt_dat, tuple) and len(opt_dat) == 2:
+            final_mat["Optical_Data_Type"] = pick_val(opt_dat, strategy)
+        else:
+            # If it's a single string or float, just keep as is
+            pass
+
+        # You may also store a default U_value here if you keep a "U_value_range" in the dict
+
+    else:
+        # fallback - do nothing special
+        pass
+
+    return final_mat
+
+
+###############################################################################
+#    The main function to retrieve data & combine user overrides
+###############################################################################
+
+def compute_wwr(elements_dict, include_doors=False):
+    """
+    Compute WWR => (window area) / (exterior wall area).
+    If include_doors=True, add door area to the fenestration area.
+    """
+    external_wall_area = 0.0
+    if "exterior_wall" in elements_dict:
+        external_wall_area += elements_dict["exterior_wall"].get("area_m2", 0.0)
+
+    window_area = elements_dict.get("windows", {}).get("area_m2", 0.0)
+    if include_doors and "doors" in elements_dict:
+        window_area += elements_dict["doors"].get("area_m2", 0.0)
+
+    if external_wall_area > 0:
+        return window_area / external_wall_area
+    else:
+        return 0.0
+
+
+def get_extended_materials_data(
+    building_function: str,
+    building_type: str,
+    age_range: str,
+    scenario: str,
+    calibration_stage: str,
+    strategy: str = "A",
+    random_seed=None,
+    user_config_fenez=None
+):
+    """
+    1) Looks up either residential_materials_data or non_residential_materials_data
+       by (building_type, age_range, scenario, calibration_stage).
+    2) Retrieves "wwr_range" and picks a final 'wwr' if relevant.
+    3) Grabs top-level 'material_opaque_lookup', 'material_window_lookup' if present.
+    4) For each sub-element (e.g., ground_floor, windows, doors),
+       picks R_value, U_value from (R_value_range, U_value_range).
+    5) If user_config_fenez is provided, we override some fields (range or fixed).
+    6) Return a dictionary with "wwr", "material_opaque", "material_window",
+       plus "elements" sub-dicts for each sub-element with final picks.
+
+    The final dict can then be used in materials.py to actually create IDF Materials/Constructions.
+    """
+    if random_seed is not None:
+        random.seed(random_seed)
+
+    # Pick which dataset to use
+    if building_function.lower() == "residential":
+        ds = residential_materials_data
+    else:
+        ds = non_residential_materials_data
+
+    dict_key = (building_type, age_range, scenario, calibration_stage)
+    if dict_key not in ds:
+        # fallback if no data
+        output_fallback = {
+            "roughness": "MediumRough",
+            "wwr": 0.3,
+            "wwr_range_used": (0.3, 0.3),
+            "material_opaque": None,
+            "material_window": None,
+            "elements": {}
+        }
+        # Possibly let user_config_fenez override wwr or wwr_range
+        if user_config_fenez:
+            if "wwr_range" in user_config_fenez:
+                output_fallback["wwr_range_used"] = user_config_fenez["wwr_range"]
+            if "wwr" in user_config_fenez:
+                output_fallback["wwr"] = user_config_fenez["wwr"]
+        return output_fallback
+
+    data_entry = ds[dict_key]
+
+    # 1) pick or override wwr_range
+    default_wwr_range = data_entry.get("wwr_range", (0.3, 0.3))
+    if user_config_fenez and "wwr_range" in user_config_fenez:
+        default_wwr_range = user_config_fenez["wwr_range"]
+    wwr_val = pick_val(default_wwr_range, strategy)
+
+    # If user overrides wwr directly, apply it
+    if user_config_fenez and "wwr" in user_config_fenez:
+        wwr_val = user_config_fenez["wwr"]
+
+    # 2) top-level roughness
+    rough_str = data_entry.get("roughness", "MediumRough")
+
+    # top-level materials
+    mat_opq_key = data_entry.get("material_opaque_lookup", None)
+    mat_win_key = data_entry.get("material_window_lookup", None)
+
+    if user_config_fenez:
+        if "material_opaque_lookup" in user_config_fenez:
+            mat_opq_key = user_config_fenez["material_opaque_lookup"]
+        if "material_window_lookup" in user_config_fenez:
+            mat_win_key = user_config_fenez["material_window_lookup"]
+
+    final_opq = None
+    if mat_opq_key and mat_opq_key in material_lookup:
+        final_opq = assign_material_from_lookup(material_lookup[mat_opq_key], strategy)
+
+    final_win = None
+    if mat_win_key and mat_win_key in material_lookup:
+        final_win = assign_material_from_lookup(material_lookup[mat_win_key], strategy)
+
+    # 3) sub-elements
+    possible_elems = [
+        "ground_floor", "exterior_wall", "flat_roof", "sloping_flat_roof",
+        "inter_floor", "interior_wall", "windows", "doors"
+    ]
+    elements = {}
+    for elem_name in possible_elems:
+        if elem_name in data_entry:
+            subd = dict(data_entry[elem_name])  # shallow copy
+
+            # apply user overrides for sub-element if present
+            if user_config_fenez and "elements" in user_config_fenez:
+                user_elem_config = user_config_fenez["elements"].get(elem_name, {})
+                if "R_value_range" in user_elem_config:
+                    subd["R_value_range"] = user_elem_config["R_value_range"]
+                if "U_value_range" in user_elem_config:
+                    subd["U_value_range"] = user_elem_config["U_value_range"]
+                if "area_m2" in user_elem_config:
+                    subd["area_m2"] = user_elem_config["area_m2"]
+                if "material_opaque_lookup" in user_elem_config:
+                    subd["material_opaque_lookup"] = user_elem_config["material_opaque_lookup"]
+                if "material_window_lookup" in user_elem_config:
+                    subd["material_window_lookup"] = user_elem_config["material_window_lookup"]
+
+            out_sub = dict(subd)
+
+            # pick R_value / U_value
+            r_val_rng = subd.get("R_value_range", None)
+            u_val_rng = subd.get("U_value_range", None)
+            r_val = pick_val(r_val_rng, strategy) if r_val_rng else None
+            u_val = pick_val(u_val_rng, strategy) if u_val_rng else None
+
+            # if user has a forced R_value / U_value
+            if user_config_fenez and "elements" in user_config_fenez:
+                user_elem_vals = user_config_fenez["elements"].get(elem_name, {})
+                if "R_value" in user_elem_vals and user_elem_vals["R_value"] is not None:
+                    r_val = user_elem_vals["R_value"]
+                if "U_value" in user_elem_vals and user_elem_vals["U_value"] is not None:
+                    u_val = user_elem_vals["U_value"]
+
+            out_sub["R_value"] = r_val
+            out_sub["U_value"] = u_val
+            if r_val_rng:
+                out_sub["R_value_range_used"] = r_val_rng
+            if u_val_rng:
+                out_sub["U_value_range_used"] = u_val_rng
+
+            # sub-element material picks
+            mat_opq_sub_key = subd.get("material_opaque_lookup", None)
+            mat_win_sub_key = subd.get("material_window_lookup", None)
+
+            if mat_opq_sub_key and mat_opq_sub_key in material_lookup:
+                out_sub["material_opaque"] = assign_material_from_lookup(
+                    material_lookup[mat_opq_sub_key],
+                    strategy
+                )
+            else:
+                out_sub["material_opaque"] = None
+
+            if mat_win_sub_key and mat_win_sub_key in material_lookup:
+                out_sub["material_window"] = assign_material_from_lookup(
+                    material_lookup[mat_win_sub_key],
+                    strategy
+                )
+            else:
+                out_sub["material_window"] = None
+
+            elements[elem_name] = out_sub
+
+    # build final result
+    result = {
+        "roughness": rough_str,
+        "wwr_range_used": default_wwr_range,
+        "wwr": wwr_val,
+        "material_opaque": final_opq,
+        "material_window": final_win,
+        "elements": elements
+    }
+
+    # 4) final step => if R_value or U_value is set, override the derived thickness/conductivity
+    for elem_name, elem_data in result["elements"].items():
+        r_val = elem_data.get("R_value", None)
+        u_val = elem_data.get("U_value", None)
+        if r_val is None and u_val is not None and u_val != 0:
+            r_val = 1.0 / u_val
+
+        mat_opq = elem_data.get("material_opaque", None)
+        if mat_opq and r_val is not None:
+            # re-derive Conductivity or Thermal_Resistance
+            if mat_opq["obj_type"].upper() == "MATERIAL":
+                thick = mat_opq["Thickness"]
+                if r_val != 0:
+                    mat_opq["Conductivity"] = thick / r_val
+            elif mat_opq["obj_type"].upper() == "MATERIAL:NOMASS":
+                mat_opq["Thermal_Resistance"] = r_val
+
+        mat_win = elem_data.get("material_window", None)
+        if mat_win and u_val is not None and u_val != 0:
+            # For WINDOWMATERIAL:GLAZING, approximate conduction => U_value * thickness
+            # For WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM, you might set a 'U_value' field directly
+            if mat_win["obj_type"].upper() == "WINDOWMATERIAL:GLAZING":
+                thick = mat_win.get("Thickness", 0.003)
+                mat_win["Conductivity"] = u_val * thick
+            elif mat_win["obj_type"].upper() == "WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM":
+                # store a direct property
+                mat_win["U_value"] = u_val
+
+    return result
+
+------------------------------------------------------------
+
 File: D:\Documents\E_Plus_2030_py\idf_objects\wshading\assign_shading_values.py
 ============================================================
 """
@@ -549,84 +2739,91 @@ def add_shading_objects(
 
                 existing_shading_ctrls_objects = idf.idfobjects.get("WINDOWSHADINGCONTROL", [])
                 found_shading_ctrl = next((sc for sc in existing_shading_ctrls_objects if sc.Name == shading_ctrl_name), None)
-                
-                shading_ctrl_obj_to_assign_name = shading_ctrl_name # Default to the name
+
+                shading_ctrl_obj_to_assign_name = shading_ctrl_name  # Default to the name
+
+                # Determine the zone name by looking up the base surface
+                zone_name = None
+                base_surface_name = getattr(fen, "Building_Surface_Name", None)
+                if base_surface_name:
+                    base_surfaces = idf.idfobjects.get("BUILDINGSURFACE:DETAILED", [])
+                    bs_obj = next((bs for bs in base_surfaces if bs.Name == base_surface_name), None)
+                    if bs_obj:
+                        zone_name = getattr(bs_obj, "Zone_Name", None)
 
                 if found_shading_ctrl:
                     logger.info(
                         f"[{window_id}] WindowShadingControl '{shading_ctrl_name}' already exists. Reusing."
                     )
-                    # shading_ctrl_obj_to_assign_name = found_shading_ctrl.Name # Already set
+                    shading_ctrl = found_shading_ctrl
                 else:
                     logger.info(f"[{window_id}] Creating new WindowShadingControl '{shading_ctrl_name}'.")
                     shading_ctrl = idf.newidfobject("WINDOWSHADINGCONTROL")
                     shading_ctrl.Name = shading_ctrl_name
-                    
+
+                    # Zone Name is required by the IDD
+                    if zone_name is not None:
+                        shading_ctrl.Zone_Name = zone_name
+                    else:
+                        shading_ctrl.Zone_Name = ""
+
                     # Determine Shading_Type based on blind_to_glass_distance or a param
                     # Defaulting to ExteriorBlind if distance is positive or not specified, Interior if negative
-                    blind_dist = shading_params.get("blind_to_glass_distance", 0.05) # Default to exterior
+                    blind_dist = shading_params.get("blind_to_glass_distance", 0.05)  # Default to exterior
                     shading_device_type_ep = "ExteriorBlind"
                     if isinstance(blind_dist, (int, float)) and blind_dist < 0:
                         shading_device_type_ep = "InteriorBlind"
-                    # Could also be driven by a parameter in shading_params:
-                    # shading_device_type_ep = shading_params.get("shading_device_type_ep", "ExteriorBlind")
                     shading_ctrl.Shading_Type = shading_device_type_ep
-                    
-                    shading_ctrl.Shading_Device_Material_Name = blind_mat_name # Use the name of the WindowMaterial:Blind
-                    
+
+                    shading_ctrl.Shading_Device_Material_Name = blind_mat_name  # Use the name of the WindowMaterial:Blind
+
                     # Control Type (defaulting to FixedSlatAngle)
-                    shading_ctrl.Type_of_Slats_Control_for_Blinds = shading_params.get("slat_control_type", "FixedSlatAngle")
-                    
+                    shading_ctrl.Shading_Control_Type = shading_params.get(
+                        "shading_control_type", "AlwaysOn"
+                    )
+                    shading_ctrl.Type_of_Slats_Control_for_Blinds = shading_params.get(
+                        "slat_control_type", "FixedSlatAngle"
+                    )
+
                     # Slat Angle for Fixed Control
                     if shading_ctrl.Type_of_Slats_Control_for_Blinds.lower() == "fixedslatangle":
-                        shading_ctrl.Slat_Angle_Control_for_Fixed_Slat_Angle = shading_params.get("slat_angle_deg", 45.0)
-                    
-                    # Schedule for deployment (e.g., AlwaysOn, or a specific schedule)
-                    # Defaulting to "No" schedule, meaning it's always available to be controlled by other means if not AlwaysOn
-                    shading_ctrl.Shading_Control_Is_Scheduled = shading_params.get("shading_control_is_scheduled", "No") 
+                        shading_ctrl.Slat_Angle_Control_for_Fixed_Slat_Angle = shading_params.get(
+                            "slat_angle_deg", 45.0
+                        )
+
+                    shading_ctrl.Shading_Control_Is_Scheduled = shading_params.get(
+                        "shading_control_is_scheduled", "No"
+                    )
                     if shading_ctrl.Shading_Control_Is_Scheduled.lower() == "yes":
-                        shading_ctrl.Shading_Control_Schedule_Name = shading_params.get("shading_control_schedule_name", "AlwaysOnSchedule") # Ensure this schedule exists
-                    
-                    # Glare Control
-                    shading_ctrl.Glare_Control_Is_Active = shading_params.get("glare_control_is_active", "No")
-                    # Other fields like Setpoint, ShadingControlSetpointScheduleName etc. for advanced control can be added from shading_params
+                        shading_ctrl.Schedule_Name = shading_params.get(
+                            "shading_control_schedule_name", "AlwaysOnSchedule"
+                        )
 
-                    logger.debug(f"[{window_id}] Successfully created WindowShadingControl '{shading_ctrl.Name}'.")
-                    # shading_ctrl_obj_to_assign_name = shading_ctrl.Name # Already set
-
-                # 4) Link the shading control to this fenestration surface
-                logger.info(f"[{window_id}] Attempting to assign Shading_Control_Name: '{shading_ctrl_obj_to_assign_name}' to fenestration surface: '{fen_name_attr}'")
-                try:
-                    # Ensure the fen object allows direct attribute assignment for Shading_Control_Name
-                    # This is typical for geomeppy/eppy objects.
-                    fen.Shading_Control_Name = shading_ctrl_obj_to_assign_name
-                    # Verification step:
-                    assigned_sc_name = getattr(fen, 'Shading_Control_Name', 'FIELD_NOT_FOUND_OR_EMPTY_AFTER_ASSIGN')
-                    logger.info(f"[{window_id}] After assignment, {fen_name_attr}.Shading_Control_Name is: '{assigned_sc_name}'")
-                    if assigned_sc_name != shading_ctrl_obj_to_assign_name:
-                        logger.error(f"[{window_id}] FAILED to verify Shading_Control_Name assignment. Expected '{shading_ctrl_obj_to_assign_name}', got '{assigned_sc_name}'.")
-                    else:
-                        logger.info(f"[{window_id}] Successfully linked shading control '{shading_ctrl_obj_to_assign_name}'.")
-                        if assigned_shading_log is not None and window_id is not None: # Log success
-                            if window_id not in assigned_shading_log:
-                                assigned_shading_log[window_id] = {}
-                            assigned_shading_log[window_id]["shading_creation_status"] = f"Success: Linked to {shading_ctrl_obj_to_assign_name}"
-                            assigned_shading_log[window_id]["shading_control_name_assigned"] = shading_ctrl_obj_to_assign_name
-                            assigned_shading_log[window_id]["blind_material_name_used"] = blind_mat_name
-
-
-                except AttributeError as e_attr:
-                    logger.error(
-                        f"[{window_id}] AttributeError: Failed to assign Shading_Control_Name. Does the FENESTRATIONSURFACE:DETAILED object have a 'Shading_Control_Name' field/attribute? Error: {e_attr}"
+                    shading_ctrl.Glare_Control_Is_Active = shading_params.get(
+                        "glare_control_is_active", "No"
                     )
-                except Exception as e_assign:
-                    logger.error(
-                        f"[{window_id}] Exception: Failed to assign Shading_Control_Name to {fen_name_attr}: {e_assign}"
+
+                    logger.debug(
+                        f"[{window_id}] Successfully created WindowShadingControl '{shading_ctrl.Name}'."
                     )
-                    if assigned_shading_log is not None and window_id is not None: # Log failure
-                        if window_id not in assigned_shading_log:
-                            assigned_shading_log[window_id] = {}
-                        assigned_shading_log[window_id]["shading_creation_status"] = f"Failed: Linking error {e_assign}"
+
+                # Ensure the current fenestration surface is listed in the control object
+                next_index = 1
+                while getattr(shading_ctrl, f"Fenestration_Surface_{next_index}_Name", None):
+                    next_index += 1
+                setattr(shading_ctrl, f"Fenestration_Surface_{next_index}_Name", fen_name_attr)
+
+                if zone_name is not None and not getattr(shading_ctrl, "Zone_Name", ""):
+                    shading_ctrl.Zone_Name = zone_name
+
+                if assigned_shading_log is not None and window_id is not None:
+                    if window_id not in assigned_shading_log:
+                        assigned_shading_log[window_id] = {}
+                    assigned_shading_log[window_id][
+                        "shading_creation_status"
+                    ] = f"Linked to {shading_ctrl_name}"
+                    assigned_shading_log[window_id]["shading_control_name_assigned"] = shading_ctrl_name
+                    assigned_shading_log[window_id]["blind_material_name_used"] = blind_mat_name
 
 
             except Exception as e_fen_processing:

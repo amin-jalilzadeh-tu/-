@@ -29,13 +29,10 @@ import random
 import logging
 from .assign_shading_values import pick_shading_params
 
-# from geomeppy import IDF # Ensure your IDF object type matches
-# from eppy.bunch_subclass import EpBunch # Ensure your IDF object type matches
-
 logger = logging.getLogger(__name__)
 # Configure logger if not already configured by the main application
 if not logger.hasHandlers():
-    logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+    logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s - %(name)s - %(message)s')
 
 
 def add_shading_objects(
@@ -102,6 +99,7 @@ def add_shading_objects(
     if create_blinds:
         logger.info("Attempting to create blind shading for fenestration surfaces.")
         try:
+            # Ensure 'FENESTRATIONSURFACE:DETAILED' key exists in idf.idfobjects
             fen_surfaces = idf.idfobjects.get("FENESTRATIONSURFACE:DETAILED", [])
             if not fen_surfaces:
                 logger.warning(
@@ -109,15 +107,16 @@ def add_shading_objects(
                 )
             else:
                 logger.info(f"Found {len(fen_surfaces)} FENESTRATIONSURFACE:DETAILED objects to process.")
-        except Exception as e:
+        except Exception as e: # Catch broader exceptions if idf.idfobjects itself is problematic
             logger.error(
-                f"Could not retrieve FENESTRATIONSURFACE:DETAILED from IDF: {e}"
+                f"Could not retrieve FENESTRATIONSURFACE:DETAILED from IDF: {e}", exc_info=True
             )
             fen_surfaces = []
 
-        for fen_idx, fen in enumerate(fen_surfaces):
-            fen_name_attr = getattr(fen, "Name", None)
-            window_id = fen_name_attr if fen_name_attr else f"FenestrationSurface_DefaultName_{fen_idx}"
+        for fen_idx, fen_surface_obj in enumerate(fen_surfaces):
+            fen_name_attr = getattr(fen_surface_obj, "Name", None)
+            # Use a more robust default name if the actual name is missing or empty
+            window_id = fen_name_attr if fen_name_attr and fen_name_attr.strip() else f"FenSurface_Unnamed_{fen_idx}"
             
             logger.info(f"Processing fenestration surface: '{window_id}' (Index: {fen_idx})")
 
@@ -136,7 +135,7 @@ def add_shading_objects(
                     logger.warning(
                         f"[{window_id}] No shading parameters resolved for key '{shading_type_key}'. Skipping blind creation for this window."
                     )
-                    if assigned_shading_log is not None and window_id is not None: # Log failure
+                    if assigned_shading_log is not None:
                         if window_id not in assigned_shading_log:
                             assigned_shading_log[window_id] = {}
                         assigned_shading_log[window_id]["shading_creation_status"] = f"Failed: No params for key {shading_type_key}"
@@ -145,48 +144,33 @@ def add_shading_objects(
                 logger.debug(f"[{window_id}] Resolved shading parameters: {shading_params}")
 
                 # 2) Create or retrieve a WindowMaterial:Blind object
-                # The name should be unique per window if properties differ, or shared if identical.
-                # Current approach makes it unique per window_id.
                 base_blind_material_name_from_params = shading_params.get("blind_name", "DefaultBlindMaterial")
-                blind_mat_name = f"{base_blind_material_name_from_params}_{window_id}"
+                # Ensure blind_mat_name is valid for E+ (no spaces, etc.)
+                blind_mat_name = f"{base_blind_material_name_from_params}_{window_id.replace(' ', '_').replace(':', '_')}"
                 
                 logger.debug(f"[{window_id}] Target WindowMaterial:Blind name: '{blind_mat_name}'")
 
-                # Check if blind material already exists to prevent duplicates
                 existing_blind_mats_objects = idf.idfobjects.get("WINDOWMATERIAL:BLIND", [])
-                found_blind_mat = next((bm for bm in existing_blind_mats_objects if bm.Name == blind_mat_name), None)
+                blind_mat = next((bm for bm in existing_blind_mats_objects if getattr(bm, 'Name', None) == blind_mat_name), None)
 
-                if found_blind_mat:
+                if blind_mat:
                     logger.info(
                         f"[{window_id}] WindowMaterial:Blind '{blind_mat_name}' already exists. Reusing."
                     )
-                    # blind_mat = found_blind_mat # Not strictly needed if only name is used later
                 else:
                     logger.info(f"[{window_id}] Creating new WindowMaterial:Blind '{blind_mat_name}'.")
                     blind_mat = idf.newidfobject("WINDOWMATERIAL:BLIND")
                     blind_mat.Name = blind_mat_name
 
                     # --- Assign common blind material properties with defaults ---
-                    blind_mat.Slat_Orientation = shading_params.get(
-                        "slat_orientation", "Horizontal"
-                    )
-                    blind_mat.Slat_Width = shading_params.get(
-                        "slat_width", 0.025
-                    )
-                    blind_mat.Slat_Separation = shading_params.get(
-                        "slat_separation", 0.020
-                    )
-                    blind_mat.Slat_Thickness = shading_params.get(
-                        "slat_thickness", 0.001
-                    )
-                    blind_mat.Slat_Angle = shading_params.get(
-                        "slat_angle_deg", 45.0
-                    )
-                    blind_mat.Slat_Conductivity = shading_params.get(
-                        "slat_conductivity", 160.0
-                    )
+                    blind_mat.Slat_Orientation = shading_params.get("slat_orientation", "Horizontal")
+                    blind_mat.Slat_Width = shading_params.get("slat_width", 0.025)
+                    blind_mat.Slat_Separation = shading_params.get("slat_separation", 0.020)
+                    blind_mat.Slat_Thickness = shading_params.get("slat_thickness", 0.001)
+                    blind_mat.Slat_Angle = shading_params.get("slat_angle_deg", 45.0) # This is for the material definition, not control
+                    blind_mat.Slat_Conductivity = shading_params.get("slat_conductivity", 160.0)
 
-                    # --- Optical Properties ---
+                    # --- Optical Properties (ensure defaults if params are missing) ---
                     sbsr = shading_params.get("slat_beam_solar_reflectance", 0.7)
                     sdsr = shading_params.get("slat_diffuse_solar_reflectance", 0.7)
                     sbvr = shading_params.get("slat_beam_visible_reflectance", 0.7)
@@ -195,7 +179,7 @@ def add_shading_objects(
 
                     blind_mat.Slat_Beam_Solar_Transmittance = shading_params.get("slat_beam_solar_transmittance", 0.0)
                     blind_mat.Front_Side_Slat_Beam_Solar_Reflectance = sbsr
-                    blind_mat.Back_Side_Slat_Beam_Solar_Reflectance = shading_params.get("back_side_slat_beam_solar_reflectance", sbsr) # Allow asymmetric if specified
+                    blind_mat.Back_Side_Slat_Beam_Solar_Reflectance = shading_params.get("back_side_slat_beam_solar_reflectance", sbsr)
 
                     blind_mat.Slat_Diffuse_Solar_Transmittance = shading_params.get("slat_diffuse_solar_transmittance", 0.0)
                     blind_mat.Front_Side_Slat_Diffuse_Solar_Reflectance = sdsr
@@ -213,122 +197,129 @@ def add_shading_objects(
                     blind_mat.Front_Side_Slat_Infrared_Hemispherical_Emissivity = sir_em
                     blind_mat.Back_Side_Slat_Infrared_Hemispherical_Emissivity = shading_params.get("back_side_slat_ir_emissivity", sir_em)
                     
-                    # --- Other Optional Fields ---
-                    if "blind_to_glass_distance" in shading_params:
+                    # --- Standard Optional Fields for WindowMaterial:Blind ---
+                    if "blind_to_glass_distance" in shading_params: # E+ Field: Distance_between_Slat_and_Glazing
                         blind_mat.Distance_between_Slat_and_Glazing = shading_params["blind_to_glass_distance"]
-                    if "blind_top_opening_multiplier" in shading_params: # E+ has one Slat_Opening_Multiplier
-                         blind_mat.Slat_Opening_Multiplier = shading_params["blind_top_opening_multiplier"]
-                    # Add other multipliers if your E+ version supports them or if you simplify them to one value
-                    if "minimum_slat_angle" in shading_params: # Check I/O ref for actual field name if this is intended for WindowMaterial:Blind
-                        blind_mat.Minimum_Slat_Angle = shading_params["minimum_slat_angle"] # Example field name
-                    if "maximum_slat_angle" in shading_params:
-                        blind_mat.Maximum_Slat_Angle = shading_params["maximum_slat_angle"] # Example field name
+                    
+                    # E+ Field: Slat_Opening_Multiplier. Uses 'slat_opening_multiplier' from updated lookup/params.
+                    # Default to 0.5 if not found, which was in the IDF.
+                    slat_opening_mult = shading_params.get("slat_opening_multiplier", 0.5) 
+                    blind_mat.Slat_Opening_Multiplier = slat_opening_mult
+                    
+                    # Minimum_Output_Signal and Maximum_Output_Signal are not typically set directly unless complex control.
+                    # The fields "Minimum Slat Angle" and "Maximum Slat Angle" are NOT part of WindowMaterial:Blind.
+                    # They are part of WindowShadingControl for certain control types.
 
-
-                    logger.debug(f"[{window_id}] Successfully created WindowMaterial:Blind '{blind_mat.Name}'.")
+                    logger.debug(f"[{window_id}] Successfully created/configured WindowMaterial:Blind '{blind_mat.Name}'.")
 
                 # 3) Create or retrieve WindowShadingControl object
-                shading_ctrl_name = f"ShadingCtrl_{window_id}"
+                shading_ctrl_name = f"ShadingCtrl_{window_id.replace(' ', '_').replace(':', '_')}"
                 logger.debug(f"[{window_id}] Target WindowShadingControl name: '{shading_ctrl_name}'")
 
-                existing_shading_ctrls_objects = idf.idfobjects.get("WINDOWSHADINGCONTROL", [])
-                found_shading_ctrl = next((sc for sc in existing_shading_ctrls_objects if sc.Name == shading_ctrl_name), None)
-
-                shading_ctrl_obj_to_assign_name = shading_ctrl_name  # Default to the name
-
-                # Determine the zone name by looking up the base surface
+                # Determine the zone name by looking up the base surface of the fenestration
                 zone_name = None
-                base_surface_name = getattr(fen, "Building_Surface_Name", None)
+                base_surface_name = getattr(fen_surface_obj, "Building_Surface_Name", None)
                 if base_surface_name:
                     base_surfaces = idf.idfobjects.get("BUILDINGSURFACE:DETAILED", [])
-                    bs_obj = next((bs for bs in base_surfaces if bs.Name == base_surface_name), None)
+                    bs_obj = next((bs for bs in base_surfaces if getattr(bs, 'Name', None) == base_surface_name), None)
                     if bs_obj:
                         zone_name = getattr(bs_obj, "Zone_Name", None)
+                
+                if zone_name is None or not zone_name.strip():
+                    logger.error(f"[{window_id}] Cannot determine Zone Name for WindowShadingControl '{shading_ctrl_name}'. Skipping this control object.")
+                    if assigned_shading_log is not None:
+                        if window_id not in assigned_shading_log: assigned_shading_log[window_id] = {}
+                        assigned_shading_log[window_id]["shading_creation_status"] = "Failed: Zone Name for ShadingControl could not be determined."
+                    continue # Skip to the next fenestration surface
 
-                if found_shading_ctrl:
+                existing_shading_ctrls_objects = idf.idfobjects.get("WINDOWSHADINGCONTROL", [])
+                shading_ctrl = next((sc for sc in existing_shading_ctrls_objects if getattr(sc, 'Name', None) == shading_ctrl_name), None)
+
+                if shading_ctrl:
                     logger.info(
                         f"[{window_id}] WindowShadingControl '{shading_ctrl_name}' already exists. Reusing."
                     )
-                    shading_ctrl = found_shading_ctrl
                 else:
                     logger.info(f"[{window_id}] Creating new WindowShadingControl '{shading_ctrl_name}'.")
                     shading_ctrl = idf.newidfobject("WINDOWSHADINGCONTROL")
                     shading_ctrl.Name = shading_ctrl_name
-
-                    # Zone Name is required by the IDD
-                    if zone_name is not None:
-                        shading_ctrl.Zone_Name = zone_name
-                    else:
-                        shading_ctrl.Zone_Name = ""
+                    shading_ctrl.Zone_Name = zone_name # Zone Name is required and now validated
 
                     # Determine Shading_Type based on blind_to_glass_distance or a param
-                    # Defaulting to ExteriorBlind if distance is positive or not specified, Interior if negative
-                    blind_dist = shading_params.get("blind_to_glass_distance", 0.05)  # Default to exterior
+                    blind_dist = shading_params.get("blind_to_glass_distance", 0.05)  # Default to positive (exterior)
                     shading_device_type_ep = "ExteriorBlind"
                     if isinstance(blind_dist, (int, float)) and blind_dist < 0:
                         shading_device_type_ep = "InteriorBlind"
-                    shading_ctrl.Shading_Type = shading_device_type_ep
+                    # Other types: "ExteriorScreen", "InteriorScreen", "BetweenGlassBlind", "BetweenGlassScreen", "Shade"
+                    # This logic could be expanded if shading_params includes a more direct "shading_device_ep_type"
+                    shading_ctrl.Shading_Type = shading_params.get("shading_device_ep_type", shading_device_type_ep)
+                    
+                    shading_ctrl.Shading_Device_Material_Name = blind_mat_name
 
-                    shading_ctrl.Shading_Device_Material_Name = blind_mat_name  # Use the name of the WindowMaterial:Blind
+                    shading_ctrl.Shading_Control_Type = shading_params.get("shading_control_type", "AlwaysOn") # E.g., AlwaysOn, OnIfHighSolarOnWindow, Scheduled
+                    
+                    # Slat control type, relevant if Shading_Type is a blind
+                    if "Blind" in shading_ctrl.Shading_Type: # Covers InteriorBlind, ExteriorBlind, BetweenGlassBlind
+                        shading_ctrl.Type_of_Slats_Control_for_Blinds = shading_params.get("slat_control_type", "FixedSlatAngle") # E.g., FixedSlatAngle, ScheduledSlatAngle, BlockBeamSolar
 
-                    # Control Type (defaulting to FixedSlatAngle)
-                    shading_ctrl.Shading_Control_Type = shading_params.get(
-                        "shading_control_type", "AlwaysOn"
-                    )
-                    shading_ctrl.Type_of_Slats_Control_for_Blinds = shading_params.get(
-                        "slat_control_type", "FixedSlatAngle"
-                    )
+                        # Set Fixed_Slat_Angle if control type is FixedSlatAngle
+                        if shading_ctrl.Type_of_Slats_Control_for_Blinds.lower() == "fixedslatangle":
+                            # Use the corrected field name: Fixed_Slat_Angle
+                            shading_ctrl.Fixed_Slat_Angle = shading_params.get("slat_angle_deg", 45.0)
+                        
+                        # Example for ScheduledSlatAngle (add more logic if using this)
+                        # if shading_ctrl.Type_of_Slats_Control_for_Blinds.lower() == "scheduledslatangle":
+                        #     shading_ctrl.Slat_Angle_Schedule_Name = shading_params.get("slat_angle_schedule_name", "DefaultSlatAngleSchedule")
+                        #     # Ensure "DefaultSlatAngleSchedule" exists or is created.
 
-                    # Slat Angle for Fixed Control
-                    if shading_ctrl.Type_of_Slats_Control_for_Blinds.lower() == "fixedslatangle":
-                        shading_ctrl.Slat_Angle_Control_for_Fixed_Slat_Angle = shading_params.get(
-                            "slat_angle_deg", 45.0
-                        )
+                    # If Shading_Control_Type is "Scheduled"
+                    if shading_ctrl.Shading_Control_Type.lower() == "scheduled":
+                         shading_ctrl.Schedule_Name = shading_params.get("shading_control_schedule_name", "AlwaysOnSchedule") # Ensure this schedule exists
+                         # The field "Shading_Control_Is_Scheduled" is not directly in WindowShadingControl.
+                         # The presence of a Schedule_Name when Shading_Control_Type is "Scheduled" implies it.
+                    
+                    shading_ctrl.Glare_Control_Is_Active = shading_params.get("glare_control_is_active", "No")
+                    # Add other fields like Setpoint, Glare_Control_Daylighting_Illuminance_Setpoint, etc. as needed.
 
-                    shading_ctrl.Shading_Control_Is_Scheduled = shading_params.get(
-                        "shading_control_is_scheduled", "No"
-                    )
-                    if shading_ctrl.Shading_Control_Is_Scheduled.lower() == "yes":
-                        shading_ctrl.Schedule_Name = shading_params.get(
-                            "shading_control_schedule_name", "AlwaysOnSchedule"
-                        )
+                    logger.debug(f"[{window_id}] Successfully created/configured WindowShadingControl '{shading_ctrl.Name}'.")
 
-                    shading_ctrl.Glare_Control_Is_Active = shading_params.get(
-                        "glare_control_is_active", "No"
-                    )
+                # Ensure the current fenestration surface is listed in the control object's extensible fields
+                # This part can be tricky with IDF libraries. Geomeppy might have an add_extensible method.
+                # Assuming a direct indexed approach for now, ensuring it doesn't overwrite.
+                # Check if the fenestration surface is already in this control object
+                is_fen_listed = False
+                for i in range(1, 101): # Max extensible fields, adjust if needed
+                    field_name = f"Fenestration_Surface_{i}_Name"
+                    current_fen_on_ctrl = getattr(shading_ctrl, field_name, None)
+                    if current_fen_on_ctrl == fen_name_attr:
+                        is_fen_listed = True
+                        break
+                    if current_fen_on_ctrl is None or not current_fen_on_ctrl.strip(): # Found an empty slot
+                        if not is_fen_listed: # Add if not already listed
+                            setattr(shading_ctrl, field_name, fen_name_attr)
+                            logger.debug(f"[{window_id}] Assigned fenestration '{fen_name_attr}' to {field_name} of '{shading_ctrl_name}'.")
+                        is_fen_listed = True # Mark as listed (or handled)
+                        break
+                if not is_fen_listed:
+                     logger.warning(f"[{window_id}] Could not assign fenestration '{fen_name_attr}' to WindowShadingControl '{shading_ctrl_name}' (no empty slots or already present).")
 
-                    logger.debug(
-                        f"[{window_id}] Successfully created WindowShadingControl '{shading_ctrl.Name}'."
-                    )
 
-                # Ensure the current fenestration surface is listed in the control object
-                next_index = 1
-                while getattr(shading_ctrl, f"Fenestration_Surface_{next_index}_Name", None):
-                    next_index += 1
-                setattr(shading_ctrl, f"Fenestration_Surface_{next_index}_Name", fen_name_attr)
-
-                if zone_name is not None and not getattr(shading_ctrl, "Zone_Name", ""):
-                    shading_ctrl.Zone_Name = zone_name
-
-                if assigned_shading_log is not None and window_id is not None:
+                if assigned_shading_log is not None:
                     if window_id not in assigned_shading_log:
                         assigned_shading_log[window_id] = {}
-                    assigned_shading_log[window_id][
-                        "shading_creation_status"
-                    ] = f"Linked to {shading_ctrl_name}"
+                    assigned_shading_log[window_id]["shading_creation_status"] = f"Linked to {shading_ctrl_name}"
                     assigned_shading_log[window_id]["shading_control_name_assigned"] = shading_ctrl_name
                     assigned_shading_log[window_id]["blind_material_name_used"] = blind_mat_name
-
 
             except Exception as e_fen_processing:
                 logger.error(
                     f"Error processing blind for fenestration surface '{window_id}': {e_fen_processing}",
-                    exc_info=True # Provides traceback
+                    exc_info=True 
                 )
-                if assigned_shading_log is not None and window_id is not None: # Log failure
+                if assigned_shading_log is not None:
                     if window_id not in assigned_shading_log:
                         assigned_shading_log[window_id] = {}
-                    assigned_shading_log[window_id]["shading_creation_status"] = f"Failed: Outer processing error {e_fen_processing}"
+                    assigned_shading_log[window_id]["shading_creation_status"] = f"Failed: Outer processing error - {str(e_fen_processing)}"
                 continue  # Move to the next fenestration surface
         logger.info("Finished processing blind shading for fenestration surfaces.")
 
@@ -341,12 +332,13 @@ def add_shading_objects(
         # This typically would not loop per window unless geometry is window-specific.
         # The _create_overhang_example is a global example.
         # You might need a list of building elements or a different context for these.
+        # Ensure user_config_shading passed here is relevant for geometric shading.
         _create_overhang_example(
             idf,
             building_row,  # Pass context
-            shading_type_key=shading_type_key,  # Use the main key, or a specific one for geometry
+            shading_type_key=shading_type_key, # This key should be for geometric shading in shading_lookup
             strategy=strategy,
-            user_config_shading=user_config_shading,  # Pass overrides if applicable to geometry
+            user_config_shading=user_config_shading, 
         )
     
     num_blind_mats_final = len(idf.idfobjects.get("WINDOWMATERIAL:BLIND", []))
@@ -371,38 +363,40 @@ def _create_overhang_example(
         Contextual data (e.g., building dimensions, orientation) that could inform geometry.
     shading_type_key : str
         Key to look up base parameters, potentially for overhang depth, etc.
+        This should point to an entry in shading_lookup.py suitable for geometric shading.
     strategy : str
         Strategy for picking values from ranges.
     user_config_shading : dict or None
         Overrides for parameters relevant to this geometric shading.
     """
-    logger.info("Executing _create_overhang_example.")
-    # Suppose we pick some shading params that define the overhang depth
+    logger.info(f"Executing _create_overhang_example for shading_type_key: {shading_type_key}.")
+    
     # For geometry, the 'window_id' for pick_shading_params might be a generic name
     # if the overhang is not tied to a specific window but rather a facade or building.
+    # The `user_config_shading` passed here should be the specific overrides for this `shading_type_key`.
     shading_params = pick_shading_params(
-        window_id="Global_Overhang_Example",  # Generic ID for logging these params
-        shading_type_key=shading_type_key,  # Could be a specific key like "my_building_overhang"
+        window_id="GeometricShading_Example",  # Generic ID for logging these params
+        shading_type_key=shading_type_key,
         strategy=strategy,
-        user_config=user_config_shading,  # Pass relevant part of user_config
+        user_config=user_config_shading, 
     )
 
     if not shading_params:
         logger.warning(
-            f"No parameters resolved for overhang example with key '{shading_type_key}'. Skipping overhang creation."
+            f"No parameters resolved for geometric shading example with key '{shading_type_key}'. Skipping creation."
         )
         return
 
-    # Let's say we expect an "overhang_depth" from shading_params
-    # or use a default if not found.
-    overhang_depth = shading_params.get("overhang_depth", 1.0)  # Default 1m depth
-    overhang_name = shading_params.get("overhang_name", "Overhang_North_Example")
+    # Example: Expecting "shading_element_name" and "overhang_depth" from shading_params
+    overhang_name = shading_params.get("shading_element_name", "Default_Overhang_Example")
+    overhang_depth = shading_params.get("overhang_depth", 1.0)  # Default 1m depth if not in params
+
+    # Ensure name is valid for E+
+    overhang_name = overhang_name.replace(' ', '_').replace(':', '_')
 
     # Check if this shading object already exists
-    existing_shading_geom = [
-        sg.Name for sg in idf.idfobjects.get("SHADING:BUILDING:DETAILED", [])
-    ]
-    if overhang_name in existing_shading_geom:
+    existing_shading_geom_objects = idf.idfobjects.get("SHADING:BUILDING:DETAILED", [])
+    if any(getattr(sg, 'Name', None) == overhang_name for sg in existing_shading_geom_objects):
         logger.info(
             f"Shading:Building:Detailed '{overhang_name}' already exists. Skipping creation."
         )
@@ -414,46 +408,52 @@ def _create_overhang_example(
         # Base_Surface_Name: Optional, if the overhang is attached to a specific surface.
         # Transmittance_Schedule_Name: Optional, if transmittance varies.
 
-        # Hard-coded example geometry (4 vertices for a simple rectangular overhang):
-        # This is purely illustrative. You’d typically compute X/Y/Z coordinates based on
-        # building_row_context (e.g., facade width, window position, orientation),
-        # and parameters like overhang_depth, width, tilt from shading_params.
+        # --- Illustrative Geometry ---
+        # This is purely illustrative. Real geometry calculation is complex and depends heavily on
+        # building_row_context (facade dimensions, window positions, building orientation)
+        # and detailed parameters from shading_params (width, tilt, offsets, etc.).
+        # The coordinates MUST be in absolute world coordinates.
 
-        # Example: A 5m wide overhang, 1m deep, at Z=3.0, on a North facade (Y positive)
-        # Vertices are typically counter-clockwise when viewed from outside.
+        logger.info(f"Illustrative geometry for '{overhang_name}': This is a placeholder and needs actual geometric calculation.")
+        
+        # Example: A 5m wide overhang, 'overhang_depth' deep, at Z=3.0, on a conceptual North facade (Y positive from facade plane)
+        # These coordinates would need to be calculated based on the actual building.
+        # Assume facade starts at X=0, Y=0 (local to facade segment) and is oriented North.
+        # World coordinates would depend on building's position and orientation.
+        
+        # For simplicity, let's define a rectangle parallel to XY plane, offset in Y.
+        # This is NOT a realistic overhang calculation.
+        x_start = 0.0
+        width = 5.0
+        z_level = 3.0
+        y_facade = 0.0 # Assuming facade is at Y=0 for this example segment
+
         shading_obj.Number_of_Vertices = 4
+        # Vertices are typically counter-clockwise when viewed from outside looking towards the building.
+        # For an overhang on a North wall (Y-positive is "out"), this means Y increases.
 
-        # Vertex 1 (Bottom-Left from outside view)
-        shading_obj.Vertex_1_X_coordinate = (
-            0.0  # Assuming start at X=0 of facade segment
-        )
-        shading_obj.Vertex_1_Y_coordinate = (
-            0.0  # Y=0 is the facade plane for this local definition
-        )
-        shading_obj.Vertex_1_Z_coordinate = 3.0  # Height
+        # Vertex 1 (Bottom-Left of overhang, at facade)
+        shading_obj.Vertex_1_X_coordinate = x_start
+        shading_obj.Vertex_1_Y_coordinate = y_facade 
+        shading_obj.Vertex_1_Z_coordinate = z_level
 
-        # Vertex 2 (Bottom-Right)
-        shading_obj.Vertex_2_X_coordinate = 5.0  # Width of overhang = 5m
-        shading_obj.Vertex_2_Y_coordinate = 0.0
-        shading_obj.Vertex_2_Z_coordinate = 3.0
+        # Vertex 2 (Bottom-Right of overhang, at facade)
+        shading_obj.Vertex_2_X_coordinate = x_start + width
+        shading_obj.Vertex_2_Y_coordinate = y_facade
+        shading_obj.Vertex_2_Z_coordinate = z_level
 
-        # Vertex 3 (Top-Right, projecting outwards)
-        shading_obj.Vertex_3_X_coordinate = 5.0
-        shading_obj.Vertex_3_Y_coordinate = overhang_depth  # Projects 'overhang_depth' outwards (e.g., in positive Y if North wall is at Y=0)
-        shading_obj.Vertex_3_Z_coordinate = 3.0  # Assuming flat overhang for simplicity
+        # Vertex 3 (Top-Right of overhang, projecting outwards)
+        shading_obj.Vertex_3_X_coordinate = x_start + width
+        shading_obj.Vertex_3_Y_coordinate = y_facade + overhang_depth # Projects 'overhang_depth'
+        shading_obj.Vertex_3_Z_coordinate = z_level 
 
-        # Vertex 4 (Top-Left, projecting outwards)
-        shading_obj.Vertex_4_X_coordinate = 0.0
-        shading_obj.Vertex_4_Y_coordinate = overhang_depth
-        shading_obj.Vertex_4_Z_coordinate = 3.0
-
-        # Note: The coordinate system for SHADING:BUILDING:DETAILED is absolute world coordinates.
-        # The example above assumes a local definition relative to a point, which would then
-        # need to be transformed to world coordinates based on building_row_context.
-        # For simplicity here, these are treated as if they are already world coordinates.
+        # Vertex 4 (Top-Left of overhang, projecting outwards)
+        shading_obj.Vertex_4_X_coordinate = x_start
+        shading_obj.Vertex_4_Y_coordinate = y_facade + overhang_depth
+        shading_obj.Vertex_4_Z_coordinate = z_level
 
         logger.debug(
-            f"Created Shading:Building:Detailed '{shading_obj.Name}' with depth {overhang_depth}m."
+            f"Created placeholder Shading:Building:Detailed '{shading_obj.Name}' with illustrative depth {overhang_depth}m."
         )
 
     except Exception as e:
@@ -477,73 +477,76 @@ def add_shading_schedule(
 
     Returns
     -------
-    EpBunch or equivalent schedule object
-        The created schedule object, or None if creation fails.
+    The created schedule object, or None if creation fails.
     """
     logger.info(
-        f"Attempting to create schedule: '{schedule_name}' of type '{schedule_type}'."
+        f"Attempting to create/retrieve schedule: '{schedule_name}' of type '{schedule_type}'."
     )
+    
+    # Ensure schedule_name is valid for E+
+    schedule_name_ep = schedule_name.replace(' ', '_').replace(':', '_')
 
-    # Check if schedule already exists
-    existing_schedules_compact = [
-        s.Name for s in idf.idfobjects.get("SCHEDULE:COMPACT", [])
-    ]
-    # Add checks for other schedule types if you use them (SCHEDULE:YEAR, SCHEDULE:CONSTANT etc.)
-    if schedule_name in existing_schedules_compact:
-        logger.info(f"Schedule:Compact '{schedule_name}' already exists. Reusing.")
-        # Find and return the existing schedule object if needed by the caller
-        for s_obj in idf.idfobjects["SCHEDULE:COMPACT"]:
-            if s_obj.Name == schedule_name:
-                return s_obj
-        return None # Should not happen if name was found in list comprehension
+
+    # Check if schedule already exists (assuming Schedule:Compact for this example)
+    # More robust checking would involve checking other schedule types too.
+    schedule_objects = idf.idfobjects.get("SCHEDULE:COMPACT", [])
+    existing_schedule = next((s for s in schedule_objects if getattr(s, 'Name', None) == schedule_name_ep), None)
+    
+    if existing_schedule:
+        logger.info(f"Schedule:Compact '{schedule_name_ep}' already exists. Reusing.")
+        return existing_schedule
 
     try:
         # Using SCHEDULE:COMPACT for simplicity.
         sched = idf.newidfobject("SCHEDULE:COMPACT")
-        sched.Name = schedule_name
+        sched.Name = schedule_name_ep
 
         # Schedule_Type_Limits_Name links to a ScheduleTypeLimits object.
-        stl_name = schedule_type  # Assuming ScheduleTypeLimits Name matches type for simplicity
-        existing_stls = [
-            stl.Name for stl in idf.idfobjects.get("SCHEDULETYPELIMITS", [])
-        ]
-        if stl_name not in existing_stls:
+        # Assume ScheduleTypeLimits Name matches the schedule_type for simplicity,
+        # e.g., if schedule_type is "Fraction", it looks for a ScheduleTypeLimits named "Fraction".
+        stl_name = schedule_type 
+        
+        stl_objects = idf.idfobjects.get("SCHEDULETYPELIMITS", [])
+        existing_stl = next((stl for stl in stl_objects if getattr(stl, 'Name', None) == stl_name), None)
+
+        if not existing_stl:
             logger.warning(
-                f"ScheduleTypeLimits '{stl_name}' not found. Creating a basic one for '{schedule_name}'."
+                f"ScheduleTypeLimits '{stl_name}' not found. Creating a basic one for '{schedule_name_ep}'."
             )
             new_stl = idf.newidfobject("SCHEDULETYPELIMITS")
             new_stl.Name = stl_name
             if schedule_type.lower() == "fraction":
                 new_stl.Lower_Limit_Value = 0.0
                 new_stl.Upper_Limit_Value = 1.0
-                new_stl.Numeric_Type = "Continuous"
-            elif schedule_type.lower() == "onoff": # Common for availability
+                new_stl.Numeric_Type = "Continuous" # Or Discrete if it's 0 or 1 steps
+            elif schedule_type.lower() == "onoff": 
                 new_stl.Lower_Limit_Value = 0.0
                 new_stl.Upper_Limit_Value = 1.0
                 new_stl.Numeric_Type = "Discrete"
             elif schedule_type.lower() == "temperature":
-                new_stl.Lower_Limit_Value = -100.0 # Example
-                new_stl.Upper_Limit_Value = 200.0  # Example
+                new_stl.Lower_Limit_Value = -100.0 
+                new_stl.Upper_Limit_Value = 200.0  
                 new_stl.Numeric_Type = "Continuous"
-            else:
+            else: # Default for unknown types
                 logger.warning(
-                    f"No default setup for ScheduleTypeLimits '{schedule_type}'. It might be invalid. Defaulting to Fraction-like limits."
+                    f"No default setup for ScheduleTypeLimits '{schedule_type}'. Defaulting to Fraction-like limits (0-1, Continuous)."
                 )
                 new_stl.Lower_Limit_Value = 0.0
                 new_stl.Upper_Limit_Value = 1.0
-                new_stl.Numeric_Type = "Continuous" # Or Discrete if more appropriate for unknown type
+                new_stl.Numeric_Type = "Continuous" 
 
         sched.Schedule_Type_Limits_Name = stl_name
 
-        # Simple example: always 1.0 (e.g., shades always active if scheduled)
+        # Simple example: always 1.0 (e.g., shades always active if scheduled and this schedule is used)
         # Field format for SCHEDULE:COMPACT: "Through: MM/DD", "For: Days", "Until: HH:MM, Value", ...
         sched.Field_1 = "Through: 12/31"  # Through end of year
         sched.Field_2 = "For: AllDays"  # For all day types
-        sched.Field_3 = "Until: 24:00, 1.0"  # Until midnight, value is 1.0
+        sched.Field_3 = "Until: 24:00"   # Until midnight
+        sched.Field_4 = "1.0"            # Value is 1.0
         # Add more fields for complex schedules.
 
         logger.debug(f"Created Schedule:Compact '{sched.Name}'.")
         return sched
     except Exception as e:
-        logger.error(f"Error creating schedule '{schedule_name}': {e}", exc_info=True)
+        logger.error(f"Error creating schedule '{schedule_name_ep}': {e}", exc_info=True)
         return None
