@@ -1,5 +1,3 @@
-
-
 D:\Documents\E_Plus_2030_py\idf_objects\wshading\assign_shading_values.py
 D:\Documents\E_Plus_2030_py\idf_objects\wshading\create_shading_objects.py
 D:\Documents\E_Plus_2030_py\idf_objects\wshading\shading_lookup.py
