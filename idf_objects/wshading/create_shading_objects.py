@@ -108,7 +108,8 @@ def add_shading_objects(
             if "slat_beam_solar_transmittance" in shading_params:
                 blind_mat.Slat_Beam_Solar_Transmittance = shading_params["slat_beam_solar_transmittance"]
             if "slat_beam_solar_reflectance" in shading_params:
-                val = shading_params["slat_beam_solar_reflectance"]
+
+              val = shading_params["slat_beam_solar_reflectance"]
                 blind_mat.Front_Side_Slat_Beam_Solar_Reflectance = val
                 blind_mat.Back_Side_Slat_Beam_Solar_Reflectance = val
             if "slat_diffuse_solar_transmittance" in shading_params:
@@ -135,6 +136,7 @@ def add_shading_objects(
                 val = shading_params["slat_ir_emissivity"]
                 blind_mat.Front_Side_Slat_Infrared_Hemispherical_Emissivity = val
                 blind_mat.Back_Side_Slat_Infrared_Hemispherical_Emissivity = val
+
 
             # 3) If dynamic shading => create or reference a schedule
             #    For example, if we want a schedule that changes slat angle or availability:
