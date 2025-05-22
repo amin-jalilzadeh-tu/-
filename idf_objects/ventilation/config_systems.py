@@ -108,7 +108,10 @@ SYSTEMS_CONFIG = {
             "fixed_params": {
                 # These parameters are typically set on the IdealLoads object for System D ventilation.
                 # Design_Specification_Outdoor_Air_Object_Name is set dynamically in create_ventilation_system.
-                "Outdoor_Air_Economizer_Type": "FixedDryBulb", # Enable economizer for free cooling
+                # EnergyPlus 22.x 'ZoneHVAC:IdealLoadsAirSystem' only supports
+                # NoEconomizer, DifferentialDryBulb or DifferentialEnthalpy.
+                # Use NoEconomizer for broad compatibility.
+                "Outdoor_Air_Economizer_Type": "NoEconomizer", # Economizer disabled for compatibility
                 "Economizer_Maximum_Limit_Dry_Bulb_Temperature": 18,  # DegC limit for economizer
                 # Heat_Recovery_Type is set dynamically in create_ventilation_system based on actual effectiveness values.
                 # "Heat_Recovery_Type": "Sensible" # Initial thought, but now dynamic
@@ -180,7 +183,9 @@ SYSTEMS_CONFIG = {
                 # "Fan_Total_Efficiency": (0.65, 0.80),
             },
             "fixed_params": {
-                "Outdoor_Air_Economizer_Type": "FixedDryBulb", # Enable economizer by default
+                # EnergyPlus 22.x does not allow 'FixedDryBulb' for IdealLoads
+                # economizers. Default to NoEconomizer for reliability.
+                "Outdoor_Air_Economizer_Type": "NoEconomizer", # Economizer disabled for compatibility
                 "Economizer_Maximum_Limit_Dry_Bulb_Temperature": 18,  # DegC limit for economizer
                 # Heat_Recovery_Type is set dynamically in create_ventilation_system.
             },
