@@ -233,84 +233,91 @@ def add_shading_objects(
 
                 existing_shading_ctrls_objects = idf.idfobjects.get("WINDOWSHADINGCONTROL", [])
                 found_shading_ctrl = next((sc for sc in existing_shading_ctrls_objects if sc.Name == shading_ctrl_name), None)
-                
-                shading_ctrl_obj_to_assign_name = shading_ctrl_name # Default to the name
+
+                shading_ctrl_obj_to_assign_name = shading_ctrl_name  # Default to the name
+
+                # Determine the zone name by looking up the base surface
+                zone_name = None
+                base_surface_name = getattr(fen, "Building_Surface_Name", None)
+                if base_surface_name:
+                    base_surfaces = idf.idfobjects.get("BUILDINGSURFACE:DETAILED", [])
+                    bs_obj = next((bs for bs in base_surfaces if bs.Name == base_surface_name), None)
+                    if bs_obj:
+                        zone_name = getattr(bs_obj, "Zone_Name", None)
 
                 if found_shading_ctrl:
                     logger.info(
                         f"[{window_id}] WindowShadingControl '{shading_ctrl_name}' already exists. Reusing."
                     )
-                    # shading_ctrl_obj_to_assign_name = found_shading_ctrl.Name # Already set
+                    shading_ctrl = found_shading_ctrl
                 else:
                     logger.info(f"[{window_id}] Creating new WindowShadingControl '{shading_ctrl_name}'.")
                     shading_ctrl = idf.newidfobject("WINDOWSHADINGCONTROL")
                     shading_ctrl.Name = shading_ctrl_name
-                    
+
+                    # Zone Name is required by the IDD
+                    if zone_name is not None:
+                        shading_ctrl.Zone_Name = zone_name
+                    else:
+                        shading_ctrl.Zone_Name = ""
+
                     # Determine Shading_Type based on blind_to_glass_distance or a param
                     # Defaulting to ExteriorBlind if distance is positive or not specified, Interior if negative
-                    blind_dist = shading_params.get("blind_to_glass_distance", 0.05) # Default to exterior
+                    blind_dist = shading_params.get("blind_to_glass_distance", 0.05)  # Default to exterior
                     shading_device_type_ep = "ExteriorBlind"
                     if isinstance(blind_dist, (int, float)) and blind_dist < 0:
                         shading_device_type_ep = "InteriorBlind"
-                    # Could also be driven by a parameter in shading_params:
-                    # shading_device_type_ep = shading_params.get("shading_device_type_ep", "ExteriorBlind")
                     shading_ctrl.Shading_Type = shading_device_type_ep
-                    
-                    shading_ctrl.Shading_Device_Material_Name = blind_mat_name # Use the name of the WindowMaterial:Blind
-                    
+
+                    shading_ctrl.Shading_Device_Material_Name = blind_mat_name  # Use the name of the WindowMaterial:Blind
+
                     # Control Type (defaulting to FixedSlatAngle)
-                    shading_ctrl.Type_of_Slats_Control_for_Blinds = shading_params.get("slat_control_type", "FixedSlatAngle")
-                    
+                    shading_ctrl.Shading_Control_Type = shading_params.get(
+                        "shading_control_type", "AlwaysOn"
+                    )
+                    shading_ctrl.Type_of_Slats_Control_for_Blinds = shading_params.get(
+                        "slat_control_type", "FixedSlatAngle"
+                    )
+
                     # Slat Angle for Fixed Control
                     if shading_ctrl.Type_of_Slats_Control_for_Blinds.lower() == "fixedslatangle":
-                        shading_ctrl.Slat_Angle_Control_for_Fixed_Slat_Angle = shading_params.get("slat_angle_deg", 45.0)
-                    
-                    # Schedule for deployment (e.g., AlwaysOn, or a specific schedule)
-                    # Defaulting to "No" schedule, meaning it's always available to be controlled by other means if not AlwaysOn
-                    shading_ctrl.Shading_Control_Is_Scheduled = shading_params.get("shading_control_is_scheduled", "No") 
+                        shading_ctrl.Slat_Angle_Control_for_Fixed_Slat_Angle = shading_params.get(
+                            "slat_angle_deg", 45.0
+                        )
+
+                    shading_ctrl.Shading_Control_Is_Scheduled = shading_params.get(
+                        "shading_control_is_scheduled", "No"
+                    )
                     if shading_ctrl.Shading_Control_Is_Scheduled.lower() == "yes":
-                        shading_ctrl.Shading_Control_Schedule_Name = shading_params.get("shading_control_schedule_name", "AlwaysOnSchedule") # Ensure this schedule exists
-                    
-                    # Glare Control
-                    shading_ctrl.Glare_Control_Is_Active = shading_params.get("glare_control_is_active", "No")
-                    # Other fields like Setpoint, ShadingControlSetpointScheduleName etc. for advanced control can be added from shading_params
+                        shading_ctrl.Schedule_Name = shading_params.get(
+                            "shading_control_schedule_name", "AlwaysOnSchedule"
+                        )
 
-                    logger.debug(f"[{window_id}] Successfully created WindowShadingControl '{shading_ctrl.Name}'.")
-                    # shading_ctrl_obj_to_assign_name = shading_ctrl.Name # Already set
-
-                # 4) Link the shading control to this fenestration surface
-                logger.info(f"[{window_id}] Attempting to assign Shading_Control_Name: '{shading_ctrl_obj_to_assign_name}' to fenestration surface: '{fen_name_attr}'")
-                try:
-                    # Ensure the fen object allows direct attribute assignment for Shading_Control_Name
-                    # This is typical for geomeppy/eppy objects.
-                    fen.Shading_Control_Name = shading_ctrl_obj_to_assign_name
-                    # Verification step:
-                    assigned_sc_name = getattr(fen, 'Shading_Control_Name', 'FIELD_NOT_FOUND_OR_EMPTY_AFTER_ASSIGN')
-                    logger.info(f"[{window_id}] After assignment, {fen_name_attr}.Shading_Control_Name is: '{assigned_sc_name}'")
-                    if assigned_sc_name != shading_ctrl_obj_to_assign_name:
-                        logger.error(f"[{window_id}] FAILED to verify Shading_Control_Name assignment. Expected '{shading_ctrl_obj_to_assign_name}', got '{assigned_sc_name}'.")
-                    else:
-                        logger.info(f"[{window_id}] Successfully linked shading control '{shading_ctrl_obj_to_assign_name}'.")
-                        if assigned_shading_log is not None and window_id is not None: # Log success
-                            if window_id not in assigned_shading_log:
-                                assigned_shading_log[window_id] = {}
-                            assigned_shading_log[window_id]["shading_creation_status"] = f"Success: Linked to {shading_ctrl_obj_to_assign_name}"
-                            assigned_shading_log[window_id]["shading_control_name_assigned"] = shading_ctrl_obj_to_assign_name
-                            assigned_shading_log[window_id]["blind_material_name_used"] = blind_mat_name
-
-
-                except AttributeError as e_attr:
-                    logger.error(
-                        f"[{window_id}] AttributeError: Failed to assign Shading_Control_Name. Does the FENESTRATIONSURFACE:DETAILED object have a 'Shading_Control_Name' field/attribute? Error: {e_attr}"
+                    shading_ctrl.Glare_Control_Is_Active = shading_params.get(
+                        "glare_control_is_active", "No"
                     )
-                except Exception as e_assign:
-                    logger.error(
-                        f"[{window_id}] Exception: Failed to assign Shading_Control_Name to {fen_name_attr}: {e_assign}"
+
+                    logger.debug(
+                        f"[{window_id}] Successfully created WindowShadingControl '{shading_ctrl.Name}'."
                     )
-                    if assigned_shading_log is not None and window_id is not None: # Log failure
-                        if window_id not in assigned_shading_log:
-                            assigned_shading_log[window_id] = {}
-                        assigned_shading_log[window_id]["shading_creation_status"] = f"Failed: Linking error {e_assign}"
+
+                # Ensure the current fenestration surface is listed in the control object
+                next_index = 1
+                while getattr(shading_ctrl, f"Fenestration_Surface_{next_index}_Name", None):
+                    next_index += 1
+                setattr(shading_ctrl, f"Fenestration_Surface_{next_index}_Name", fen_name_attr)
+
+                if zone_name is not None and not getattr(shading_ctrl, "Zone_Name", ""):
+                    shading_ctrl.Zone_Name = zone_name
+
+                if assigned_shading_log is not None and window_id is not None:
+                    if window_id not in assigned_shading_log:
+                        assigned_shading_log[window_id] = {}
+                    assigned_shading_log[window_id][
+                        "shading_creation_status"
+                    ] = f"Linked to {shading_ctrl_name}"
+                    assigned_shading_log[window_id]["shading_control_name_assigned"] = shading_ctrl_name
+                    assigned_shading_log[window_id]["blind_material_name_used"] = blind_mat_name
 
 
             except Exception as e_fen_processing:
