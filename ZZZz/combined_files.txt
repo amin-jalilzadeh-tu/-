@@ -1,905 +1,3 @@
-D:\Documents\E_Plus_2030_py\idf_objects\geomz
-D:\Documents\E_Plus_2030_py\idf_objects\geomz\assign_geometry_values.py
-D:\Documents\E_Plus_2030_py\idf_objects\geomz\building.py
-D:\Documents\E_Plus_2030_py\idf_objects\geomz\geometry.py
-D:\Documents\E_Plus_2030_py\idf_objects\geomz\zoning.py
-D:\Documents\E_Plus_2030_py\idf_objects\fenez\assign_fenestration_values.py
-D:\Documents\E_Plus_2030_py\idf_objects\fenez\fenestration.py
-D:\Documents\E_Plus_2030_py\idf_objects\fenez\fenez_config_manager.py
-D:\Documents\E_Plus_2030_py\idf_objects\fenez\materials.py
-D:\Documents\E_Plus_2030_py\idf_objects\fenez\materials_config.py
-D:\Documents\E_Plus_2030_py\idf_objects\wshading\assign_shading_values.py
-D:\Documents\E_Plus_2030_py\idf_objects\wshading\shading_lookup.py
-D:\Documents\E_Plus_2030_py\idf_objects\wshading\create_shading_objects.py
-D:\Documents\E_Plus_2030_py\idf_objects\wshading\shading_overrides_from_excel.py
-D:\Documents\E_Plus_2030_py\idf_creation.py
-
-
-
-File: D:\Documents\E_Plus_2030_py\idf_objects\geomz
-============================================================
-Error reading file: [Errno 13] Permission denied: 'D:\\Documents\\E_Plus_2030_py\\idf_objects\\geomz'
-
-------------------------------------------------------------
-
-File: D:\Documents\E_Plus_2030_py\idf_objects\geomz\assign_geometry_values.py
-============================================================
-# geomz/assign_geometry_values.py
-
-import random
-from .geometry_lookup import geometry_lookup
-from .geometry_overrides_from_excel import pick_geom_params_from_rules
-
-
-def find_geom_overrides(building_id, building_type, user_config):
-    """
-    Returns any matching rows from user_config for the given building_id / building_type.
-    Each override can define:
-      - building_id (exact match, if provided)
-      - building_type (exact match, if provided)
-      - param_name in ["perimeter_depth", "has_core"]
-      - min_val, max_val (for numeric overrides)
-      - fixed_value (for boolean or "lock" numeric)
-    """
-    matches = []
-    for row in (user_config or []):
-        # Match building_id if specified
-        if "building_id" in row:
-            if row["building_id"] != building_id:
-                continue
-        # Match building_type if specified
-        if "building_type" in row:
-            if row["building_type"] != building_type:
-                continue
-        matches.append(row)
-    return matches
-
-
-def pick_val_with_range(
-    rng_tuple,
-    strategy="A",
-    log_dict=None,      # e.g. assigned_geom_log[bldg_id]
-    param_name=None
-):
-    """
-    rng_tuple = (min_val, max_val)
-    strategy  = "A" => midpoint
-                "B" => random uniform
-                else => pick min_val
-    log_dict  => dictionary for logging (if not None)
-    param_name=> e.g. "perimeter_depth"
-
-    We log both the range and the final chosen value:
-       log_dict["perimeter_depth_range"] = (2.0, 3.0)
-       log_dict["perimeter_depth"]       = 2.45
-    """
-    min_v, max_v = rng_tuple
-
-    if strategy == "A":         # midpoint
-        chosen = (min_v + max_v) / 2.0
-    elif strategy == "B":       # random uniform
-        chosen = random.uniform(min_v, max_v)
-    else:
-        chosen = min_v          # fallback => min
-
-    if log_dict is not None and param_name is not None:
-        log_dict[f"{param_name}_range"] = (min_v, max_v)
-        log_dict[param_name] = chosen
-
-    return chosen
-
-
-def assign_geometry_values(
-    building_row,
-    calibration_stage="pre_calibration",
-    strategy="A",
-    random_seed=None,
-    user_config=None,         # optional list of partial overrides from JSON
-    assigned_geom_log=None,   # dictionary for logging
-    excel_rules=None          # optional excel-based geometry rules
-):
-    """
-    1) Identify building_function => "residential" or "non_residential".
-    2) Identify sub-type => read "residential_type" or "non_residential_type".
-    3) Start from geometry_lookup[ building_function ][ sub_type ][ calibration_stage ] => param_dict
-       e.g. { "perimeter_depth_range": (2.0,3.0), "has_core": False }
-    4) If excel_rules => override further (pick_geom_params_from_rules(...)).
-    5) If user_config => partial override for "perimeter_depth" or "has_core".
-       - If param_name="perimeter_depth" with min_val & max_val => update perimeter_depth_range.
-         If "fixed_value":true => interpret it as (min_val, min_val) => no randomness.
-       - If param_name="has_core" and fixed_value => set has_core = that boolean
-    6) We pick final perimeter_depth using pick_val_with_range(...).
-    7) Return a dictionary => {"perimeter_depth": X, "has_core": Y}.
-    8) Log final picks (and numeric range) in assigned_geom_log if provided.
-    """
-
-    # optional reproducibility
-    if random_seed is not None:
-        random.seed(random_seed)
-
-    bldg_id        = building_row.get("ogc_fid", 0)
-    bldg_function  = building_row.get("building_function", "residential").lower()
-    area           = building_row.get("area", 100.0)
-    perimeter      = building_row.get("perimeter", 40.0)
-
-    # 1) get sub-type
-    if bldg_function == "residential":
-        sub_type = building_row.get("residential_type", "Two-and-a-half-story House")
-        dict_for_function = geometry_lookup.get("residential", {}).get(sub_type, {})
-    else:
-        sub_type = building_row.get("non_residential_type", "Office Function")
-        dict_for_function = geometry_lookup.get("non_residential", {}).get(sub_type, {})
-
-    # 2) if calibration_stage not found => fallback
-    if calibration_stage not in dict_for_function:
-        param_dict = {
-            "perimeter_depth_range": (2.0, 3.0),
-            "has_core": False
-        }
-    else:
-        param_dict = dict_for_function[calibration_stage]
-
-    # Start with these defaults
-    perimeter_depth_range = param_dict.get("perimeter_depth_range", (2.0, 3.0))
-    has_core_default      = param_dict.get("has_core", False)
-
-    # 3) If excel_rules => apply
-    if excel_rules:
-        rule_result = pick_geom_params_from_rules(
-            building_function=bldg_function,
-            building_type=sub_type,
-            area=area,
-            perimeter=perimeter,
-            all_rules=excel_rules,
-            calibration_stage=calibration_stage
-        )
-        if rule_result:
-            perimeter_depth_range = rule_result["perimeter_depth_range"]
-            core_val = rule_result["has_core_override"]
-            if core_val is not None:
-                has_core_default = core_val
-
-    # 4) Check user_config partial overrides
-    matched_rows = []
-    if user_config:
-        matched_rows = find_geom_overrides(bldg_id, sub_type, user_config)
-
-    for row in matched_rows:
-        pname = row.get("param_name", "")
-        if pname == "perimeter_depth":
-            mn = row.get("min_val")
-            mx = row.get("max_val")
-            if mn is not None and mx is not None:
-                # If "fixed_value": true => make it (mn, mn)
-                if row.get("fixed_value") is True:
-                    perimeter_depth_range = (mn, mn)
-                else:
-                    perimeter_depth_range = (mn, mx)
-
-        elif pname == "has_core":
-            val = row.get("fixed_value")
-            if val is not None:
-                has_core_default = bool(val)
-
-    # 5) Logging dict
-    if assigned_geom_log is not None and bldg_id not in assigned_geom_log:
-        assigned_geom_log[bldg_id] = {}
-    log_dict = assigned_geom_log[bldg_id] if assigned_geom_log and bldg_id else None
-
-    # 6) Pick final perimeter_depth
-    perimeter_depth = pick_val_with_range(
-        rng_tuple=perimeter_depth_range,
-        strategy=strategy,
-        log_dict=log_dict,
-        param_name="perimeter_depth"
-    )
-
-    # 7) has_core => store directly
-    if log_dict is not None:
-        log_dict["has_core"] = has_core_default
-
-    # 8) Return final dictionary
-    result = {
-        "perimeter_depth": perimeter_depth,
-        "has_core": has_core_default
-    }
-    return result
-
-------------------------------------------------------------
-
-File: D:\Documents\E_Plus_2030_py\idf_objects\geomz\building.py
-============================================================
-# geomz/building.py
-
-from .assign_geometry_values import assign_geometry_values
-from .geometry import compute_dimensions_from_area_perimeter, create_building_base_polygon
-from .zoning import create_zones_with_perimeter_depth, link_surfaces
-import math
-import pandas as pd
-
-def create_building_with_roof_type(
-    idf,
-    area,
-    perimeter,
-    orientation,
-    building_row,
-    edge_types,
-    wall_height=None,
-    roof_slope_axis='length',
-    ridge_position=0.5,
-    calibration_stage="pre_calibration",
-    strategy="A",
-    random_seed=None,
-    user_config=None,
-    assigned_geom_log=None,
-    excel_rules=None
-):
-    """
-    Create building geometry in the IDF, multi-floor, optionally perimeter+core.
-    Now includes logic to link each new floor's Floor to the old floor's Ceiling.
-    """
-
-     # --------------------------------------------------------------------
-    # 1) Safely read gem_hoogte (float) and num_floors (int), with defaults
-    # --------------------------------------------------------------------
-    raw_hoogte = building_row.get("gem_hoogte", 3)  # default 3
-    if pd.isna(raw_hoogte) or raw_hoogte is None:
-        gem_hoogte = 3.0
-    else:
-        try:
-            gem_hoogte = float(raw_hoogte)
-        except ValueError:
-            # In case it's a weird string
-            gem_hoogte = 3.0
-
-    # Safely get num_floors as an int
-    raw_floors = building_row.get("gem_bouwlagen", 1)  # default 1
-    if pd.isna(raw_floors) or raw_floors is None:
-        num_floors = 1
-    else:
-        try:
-            # Round or floor/ceil as needed
-            num_floors = int(round(float(raw_floors)))
-        except ValueError:
-            # In case it's a weird string
-            num_floors = 1
-
-    # Guard against zero or negative floors
-    if num_floors < 1:
-        num_floors = 1
-
-
-
-
-
-
-    # ------------------------------------------------
-    # Approach A: Reconcile total height & floors
-    # ------------------------------------------------
-    bldg_func = building_row.get("building_function", "").lower()
-
-    # Decide typical min/max floor heights per function
-    if "residential" in bldg_func:
-        typical_floor_height_min = 2.5
-        typical_floor_height_max = 4.0
-    else:
-        # e.g. non-res might allow taller floors
-        typical_floor_height_min = 3.0
-        typical_floor_height_max = 6.0
-
-    # implied floor height
-    implied_floor_height = gem_hoogte / num_floors
-
-    # If each floor is taller than max => increase floors
-    if implied_floor_height > typical_floor_height_max:
-        new_floors = int(round(gem_hoogte / typical_floor_height_max))
-        if new_floors < 1:
-            new_floors = 1
-        num_floors = new_floors
-
-    # Recompute after possible update above
-    implied_floor_height = gem_hoogte / num_floors
-
-    # If each floor is shorter than min => reduce floors (only if floors>1)
-    if implied_floor_height < typical_floor_height_min and num_floors > 1:
-        new_floors = int(round(gem_hoogte / typical_floor_height_min))
-        if new_floors < 1:
-            new_floors = 1
-        num_floors = new_floors
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    if wall_height is None:
-        if gem_hoogte is not None:
-            total_height = gem_hoogte
-        else:
-            total_height = 3.0 * num_floors
-        wall_height = total_height / num_floors
-
-    # 2) Determine geometry parameters (perimeter_depth, has_core) from dictionary + overrides
-    geom_params = assign_geometry_values(
-        building_row=building_row,
-        calibration_stage=calibration_stage,
-        strategy=strategy,
-        random_seed=random_seed,
-        user_config=user_config,
-        assigned_geom_log=assigned_geom_log,
-        excel_rules=excel_rules
-    )
-    perimeter_depth = geom_params["perimeter_depth"]
-    has_core = geom_params["has_core"]
-
-    # 3) Rectangle dimensions from area & perimeter
-    width, length = compute_dimensions_from_area_perimeter(area, perimeter)
-
-    # 4) Create base polygon for ground floor
-    A0, B0, C0, D0 = create_building_base_polygon(width, length, orientation)
-    base_poly_0 = [A0, B0, C0, D0]
-
-    # 5) Create each floor in a loop
-    floors_zones = {}
-    current_base_poly = base_poly_0
-
-    prev_floor_zones = None  # Will store the zone surfaces from the previous floor
-    for floor_i in range(1, num_floors + 1):
-        # "Ground" for 1st floor, else "Internal"
-        floor_type = "Ground" if floor_i == 1 else "Internal"
-        is_top_floor = (floor_i == num_floors)
-
-        # Create zones for this floor (could be single or perimeter+core)
-        zones_data = create_zones_with_perimeter_depth(
-            idf=idf,
-            floor_i=floor_i,
-            base_poly=current_base_poly,
-            wall_height=wall_height,
-            edge_types=edge_types,
-            perimeter_depth=perimeter_depth,
-            floor_type=floor_type,
-            has_core=has_core,
-            is_top_floor=is_top_floor
-        )
-        floors_zones[floor_i] = zones_data
-
-        # -------------------------------------------------------
-        #  LINK THIS FLOOR’S "FLOOR" SURFACES TO PREV FLOOR’S "CEILING" SURFACES
-        # -------------------------------------------------------
-        if floor_i > 1 and prev_floor_zones:
-            # We'll do a basic approach: match zone names in sorted order
-            old_zone_names = sorted(prev_floor_zones.keys())
-            new_zone_names = sorted(zones_data.keys())
-
-            for oz, nz in zip(old_zone_names, new_zone_names):
-                old_zone_surfs = prev_floor_zones[oz][3]  # (bpoly, tpoly, surf_list) => index 3
-                new_zone_surfs = zones_data[nz][3]
-
-                # find the "Ceiling" in old zone
-                old_ceiling = None
-                for srf in old_zone_surfs:
-                    if srf.Name.endswith("_Ceiling") or srf.Name.endswith("_Roof"):
-                        # If the old floor was not top floor, we expect a "Ceiling"
-                        # If the old floor was top floor (?), it might be a "Roof" -- but typically that wouldn't stack
-                        old_ceiling = srf
-                        break
-
-                # find the "Floor" in new zone
-                new_floor = new_zone_surfs[0]  # typically index=0 is the Floor object from create_zone_surfaces
-
-                # If found both, link them (interzone conduction)
-                if old_ceiling and new_floor:
-                    link_surfaces(new_floor, old_ceiling)
-
-        prev_floor_zones = zones_data
-
-        # shift the base polygon upward by wall_height for the next floor
-        current_base_poly = [(p[0], p[1], p[2] + wall_height) for p in current_base_poly]
-
-    # (Optional) if you want to add pitched roof logic, do it after the top floor is created
-    return floors_zones
-
-------------------------------------------------------------
-
-File: D:\Documents\E_Plus_2030_py\idf_objects\geomz\geometry.py
-============================================================
-import math
-from math import sqrt, radians, cos, sin
-
-def rotate_point(px, py, pz, orientation_rad):
-    x_new = cos(orientation_rad) * px - sin(orientation_rad) * py
-    y_new = sin(orientation_rad) * px + cos(orientation_rad) * py
-    return (x_new, y_new, pz)
-
-def compute_dimensions_from_area_perimeter(area, perimeter):
-    """
-    Solve for width (w) and length (l) using area (A) and perimeter (P):
-      w = A / (P/4)
-      l = A / w
-    """
-    if perimeter <= 0:
-        raise ValueError("Perimeter must be positive.")
-    if area <= 0:
-        raise ValueError("Area must be positive.")
-    width = area / (perimeter / 4.0)
-    length = area / width
-    return width, length
-
-def create_building_base_polygon(width, length, orientation):
-    """
-    Return 4 points in XY plane for a rectangle, rotate them by orientation degrees.
-    """
-    A = (0, 0, 0)
-    B = (width, 0, 0)
-    C = (width, length, 0)
-    D = (0, length, 0)
-
-    if orientation != 0:
-        orientation_rad = radians(orientation)
-        A = rotate_point(*A, orientation_rad)
-        B = rotate_point(*B, orientation_rad)
-        C = rotate_point(*C, orientation_rad)
-        D = rotate_point(*D, orientation_rad)
-
-    return A, B, C, D
-
-def polygon_area(poly):
-    """Compute area in XY plane via Shoelace formula."""
-    x = [p[0] for p in poly]
-    y = [p[1] for p in poly]
-    n = len(poly)
-    area = 0.0
-    for i in range(n):
-        j = (i + 1) % n
-        area += x[i] * y[j] - x[j] * y[i]
-    return abs(area) / 2.0
-
-def polygon_area_signed(poly):
-    """Return signed area in XY plane (positive => CCW, negative => CW)."""
-    x = [p[0] for p in poly]
-    y = [p[1] for p in poly]
-    n = len(poly)
-    area = 0.0
-    for i in range(n):
-        j = (i + 1) % n
-        area += x[i] * y[j] - x[j] * y[i]
-    return area / 2.0
-
-def inward_offset_polygon(A, B, C, D, depth):
-    """
-    Inward offset of rectangle ABCD by depth, returning [A2,B2,C2,D2] or None if invalid.
-    """
-    def edge_offset(P1, P2, dist):
-        vx = P2[0] - P1[0]
-        vy = P2[1] - P1[1]
-        length = sqrt(vx*vx + vy*vy)
-        nx = -vy / length
-        ny = vx / length
-        return [
-            (P1[0] + nx*dist, P1[1] + ny*dist, P1[2]),
-            (P2[0] + nx*dist, P2[1] + ny*dist, P2[2])
-        ]
-
-    def line_intersect(p1, p2, p3, p4):
-        x1, y1 = p1[0], p1[1]
-        x2, y2 = p2[0], p2[1]
-        x3, y3 = p3[0], p3[1]
-        x4, y4 = p4[0], p4[1]
-        denom = (y4 - y3)*(x2 - x1) - (x4 - x3)*(y2 - y1)
-        if abs(denom) < 1e-12:
-            return None
-        ua = ((x4 - x3)*(y1 - y3) - (y4 - y3)*(x1 - x3)) / denom
-        X = x1 + ua*(x2 - x1)
-        Y = y1 + ua*(y2 - y1)
-        return (X, Y, p1[2])
-
-    front_line = edge_offset(A, B, depth)
-    right_line = edge_offset(B, C, depth)
-    rear_line = edge_offset(C, D, depth)
-    left_line = edge_offset(D, A, depth)
-
-    A2 = line_intersect(front_line[0], front_line[1], left_line[0], left_line[1])
-    B2 = line_intersect(front_line[0], front_line[1], right_line[0], right_line[1])
-    C2 = line_intersect(rear_line[0], rear_line[1], right_line[0], right_line[1])
-    D2 = line_intersect(rear_line[0], rear_line[1], left_line[0], left_line[1])
-
-    if A2 and B2 and C2 and D2:
-        return [A2, B2, C2, D2]
-    else:
-        return None
-
-------------------------------------------------------------
-
-File: D:\Documents\E_Plus_2030_py\idf_objects\geomz\zoning.py
-============================================================
-# D:\Documents\E_Plus_2030_py\geomz\zoning.py
-# --------------------------------------------------------------------------
-# This module handles the creation of zones (perimeter + core or single)
-# for each floor in a building, plus optional interzone linking. 
-# --------------------------------------------------------------------------
-
-from .geometry import polygon_area, polygon_area_signed, inward_offset_polygon
-
-def link_surfaces(surface_a, surface_b):
-    """
-    Cross-link two surfaces as interzone partitions:
-      1) Both Outside_Boundary_Condition = "Surface"
-      2) Each references the other's name
-
-    This is used for:
-      - Perimeter zone to core zone partitions
-      - Floor-to-ceiling linking between stories (in building.py)
-    """
-    surface_a.Outside_Boundary_Condition = "Surface"
-    surface_b.Outside_Boundary_Condition = "Surface"
-    surface_a.Outside_Boundary_Condition_Object = surface_b.Name
-    surface_b.Outside_Boundary_Condition_Object = surface_a.Name
-
-
-def create_zone_surfaces(
-    idf,
-    zone_name,
-    base_poly,
-    wall_height,
-    floor_bc,
-    wall_bcs,
-    is_top_floor
-):
-    """
-    Create a rectangular zone (Floor, 4 Walls, and a Roof or Ceiling).
-
-    Parameters
-    ----------
-    idf : geomeppy.IDF
-        The IDF to which we add surfaces.
-    zone_name : str
-        Name of the new Zone object (e.g. "Zone1", "Zone2_Core", etc.).
-    base_poly : list of (x,y,z)
-        4 corner points (in order) for the zone’s base polygon.
-    wall_height : float
-        Height of the walls for this floor (e.g. 2.5 m).
-    floor_bc : str
-        Boundary Condition for the floor (e.g. "Ground", "Adiabatic", "Outdoors").
-    wall_bcs : list of str or dict
-        4 items for the wall boundary conditions (one per edge).
-        If a dict, e.g. {"bc": "Surface", "adj_surf_name": "..."},
-        we can store info for cross-linking. If just a string, e.g. "Outdoors" or "Adiabatic".
-    is_top_floor : bool
-        If True => create a roof with Outdoors, else => a ceiling with "Adiabatic" (or a placeholder
-        that can later be changed to "Surface" if linking to the floor above).
-
-    Returns
-    -------
-    (zone_name, base_poly, top_poly, created_surfaces)
-      zone_name        : str
-      base_poly        : list of points (x,y,z) for the floor polygon
-      top_poly         : list of points (x,y,z) for the upper polygon (floor + wall_height)
-      created_surfaces : list of BUILDINGSURFACE:DETAILED objects created
-    """
-    zone = idf.newidfobject("ZONE")
-    zone.Name = zone_name
-
-    created_surfaces = []
-
-    # ===== Floor =====
-    floor_surf = idf.newidfobject("BUILDINGSURFACE:DETAILED")
-    floor_surf.Name = f"{zone_name}_Floor"
-    floor_surf.Surface_Type = "Floor"
-    floor_surf.Zone_Name = zone_name
-    floor_surf.Outside_Boundary_Condition = floor_bc
-
-    # If we have "Outdoors", we set SunExposed, WindExposed; else NoSun/NoWind
-    if floor_bc.lower() == "outdoors":
-        floor_surf.Sun_Exposure = "SunExposed"
-        floor_surf.Wind_Exposure = "WindExposed"
-    else:
-        floor_surf.Sun_Exposure = "NoSun"
-        floor_surf.Wind_Exposure = "NoWind"
-
-    # Ensure floor normal faces downward (Tilt ~180)
-    from .geometry import polygon_area_signed
-    if polygon_area_signed(base_poly) > 0:
-        floor_coords = base_poly[::-1]
-    else:
-        floor_coords = base_poly
-    floor_surf.setcoords(floor_coords)
-    created_surfaces.append(floor_surf)
-
-    # ===== Walls =====
-    # The top polygon is base_poly + wall_height in Z
-    top_poly = [(p[0], p[1], p[2] + wall_height) for p in base_poly]
-    if polygon_area_signed(base_poly) < 0:
-        top_poly_for_roof = top_poly[::-1]
-    else:
-        top_poly_for_roof = top_poly
-    for i in range(4):
-        p1 = base_poly[i]
-        p2 = base_poly[(i + 1) % 4]
-        p1t = top_poly[i]
-        p2t = top_poly[(i + 1) % 4]
-
-        wall_coords = [p1, p2, p2t, p1t]
-        wall_obj = idf.newidfobject("BUILDINGSURFACE:DETAILED")
-        wall_obj.Name = f"{zone_name}_Wall_{i}"
-        wall_obj.Surface_Type = "Wall"
-        wall_obj.Zone_Name = zone_name
-
-        bc_info = wall_bcs[i]
-        if isinstance(bc_info, dict):
-            # If bc_info is a dict => can specify 'bc' and optionally 'adj_surf_name'
-            bc_str = bc_info.get("bc", "Adiabatic")
-            wall_obj.Outside_Boundary_Condition = bc_str
-            if bc_str.lower() == "outdoors":
-                wall_obj.Sun_Exposure = "SunExposed"
-                wall_obj.Wind_Exposure = "WindExposed"
-            else:
-                wall_obj.Sun_Exposure = "NoSun"
-                wall_obj.Wind_Exposure = "NoWind"
-
-            # If "Surface", optionally set the adjacent surface name
-            if bc_str.lower() == "surface":
-                adj_name = bc_info.get("adj_surf_name", "")
-                wall_obj.Outside_Boundary_Condition_Object = adj_name
-        else:
-            # bc_info is just a string
-            wall_obj.Outside_Boundary_Condition = bc_info
-            if bc_info.lower() == "outdoors":
-                wall_obj.Sun_Exposure = "SunExposed"
-                wall_obj.Wind_Exposure = "WindExposed"
-            else:
-                wall_obj.Sun_Exposure = "NoSun"
-                wall_obj.Wind_Exposure = "NoWind"
-
-        wall_obj.setcoords(wall_coords)
-        created_surfaces.append(wall_obj)
-
-    # ===== Ceiling or Roof =====
-    if is_top_floor:
-        # For top floors, we create a roof surface with "Outdoors"
-        top_surf = idf.newidfobject("BUILDINGSURFACE:DETAILED")
-        top_surf.Name = f"{zone_name}_Roof"
-        top_surf.Surface_Type = "Roof"
-        top_surf.Zone_Name = zone_name
-        top_surf.Outside_Boundary_Condition = "Outdoors"
-        top_surf.Sun_Exposure = "SunExposed"
-        top_surf.Wind_Exposure = "WindExposed"
-        top_surf.setcoords(top_poly_for_roof)
-        created_surfaces.append(top_surf)
-    else:
-        # For intermediate floors, we typically do "Ceiling" with "Adiabatic"
-        # so it can be changed to "Surface" if we link it to the floor above.
-        top_surf = idf.newidfobject("BUILDINGSURFACE:DETAILED")
-        top_surf.Name = f"{zone_name}_Ceiling"
-        top_surf.Surface_Type = "Ceiling"
-        top_surf.Zone_Name = zone_name
-        top_surf.Outside_Boundary_Condition = "Adiabatic"
-        top_surf.Sun_Exposure = "NoSun"
-        top_surf.Wind_Exposure = "NoWind"
-        top_surf.setcoords(top_poly_for_roof)
-        created_surfaces.append(top_surf)
-
-    # Return a 4-tuple: (zone_name, base_poly, top_poly, created_surfaces)
-    return (zone_name, base_poly, top_poly, created_surfaces)
-
-
-def create_zones_with_perimeter_depth(
-    idf,
-    floor_i,
-    base_poly,
-    wall_height,
-    edge_types,
-    perimeter_depth,
-    floor_type,
-    has_core,
-    is_top_floor
-):
-    """
-    Create multiple zones (4 perimeter + 1 core) or a single zone if no core.
-    Then explicitly cross-link perimeter-to-core surfaces.
-
-    Returns
-    -------
-    dict : { zone_name => (zname, bpoly, tpoly, list_of_surfaces) }
-
-    Explanation:
-      - "floor_type" can be "Ground" for the 1st floor (so floor BC="Ground"), or "Internal" for higher floors (so floor BC="Adiabatic" initially).
-      - "edge_types" might be ["facade", "shared", ...], each mapping to "Outdoors" or "Adiabatic".
-      - "has_core" => if True, we do perimeter+core. Otherwise, a single zone.
-
-    The final dict has keys = zone_name ("Zone1", "Zone1_Core", etc.),
-    each mapping to a tuple of 4 items: (zname, base_poly, top_poly, surfs_list).
-    That means index [3] is the list of surfaces, so we can do zone_data[zname][3]
-    in building.py.
-    """
-    def edge_to_bc(e):
-        """
-        Convert textual edge label to an EnergyPlus BC string:
-          - "facade" => "Outdoors"
-          - "shared" => "Adiabatic"
-          - anything else => "Outdoors"
-        """
-        e_lower = e.lower().strip()
-        if e_lower == "facade":
-            return "Outdoors"
-        elif e_lower == "shared":
-            return "Adiabatic"
-        else:
-            return "Outdoors"
-
-    zone_data = {}
-
-    # Decide the floor boundary condition
-    if floor_type.lower() == "ground":
-        floor_bc = "Ground"
-    else:
-        # For intermediate floors, we temporarily set "Adiabatic"
-        # The code in building.py can link surfaces for multi-story conduction.
-        floor_bc = "Adiabatic"
-
-    # Try to offset the polygon inward for a core
-    A, B, C, D = base_poly
-    inner_poly = None
-    if has_core:
-        inner_poly = inward_offset_polygon(A, B, C, D, perimeter_depth)
-        if inner_poly:
-            A2, B2, C2, D2 = inner_poly
-            # Check if that offset polygon is large enough
-            if polygon_area([A2, B2, C2, D2]) < 1e-3:
-                inner_poly = None  # not valid => discard
-
-    # ================= Single-Zone Case =================
-    if not inner_poly:
-        # Means no valid core => only one zone
-        wall_bcs = [edge_to_bc(e) for e in edge_types]
-        zname, bpoly, tpoly, surfs = create_zone_surfaces(
-            idf,
-            f"Zone{floor_i}",
-            base_poly,
-            wall_height,
-            floor_bc,
-            wall_bcs,
-            is_top_floor
-        )
-        # Store 4 items => so we can do zone_data[zname][3] = surfaces later
-        zone_data[zname] = (zname, bpoly, tpoly, surfs)
-        return zone_data
-
-    # ================= Perimeter + Core Case =================
-    A2, B2, C2, D2 = inner_poly
-
-    # We'll create 4 perimeter zones + 1 core zone
-
-    # 1) Front perimeter
-    front_bc = edge_to_bc(edge_types[0])
-    front_base = [A, B, B2, A2]
-    # We define the perimeter->core edge as the 3rd wall => "Surface"
-    front_walls = [front_bc, "Adiabatic", "Surface", "Adiabatic"]
-    zf, fbpoly, ftpoly, fsurfs = create_zone_surfaces(
-        idf,
-        f"Zone{floor_i}_FrontPerimeter",
-        front_base,
-        wall_height,
-        floor_bc,
-        front_walls,
-        is_top_floor
-    )
-    zone_data[zf] = (zf, fbpoly, ftpoly, fsurfs)
-
-    # 2) Right perimeter
-    right_bc = edge_to_bc(edge_types[1])
-    right_base = [B, C, C2, B2]
-    right_walls = [right_bc, "Adiabatic", "Surface", "Adiabatic"]
-    zr, rbpoly, rtpoly, rsurfs = create_zone_surfaces(
-        idf,
-        f"Zone{floor_i}_RightPerimeter",
-        right_base,
-        wall_height,
-        floor_bc,
-        right_walls,
-        is_top_floor
-    )
-    zone_data[zr] = (zr, rbpoly, rtpoly, rsurfs)
-
-    # 3) Rear perimeter
-    rear_bc = edge_to_bc(edge_types[2])
-    rear_base = [C, D, D2, C2]
-    rear_walls = [rear_bc, "Adiabatic", "Surface", "Adiabatic"]
-    zre, rebpoly, retpoly, resurfs = create_zone_surfaces(
-        idf,
-        f"Zone{floor_i}_RearPerimeter",
-        rear_base,
-        wall_height,
-        floor_bc,
-        rear_walls,
-        is_top_floor
-    )
-    zone_data[zre] = (zre, rebpoly, retpoly, resurfs)
-
-    # 4) Left perimeter
-    left_bc = edge_to_bc(edge_types[3])
-    left_base = [D, A, A2, D2]
-    left_walls = [left_bc, "Adiabatic", "Surface", "Adiabatic"]
-    zl, lbpoly, ltpoly, lsurfs = create_zone_surfaces(
-        idf,
-        f"Zone{floor_i}_LeftPerimeter",
-        left_base,
-        wall_height,
-        floor_bc,
-        left_walls,
-        is_top_floor
-    )
-    zone_data[zl] = (zl, lbpoly, ltpoly, lsurfs)
-
-    # 5) Core
-    #
-    # Use the inner polygon with the same order so we can map walls directly
-    core_poly = [A2, B2, C2, D2]
-    # All edges => "Surface" bc
-    core_bc = ["Surface", "Surface", "Surface", "Surface"]
-    zc, cbpoly, ctpoly, csurfs = create_zone_surfaces(
-        idf,
-        f"Zone{floor_i}_Core",
-        core_poly,
-        wall_height,
-        floor_bc,
-        core_bc,
-        is_top_floor
-    )
-    zone_data[zc] = (zc, cbpoly, ctpoly, csurfs)
-
-    # ===================== Cross-Linking Perimeter->Core =====================
-    #
-    # We assume:
-    #  - The perimeter zone "Wall_2" (index=2 => array position=3 in the surfaces array) 
-    #    is the interior partition to the core.
-    #  - The matching core zone side is "Wall_x", using the same polygon order so
-    #    each shared edge has opposite orientation.
-
-    def get_wall(surfs, wall_idx):
-        """
-        For surfs array: 
-          index 0 => Floor, 
-          index 1..4 => Walls, 
-          index 5 => Ceiling/Roof
-        So the perimeter interior wall (index=2) => surfs[1+2] => surfs[3].
-        """
-        return surfs[1 + wall_idx]
-
-    # front perimeter interior => index=2 => surfs[3]
-    front_interior = get_wall(fsurfs, 2)
-    right_interior = get_wall(rsurfs, 2)
-    rear_interior  = get_wall(resurfs, 2)
-    left_interior  = get_wall(lsurfs, 2)
-
-    # Map each perimeter interior wall to the opposing core wall
-    #   - front perimeter => core wall_0
-    #   - right perimeter => core wall_1
-    #   - rear perimeter  => core wall_2
-    #   - left perimeter  => core wall_3
-    core_wall_front = get_wall(csurfs, 0)
-    core_wall_right = get_wall(csurfs, 1)
-    core_wall_rear  = get_wall(csurfs, 2)
-    core_wall_left  = get_wall(csurfs, 3)
-
-    link_surfaces(front_interior, core_wall_front)
-    link_surfaces(right_interior, core_wall_right)
-    link_surfaces(rear_interior, core_wall_rear)
-    link_surfaces(left_interior, core_wall_left)
-
-    return zone_data
-
-------------------------------------------------------------
-
 File: D:\Documents\E_Plus_2030_py\idf_objects\fenez\assign_fenestration_values.py
 ============================================================
 """
@@ -1047,6 +145,182 @@ def compute_wwr_from_row(building_row, include_doors_in_wwr=False):
         window_area += door_area
 
     return window_area / ext_wall_area
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_objects\fenez\dict_override_excel.py
+============================================================
+"""
+dict_override_excel.py
+
+Used by fenez_config_manager.py (and others) to apply Excel-based overrides
+to your base fenestration/material dictionaries.
+
+The Excel file is expected to have columns like:
+
+  building_function:        e.g. "residential" or "non_residential"
+  building_type:            e.g. "Two-and-a-half-story House"
+  year_range:               e.g. "1992 - 2005"
+  scenario:                 e.g. "scenario1"
+  calibration_stage:        e.g. "pre_calibration"
+  element:                  e.g. "exterior_wall", "windows", "doors", "flat_roof"
+  area_m2:                  numeric
+  R_value_min, R_value_max: numeric
+  U_value_min, U_value_max: numeric
+  roughness:                string or blank
+  material_opaque_lookup:   optional, e.g. "Concrete_200mm"
+  material_window_lookup:   optional, e.g. "Glazing_Clear_3mm"
+  min_wwr, max_wwr:         numeric (for top-level wwr_range override)
+
+This file merges those Excel-based settings into your in-memory dictionaries
+for residential and non_residential. The order of overrides is:
+
+1) Start with your base dictionaries (res_data, nonres_data).
+2) For each row in the Excel, find or create the (btype, year_range, scenario, stage) key.
+3) Override or fill in fields like "wwr_range", R_value_range, U_value_range, etc.
+
+Returns new copies (deep copies) of the dictionaries with overrides applied.
+"""
+
+import pandas as pd
+import copy
+
+def override_dictionaries_from_excel(
+    excel_path: str,
+    default_res_data: dict,
+    default_nonres_data: dict,
+    default_roughness="MediumRough",
+    fallback_wwr_range=(0.2, 0.3)
+):
+    """
+    Reads an Excel file containing envelope/fenestration data and uses it to override
+    the default dictionaries for residential and non_residential materials.
+
+    The Excel must contain columns:
+
+      building_function, building_type, year_range, scenario, calibration_stage,
+      element, area_m2, R_value_min, R_value_max, U_value_min, U_value_max,
+      roughness, material_opaque_lookup, material_window_lookup,
+      min_wwr, max_wwr
+
+    Parameters
+    ----------
+    excel_path : str
+        Path to the .xlsx file with columns described above.
+    default_res_data : dict
+        The default residential fenestration/material dictionary.
+    default_nonres_data : dict
+        The default non-residential fenestration/material dictionary.
+    default_roughness : str
+        A fallback roughness if none is provided or if the Excel cell is blank.
+    fallback_wwr_range : tuple
+        A default (min_wwr, max_wwr) if none is found.
+
+    Returns
+    -------
+    new_res_data : dict
+    new_nonres_data : dict
+        Updated copies of the input dictionaries with Excel overrides applied.
+    """
+    # Make deep copies so we don't mutate the originals
+    new_res_data = copy.deepcopy(default_res_data)
+    new_nonres_data = copy.deepcopy(default_nonres_data)
+
+    # Read the Excel data into a DataFrame
+    df = pd.read_excel(excel_path)
+
+    # Check for required columns
+    required_cols = [
+        "building_function",
+        "building_type",
+        "year_range",
+        "scenario",
+        "calibration_stage",
+        "element",
+        "area_m2",
+        "R_value_min",
+        "R_value_max",
+        "U_value_min",
+        "U_value_max",
+        "roughness",
+        "material_opaque_lookup",
+        "material_window_lookup",
+        "min_wwr",
+        "max_wwr"
+    ]
+    missing_cols = [c for c in required_cols if c not in df.columns]
+    if missing_cols:
+        raise ValueError(f"Excel file is missing required columns: {missing_cols}")
+
+    # Iterate over each row and override accordingly
+    for _, row in df.iterrows():
+        bfunc = str(row["building_function"]).strip().lower()   # "residential" or "non_residential"
+        btype = str(row["building_type"]).strip()
+        yrange= str(row["year_range"]).strip()
+        scen  = str(row["scenario"]).strip()
+        stage = str(row["calibration_stage"]).strip()
+        elem_name = str(row["element"]).strip()
+
+        # Decide which dictionary to modify
+        if bfunc == "residential":
+            current_dict = new_res_data
+        else:
+            current_dict = new_nonres_data
+
+        dict_key = (btype, yrange, scen, stage)
+
+        # Create or fetch the entry
+        if dict_key not in current_dict:
+            current_dict[dict_key] = {
+                "roughness": default_roughness,
+                "wwr_range": fallback_wwr_range,
+            }
+        data_entry = current_dict[dict_key]
+
+        # Possibly override top-level roughness
+        rgh_val = str(row["roughness"]).strip()
+        if rgh_val.lower() not in ["nan", ""]:
+            data_entry["roughness"] = rgh_val
+
+        # Possibly override top-level wwr_range
+        min_wwr = row["min_wwr"]
+        max_wwr = row["max_wwr"]
+        if pd.notna(min_wwr) and pd.notna(max_wwr):
+            data_entry["wwr_range"] = (float(min_wwr), float(max_wwr))
+
+        # Now handle the sub-element (doors, windows, exterior_wall, etc.)
+        if elem_name not in data_entry:
+            data_entry[elem_name] = {}
+
+        elem_dict = data_entry[elem_name]
+
+        # area_m2
+        if pd.notna(row["area_m2"]):
+            elem_dict["area_m2"] = float(row["area_m2"])
+
+        # R_value_range
+        r_min = row["R_value_min"]
+        r_max = row["R_value_max"]
+        if pd.notna(r_min) and pd.notna(r_max):
+            elem_dict["R_value_range"] = (float(r_min), float(r_max))
+
+        # U_value_range
+        u_min = row["U_value_min"]
+        u_max = row["U_value_max"]
+        if pd.notna(u_min) and pd.notna(u_max):
+            elem_dict["U_value_range"] = (float(u_min), float(u_max))
+
+        # material_opaque_lookup
+        opq_lookup = row["material_opaque_lookup"]
+        if pd.notna(opq_lookup):
+            elem_dict["material_opaque_lookup"] = str(opq_lookup).strip()
+
+        # material_window_lookup
+        win_lookup = row["material_window_lookup"]
+        if pd.notna(win_lookup):
+            elem_dict["material_window_lookup"] = str(win_lookup).strip()
+
+    return new_res_data, new_nonres_data
 
 ------------------------------------------------------------
 
@@ -1342,6 +616,388 @@ def apply_user_fenez_overrides(final_res_data, final_nonres_data, user_fenez_lis
         # go by (bldg_type, age_range, scenario, stage) unless you want per-bldg logic.
 
     return final_res_data, final_nonres_data
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_objects\fenez\materials_config.py
+============================================================
+"""
+fenez/materials_config.py
+
+Contains logic for picking final material properties from ranges,
+including references to material_lookup for different obj_types (MATERIAL,
+MATERIAL:NOMASS, WINDOWMATERIAL:GLAZING, WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM, etc.).
+
+Key functions:
+    - pick_val(...)
+    - assign_material_from_lookup(...)
+    - get_extended_materials_data(...)
+    - compute_wwr(...)
+"""
+
+import random
+
+# Update these imports to match your actual file locations:
+from Lookups.data_materials_residential import residential_materials_data
+from Lookups.data_materials_non_residential import non_residential_materials_data
+from .materials_lookup import material_lookup
+
+
+###############################################################################
+#    pick_val(...) & assign_material_from_lookup(...) helper functions
+###############################################################################
+
+def pick_val(rng, strategy="A"):
+    """
+    Helper to pick a single float from a numeric range (min_val, max_val).
+    If rng=(x,x), returns x.
+    If strategy="A", picks the midpoint. If "B", picks random uniform.
+    Otherwise, fallback to min_val.
+
+    Parameters
+    ----------
+    rng : tuple of (float, float)
+        (min_val, max_val).
+    strategy : str
+        "A" => midpoint, "B" => random uniform, etc.
+
+    Returns
+    -------
+    A float in [min_val, max_val], or None if invalid.
+    """
+    if not rng or len(rng) < 2:
+        return None
+    min_val, max_val = rng
+    if min_val is None and max_val is None:
+        return None
+    if min_val is not None and max_val is not None:
+        if min_val == max_val:
+            return min_val
+        if strategy == "A":
+            return (min_val + max_val) / 2.0
+        elif strategy == "B":
+            return random.uniform(min_val, max_val)
+        else:
+            # fallback => pick min
+            return min_val
+    # If one side is None, fallback to the other
+    return min_val if min_val is not None else max_val
+
+
+def assign_material_from_lookup(mat_def: dict, strategy="A"):
+    """
+    Takes a dict from material_lookup (which has fields like "Thickness_range",
+    "Conductivity_range", etc.) and returns a *copy* with final numeric picks assigned.
+
+    The function modifies keys like "Thickness", "Conductivity", "Thermal_Resistance",
+    etc., based on the strategy for picking from each _range.
+
+    Returns the updated dict.
+    """
+    final_mat = dict(mat_def)  # shallow copy to preserve original
+    obj_type = final_mat["obj_type"].upper()
+
+    # Some materials have thickness & conductivity ranges
+    thick_rng = final_mat.get("Thickness_range", None)
+    cond_rng  = final_mat.get("Conductivity_range", None)
+
+    if obj_type == "MATERIAL":
+        # Mass-based opaque
+        final_mat["Thickness"] = pick_val(thick_rng, strategy)
+        final_mat["Conductivity"] = pick_val(cond_rng, strategy)
+        final_mat["Density"] = pick_val(final_mat.get("Density_range", (2300, 2300)), strategy)
+        final_mat["Specific_Heat"] = pick_val(final_mat.get("Specific_Heat_range", (900, 900)), strategy)
+        final_mat["Thermal_Absorptance"] = pick_val(final_mat.get("Thermal_Absorptance_range", (0.9, 0.9)), strategy)
+        final_mat["Solar_Absorptance"]   = pick_val(final_mat.get("Solar_Absorptance_range", (0.7, 0.7)), strategy)
+        final_mat["Visible_Absorptance"] = pick_val(final_mat.get("Visible_Absorptance_range", (0.7, 0.7)), strategy)
+
+    elif obj_type == "MATERIAL:NOMASS":
+        # No-mass => thermal_resistance
+        r_rng = final_mat.get("Thermal_Resistance_range", None)
+        final_mat["Thermal_Resistance"] = pick_val(r_rng, strategy)
+        final_mat["Thermal_Absorptance"] = pick_val(final_mat.get("Thermal_Absorptance_range", (0.9, 0.9)), strategy)
+        final_mat["Solar_Absorptance"]   = pick_val(final_mat.get("Solar_Absorptance_range", (0.7, 0.7)), strategy)
+        final_mat["Visible_Absorptance"] = pick_val(final_mat.get("Visible_Absorptance_range", (0.7, 0.7)), strategy)
+
+    elif obj_type == "WINDOWMATERIAL:GLAZING":
+        # Typical single/multi-pane window material
+        final_mat["Thickness"] = pick_val(thick_rng, strategy)
+        final_mat["Solar_Transmittance"] = pick_val(
+            final_mat.get("Solar_Transmittance_range", (0.76, 0.76)),
+            strategy
+        )
+        final_mat["Front_Solar_Reflectance"] = pick_val(
+            final_mat.get("Front_Solar_Reflectance_range", (0.07, 0.07)),
+            strategy
+        )
+        final_mat["Back_Solar_Reflectance"]  = pick_val(
+            final_mat.get("Back_Solar_Reflectance_range", (0.07, 0.07)),
+            strategy
+        )
+        final_mat["Visible_Transmittance"]   = pick_val(
+            final_mat.get("Visible_Transmittance_range", (0.86, 0.86)),
+            strategy
+        )
+        final_mat["Front_Visible_Reflectance"] = pick_val(
+            final_mat.get("Front_Visible_Reflectance_range", (0.06, 0.06)),
+            strategy
+        )
+        final_mat["Back_Visible_Reflectance"]  = pick_val(
+            final_mat.get("Back_Visible_Reflectance_range", (0.06, 0.06)),
+            strategy
+        )
+        final_mat["Front_IR_Emissivity"]       = pick_val(
+            final_mat.get("Front_IR_Emissivity_range", (0.84, 0.84)),
+            strategy
+        )
+        final_mat["Back_IR_Emissivity"]        = pick_val(
+            final_mat.get("Back_IR_Emissivity_range", (0.84, 0.84)),
+            strategy
+        )
+        final_mat["Conductivity"]              = pick_val(cond_rng, strategy)
+        final_mat["Dirt_Correction_Factor"]    = pick_val(
+            final_mat.get("Dirt_Correction_Factor_range", (1.0, 1.0)),
+            strategy
+        )
+        # IR_Transmittance often 0 => if stored, keep as is
+
+    elif obj_type == "WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM":
+        # For simple glazing, you typically just set U-factor, SHGC, Visible Transmittance in E+.
+        # We'll just pick from the provided ranges if present:
+        final_mat["SHGC"] = pick_val(final_mat.get("SHGC_range", (0.40, 0.40)), strategy)
+        # If "Optical_Data_Type" is stored as a numeric range for some reason, pick it:
+        opt_dat = final_mat.get("Optical_Data_Type", None)
+        # This might be a numeric or fixed string; handle gracefully:
+        if isinstance(opt_dat, tuple) and len(opt_dat) == 2:
+            final_mat["Optical_Data_Type"] = pick_val(opt_dat, strategy)
+        else:
+            # If it's a single string or float, just keep as is
+            pass
+
+        # You may also store a default U_value here if you keep a "U_value_range" in the dict
+
+    else:
+        # fallback - do nothing special
+        pass
+
+    return final_mat
+
+
+###############################################################################
+#    The main function to retrieve data & combine user overrides
+###############################################################################
+
+def compute_wwr(elements_dict, include_doors=False):
+    """
+    Compute WWR => (window area) / (exterior wall area).
+    If include_doors=True, add door area to the fenestration area.
+    """
+    external_wall_area = 0.0
+    if "exterior_wall" in elements_dict:
+        external_wall_area += elements_dict["exterior_wall"].get("area_m2", 0.0)
+
+    window_area = elements_dict.get("windows", {}).get("area_m2", 0.0)
+    if include_doors and "doors" in elements_dict:
+        window_area += elements_dict["doors"].get("area_m2", 0.0)
+
+    if external_wall_area > 0:
+        return window_area / external_wall_area
+    else:
+        return 0.0
+
+
+def get_extended_materials_data(
+    building_function: str,
+    building_type: str,
+    age_range: str,
+    scenario: str,
+    calibration_stage: str,
+    strategy: str = "A",
+    random_seed=None,
+    user_config_fenez=None
+):
+    """
+    1) Looks up either residential_materials_data or non_residential_materials_data
+       by (building_type, age_range, scenario, calibration_stage).
+    2) Retrieves "wwr_range" and picks a final 'wwr' if relevant.
+    3) Grabs top-level 'material_opaque_lookup', 'material_window_lookup' if present.
+    4) For each sub-element (e.g., ground_floor, windows, doors),
+       picks R_value, U_value from (R_value_range, U_value_range).
+    5) If user_config_fenez is provided, we override some fields (range or fixed).
+    6) Return a dictionary with "wwr", "material_opaque", "material_window",
+       plus "elements" sub-dicts for each sub-element with final picks.
+
+    The final dict can then be used in materials.py to actually create IDF Materials/Constructions.
+    """
+    if random_seed is not None:
+        random.seed(random_seed)
+
+    # Pick which dataset to use
+    if building_function.lower() == "residential":
+        ds = residential_materials_data
+    else:
+        ds = non_residential_materials_data
+
+    dict_key = (building_type, age_range, scenario, calibration_stage)
+    if dict_key not in ds:
+        # fallback if no data
+        output_fallback = {
+            "roughness": "MediumRough",
+            "wwr": 0.3,
+            "wwr_range_used": (0.3, 0.3),
+            "material_opaque": None,
+            "material_window": None,
+            "elements": {}
+        }
+        # Possibly let user_config_fenez override wwr or wwr_range
+        if user_config_fenez:
+            if "wwr_range" in user_config_fenez:
+                output_fallback["wwr_range_used"] = user_config_fenez["wwr_range"]
+            if "wwr" in user_config_fenez:
+                output_fallback["wwr"] = user_config_fenez["wwr"]
+        return output_fallback
+
+    data_entry = ds[dict_key]
+
+    # 1) pick or override wwr_range
+    default_wwr_range = data_entry.get("wwr_range", (0.3, 0.3))
+    if user_config_fenez and "wwr_range" in user_config_fenez:
+        default_wwr_range = user_config_fenez["wwr_range"]
+    wwr_val = pick_val(default_wwr_range, strategy)
+
+    # If user overrides wwr directly, apply it
+    if user_config_fenez and "wwr" in user_config_fenez:
+        wwr_val = user_config_fenez["wwr"]
+
+    # 2) top-level roughness
+    rough_str = data_entry.get("roughness", "MediumRough")
+
+    # top-level materials
+    mat_opq_key = data_entry.get("material_opaque_lookup", None)
+    mat_win_key = data_entry.get("material_window_lookup", None)
+
+    if user_config_fenez:
+        if "material_opaque_lookup" in user_config_fenez:
+            mat_opq_key = user_config_fenez["material_opaque_lookup"]
+        if "material_window_lookup" in user_config_fenez:
+            mat_win_key = user_config_fenez["material_window_lookup"]
+
+    final_opq = None
+    if mat_opq_key and mat_opq_key in material_lookup:
+        final_opq = assign_material_from_lookup(material_lookup[mat_opq_key], strategy)
+
+    final_win = None
+    if mat_win_key and mat_win_key in material_lookup:
+        final_win = assign_material_from_lookup(material_lookup[mat_win_key], strategy)
+
+    # 3) sub-elements
+    possible_elems = [
+        "ground_floor", "exterior_wall", "flat_roof", "sloping_flat_roof",
+        "inter_floor", "interior_wall", "windows", "doors"
+    ]
+    elements = {}
+    for elem_name in possible_elems:
+        if elem_name in data_entry:
+            subd = dict(data_entry[elem_name])  # shallow copy
+
+            # apply user overrides for sub-element if present
+            if user_config_fenez and "elements" in user_config_fenez:
+                user_elem_config = user_config_fenez["elements"].get(elem_name, {})
+                if "R_value_range" in user_elem_config:
+                    subd["R_value_range"] = user_elem_config["R_value_range"]
+                if "U_value_range" in user_elem_config:
+                    subd["U_value_range"] = user_elem_config["U_value_range"]
+                if "area_m2" in user_elem_config:
+                    subd["area_m2"] = user_elem_config["area_m2"]
+                if "material_opaque_lookup" in user_elem_config:
+                    subd["material_opaque_lookup"] = user_elem_config["material_opaque_lookup"]
+                if "material_window_lookup" in user_elem_config:
+                    subd["material_window_lookup"] = user_elem_config["material_window_lookup"]
+
+            out_sub = dict(subd)
+
+            # pick R_value / U_value
+            r_val_rng = subd.get("R_value_range", None)
+            u_val_rng = subd.get("U_value_range", None)
+            r_val = pick_val(r_val_rng, strategy) if r_val_rng else None
+            u_val = pick_val(u_val_rng, strategy) if u_val_rng else None
+
+            # if user has a forced R_value / U_value
+            if user_config_fenez and "elements" in user_config_fenez:
+                user_elem_vals = user_config_fenez["elements"].get(elem_name, {})
+                if "R_value" in user_elem_vals and user_elem_vals["R_value"] is not None:
+                    r_val = user_elem_vals["R_value"]
+                if "U_value" in user_elem_vals and user_elem_vals["U_value"] is not None:
+                    u_val = user_elem_vals["U_value"]
+
+            out_sub["R_value"] = r_val
+            out_sub["U_value"] = u_val
+            if r_val_rng:
+                out_sub["R_value_range_used"] = r_val_rng
+            if u_val_rng:
+                out_sub["U_value_range_used"] = u_val_rng
+
+            # sub-element material picks
+            mat_opq_sub_key = subd.get("material_opaque_lookup", None)
+            mat_win_sub_key = subd.get("material_window_lookup", None)
+
+            if mat_opq_sub_key and mat_opq_sub_key in material_lookup:
+                out_sub["material_opaque"] = assign_material_from_lookup(
+                    material_lookup[mat_opq_sub_key],
+                    strategy
+                )
+            else:
+                out_sub["material_opaque"] = None
+
+            if mat_win_sub_key and mat_win_sub_key in material_lookup:
+                out_sub["material_window"] = assign_material_from_lookup(
+                    material_lookup[mat_win_sub_key],
+                    strategy
+                )
+            else:
+                out_sub["material_window"] = None
+
+            elements[elem_name] = out_sub
+
+    # build final result
+    result = {
+        "roughness": rough_str,
+        "wwr_range_used": default_wwr_range,
+        "wwr": wwr_val,
+        "material_opaque": final_opq,
+        "material_window": final_win,
+        "elements": elements
+    }
+
+    # 4) final step => if R_value or U_value is set, override the derived thickness/conductivity
+    for elem_name, elem_data in result["elements"].items():
+        r_val = elem_data.get("R_value", None)
+        u_val = elem_data.get("U_value", None)
+        if r_val is None and u_val is not None and u_val != 0:
+            r_val = 1.0 / u_val
+
+        mat_opq = elem_data.get("material_opaque", None)
+        if mat_opq and r_val is not None:
+            # re-derive Conductivity or Thermal_Resistance
+            if mat_opq["obj_type"].upper() == "MATERIAL":
+                thick = mat_opq["Thickness"]
+                if r_val != 0:
+                    mat_opq["Conductivity"] = thick / r_val
+            elif mat_opq["obj_type"].upper() == "MATERIAL:NOMASS":
+                mat_opq["Thermal_Resistance"] = r_val
+
+        mat_win = elem_data.get("material_window", None)
+        if mat_win and u_val is not None and u_val != 0:
+            # For WINDOWMATERIAL:GLAZING, approximate conduction => U_value * thickness
+            # For WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM, you might set a 'U_value' field directly
+            if mat_win["obj_type"].upper() == "WINDOWMATERIAL:GLAZING":
+                thick = mat_win.get("Thickness", 0.003)
+                mat_win["Conductivity"] = u_val * thick
+            elif mat_win["obj_type"].upper() == "WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM":
+                # store a direct property
+                mat_win["U_value"] = u_val
+
+    return result
 
 ------------------------------------------------------------
 
@@ -1806,2078 +1462,937 @@ def assign_constructions_to_surfaces(idf, construction_map):
 
 ------------------------------------------------------------
 
-File: D:\Documents\E_Plus_2030_py\idf_objects\fenez\materials_config.py
+File: D:\Documents\E_Plus_2030_py\idf_objects\fenez\materials_lookup.py
 ============================================================
 """
-fenez/materials_config.py
-
-Contains logic for picking final material properties from ranges,
-including references to material_lookup for different obj_types (MATERIAL,
-MATERIAL:NOMASS, WINDOWMATERIAL:GLAZING, WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM, etc.).
-
-Key functions:
-    - pick_val(...)
-    - assign_material_from_lookup(...)
-    - get_extended_materials_data(...)
-    - compute_wwr(...)
+Auto-generated materials_lookup.py
 """
+"""
+materials_lookup.py
 
-import random
-
-# Update these imports to match your actual file locations:
-from Lookups.data_materials_residential import residential_materials_data
-from Lookups.data_materials_non_residential import non_residential_materials_data
-from .materials_lookup import material_lookup
-
-
-###############################################################################
-#    pick_val(...) & assign_material_from_lookup(...) helper functions
-###############################################################################
-
-def pick_val(rng, strategy="A"):
-    """
-    Helper to pick a single float from a numeric range (min_val, max_val).
-    If rng=(x,x), returns x.
-    If strategy="A", picks the midpoint. If "B", picks random uniform.
-    Otherwise, fallback to min_val.
-
-    Parameters
-    ----------
-    rng : tuple of (float, float)
-        (min_val, max_val).
-    strategy : str
-        "A" => midpoint, "B" => random uniform, etc.
-
-    Returns
-    -------
-    A float in [min_val, max_val], or None if invalid.
-    """
-    if not rng or len(rng) < 2:
-        return None
-    min_val, max_val = rng
-    if min_val is None and max_val is None:
-        return None
-    if min_val is not None and max_val is not None:
-        if min_val == max_val:
-            return min_val
-        if strategy == "A":
-            return (min_val + max_val) / 2.0
-        elif strategy == "B":
-            return random.uniform(min_val, max_val)
-        else:
-            # fallback => pick min
-            return min_val
-    # If one side is None, fallback to the other
-    return min_val if min_val is not None else max_val
-
-
-def assign_material_from_lookup(mat_def: dict, strategy="A"):
-    """
-    Takes a dict from material_lookup (which has fields like "Thickness_range",
-    "Conductivity_range", etc.) and returns a *copy* with final numeric picks assigned.
-
-    The function modifies keys like "Thickness", "Conductivity", "Thermal_Resistance",
-    etc., based on the strategy for picking from each _range.
-
-    Returns the updated dict.
-    """
-    final_mat = dict(mat_def)  # shallow copy to preserve original
-    obj_type = final_mat["obj_type"].upper()
-
-    # Some materials have thickness & conductivity ranges
-    thick_rng = final_mat.get("Thickness_range", None)
-    cond_rng  = final_mat.get("Conductivity_range", None)
-
-    if obj_type == "MATERIAL":
-        # Mass-based opaque
-        final_mat["Thickness"] = pick_val(thick_rng, strategy)
-        final_mat["Conductivity"] = pick_val(cond_rng, strategy)
-        final_mat["Density"] = pick_val(final_mat.get("Density_range", (2300, 2300)), strategy)
-        final_mat["Specific_Heat"] = pick_val(final_mat.get("Specific_Heat_range", (900, 900)), strategy)
-        final_mat["Thermal_Absorptance"] = pick_val(final_mat.get("Thermal_Absorptance_range", (0.9, 0.9)), strategy)
-        final_mat["Solar_Absorptance"]   = pick_val(final_mat.get("Solar_Absorptance_range", (0.7, 0.7)), strategy)
-        final_mat["Visible_Absorptance"] = pick_val(final_mat.get("Visible_Absorptance_range", (0.7, 0.7)), strategy)
-
-    elif obj_type == "MATERIAL:NOMASS":
-        # No-mass => thermal_resistance
-        r_rng = final_mat.get("Thermal_Resistance_range", None)
-        final_mat["Thermal_Resistance"] = pick_val(r_rng, strategy)
-        final_mat["Thermal_Absorptance"] = pick_val(final_mat.get("Thermal_Absorptance_range", (0.9, 0.9)), strategy)
-        final_mat["Solar_Absorptance"]   = pick_val(final_mat.get("Solar_Absorptance_range", (0.7, 0.7)), strategy)
-        final_mat["Visible_Absorptance"] = pick_val(final_mat.get("Visible_Absorptance_range", (0.7, 0.7)), strategy)
-
-    elif obj_type == "WINDOWMATERIAL:GLAZING":
-        # Typical single/multi-pane window material
-        final_mat["Thickness"] = pick_val(thick_rng, strategy)
-        final_mat["Solar_Transmittance"] = pick_val(
-            final_mat.get("Solar_Transmittance_range", (0.76, 0.76)),
-            strategy
-        )
-        final_mat["Front_Solar_Reflectance"] = pick_val(
-            final_mat.get("Front_Solar_Reflectance_range", (0.07, 0.07)),
-            strategy
-        )
-        final_mat["Back_Solar_Reflectance"]  = pick_val(
-            final_mat.get("Back_Solar_Reflectance_range", (0.07, 0.07)),
-            strategy
-        )
-        final_mat["Visible_Transmittance"]   = pick_val(
-            final_mat.get("Visible_Transmittance_range", (0.86, 0.86)),
-            strategy
-        )
-        final_mat["Front_Visible_Reflectance"] = pick_val(
-            final_mat.get("Front_Visible_Reflectance_range", (0.06, 0.06)),
-            strategy
-        )
-        final_mat["Back_Visible_Reflectance"]  = pick_val(
-            final_mat.get("Back_Visible_Reflectance_range", (0.06, 0.06)),
-            strategy
-        )
-        final_mat["Front_IR_Emissivity"]       = pick_val(
-            final_mat.get("Front_IR_Emissivity_range", (0.84, 0.84)),
-            strategy
-        )
-        final_mat["Back_IR_Emissivity"]        = pick_val(
-            final_mat.get("Back_IR_Emissivity_range", (0.84, 0.84)),
-            strategy
-        )
-        final_mat["Conductivity"]              = pick_val(cond_rng, strategy)
-        final_mat["Dirt_Correction_Factor"]    = pick_val(
-            final_mat.get("Dirt_Correction_Factor_range", (1.0, 1.0)),
-            strategy
-        )
-        # IR_Transmittance often 0 => if stored, keep as is
-
-    elif obj_type == "WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM":
-        # For simple glazing, you typically just set U-factor, SHGC, Visible Transmittance in E+.
-        # We'll just pick from the provided ranges if present:
-        final_mat["SHGC"] = pick_val(final_mat.get("SHGC_range", (0.40, 0.40)), strategy)
-        # If "Optical_Data_Type" is stored as a numeric range for some reason, pick it:
-        opt_dat = final_mat.get("Optical_Data_Type", None)
-        # This might be a numeric or fixed string; handle gracefully:
-        if isinstance(opt_dat, tuple) and len(opt_dat) == 2:
-            final_mat["Optical_Data_Type"] = pick_val(opt_dat, strategy)
-        else:
-            # If it's a single string or float, just keep as is
-            pass
-
-        # You may also store a default U_value here if you keep a "U_value_range" in the dict
-
-    else:
-        # fallback - do nothing special
-        pass
-
-    return final_mat
+Defines a dictionary 'material_lookup' where each key is a label like
+"Concrete_200mm" or "Glazing_Clear_3mm". Each value is a dict containing:
+  - obj_type (e.g. "MATERIAL", "MATERIAL:NOMASS", "WINDOWMATERIAL:GLAZING", etc.)
+  - Name (the actual name in the IDF)
+  - Roughness
+  - Range-based fields like "Thickness_range", "Conductivity_range", etc.
+  - Possibly optical properties for glazing, etc.
+"""
+material_lookup = {
+    'Default_Material': {
+        'obj_type': 'MATERIAL',
+        'Name': 'Default_Material',
+        'Description': 'Placeholder for generic opaque material',
+        'Roughness': 'MediumRough',
+        'Thickness_range': (0.099, 0.101),
+        'Conductivity_range': (0.99, 1.01),
+        'Density_range': (1782, 1818),
+        'Specific_Heat_range': (832, 848),
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+    }, 
+    'Concrete_200mm': {
+        'obj_type': 'MATERIAL',
+        'Name': 'Concrete_200mm',
+        'Description': 'Standard 200 mm concrete wall',
+        'Roughness': 'MediumRough',
+        'Thickness_range': (0.195, 0.205),
+        'Conductivity_range': (1.5, 1.7),
+        'Density_range': (2250, 2350),
+        'Specific_Heat_range': (850, 950),
+        'Thermal_Absorptance_range': (0.9, 0.9),
+        'Solar_Absorptance_range': (0.7, 0.7),
+        'Visible_Absorptance_range': (0.7, 0.7),
+    },
+    'Brick_100mm': {
+        'obj_type': 'MATERIAL',
+        'Name': 'Brick_100mm',
+        'Description': '100 mm common brick',
+        'Roughness': 'MediumRough',
+        'Thickness_range': (0.095, 0.105),
+        'Conductivity_range': (0.6, 0.8),
+        'Density_range': (1700, 1900),
+        'Specific_Heat_range': (800, 900),
+        'Thermal_Absorptance_range': (0.9, 0.9),
+        'Solar_Absorptance_range': (0.7, 0.7),
+        'Visible_Absorptance_range': (0.7, 0.7),
+    },
+    'Fiberglass_Insulation_100mm': {
+        'obj_type': 'MATERIAL',
+        'Name': 'Fiberglass_Insulation_100mm',
+        'Description': '100 mm fiberglass batt insulation',
+        'Roughness': 'MediumRough',
+        'Thickness_range': (0.095, 0.105),
+        'Conductivity_range': (0.04, 0.05),
+        'Density_range': (12, 20),
+        'Specific_Heat_range': (800, 900),
+        'Thermal_Absorptance_range': (0.9, 0.9),
+        'Solar_Absorptance_range': (0.5, 0.5),
+        'Visible_Absorptance_range': (0.5, 0.5),
+    },
+    'Gypsum_Board_12mm': {
+        'obj_type': 'MATERIAL',
+        'Name': 'Gypsum_Board_12mm',
+        'Description': '12 mm gypsum board',
+        'Roughness': 'MediumSmooth',
+        'Thickness_range': (0.0115, 0.0125),
+        'Conductivity_range': (0.16, 0.18),
+        'Density_range': (800, 950),
+        'Specific_Heat_range': (1000, 1100),
+        'Thermal_Absorptance_range': (0.9, 0.9),
+        'Solar_Absorptance_range': (0.7, 0.7),
+        'Visible_Absorptance_range': (0.7, 0.7),
+    },
 
 
-###############################################################################
-#    The main function to retrieve data & combine user overrides
-###############################################################################
-
-def compute_wwr(elements_dict, include_doors=False):
-    """
-    Compute WWR => (window area) / (exterior wall area).
-    If include_doors=True, add door area to the fenestration area.
-    """
-    external_wall_area = 0.0
-    if "exterior_wall" in elements_dict:
-        external_wall_area += elements_dict["exterior_wall"].get("area_m2", 0.0)
-
-    window_area = elements_dict.get("windows", {}).get("area_m2", 0.0)
-    if include_doors and "doors" in elements_dict:
-        window_area += elements_dict["doors"].get("area_m2", 0.0)
-
-    if external_wall_area > 0:
-        return window_area / external_wall_area
-    else:
-        return 0.0
 
 
-def get_extended_materials_data(
-    building_function: str,
-    building_type: str,
-    age_range: str,
-    scenario: str,
-    calibration_stage: str,
-    strategy: str = "A",
-    random_seed=None,
-    user_config_fenez=None
-):
-    """
-    1) Looks up either residential_materials_data or non_residential_materials_data
-       by (building_type, age_range, scenario, calibration_stage).
-    2) Retrieves "wwr_range" and picks a final 'wwr' if relevant.
-    3) Grabs top-level 'material_opaque_lookup', 'material_window_lookup' if present.
-    4) For each sub-element (e.g., ground_floor, windows, doors),
-       picks R_value, U_value from (R_value_range, U_value_range).
-    5) If user_config_fenez is provided, we override some fields (range or fixed).
-    6) Return a dictionary with "wwr", "material_opaque", "material_window",
-       plus "elements" sub-dicts for each sub-element with final picks.
 
-    The final dict can then be used in materials.py to actually create IDF Materials/Constructions.
-    """
-    if random_seed is not None:
-        random.seed(random_seed)
 
-    # Pick which dataset to use
-    if building_function.lower() == "residential":
-        ds = residential_materials_data
-    else:
-        ds = non_residential_materials_data
+    'InteriorWall_Generic_R0.5': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'InteriorWall_Generic_R0.5',
+        'Description': 'Generic Interior Wall R0.5',
+        'Roughness': 'MediumSmooth',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.495, 0.505),
+        'Visible_Absorptance_range': (0.495, 0.505),
+        'Thermal_Resistance_range': (0.495, 0.505),
+    },
+    'InternalFloor_Generic_R1.0': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'InternalFloor_Generic_R1.0',
+        'Description': 'Generic Internal Floor R1.0',
+        'Roughness': 'MediumSmooth',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.99, 1.01),
+    },
+    'GroundFloor_R0.15': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'GroundFloor_R0.15',
+        'Description': 'Ground Floor R0.15',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.148, 0.152),
+    },
+    'GroundFloor_R0.17': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'GroundFloor_R0.17',
+        'Description': 'Ground Floor R0.17',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.168, 0.172),
+    },
+    'GroundFloor_R0.52': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'GroundFloor_R0.52',
+        'Description': 'Ground Floor R0.52',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.515, 0.525),
+    },
+    'GroundFloor_R1.30': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'GroundFloor_R1.30',
+        'Description': 'Ground Floor R1.30',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (1.287, 1.313),
+    },
+    'GroundFloor_R2.5': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'GroundFloor_R2.5',
+        'Description': 'Ground Floor R2.5',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (2.475, 2.525),
+    },
+    'GroundFloor_R3.5': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'GroundFloor_R3.5',
+        'Description': 'Ground Floor R3.5',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (3.465, 3.535),
+    },
+    'ExtWall_R0.19': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'ExtWall_R0.19',
+        'Description': 'Exterior Wall R0.19',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.188, 0.192),
+    },
+    'ExtWall_R0.35': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'ExtWall_R0.35',
+        'Description': 'Exterior Wall R0.35',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.347, 0.354),
+    },
+    'ExtWall_R0.43': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'ExtWall_R0.43',
+        'Description': 'Exterior Wall R0.43',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.426, 0.434),
+    },
+    'ExtWall_R1.30': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'ExtWall_R1.30',
+        'Description': 'Exterior Wall R1.30',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (1.287, 1.313),
+    },
+    'ExtWall_R1.7': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'ExtWall_R1.7',
+        'Description': 'Exterior Wall R1.7',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (1.683, 1.717),
+    },
+    'ExtWall_R2.5': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'ExtWall_R2.5',
+        'Description': 'Exterior Wall R2.5',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (2.475, 2.525),
+    },
+    'ExtWall_R4.5': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'ExtWall_R4.5',
+        'Description': 'Exterior Wall R4.5',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (4.455, 4.545),
+    },
+    'Roof_R0.22': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'Roof_R0.22',
+        'Description': 'Roof R0.22',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.218, 0.222),
+    },
+    'Roof_R0.25': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'Roof_R0.25',
+        'Description': 'Roof R0.25',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.247, 0.253),
+    },
+    'Roof_R0.35': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'Roof_R0.35',
+        'Description': 'Roof R0.35',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.347, 0.354),
+    },
+    'Roof_R0.43': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'Roof_R0.43',
+        'Description': 'Roof R0.43',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.426, 0.434),
+    },
+    'Roof_R0.72': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'Roof_R0.72',
+        'Description': 'Roof R0.72',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.713, 0.727),
+    },
+    'Roof_R0.86': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'Roof_R0.86',
+        'Description': 'Roof R0.86',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.851, 0.869),
+    },
+    'Roof_R1.03': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'Roof_R1.03',
+        'Description': 'Roof R1.03',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (1.02, 1.04),
+    },
+    'Roof_R1.30': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'Roof_R1.30',
+        'Description': 'Roof R1.30',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (1.287, 1.313),
+    },
+    'Roof_R1.71': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'Roof_R1.71',
+        'Description': 'Roof R1.71',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (1.693, 1.727),
+    },
+    'Roof_R2.5': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'Roof_R2.5',
+        'Description': 'Roof R2.5',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (2.475, 2.525),
+    },
+    'Roof_R3.5': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'Roof_R3.5',
+        'Description': 'Roof R3.5',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (3.465, 3.535),
+    },
+    'Roof_R6.0': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'Roof_R6.0',
+        'Description': 'Roof R6.0',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (5.94, 6.06),
+    },
+    'Door_U3.4': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'Door_U3.4',
+        'Description': 'Opaque Door, U=3.4 (R=0.29)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.287, 0.293),
+    },
+    'Door_U2.0': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'Door_U2.0',
+        'Description': 'Opaque Door, U=2.0 (R=0.50)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.495, 0.505),
+    },
+    'Door_U1.4': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'Door_U1.4',
+        'Description': 'Opaque Door, U=1.4 (R=0.71)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.703, 0.717),
+    },
+    'Window_U5.1': {
+    'obj_type': 'WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM',
+    'Name': 'Window_U5.1',
+    'Description': 'Window System U=5.1 (Single Clear?)',
+    # U=5.1 W/m2K => store that as U_value_range
+    'U_value_range': (5.049, 5.151),
+    # SHGC ~0.80 => store as SHGC_range in [0,1]
+    'SHGC_range': (0.792, 0.808),
+},
 
-    dict_key = (building_type, age_range, scenario, calibration_stage)
-    if dict_key not in ds:
-        # fallback if no data
-        output_fallback = {
-            "roughness": "MediumRough",
-            "wwr": 0.3,
-            "wwr_range_used": (0.3, 0.3),
-            "material_opaque": None,
-            "material_window": None,
-            "elements": {}
-        }
-        # Possibly let user_config_fenez override wwr or wwr_range
-        if user_config_fenez:
-            if "wwr_range" in user_config_fenez:
-                output_fallback["wwr_range_used"] = user_config_fenez["wwr_range"]
-            if "wwr" in user_config_fenez:
-                output_fallback["wwr"] = user_config_fenez["wwr"]
-        return output_fallback
+'Window_U4.0': {
+    'obj_type': 'WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM',
+    'Name': 'Window_U4.0',
+    'Description': 'Window System U=4.0 (Single Clear?)',
+    'U_value_range': (3.960, 4.040),
+    'SHGC_range': (0.742, 0.758),
+},
 
-    data_entry = ds[dict_key]
+'Window_U2.9': {
+    'obj_type': 'WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM',
+    'Name': 'Window_U2.9',
+    'Description': 'Window System U=2.9 (Double Clear?)',
+    'U_value_range': (2.871, 2.929),
+    'SHGC_range': (0.693, 0.707),
+},
 
-    # 1) pick or override wwr_range
-    default_wwr_range = data_entry.get("wwr_range", (0.3, 0.3))
-    if user_config_fenez and "wwr_range" in user_config_fenez:
-        default_wwr_range = user_config_fenez["wwr_range"]
-    wwr_val = pick_val(default_wwr_range, strategy)
+'Window_U2.0': {
+    'obj_type': 'WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM',
+    'Name': 'Window_U2.0',
+    'Description': 'Window System U=2.0 (Double Low-e?)',
+    'U_value_range': (1.980, 2.020),
+    'SHGC_range': (0.594, 0.606),
+},
 
-    # If user overrides wwr directly, apply it
-    if user_config_fenez and "wwr" in user_config_fenez:
-        wwr_val = user_config_fenez["wwr"]
+'Window_U1.8': {
+    'obj_type': 'WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM',
+    'Name': 'Window_U1.8',
+    'Description': 'Window System U=1.8 (Double Low-e?)',
+    'U_value_range': (1.782, 1.818),
+    'SHGC_range': (0.544, 0.556),
+},
 
-    # 2) top-level roughness
-    rough_str = data_entry.get("roughness", "MediumRough")
+'Window_U1.4': {
+    'obj_type': 'WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM',
+    'Name': 'Window_U1.4',
+    'Description': 'Window System U=1.4 (Triple Low-e?)',
+    'U_value_range': (1.386, 1.414),
+    'SHGC_range': (0.446, 0.455),
+},
 
-    # top-level materials
-    mat_opq_key = data_entry.get("material_opaque_lookup", None)
-    mat_win_key = data_entry.get("material_window_lookup", None)
+    'NR_InteriorWall_R0.5': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_InteriorWall_R0.5',
+        'Description': 'NonRes Generic Interior Wall R0.5',
+        'Roughness': 'MediumSmooth',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.495, 0.505),
+        'Visible_Absorptance_range': (0.495, 0.505),
+        'Thermal_Resistance_range': (0.495, 0.505),
+    },
+    'NR_InternalFloor_R1.0': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_InternalFloor_R1.0',
+        'Description': 'NonRes Generic Internal Floor R1.0',
+        'Roughness': 'MediumSmooth',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.99, 1.01),
+    },
+    'NR_GroundFloor_U2.8': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_GroundFloor_U2.8',
+        'Description': 'NonRes Ground Floor U=2.8 (R=0.36)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.356, 0.364),
+    },
+    'NR_GroundFloor_U2.4': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_GroundFloor_U2.4',
+        'Description': 'NonRes Ground Floor U=2.4 (R=0.42)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.416, 0.424),
+    },
+    'NR_GroundFloor_U1.8': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_GroundFloor_U1.8',
+        'Description': 'NonRes Ground Floor U=1.8 (R=0.56)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.554, 0.566),
+    },
+    'NR_GroundFloor_U1.3': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_GroundFloor_U1.3',
+        'Description': 'NonRes Ground Floor U=1.3 (R=0.77)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.762, 0.778),
+    },
+    'NR_GroundFloor_U0.9': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_GroundFloor_U0.9',
+        'Description': 'NonRes Ground Floor U=0.9 (R=1.11)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (1.099, 1.121),
+    },
+    'NR_GroundFloor_U0.8': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_GroundFloor_U0.8',
+        'Description': 'NonRes Ground Floor U=0.8 (R=1.25)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (1.237, 1.263),
+    },
+    'NR_GroundFloor_U0.5': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_GroundFloor_U0.5',
+        'Description': 'NonRes Ground Floor U=0.5 (R=2.00)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (1.98, 2.02),
+    },
+    'NR_GroundFloor_U0.35': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_GroundFloor_U0.35',
+        'Description': 'NonRes Ground Floor U=0.35 (R=2.86)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (2.831, 2.889),
+    },
+    'NR_GroundFloor_U0.3': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_GroundFloor_U0.3',
+        'Description': 'NonRes Ground Floor U=0.3 (R=3.33)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (3.297, 3.363),
+    },
+    'NR_GroundFloor_U0.2': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_GroundFloor_U0.2',
+        'Description': 'NonRes Ground Floor U=0.2 (R=5.00)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (4.95, 5.05),
+    },
+    'NR_ExtWall_U3.0': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_ExtWall_U3.0',
+        'Description': 'NonRes Exterior Wall U=3.0 (R=0.33)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.327, 0.333),
+    },
+    'NR_ExtWall_U2.5': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_ExtWall_U2.5',
+        'Description': 'NonRes Exterior Wall U=2.5 (R=0.40)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.396, 0.404),
+    },
+    'NR_ExtWall_U2.0': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_ExtWall_U2.0',
+        'Description': 'NonRes Exterior Wall U=2.0 (R=0.50)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.495, 0.505),
+    },
+    'NR_ExtWall_U1.5': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_ExtWall_U1.5',
+        'Description': 'NonRes Exterior Wall U=1.5 (R=0.67)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.663, 0.677),
+    },
+    'NR_ExtWall_U1.0': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_ExtWall_U1.0',
+        'Description': 'NonRes Exterior Wall U=1.0 (R=1.00)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.99, 1.01),
+    },
+    'NR_ExtWall_U0.7': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_ExtWall_U0.7',
+        'Description': 'NonRes Exterior Wall U=0.7 (R=1.43)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (1.416, 1.444),
+    },
+    'NR_ExtWall_U0.6': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_ExtWall_U0.6',
+        'Description': 'NonRes Exterior Wall U=0.6 (R=1.67)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (1.653, 1.687),
+    },
+    'NR_ExtWall_U0.4': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_ExtWall_U0.4',
+        'Description': 'NonRes Exterior Wall U=0.4 (R=2.50)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (2.475, 2.525),
+    },
+    'NR_ExtWall_U0.3': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_ExtWall_U0.3',
+        'Description': 'NonRes Exterior Wall U=0.3 (R=3.33)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (3.297, 3.363),
+    },
+    'NR_ExtWall_U0.2': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_ExtWall_U0.2',
+        'Description': 'NonRes Exterior Wall U=0.2 (R=5.00)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (4.95, 5.05),
+    },
+    'NR_Roof_U3.5': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_Roof_U3.5',
+        'Description': 'NonRes Roof U=3.5 (R=0.29)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.287, 0.293),
+    },
+    'NR_Roof_U3.0': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_Roof_U3.0',
+        'Description': 'NonRes Roof U=3.0 (R=0.33)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.327, 0.333),
+    },
+    'NR_Roof_U2.5': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_Roof_U2.5',
+        'Description': 'NonRes Roof U=2.5 (R=0.40)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.396, 0.404),
+    },
+    'NR_Roof_U1.8': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_Roof_U1.8',
+        'Description': 'NonRes Roof U=1.8 (R=0.56)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.554, 0.566),
+    },
+    'NR_Roof_U1.2': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_Roof_U1.2',
+        'Description': 'NonRes Roof U=1.2 (R=0.83)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.822, 0.838),
+    },
+    'NR_Roof_U0.8': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_Roof_U0.8',
+        'Description': 'NonRes Roof U=0.8 (R=1.25)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (1.237, 1.263),
+    },
+    'NR_Roof_U0.7': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_Roof_U0.7',
+        'Description': 'NonRes Roof U=0.7 (R=1.43)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (1.416, 1.444),
+    },
+    'NR_Roof_U0.5': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_Roof_U0.5',
+        'Description': 'NonRes Roof U=0.5 (R=2.00)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (1.98, 2.02),
+    },
+    'NR_Roof_U0.35': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_Roof_U0.35',
+        'Description': 'NonRes Roof U=0.35 (R=2.86)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (2.831, 2.889),
+    },
+    'NR_Roof_U0.3': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_Roof_U0.3',
+        'Description': 'NonRes Roof U=0.3 (R=3.33)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (3.297, 3.363),
+    },
+    'NR_Roof_U0.18': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_Roof_U0.18',
+        'Description': 'NonRes Roof U=0.18 (R=5.56)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (5.504, 5.616),
+    },
+    'NR_Door_U4.0': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_Door_U4.0',
+        'Description': 'NonRes Door U=4.0 (R=0.25)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.247, 0.253),
+    },
+    'NR_Door_U3.4': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_Door_U3.4',
+        'Description': 'NonRes Door U=3.4 (R=0.29)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.287, 0.293),
+    },
+    'NR_Door_U2.8': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_Door_U2.8',
+        'Description': 'NonRes Door U=2.8 (R=0.36)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.356, 0.364),
+    },
+    'NR_Door_U2.2': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_Door_U2.2',
+        'Description': 'NonRes Door U=2.2 (R=0.45)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.446, 0.455),
+    },
+    'NR_Door_U1.8': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_Door_U1.8',
+        'Description': 'NonRes Door U=1.8 (R=0.56)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.554, 0.566),
+    },
+    'NR_Door_U1.5': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_Door_U1.5',
+        'Description': 'NonRes Door U=1.5 (R=0.67)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.663, 0.677),
+    },
+    'NR_Door_U1.2': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_Door_U1.2',
+        'Description': 'NonRes Door U=1.2 (R=0.83)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.822, 0.838),
+    },
+    'NR_Door_U1.0': {
+        'obj_type': 'MATERIAL:NOMASS',
+        'Name': 'NR_Door_U1.0',
+        'Description': 'NonRes Door U=1.0 (R=1.00)',
+        'Roughness': 'MediumRough',
+        'Thermal_Absorptance_range': (0.891, 0.909),
+        'Solar_Absorptance_range': (0.693, 0.707),
+        'Visible_Absorptance_range': (0.693, 0.707),
+        'Thermal_Resistance_range': (0.99, 1.01),
+    },
+'NR_Window_U5.8_SHGC0.80': {
+    'obj_type': 'WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM',
+    'Name': 'NR_Window_U5.8_SHGC0.80',
+    'Description': 'NonRes Window U=5.8, SHGC=0.80',
+    'U_value_range': (5.742, 5.858),
+    'SHGC_range': (0.792, 0.808),
+},
 
-    if user_config_fenez:
-        if "material_opaque_lookup" in user_config_fenez:
-            mat_opq_key = user_config_fenez["material_opaque_lookup"]
-        if "material_window_lookup" in user_config_fenez:
-            mat_win_key = user_config_fenez["material_window_lookup"]
+'NR_Window_U5.1_SHGC0.80': {
+    'obj_type': 'WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM',
+    'Name': 'NR_Window_U5.1_SHGC0.80',
+    'Description': 'NonRes Window U=5.1, SHGC=0.80',
+    'U_value_range': (5.049, 5.151),
+    'SHGC_range': (0.792, 0.808),
+},
 
-    final_opq = None
-    if mat_opq_key and mat_opq_key in material_lookup:
-        final_opq = assign_material_from_lookup(material_lookup[mat_opq_key], strategy)
+'NR_Window_U4.0_SHGC0.70': {
+    'obj_type': 'WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM',
+    'Name': 'NR_Window_U4.0_SHGC0.70',
+    'Description': 'NonRes Window U=4.0, SHGC=0.70',
+    'U_value_range': (3.960, 4.040),
+    'SHGC_range': (0.693, 0.707),
+},
 
-    final_win = None
-    if mat_win_key and mat_win_key in material_lookup:
-        final_win = assign_material_from_lookup(material_lookup[mat_win_key], strategy)
+'NR_Window_U2.9_SHGC0.60': {
+    'obj_type': 'WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM',
+    'Name': 'NR_Window_U2.9_SHGC0.60',
+    'Description': 'NonRes Window U=2.9, SHGC=0.60',
+    'U_value_range': (2.871, 2.929),
+    'SHGC_range': (0.594, 0.606),
+},
 
-    # 3) sub-elements
-    possible_elems = [
-        "ground_floor", "exterior_wall", "flat_roof", "sloping_flat_roof",
-        "inter_floor", "interior_wall", "windows", "doors"
-    ]
-    elements = {}
-    for elem_name in possible_elems:
-        if elem_name in data_entry:
-            subd = dict(data_entry[elem_name])  # shallow copy
+'NR_Window_U2.2_SHGC0.55': {
+    'obj_type': 'WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM',
+    'Name': 'NR_Window_U2.2_SHGC0.55',
+    'Description': 'NonRes Window U=2.2, SHGC=0.55',
+    'U_value_range': (2.178, 2.222),
+    'SHGC_range': (0.544, 0.556),
+},
 
-            # apply user overrides for sub-element if present
-            if user_config_fenez and "elements" in user_config_fenez:
-                user_elem_config = user_config_fenez["elements"].get(elem_name, {})
-                if "R_value_range" in user_elem_config:
-                    subd["R_value_range"] = user_elem_config["R_value_range"]
-                if "U_value_range" in user_elem_config:
-                    subd["U_value_range"] = user_elem_config["U_value_range"]
-                if "area_m2" in user_elem_config:
-                    subd["area_m2"] = user_elem_config["area_m2"]
-                if "material_opaque_lookup" in user_elem_config:
-                    subd["material_opaque_lookup"] = user_elem_config["material_opaque_lookup"]
-                if "material_window_lookup" in user_elem_config:
-                    subd["material_window_lookup"] = user_elem_config["material_window_lookup"]
+'NR_Window_U1.8_SHGC0.50': {
+    'obj_type': 'WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM',
+    'Name': 'NR_Window_U1.8_SHGC0.50',
+    'Description': 'NonRes Window U=1.8, SHGC=0.50',
+    'U_value_range': (1.782, 1.818),
+    'SHGC_range': (0.495, 0.505),
+},
 
-            out_sub = dict(subd)
+'NR_Window_U1.4_SHGC0.45': {
+    'obj_type': 'WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM',
+    'Name': 'NR_Window_U1.4_SHGC0.45',
+    'Description': 'NonRes Window U=1.4, SHGC=0.45',
+    'U_value_range': (1.386, 1.414),
+    'SHGC_range': (0.446, 0.455),
+},
 
-            # pick R_value / U_value
-            r_val_rng = subd.get("R_value_range", None)
-            u_val_rng = subd.get("U_value_range", None)
-            r_val = pick_val(r_val_rng, strategy) if r_val_rng else None
-            u_val = pick_val(u_val_rng, strategy) if u_val_rng else None
+'NR_Window_U1.1_SHGC0.40': {
+    'obj_type': 'WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM',
+    'Name': 'NR_Window_U1.1_SHGC0.40',
+    'Description': 'NonRes Window U=1.1, SHGC=0.40',
+    'U_value_range': (1.089, 1.111),
+    'SHGC_range': (0.396, 0.404),
+},
 
-            # if user has a forced R_value / U_value
-            if user_config_fenez and "elements" in user_config_fenez:
-                user_elem_vals = user_config_fenez["elements"].get(elem_name, {})
-                if "R_value" in user_elem_vals and user_elem_vals["R_value"] is not None:
-                    r_val = user_elem_vals["R_value"]
-                if "U_value" in user_elem_vals and user_elem_vals["U_value"] is not None:
-                    u_val = user_elem_vals["U_value"]
-
-            out_sub["R_value"] = r_val
-            out_sub["U_value"] = u_val
-            if r_val_rng:
-                out_sub["R_value_range_used"] = r_val_rng
-            if u_val_rng:
-                out_sub["U_value_range_used"] = u_val_rng
-
-            # sub-element material picks
-            mat_opq_sub_key = subd.get("material_opaque_lookup", None)
-            mat_win_sub_key = subd.get("material_window_lookup", None)
-
-            if mat_opq_sub_key and mat_opq_sub_key in material_lookup:
-                out_sub["material_opaque"] = assign_material_from_lookup(
-                    material_lookup[mat_opq_sub_key],
-                    strategy
-                )
-            else:
-                out_sub["material_opaque"] = None
-
-            if mat_win_sub_key and mat_win_sub_key in material_lookup:
-                out_sub["material_window"] = assign_material_from_lookup(
-                    material_lookup[mat_win_sub_key],
-                    strategy
-                )
-            else:
-                out_sub["material_window"] = None
-
-            elements[elem_name] = out_sub
-
-    # build final result
-    result = {
-        "roughness": rough_str,
-        "wwr_range_used": default_wwr_range,
-        "wwr": wwr_val,
-        "material_opaque": final_opq,
-        "material_window": final_win,
-        "elements": elements
+    'Glazing_Clear_3mm': {
+        'obj_type': 'WINDOWMATERIAL:GLAZING',
+        'Name': 'Glazing_Clear_3mm',
+        'Thickness_range': (0.003, 0.003),
+        'Conductivity_range': (0.95, 1.05),
+        'Optical_Data_Type': 'SpectralAverage',
+        'Solar_Transmittance_range': (0.76, 0.78),
+        'Front_Solar_Reflectance_range': (0.07, 0.08),
+        'Back_Solar_Reflectance_range': (0.07, 0.08),
+        'Visible_Transmittance_range': (0.86, 0.88),
+        'Front_Visible_Reflectance_range': (0.06, 0.07),
+        'Back_Visible_Reflectance_range': (0.06, 0.07),
+        'IR_Transmittance': 0,
+        'Front_IR_Emissivity_range': (0.84, 0.84),
+        'Back_IR_Emissivity_range': (0.84, 0.84),
+        'Dirt_Correction_Factor_range': (1.0, 1.0),
+        'Solar_Diffusing': 'No',
     }
-
-    # 4) final step => if R_value or U_value is set, override the derived thickness/conductivity
-    for elem_name, elem_data in result["elements"].items():
-        r_val = elem_data.get("R_value", None)
-        u_val = elem_data.get("U_value", None)
-        if r_val is None and u_val is not None and u_val != 0:
-            r_val = 1.0 / u_val
-
-        mat_opq = elem_data.get("material_opaque", None)
-        if mat_opq and r_val is not None:
-            # re-derive Conductivity or Thermal_Resistance
-            if mat_opq["obj_type"].upper() == "MATERIAL":
-                thick = mat_opq["Thickness"]
-                if r_val != 0:
-                    mat_opq["Conductivity"] = thick / r_val
-            elif mat_opq["obj_type"].upper() == "MATERIAL:NOMASS":
-                mat_opq["Thermal_Resistance"] = r_val
-
-        mat_win = elem_data.get("material_window", None)
-        if mat_win and u_val is not None and u_val != 0:
-            # For WINDOWMATERIAL:GLAZING, approximate conduction => U_value * thickness
-            # For WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM, you might set a 'U_value' field directly
-            if mat_win["obj_type"].upper() == "WINDOWMATERIAL:GLAZING":
-                thick = mat_win.get("Thickness", 0.003)
-                mat_win["Conductivity"] = u_val * thick
-            elif mat_win["obj_type"].upper() == "WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM":
-                # store a direct property
-                mat_win["U_value"] = u_val
-
-    return result
-
-------------------------------------------------------------
-
-File: D:\Documents\E_Plus_2030_py\idf_objects\wshading\assign_shading_values.py
-============================================================
-"""
-assign_shading_values.py
-
-This module picks the final shading parameters from shading_lookup.py
-and optionally user overrides or Excel-based rules. The actual creation
-of EnergyPlus objects (e.g. WindowMaterial:Blind, Shading:Building:Detailed, etc.)
-will happen in another file (e.g. create_shading_objects.py).
-"""
-
-import random
-import logging
-from .shading_lookup import shading_lookup # Assuming shading_lookup.py is in the same directory
-
-logger = logging.getLogger(__name__)
-
-def pick_val_from_range(rng_tuple, strategy="A"):
-    """
-    Helper function to pick a numeric value from a (min_val, max_val) tuple.
-
-    - If strategy="A", picks the midpoint.
-    - If strategy="B", picks a random value in [min_val, max_val].
-    - Otherwise (e.g., strategy="C" or any other string), picks min_val.
-
-    Parameters
-    ----------
-    rng_tuple : tuple or None
-        A tuple of two numeric values (min_val, max_val) or None.
-        If None or not a 2-element tuple, returns None.
-        If min_val or max_val is None, attempts to return the non-None value,
-        or None if both are None.
-    strategy : str, optional
-        The strategy to use for picking the value ("A", "B", or other).
-        Defaults to "A".
-
-    Returns
-    -------
-    float or int or None
-        The picked numeric value, or None if input is invalid or values are missing.
-    """
-    if not rng_tuple or not isinstance(rng_tuple, tuple) or len(rng_tuple) != 2:
-        if rng_tuple is not None: # Log if it's not None but still invalid
-             logger.warning(f"Invalid rng_tuple: {rng_tuple}. Expected a 2-element tuple or None.")
-        return None
-
-    min_val, max_val = rng_tuple
-
-    if min_val is None and max_val is None:
-        return None
-    if min_val is None:
-        return max_val # Return max_val if min_val is None
-    if max_val is None:
-        return min_val # Return min_val if max_val is None
-
-    # Ensure min_val and max_val are numbers if they are not None
-    if not all(isinstance(v, (int, float)) for v in [min_val, max_val] if v is not None):
-        logger.warning(f"Non-numeric values in rng_tuple: {rng_tuple}. Cannot pick value.")
-        return None # Or handle as per specific logic, e.g., return first valid number
-
-    if min_val == max_val:
-        return min_val  # No variability
-
-    if min_val > max_val:
-        logger.warning(
-            f"min_val ({min_val}) is greater than max_val ({max_val}) in range tuple. "
-            f"Swapping them for strategy 'A'. For strategy 'B', this might lead to issues if not handled by random.uniform."
-        )
-        # For midpoint, swapping is fine. For random, random.uniform might error or behave unexpectedly.
-        # Python's random.uniform(a,b) requires a <= b.
-        if strategy == "B":
-            # To be safe, either swap, or return min_val, or log and let it potentially error
-            # Choosing to swap for random.uniform to ensure it works:
-            min_val, max_val = max_val, min_val
-
-
-    if strategy == "A":
-        return 0.5 * (min_val + max_val)
-    elif strategy == "B":
-        return random.uniform(min_val, max_val)
-    else: # Default or other strategies pick min_val
-        return min_val
-
-def pick_shading_params(
-    window_id, # Retained for logging, though not strictly used for parameter picking logic here
-    shading_type_key="my_external_louvers",
-    strategy="A",
-    user_config=None,
-    assigned_shading_log=None
-):
-    """
-    1) Looks up default shading parameters from shading_lookup[shading_type_key].
-    2) If user_config is provided, overrides or adjusts some values. The user_config
-       is expected to be a dictionary where keys are parameter names (e.g.,
-       "slat_angle_deg_range") and values are the new values or new ranges.
-       This `user_config` should be specific to the `shading_type_key` being processed.
-    3) Based on 'strategy', picks final numeric values (midpoint, random, or min)
-       from any ranges in these parameters.
-    4) Optionally logs the final picks in assigned_shading_log.
-
-    Parameters
-    ----------
-    window_id : str
-        An identifier for the window (primarily for logging purposes).
-    shading_type_key : str
-        The key in shading_lookup to use, e.g., "my_external_louvers".
-    strategy : str
-        "A" => pick midpoint from ranges; "B" => pick random.
-        Otherwise => pick min_val from ranges.
-    user_config : dict or None
-        A dictionary of overrides specific to this `shading_type_key`.
-        E.g., { "slat_angle_deg_range": (30, 60), "slat_width": 0.05 }.
-        This dict directly contains parameter names and their override values.
-    assigned_shading_log : dict or None
-        If provided, store final picks under assigned_shading_log[window_id].
-
-    Returns
-    -------
-    dict
-        A dictionary of final shading parameters with single numeric values, e.g.:
-        {
-          "blind_name": "MyExternalLouvers",
-          "slat_orientation": "Horizontal",
-          "slat_width": 0.025,
-          "slat_angle_deg": 45.0,
-          ...
-        }
-        Returns an empty dictionary if base_params for shading_type_key are not found.
-    """
-    base_params = shading_lookup.get(shading_type_key)
-    if not base_params:
-        logger.error(f"Shading type key '{shading_type_key}' not found in shading_lookup.")
-        if assigned_shading_log is not None and window_id is not None:
-            if window_id not in assigned_shading_log:
-                assigned_shading_log[window_id] = {}
-            assigned_shading_log[window_id]["shading_params_error"] = f"Key '{shading_type_key}' not in lookup."
-        return {}
-
-    # Start with a deepcopy if base_params might contain nested mutable structures,
-    # though for typical shading_lookup, shallow copy is often sufficient.
-    # Using shallow copy as per original, assuming values are simple types or tuples.
-    final_params = dict(base_params)
-
-    # 2) Apply user overrides
-    # user_config here is already the specific set of overrides for this shading_type_key.
-    if user_config and isinstance(user_config, dict):
-        for key, override_val in user_config.items():
-            # If the override_val is a tuple and the original key also ended with _range
-            # (or if the new key ends with _range), it's likely an override for a range.
-            # Otherwise, it's a direct value replacement or a new parameter.
-            final_params[key] = override_val
-            # Log if an existing parameter is being overridden
-            # if key in base_params:
-            # logger.debug(f"For {shading_type_key}, '{key}' overridden from '{base_params[key]}' to '{override_val}'")
-            # else:
-            # logger.debug(f"For {shading_type_key}, new param '{key}' added with value '{override_val}'")
-
-
-    # 3) Convert all "*_range" fields to single numeric picks
-    #    Also convert any single values that were specified as ranges in lookup/override.
-    processed_params = {}
-    params_to_remove_range_suffix = []
-
-    for field_key, field_val in list(final_params.items()):
-        if field_key.endswith("_range"):
-            param_name_base = field_key[:-6]  # remove "_range"
-            if isinstance(field_val, tuple): # It's a range, pick a value
-                chosen_val = pick_val_from_range(field_val, strategy=strategy)
-                if chosen_val is not None:
-                    processed_params[param_name_base] = chosen_val
-                else:
-                    logger.warning(f"Could not pick value for '{field_key}' with value {field_val} for {shading_type_key}. Parameter '{param_name_base}' will be missing.")
-                params_to_remove_range_suffix.append(field_key)
-            else: # It ends with _range but isn't a tuple, treat as direct value for param_name_base
-                logger.warning(f"Field '{field_key}' for {shading_type_key} ends with '_range' but is not a tuple: {field_val}. Using value directly for '{param_name_base}'.")
-                processed_params[param_name_base] = field_val
-                params_to_remove_range_suffix.append(field_key)
-        else:
-            # If field_val is a tuple (e.g. from an override that set a non-range field to a tuple)
-            # AND it's meant to be a range that needs picking (e.g. user_config provided ("width": (0.1,0.2))
-            # then pick_val_from_range should be used.
-            # Current logic assumes explicit *_range suffix for picking.
-            # If a non-range parameter is overridden with a tuple, it stays a tuple unless handled elsewhere.
-            # For simplicity, we only act on *_range keys here.
-            # Non-range parameters are kept as is.
-            processed_params[field_key] = field_val
-
-    # Clean up the original *_range keys from final_params if they were processed
-    for key_to_remove in params_to_remove_range_suffix:
-        if key_to_remove in final_params : # It might have been overwritten by a direct key (param_name_base) already
-            final_params.pop(key_to_remove, None)
-
-
-    # Update final_params with the processed (picked) values
-    final_params.update(processed_params)
-
-
-    # 4) Log if needed
-    if assigned_shading_log is not None and window_id is not None:
-        if window_id not in assigned_shading_log:
-            assigned_shading_log[window_id] = {}
-        # Store a copy to avoid external modification if final_params is mutable and reused.
-        assigned_shading_log[window_id]["shading_params"] = dict(final_params)
-
-    return final_params
-------------------------------------------------------------
-
-File: D:\Documents\E_Plus_2030_py\idf_objects\wshading\shading_lookup.py
-============================================================
-"""
-shading_lookup.py
-
-Contains default (hardcoded) shading parameters for different blind types,
-overhangs, louvers, etc. This is analogous to geometry_lookup.py or
-materials_lookup.py, storing dictionary-based defaults.
-
-Each key in the `shading_lookup` dictionary represents a specific type of shading.
-The associated value is a dictionary of its parameters. Parameters intended
-to be a range (min, max) from which a value will be picked should have a
-key ending with "_range".
-
-Example:
-  "slat_width_range": (0.025, 0.050)  # Slat width can be between 0.025m and 0.050m
-
-Values for these ranges will be selected by the `pick_val_from_range` function
-in `assign_shading_values.py` based on the chosen strategy (e.g., midpoint, random).
-"""
-
-shading_lookup = {
-    # Example: external horizontal louvers/blinds
-    "my_external_louvers": {
-        # This name will be used as a base for the EnergyPlus WindowMaterial:Blind object name
-        "blind_name": "MyExternalLouvers",
-        "slat_orientation": "Horizontal", # Or "Vertical"
-        "slat_width_range": (0.025, 0.025), # Slat width in meters
-        "slat_separation_range": (0.020, 0.020), # Slat separation (distance between front of one slat and next) in meters
-        "slat_thickness_range": (0.001, 0.001), # Slat thickness in meters
-        "slat_angle_deg_range": (45.0, 45.0), # Slat angle in degrees (0=horizontal, 90=vertical profile)
-        "slat_conductivity_range": (160.0, 160.0), # Slat conductivity in W/m-K (e.g., for aluminum)
-
-        # Solar trans/reflect properties (beam & diffuse):
-        # These are for the slat material itself.
-        "slat_beam_solar_transmittance_range": (0.0, 0.0), # Fraction of beam solar radiation transmitted directly through slat
-        "slat_beam_solar_reflectance_range": (0.7, 0.7), # Fraction of beam solar radiation reflected by front/back of slat (assumed same for front/back here)
-        "slat_diffuse_solar_transmittance_range": (0.0, 0.0),# Fraction of diffuse solar radiation transmitted directly through slat
-        "slat_diffuse_solar_reflectance_range": (0.7, 0.7), # Fraction of diffuse solar radiation reflected by front/back of slat (assumed same for front/back here)
-
-        # Visible trans/reflect properties (beam & diffuse):
-        "slat_beam_visible_transmittance_range": (0.0, 0.0),
-        "slat_beam_visible_reflectance_range": (0.7, 0.7), # Assumed same for front/back here
-        "slat_diffuse_visible_transmittance_range": (0.0, 0.0),
-        "slat_diffuse_visible_reflectance_range": (0.7, 0.7), # Assumed same for front/back here
-
-        # IR / emissivity properties
-        "slat_ir_transmittance_range": (0.0, 0.0), # Infrared transmittance of slat material
-        "slat_ir_emissivity_range": (0.9, 0.9), # Infrared emissivity of slat material (assumed same for front/back here)
-
-        # Blind geometry offsets and details (these may or may not be used by all shading objects)
-        "blind_to_glass_distance_range": (0.05, 0.05), # Distance from glazing to blind in meters (positive for exterior, negative for interior)
-        "blind_top_opening_multiplier_range": (1.0, 1.0), # Multiplier for air flow opening at top of blind
-        "blind_bottom_opening_multiplier_range": (1.0, 1.0), # Multiplier for air flow opening at bottom of blind
-        "blind_left_opening_multiplier_range": (1.0, 1.0), # Multiplier for air flow opening at left side of blind
-        "blind_right_opening_multiplier_range": (1.0, 1.0), # Multiplier for air flow opening at right side of blind
-
-        # Slat angle limits (if dynamic control is used, not directly used by fixed angle)
-        "slat_angle_min_deg_range": (0.0, 0.0), # Minimum slat angle in degrees
-        "slat_angle_max_deg_range": (90.0, 90.0), # Maximum slat angle in degrees
-
-        # For Shading:Building:Detailed type objects (if this key were for an overhang/fin)
-        # "overhang_depth_range": (0.5, 1.0), # Example for a geometric shading element
-        # "fin_depth_range": (0.3, 0.6),      # Example for a geometric shading element
-    },
-
-    # Example: interior roller blind (dark)
-    "my_interior_roller_blind_dark": {
-        "blind_name": "InteriorRollerDark",
-        "slat_orientation": "Horizontal", # Roller blinds are effectively horizontal slats of fabric
-        "slat_width_range": (1.0, 1.0), # Effectively the full window width when down (actual E+ modelling might differ)
-        "slat_separation_range": (1.0, 1.0), # Effectively the same as slat width
-        "slat_thickness_range": (0.0005, 0.0005), # Fabric thickness
-        "slat_angle_deg_range": (0.0, 0.0), # Always flat when down
-        "slat_conductivity_range": (0.1, 0.1), # Fabric conductivity
-
-        "slat_beam_solar_transmittance_range": (0.05, 0.05),
-        "slat_beam_solar_reflectance_range": (0.1, 0.1),
-        "slat_diffuse_solar_transmittance_range": (0.05, 0.05),
-        "slat_diffuse_solar_reflectance_range": (0.1, 0.1),
-
-        "slat_beam_visible_transmittance_range": (0.03, 0.03),
-        "slat_beam_visible_reflectance_range": (0.05, 0.05),
-        "slat_diffuse_visible_transmittance_range": (0.03, 0.03),
-        "slat_diffuse_visible_reflectance_range": (0.05, 0.05),
-
-        "slat_ir_transmittance_range": (0.0, 0.0),
-        "slat_ir_emissivity_range": (0.85, 0.85),
-
-        "blind_to_glass_distance_range": (-0.03, -0.03), # Negative for interior
-    },
-
-    # Add more predefined shading “types” here as needed, for example:
-    # "my_vertical_fins": {
-    #     "fin_name": "VerticalFinSystem",
-    #     "fin_depth_range": (0.3, 0.5),
-    #     "fin_spacing_range": (0.5, 0.7),
-    #     # ... other relevant geometric or material properties
-    # },
-    # "my_fixed_overhang": {
-    #     "overhang_name": "FixedBuildingOverhang",
-    #     "overhang_depth_range": (0.5, 1.2),
-    #     # ... other relevant geometric or material properties
-    # },
 }
-------------------------------------------------------------
-
-File: D:\Documents\E_Plus_2030_py\idf_objects\wshading\create_shading_objects.py
-============================================================
-"""
-create_shading_objects.py
-
-This module creates EnergyPlus shading objects in the IDF
-(e.g., WindowMaterial:Blind, WindowShadingControl,
- Shading:Building:Detailed, schedules, etc.).
-
-It calls pick_shading_params(...) from assign_shading_values.py
-to get final numeric parameter values. You can pass user/Excel overrides
-to customize these parameters.
-
-Usage:
-  from idf_objects.wshading.create_shading_objects import add_shading_objects
-
-  add_shading_objects(
-      idf=idf,
-      building_row=some_dict, # Or other context identifier
-      shading_type_key="my_external_louvers",
-      strategy="A", # Or "B"
-      random_seed=42,
-      user_config_shading=shading_overrides_for_this_type, # Dict of overrides for this specific shading_type_key
-      assigned_shading_log=shading_log_dict,
-      create_blinds=True,
-      create_geometry_shading=False
-  )
-"""
-
-import random
-import logging
-from .assign_shading_values import pick_shading_params
-
-# from geomeppy import IDF # Ensure your IDF object type matches
-# from eppy.bunch_subclass import EpBunch # Ensure your IDF object type matches
-
-logger = logging.getLogger(__name__)
-
-
-def add_shading_objects(
-    idf,
-    building_row,  # Used for context, e.g., if shading depends on building properties
-    shading_type_key="my_external_louvers",
-    strategy="A",
-    random_seed=42,
-    user_config_shading=None,
-    assigned_shading_log=None,
-    create_blinds=True,
-    create_geometry_shading=False,
-):
-    """
-    Creates the necessary shading objects in the IDF: e.g. WindowMaterial:Blind,
-    WindowShadingControl, or geometry-based Shading:Building:Detailed.
-
-    1) Loops over fenestration surfaces (if creating blinds per window) or processes
-       once for global shading elements.
-    2) Calls pick_shading_params(...) to get final numeric values (slat angles, etc.).
-    3) Creates EnergyPlus shading devices (e.g., WindowMaterial:Blind + ShadingControl).
-    4) Optionally, creates an E+ schedule if dynamic shading is needed (example provided).
-    5) Optionally, creates Shading:Building:Detailed geometry if requested.
-
-    Parameters
-    ----------
-    idf : IDF object
-        The IDF object (e.g., from geomeppy or eppy) where new objects will be added.
-    building_row : dict or pandas.Series or object
-        Contextual data for the building/element being processed. Can be used to
-        derive window IDs or influence shading choices if needed.
-    shading_type_key : str
-        Key in shading_lookup (from shading_lookup.py) to define the base shading
-        parameters, e.g., "my_external_louvers".
-    strategy : str
-        Strategy for picking values from ranges ("A" for midpoint, "B" for random,
-        other for min_val). Passed to pick_shading_params.
-    random_seed : int, optional
-        Seed for random number generation if strategy="B". Defaults to 42.
-    user_config_shading : dict or None
-        A dictionary of overrides for the specified `shading_type_key`.
-        E.g., {"slat_angle_deg_range": (30, 60), "slat_width": 0.05}.
-        These are applied on top of `shading_lookup` defaults.
-    assigned_shading_log : dict or None
-        If provided, final shading params are stored here. Keys could be window_id
-        or another relevant identifier.
-    create_blinds : bool
-        If True, attempts to create blind-based shading objects (WindowMaterial:Blind
-        + WindowShadingControl) for fenestration surfaces.
-    create_geometry_shading : bool
-        If True, attempts to create Shading:Building:Detailed geometry-based shading
-        (e.g., overhangs), using an example function.
-    """
-    if random_seed is not None:
-        random.seed(random_seed)
-
-    if not idf:
-        logger.error("IDF object is None. Cannot add shading objects.")
-        return
-
-    # --- Create Blind Shading for Fenestration Surfaces ---
-    if create_blinds:
-        try:
-            fen_surfaces = idf.idfobjects.get("FENESTRATIONSURFACE:DETAILED", [])
-            if not fen_surfaces:
-                logger.info(
-                    "No 'FENESTRATIONSURFACE:DETAILED' objects found in IDF. Skipping blind creation."
-                )
-        except Exception as e:
-            logger.error(
-                f"Could not retrieve FENESTRATIONSURFACE:DETAILED from IDF: {e}"
-            )
-            fen_surfaces = []
-
-        for fen_idx, fen in enumerate(fen_surfaces):
-            try:
-                window_id = getattr(fen, "Name", f"FenestrationSurface_{fen_idx}")
-                if not window_id:  # Fallback if Name is empty
-                    window_id = f"FenestrationSurface_{fen_idx}"
-                logger.info(
-                    f"Processing blinds for window: {window_id} using shading_type_key: '{shading_type_key}'"
-                )
-
-                # 1) Pick shading params (combines shading_lookup + user overrides)
-                shading_params = pick_shading_params(
-                    window_id=window_id,  # Used for logging within pick_shading_params
-                    shading_type_key=shading_type_key,
-                    strategy=strategy,
-                    user_config=user_config_shading,  # Pass the specific overrides for this type
-                    assigned_shading_log=assigned_shading_log,
-                )
-
-                if not shading_params:
-                    logger.warning(
-                        f"No shading parameters resolved for window '{window_id}' with key '{shading_type_key}'. Skipping blind creation for this window."
-                    )
-                    continue
-
-                # 2) Create a WindowMaterial:Blind object
-                blind_mat_name = (
-                    shading_params.get("blind_name", "DefaultBlindMaterial")
-                    + f"_{window_id}"
-                )
-
-                # Check if blind material already exists to prevent duplicates
-                existing_blind_mats = [
-                    bm.Name for bm in idf.idfobjects.get("WINDOWMATERIAL:BLIND", [])
-                ]
-                if blind_mat_name in existing_blind_mats:
-                    logger.info(
-                        f"WindowMaterial:Blind '{blind_mat_name}' already exists. Reusing."
-                    )
-                    # Potentially fetch the existing object if needed, or just use its name
-                else:
-                    blind_mat = idf.newidfobject("WINDOWMATERIAL:BLIND")
-                    blind_mat.Name = blind_mat_name
-
-                    # --- Assign common blind material properties with defaults ---
-                    blind_mat.Slat_Orientation = shading_params.get(
-                        "slat_orientation", "Horizontal"
-                    )
-                    blind_mat.Slat_Width = shading_params.get(
-                        "slat_width", 0.025
-                    )  # Default 25mm
-                    blind_mat.Slat_Separation = shading_params.get(
-                        "slat_separation", 0.020
-                    )  # Default 20mm
-                    blind_mat.Slat_Thickness = shading_params.get(
-                        "slat_thickness", 0.001
-                    )  # Default 1mm
-                    blind_mat.Slat_Angle = shading_params.get(
-                        "slat_angle_deg", 45.0
-                    )  # Default 45 degrees
-                    blind_mat.Slat_Conductivity = shading_params.get(
-                        "slat_conductivity", 160.0
-                    )  # Default for Aluminum
-
-                    # --- Optical Properties with defaults (0.0 for transmittance, sensible reflectance/emissivity) ---
-                    # Solar Transmittance/Reflectance
-                    blind_mat.Slat_Beam_Solar_Transmittance = shading_params.get(
-                        "slat_beam_solar_transmittance", 0.0
-                    )
-                    sbsr = shading_params.get("slat_beam_solar_reflectance", 0.7)
-                    blind_mat.Front_Side_Slat_Beam_Solar_Reflectance = sbsr
-                    blind_mat.Back_Side_Slat_Beam_Solar_Reflectance = (
-                        sbsr  # Assuming symmetric
-                    )
-
-                    blind_mat.Slat_Diffuse_Solar_Transmittance = shading_params.get(
-                        "slat_diffuse_solar_transmittance", 0.0
-                    )
-                    sdsr = shading_params.get("slat_diffuse_solar_reflectance", 0.7)
-                    blind_mat.Front_Side_Slat_Diffuse_Solar_Reflectance = sdsr
-                    blind_mat.Back_Side_Slat_Diffuse_Solar_Reflectance = (
-                        sdsr  # Assuming symmetric
-                    )
-
-                    # Visible Transmittance/Reflectance
-                    blind_mat.Slat_Beam_Visible_Transmittance = shading_params.get(
-                        "slat_beam_visible_transmittance", 0.0
-                    )
-                    sbvr = shading_params.get("slat_beam_visible_reflectance", 0.7)
-                    blind_mat.Front_Side_Slat_Beam_Visible_Reflectance = sbvr
-                    blind_mat.Back_Side_Slat_Beam_Visible_Reflectance = (
-                        sbvr  # Assuming symmetric
-                    )
-
-                    blind_mat.Slat_Diffuse_Visible_Transmittance = shading_params.get(
-                        "slat_diffuse_visible_transmittance", 0.0
-                    )
-                    sdvr = shading_params.get("slat_diffuse_visible_reflectance", 0.7)
-                    blind_mat.Front_Side_Slat_Diffuse_Visible_Reflectance = sdvr
-                    blind_mat.Back_Side_Slat_Diffuse_Visible_Reflectance = (
-                        sdvr  # Assuming symmetric
-                    )
-
-                    # IR Transmittance/Emissivity
-                    blind_mat.Slat_Infrared_Hemispherical_Transmittance = (
-                        shading_params.get("slat_ir_transmittance", 0.0)
-                    )
-                    sir_em = shading_params.get("slat_ir_emissivity", 0.9)
-                    blind_mat.Front_Side_Slat_Infrared_Hemispherical_Emissivity = sir_em
-                    blind_mat.Back_Side_Slat_Infrared_Hemispherical_Emissivity = (
-                        sir_em  # Assuming symmetric
-                    )
-
-                    # Other optional fields (EnergyPlus often defaults these if left blank)
-                    # Check E+ I/O reference for which fields are truly optional vs. required.
-                    if "blind_to_glass_distance" in shading_params:
-                        blind_mat.Distance_between_Slat_and_Glazing = (
-                            shading_params.get("blind_to_glass_distance")
-                        )
-                    if "blind_top_opening_multiplier" in shading_params:
-                        blind_mat.Slat_Opening_Multiplier = shading_params.get(
-                            "blind_top_opening_multiplier"
-                        )  # Note: E+ has one Slat_Opening_Multiplier
-                        # if distinct top/bottom/left/right are needed, model might be more complex.
-                        # Using top as a proxy here.
-
-                    logger.debug(f"Created WindowMaterial:Blind '{blind_mat.Name}'.")
-
-                # 3) Create WindowShadingControl object
-                shading_ctrl_name = f"ShadingCtrl_{window_id}"
-
-                # Check if shading control already exists
-                existing_ctrls = [
-                    sc.Name for sc in idf.idfobjects.get("WINDOWSHADINGCONTROL", [])
-                ]
-                if shading_ctrl_name in existing_ctrls:
-                    logger.info(
-                        f"WindowShadingControl '{shading_ctrl_name}' already exists. Reusing."
-                    )
-                    shading_ctrl_obj_to_assign = shading_ctrl_name  # Use the name
-                else:
-                    shading_ctrl = idf.newidfobject("WINDOWSHADINGCONTROL")
-                    shading_ctrl.Name = shading_ctrl_name
-                    shading_ctrl.Shading_Type = (
-                        "ExteriorBlind"  # Or "InteriorBlind", "ExteriorScreen" etc.
-                    )
-                    # This should ideally come from shading_params or shading_type_key logic
-                    shading_ctrl.Shading_Device_Material_Name = (
-                        blind_mat_name  # Use the potentially unique name
-                    )
-
-                    # Defaulting to FixedSlatAngle. More complex control types would need schedule names etc.
-                    shading_ctrl.Type_of_Slats_Control_for_Blinds = (
-                        "FixedSlatAngle"  # E.g., FixedSlatAngle, ScheduledSlatAngle
-                    )
-                    # Slat_Angle_Schedule_Name would be needed for ScheduledSlatAngle
-
-                    # Use the same slat angle as in the blind material for fixed control
-                    shading_ctrl.Slat_Angle_Control_for_Fixed_Slat_Angle = (
-                        shading_params.get("slat_angle_deg", 45.0)
-                    )
-
-                    shading_ctrl.Shading_Control_Is_Scheduled = (
-                        "No"  # Set to "Yes" if using a schedule
-                    )
-                    # Shading_Control_Schedule_Name would be needed if "Yes"
-
-                    shading_ctrl.Glare_Control_Is_Active = (
-                        "No"  # Defaulting, can be "Yes"
-                    )
-                    # Other fields like Setpoint, ShadingControlSetpointScheduleName etc. for advanced control
-
-                    logger.debug(f"Created WindowShadingControl '{shading_ctrl.Name}'.")
-                    shading_ctrl_obj_to_assign = shading_ctrl.Name
-
-                # Link the shading control to this fenestration surface
-                # Ensure the fen object allows direct attribute assignment for Shading_Control_Name
-                try:
-                    fen.Shading_Control_Name = shading_ctrl_obj_to_assign
-                except Exception as e_assign:
-                    logger.error(
-                        f"Failed to assign Shading_Control_Name to {window_id}: {e_assign}"
-                    )
-
-            except Exception as e_fen:
-                logger.error(
-                    f"Error processing blind for fenestration surface {getattr(fen, 'Name', 'UnnamedFen')}: {e_fen}"
-                )
-                continue  # Move to the next fenestration surface
-
-    # --- Create Geometry-Based Shading (e.g., Overhangs, Fins) ---
-    if create_geometry_shading:
-        logger.info(
-            f"Attempting to create geometry-based shading using shading_type_key: '{shading_type_key}'"
-        )
-        # This typically would not loop per window unless geometry is window-specific.
-        # The _create_overhang_example is a global example.
-        # You might need a list of building elements or a different context for these.
-        _create_overhang_example(
-            idf,
-            building_row,  # Pass context
-            shading_type_key=shading_type_key,  # Use the main key, or a specific one for geometry
-            strategy=strategy,
-            user_config_shading=user_config_shading,  # Pass overrides if applicable to geometry
-        )
-
-
-def _create_overhang_example(
-    idf, building_row_context, shading_type_key, strategy, user_config_shading
-):
-    """
-    Example function to demonstrate geometry-based shading (Shading:Building:Detailed).
-    In real usage, you’d compute or retrieve the overhang geometry from
-    building_row_context, other geometric inputs, or detailed shading_params.
-    This is a placeholder and creates a fixed, illustrative overhang.
-
-    Parameters
-    ----------
-    idf : IDF object
-    building_row_context : dict or object
-        Contextual data (e.g., building dimensions, orientation) that could inform geometry.
-    shading_type_key : str
-        Key to look up base parameters, potentially for overhang depth, etc.
-    strategy : str
-        Strategy for picking values from ranges.
-    user_config_shading : dict or None
-        Overrides for parameters relevant to this geometric shading.
-    """
-    logger.info("Executing _create_overhang_example.")
-    # Suppose we pick some shading params that define the overhang depth
-    # For geometry, the 'window_id' for pick_shading_params might be a generic name
-    # if the overhang is not tied to a specific window but rather a facade or building.
-    shading_params = pick_shading_params(
-        window_id="Global_Overhang_Example",  # Generic ID for logging these params
-        shading_type_key=shading_type_key,  # Could be a specific key like "my_building_overhang"
-        strategy=strategy,
-        user_config=user_config_shading,  # Pass relevant part of user_config
-    )
-
-    if not shading_params:
-        logger.warning(
-            f"No parameters resolved for overhang example with key '{shading_type_key}'. Skipping overhang creation."
-        )
-        return
-
-    # Let's say we expect an "overhang_depth" from shading_params
-    # or use a default if not found.
-    overhang_depth = shading_params.get("overhang_depth", 1.0)  # Default 1m depth
-    overhang_name = shading_params.get("overhang_name", "Overhang_North_Example")
-
-    # Check if this shading object already exists
-    existing_shading_geom = [
-        sg.Name for sg in idf.idfobjects.get("SHADING:BUILDING:DETAILED", [])
-    ]
-    if overhang_name in existing_shading_geom:
-        logger.info(
-            f"Shading:Building:Detailed '{overhang_name}' already exists. Skipping creation."
-        )
-        return
-
-    try:
-        shading_obj = idf.newidfobject("SHADING:BUILDING:DETAILED")
-        shading_obj.Name = overhang_name
-        # Base_Surface_Name: Optional, if the overhang is attached to a specific surface.
-        # Transmittance_Schedule_Name: Optional, if transmittance varies.
-
-        # Hard-coded example geometry (4 vertices for a simple rectangular overhang):
-        # This is purely illustrative. You’d typically compute X/Y/Z coordinates based on
-        # building_row_context (e.g., facade width, window position, orientation),
-        # and parameters like overhang_depth, width, tilt from shading_params.
-
-        # Example: A 5m wide overhang, 1m deep, at Z=3.0, on a North facade (Y positive)
-        # Vertices are typically counter-clockwise when viewed from outside.
-        shading_obj.Number_of_Vertices = 4
-
-        # Vertex 1 (Bottom-Left from outside view)
-        shading_obj.Vertex_1_X_coordinate = (
-            0.0  # Assuming start at X=0 of facade segment
-        )
-        shading_obj.Vertex_1_Y_coordinate = (
-            0.0  # Y=0 is the facade plane for this local definition
-        )
-        shading_obj.Vertex_1_Z_coordinate = 3.0  # Height
-
-        # Vertex 2 (Bottom-Right)
-        shading_obj.Vertex_2_X_coordinate = 5.0  # Width of overhang = 5m
-        shading_obj.Vertex_2_Y_coordinate = 0.0
-        shading_obj.Vertex_2_Z_coordinate = 3.0
-
-        # Vertex 3 (Top-Right, projecting outwards)
-        shading_obj.Vertex_3_X_coordinate = 5.0
-        shading_obj.Vertex_3_Y_coordinate = overhang_depth  # Projects 'overhang_depth' outwards (e.g., in positive Y if North wall is at Y=0)
-        shading_obj.Vertex_3_Z_coordinate = 3.0  # Assuming flat overhang for simplicity
-
-        # Vertex 4 (Top-Left, projecting outwards)
-        shading_obj.Vertex_4_X_coordinate = 0.0
-        shading_obj.Vertex_4_Y_coordinate = overhang_depth
-        shading_obj.Vertex_4_Z_coordinate = 3.0
-
-        # Note: The coordinate system for SHADING:BUILDING:DETAILED is absolute world coordinates.
-        # The example above assumes a local definition relative to a point, which would then
-        # need to be transformed to world coordinates based on building_row_context.
-        # For simplicity here, these are treated as if they are already world coordinates.
-
-        logger.debug(
-            f"Created Shading:Building:Detailed '{shading_obj.Name}' with depth {overhang_depth}m."
-        )
-
-    except Exception as e:
-        logger.error(f"Error creating Shading:Building:Detailed '{overhang_name}': {e}")
-
-
-def add_shading_schedule(
-    idf, schedule_name="DefaultShadingSchedule", schedule_type="Fraction"
-):
-    """
-    Example of how you might create a schedule for dynamic shading control
-    (e.g., for Shading_Control_Schedule_Name in WindowShadingControl).
-
-    Parameters
-    ----------
-    idf : IDF object
-    schedule_name : str
-        Name for the new schedule.
-    schedule_type : str
-        Type of schedule, e.g., "Fraction", "OnOff", "Temperature".
-
-    Returns
-    -------
-    EpBunch or equivalent schedule object
-        The created schedule object, or None if creation fails.
-    """
-    logger.info(
-        f"Attempting to create schedule: '{schedule_name}' of type '{schedule_type}'."
-    )
-
-    # Check if schedule already exists
-    existing_schedules = [
-        s.Name for s in idf.idfobjects.get("SCHEDULE:COMPACT", [])
-    ]  # Also check SCHEDULE:YEAR, SCHEDULE:FILE etc.
-    if schedule_name in existing_schedules:
-        logger.info(f"Schedule:Compact '{schedule_name}' already exists. Reusing.")
-        # Find and return the existing schedule object if needed by the caller
-        for s in idf.idfobjects["SCHEDULE:COMPACT"]:
-            if s.Name == schedule_name:
-                return s
-        return None  # Should not happen if name was found
-
-    try:
-        # Using SCHEDULE:COMPACT for simplicity.
-        # Other types: SCHEDULE:YEAR, SCHEDULE:CONSTANT, SCHEDULE:FILE
-        sched = idf.newidfobject("SCHEDULE:COMPACT")
-        sched.Name = schedule_name
-
-        # Schedule_Type_Limits_Name links to a ScheduleTypeLimits object.
-        # Common types: "Fraction" (0-1), "OnOff" (0 or 1), "Temperature" (degrees C)
-        # Make sure a ScheduleTypeLimits object with this name exists in the IDF.
-        # If not, it needs to be created.
-        # Example: Ensure "Fraction" ScheduleTypeLimits exists.
-        stl_name = schedule_type  # Assuming ScheduleTypeLimits Name matches type for simplicity
-        existing_stls = [
-            stl.Name for stl in idf.idfobjects.get("SCHEDULETYPELIMITS", [])
-        ]
-        if stl_name not in existing_stls:
-            logger.warning(
-                f"ScheduleTypeLimits '{stl_name}' not found. Creating a basic one for '{schedule_name}'."
-            )
-            new_stl = idf.newidfobject("SCHEDULETYPELIMITS")
-            new_stl.Name = stl_name
-            if schedule_type == "Fraction":
-                new_stl.Lower_Limit_Value = 0.0
-                new_stl.Upper_Limit_Value = 1.0
-                new_stl.Numeric_Type = "Continuous"
-            elif schedule_type == "OnOff":
-                new_stl.Lower_Limit_Value = 0.0
-                new_stl.Upper_Limit_Value = 1.0
-                new_stl.Numeric_Type = "Discrete"
-            # Add more types as needed
-            else:
-                logger.warning(
-                    f"No default setup for ScheduleTypeLimits '{schedule_type}'. It might be invalid."
-                )
-
-        sched.Schedule_Type_Limits_Name = stl_name
-
-        # Simple example: always 1.0 (e.g., shades always active if scheduled)
-        # Field format for SCHEDULE:COMPACT: "Through: MM/DD", "For: Days", "Until: HH:MM, Value", ...
-        sched.Field_1 = "Through: 12/31"  # Through end of year
-        sched.Field_2 = "For: AllDays"  # For all day types
-        sched.Field_3 = "Until: 24:00, 1.0"  # Until midnight, value is 1.0
-        # Add more fields for complex schedules.
-
-        logger.debug(f"Created Schedule:Compact '{sched.Name}'.")
-        return sched
-    except Exception as e:
-        logger.error(f"Error creating schedule '{schedule_name}': {e}")
-        return None
-
-------------------------------------------------------------
-
-File: D:\Documents\E_Plus_2030_py\idf_objects\wshading\shading_overrides_from_excel.py
-============================================================
-"""
-shading_overrides_from_excel.py
-
-If you want to read shading overrides from an Excel file (e.g., different
-blind angles per season, or custom user settings for certain building IDs),
-you can do that here.
-
-Analogous to geometry_overrides_from_excel.py or dict_override_excel.py:
- - parse the Excel
- - store each row in a rules dictionary
- - 'pick_shading_params_from_rules' uses those rules to find
-   the best match for a building/window context
-"""
-
-import pandas as pd
-import logging
-
-logger = logging.getLogger(__name__)
-
-def read_shading_overrides_excel(excel_path):
-    """
-    Reads an Excel file containing shading override rules.
-
-    Example columns might be:
-        building_id
-        shading_type_key
-        slat_angle_deg_min
-        slat_angle_deg_max
-        slat_width  # Example of a single value override
-        # ... other parameters ...
-
-    Returns
-    -------
-    list
-        A list of dictionaries, where each dictionary represents a row (a rule)
-        from the Excel sheet. Returns an empty list if the file cannot be read
-        or is empty.
-    
-    Raises
-    ------
-    ValueError
-        If required columns are missing.
-    """
-    try:
-        df = pd.read_excel(excel_path)
-    except FileNotFoundError:
-        logger.error(f"Excel override file not found: {excel_path}")
-        return []
-    except Exception as e:
-        logger.error(f"Error reading Excel override file {excel_path}: {e}")
-        return []
-
-    if df.empty:
-        logger.warning(f"Shading overrides Excel file is empty: {excel_path}")
-        return []
-
-    # We define a minimal required set of columns
-    required_cols = ["building_id", "shading_type_key"]
-    missing = [c for c in required_cols if c not in df.columns]
-    if missing:
-        raise ValueError(f"Missing columns in shading_overrides Excel ({excel_path}): {missing}")
-
-    override_rules = []
-    for index, row in df.iterrows():
-        rule = {}
-        try:
-            rule["building_id"] = str(row["building_id"]).strip()
-            rule["shading_type_key"] = str(row["shading_type_key"]).strip()
-
-            # --- Handle range parameters ---
-            # Example: slat_angle_deg_range
-            if "slat_angle_deg_min" in df.columns and "slat_angle_deg_max" in df.columns:
-                min_ang = row["slat_angle_deg_min"]
-                max_ang = row["slat_angle_deg_max"]
-                if pd.notna(min_ang) and pd.notna(max_ang):
-                    try:
-                        rule["slat_angle_deg_range"] = (float(min_ang), float(max_ang))
-                    except ValueError:
-                        logger.warning(
-                            f"Invalid float value for slat_angle_deg_min/max in Excel row {index + 2}. "
-                            f"Skipping slat_angle_deg_range for this rule."
-                        )
-                elif pd.notna(min_ang) or pd.notna(max_ang):
-                    logger.warning(
-                        f"Partial slat_angle_deg_min/max definition in Excel row {index + 2}. "
-                        f"Both must be provided. Skipping slat_angle_deg_range for this rule."
-                    )
-            
-            # TODO: Add more explicit range parameter handling here if needed
-            # Example for another range parameter "parameter_foo_range":
-            # if "parameter_foo_min" in df.columns and "parameter_foo_max" in df.columns:
-            #     min_val = row["parameter_foo_min"]
-            #     max_val = row["parameter_foo_max"]
-            #     if pd.notna(min_val) and pd.notna(max_val):
-            #         try:
-            #             rule["parameter_foo_range"] = (float(min_val), float(max_val))
-            #         except ValueError:
-            #              logger.warning(f"Invalid float for parameter_foo_min/max in Excel row {index + 2}.")
-            #     elif pd.notna(min_val) or pd.notna(max_val):
-            #         logger.warning(f"Partial parameter_foo_min/max in Excel row {index + 2}.")
-
-
-            # --- Handle single value parameters ---
-            # Add other specific single-value parameters that can be overridden from Excel.
-            # Ensure they are parsed to the correct type.
-            # Example:
-            # if "slat_width" in df.columns and pd.notna(row["slat_width"]):
-            #     try:
-            #         rule["slat_width"] = float(row["slat_width"])
-            #     except ValueError:
-            #         logger.warning(f"Invalid float value for slat_width in Excel row {index + 2}. Skipping.")
-            
-            # Generic approach: Add all other non-empty columns from the Excel row to the rule.
-            # These will be used as direct overrides in `pick_shading_params`.
-            # The `pick_shading_params` function will then decide how to use them (e.g., if it's a range or single value).
-            for col_name in df.columns:
-                if col_name not in required_cols and \
-                   not col_name.endswith(("_min", "_max")) and \
-                   col_name not in rule and \
-                   pd.notna(row[col_name]):
-                    rule[col_name] = row[col_name] # Keep original type for now, or convert as needed
-
-            override_rules.append(rule)
-        except Exception as e:
-            logger.error(f"Error processing row {index + 2} in {excel_path}: {e}. Skipping this rule.")
-            continue
-            
-    return override_rules
-
-
-def pick_shading_params_from_rules(
-    building_id,
-    shading_type_key,
-    all_rules,
-    fallback=None
-):
-    """
-    Looks through the list of override_rules (from read_shading_overrides_excel)
-    to find a matching rule for the given building_id and shading_type_key.
-
-    The matching is case-insensitive for building_id and shading_type_key.
-    If multiple rules match, the last one found in the `all_rules` list takes precedence.
-
-    Parameters
-    ----------
-    building_id : str or int
-        The identifier of the building.
-    shading_type_key : str
-        The key identifying the type of shading (e.g., "my_external_louvers").
-    all_rules : list
-        A list of rule dictionaries, typically from `read_shading_overrides_excel`.
-    fallback : any, optional
-        Value to return if no matching rule is found. Defaults to None.
-
-    Returns
-    -------
-    dict or any
-        A dictionary containing the override parameters if a match is found.
-        These parameters are the ones to be applied, excluding "building_id"
-        and "shading_type_key". Returns `fallback` if no rule matches.
-        Example override dict: {"slat_angle_deg_range": (30, 60), "slat_width": 0.05}
-    """
-    if not all_rules:
-        return fallback
-
-    best_rule_content = None
-    building_id_str = str(building_id).lower()
-    shading_type_key_str = str(shading_type_key).lower()
-
-    for rule in all_rules:
-        # building_id must match (case-insensitive)
-        rule_building_id = str(rule.get("building_id", "")).lower()
-        if rule_building_id != building_id_str:
-            continue
-
-        # shading_type_key must match (case-insensitive)
-        rule_shading_type_key = str(rule.get("shading_type_key", "")).lower()
-        if rule_shading_type_key != shading_type_key_str:
-            continue
-        
-        # If we are here, both IDs matched.
-        # The last match in the list takes precedence.
-        current_overrides = dict(rule)
-        current_overrides.pop("building_id", None)
-        current_overrides.pop("shading_type_key", None)
-        best_rule_content = current_overrides
-
-    if best_rule_content is None:
-        return fallback
-
-    return best_rule_content
-------------------------------------------------------------
-
-File: D:\Documents\E_Plus_2030_py\idf_creation.py
-============================================================
-"""
-idf_creation.py
-
-Handles the creation of EnergyPlus IDF files for a list of buildings,
-plus optional simulation runs and post-processing.
-
-Key functionalities:
-  1) create_idf_for_building(...) builds a single IDF using geomeppy,
-     applying geometry, fenestration, HVAC, etc.
-  2) create_idfs_for_all_buildings(...) loops over multiple buildings,
-     then optionally runs simulations and merges results in one or more ways.
-
-Updated to allow writing logs/results inside a specific job folder via logs_base_dir.
-"""
-
-import os
-import logging
-import pandas as pd
-
-# geomeppy for IDF manipulation
-from geomeppy import IDF
-
-# --- Import your custom submodules ---
-from idf_objects.geomz.building import create_building_with_roof_type
-from idf_objects.fenez.fenestration import add_fenestration
-from idf_objects.fenez.materials import (
-    update_construction_materials,
-    assign_constructions_to_surfaces
-)
-from idf_objects.Elec.lighting import add_lights_and_parasitics
-from idf_objects.eequip.equipment import add_electric_equipment
-from idf_objects.DHW.water_heater import add_dhw_to_idf
-from idf_objects.HVAC.custom_hvac import add_HVAC_Ideal_to_all_zones
-from idf_objects.ventilation.add_ventilation import add_ventilation_to_idf
-from idf_objects.wshading.create_shading_objects import add_shading_objects
-from idf_objects.setzone.add_outdoor_air_and_zone_sizing_to_all_zones import add_outdoor_air_and_zone_sizing_to_all_zones
-from idf_objects.tempground.add_ground_temperatures import add_ground_temperatures
-from idf_objects.other.zonelist import create_zonelist
-
-# Output & simulation modules
-from idf_objects.outputdef.assign_output_settings import assign_output_settings
-from idf_objects.outputdef.add_output_definitions import add_output_definitions
-from postproc.merge_results import merge_all_results
-from epw.run_epw_sims import simulate_all
-
-###############################################################################
-# Global Default IDF Config
-# (Override these via environment variables or main_config if needed.)
-###############################################################################
-idf_config = {
-    "iddfile": "EnergyPlus/Energy+.idd",         # Default path to the IDD file
-    "idf_file_path": "EnergyPlus/Minimal.idf",   # Default path to a minimal base IDF
-    "output_dir": "output/output_IDFs"           # Default folder to save generated IDFs
-}
-
-
-def create_idf_for_building(
-    building_row,
-    building_index,
-    scenario="scenario1",
-    calibration_stage="pre_calibration",
-    strategy="B",
-    random_seed=42,
-    # Geometry
-    user_config_geom=None,
-    assigned_geom_log=None,
-    # Lighting
-    user_config_lighting=None,
-    assigned_lighting_log=None,
-    # Electric equipment
-    user_config_equipment=None,
-    assigned_equip_log=None,
-    # DHW
-    user_config_dhw=None,
-    assigned_dhw_log=None,
-    # Fenestration
-    res_data=None,
-    nonres_data=None,
-    assigned_fenez_log=None,
-    # Window Shading
-    user_config_shading=None,
-    assigned_shading_log=None,
-    # HVAC
-    user_config_hvac=None,
-    assigned_hvac_log=None,
-    # Vent
-    user_config_vent=None,
-    assigned_vent_log=None,
-    # Zone sizing
-    assigned_setzone_log=None,
-    # Ground temps
-    assigned_groundtemp_log=None,
-    # Output definitions
-    output_definitions=None
-):
-    """
-    Build an IDF for a single building, applying geometry, fenestration, window
-    shading, lighting, HVAC, ventilation, zone sizing, ground temps, and user
-    overrides.
-
-    Returns
-    -------
-    out_path : str
-        File path to the saved IDF.
-    """
-    # 1) Setup IDF from the minimal template
-    IDF.setiddname(idf_config["iddfile"])
-    idf = IDF(idf_config["idf_file_path"])
-
-    # 2) Basic building object settings
-    building_obj = idf.newidfobject("BUILDING")
-    building_obj.Name = f"Sample_Building_{building_index}"
-
-    orientation = building_row.get("building_orientation", 0.0)
-
-
-
-    # for orientation correction this changed 
-    #if not pd.isna(orientation):
-    #    building_obj.North_Axis = orientation
-
-
-
-
-
-
-    if pd.isna(orientation):
-        orientation = 0.0
-
-    # Apply orientation when creating geometry.  The BUILDING object's
-    # North_Axis is kept at 0 so that the rotated geometry correctly
-    # represents the building's orientation in the world coordinate system.
-    building_obj.North_Axis = 0.0
-
-
-
-
-
-
-
-
-
-    # 3) Create geometry
-    if assigned_geom_log is not None and building_row.get("ogc_fid") not in assigned_geom_log:
-        assigned_geom_log[building_row.get("ogc_fid")] = {}
-
-    edge_types = []
-    for side_col in ["north_side", "east_side", "south_side", "west_side"]:
-        edge_types.append(building_row.get(side_col, "Facade"))
-
-    create_building_with_roof_type(
-        idf=idf,
-        area=building_row.get("area", 100.0),
-        perimeter=building_row.get("perimeter", 40.0),
-        orientation=orientation,
-        building_row=building_row,
-        edge_types=edge_types,
-        calibration_stage=calibration_stage,
-        strategy=strategy,
-        random_seed=random_seed,
-        user_config=user_config_geom,
-        assigned_geom_log=assigned_geom_log
-    )
-
-    # 4) Update materials & constructions
-    construction_map = update_construction_materials(
-        idf=idf,
-        building_row=building_row,
-        building_index=building_index,
-        scenario=scenario,
-        calibration_stage=calibration_stage,
-        strategy=strategy,
-        random_seed=random_seed,
-        user_config_fenez=None,  # not used directly
-        assigned_fenez_log=assigned_fenez_log
-    )
-    assign_constructions_to_surfaces(idf, construction_map)
-
-    # Create zone list for convenience
-    create_zonelist(idf, zonelist_name="ALL_ZONES")
-
-    # 5) Fenestration
-    add_fenestration(
-        idf=idf,
-        building_row=building_row,
-        scenario=scenario,
-        calibration_stage=calibration_stage,
-        strategy=strategy,
-        random_seed=random_seed,
-        res_data=res_data,
-        nonres_data=nonres_data,
-        assigned_fenez_log=assigned_fenez_log
-    )
-
-    # 6) Window shading (e.g., blinds)
-    add_shading_objects(
-        idf=idf,
-        building_row=building_row,
-        strategy=strategy,
-        random_seed=random_seed,
-        user_config_shading=user_config_shading,
-        assigned_shading_log=assigned_shading_log,
-    )
-
-    # 7) Lighting
-    add_lights_and_parasitics(
-        idf=idf,
-        building_row=building_row,
-        calibration_stage=calibration_stage,
-        strategy=strategy,
-        random_seed=random_seed,
-        user_config=user_config_lighting,
-        assigned_values_log=assigned_lighting_log
-    )
-
-    # 8) Electric equipment
-    add_electric_equipment(
-        idf=idf,
-        building_row=building_row,
-        calibration_stage=calibration_stage,
-        strategy=strategy,
-        random_seed=random_seed,
-        user_config=user_config_equipment,
-        assigned_values_log=assigned_equip_log,
-        zonelist_name="ALL_ZONES",
-    )
-    # 9) DHW
-    add_dhw_to_idf(
-        idf=idf,
-        building_row=building_row,
-        calibration_stage=calibration_stage,
-        strategy=strategy,
-        random_seed=random_seed,
-        name_suffix=f"MyDHW_{building_index}",
-        user_config_dhw=user_config_dhw,
-        assigned_dhw_log=assigned_dhw_log,
-        use_nta=True
-    )
-
-    # 10) HVAC
-    add_HVAC_Ideal_to_all_zones(
-        idf=idf,
-        building_row=building_row,
-        calibration_stage=calibration_stage,
-        strategy=strategy,
-        random_seed=random_seed,
-        user_config_hvac=user_config_hvac,
-        assigned_hvac_log=assigned_hvac_log
-    )
-
-    # 11) Ventilation
-    add_ventilation_to_idf(
-        idf=idf,
-        building_row=building_row,
-        calibration_stage=calibration_stage,
-        strategy=strategy,
-        random_seed=random_seed,
-        user_config_vent=user_config_vent,
-        assigned_vent_log=assigned_vent_log,
-        infiltration_model="weather",
-    )
-
-    # 12) Zone sizing
-    add_outdoor_air_and_zone_sizing_to_all_zones(
-        idf=idf,
-        building_row=building_row,
-        calibration_stage=calibration_stage,
-        strategy=strategy,
-        random_seed=random_seed,
-        assigned_setzone_log=assigned_setzone_log
-    )
-
-    # 13) Ground temperatures
-    add_ground_temperatures(
-        idf=idf,
-        calibration_stage=calibration_stage,
-        strategy=strategy,
-        random_seed=random_seed,
-        assigned_groundtemp_log=assigned_groundtemp_log
-    )
-
-    # 14) Output definitions
-    if output_definitions is None:
-        output_definitions = {
-            "desired_variables": ["Facility Total Electric Demand Power", "Zone Air Temperature"],
-            "desired_meters": ["Electricity:Facility"],
-            "override_variable_frequency": "Hourly",
-            "override_meter_frequency": "Hourly",
-            "include_tables": True,
-            "include_summary": True
-        }
-    out_settings = assign_output_settings(
-        desired_variables=output_definitions.get("desired_variables", []),
-        desired_meters=output_definitions.get("desired_meters", []),
-        override_variable_frequency=output_definitions.get("override_variable_frequency", "Hourly"),
-        override_meter_frequency=output_definitions.get("override_meter_frequency", "Hourly"),
-        include_tables=output_definitions.get("include_tables", True),
-        include_summary=output_definitions.get("include_summary", True)
-    )
-    add_output_definitions(idf, out_settings)
-
-    # 15) Save final IDF
-    os.makedirs(idf_config["output_dir"], exist_ok=True)
-    idf_filename = f"building_{building_index}.idf"
-    out_path = os.path.join(idf_config["output_dir"], idf_filename)
-    idf.save(out_path)
-    print(f"[create_idf_for_building] IDF saved at: {out_path}")
-
-    return out_path
-
-
-def create_idfs_for_all_buildings(
-    df_buildings,
-    scenario="scenario1",
-    calibration_stage="pre_calibration",
-    strategy="B",
-    random_seed=42,
-    # partial user configs
-    user_config_geom=None,
-    user_config_lighting=None,
-    user_config_equipment=None,
-    user_config_dhw=None,
-    res_data=None,
-    nonres_data=None,
-    user_config_shading=None,
-    assigned_shading_log=None,
-    user_config_hvac=None,
-    user_config_vent=None,
-    user_config_epw=None,  # pass epw config or list if relevant
-    # output definitions
-    output_definitions=None,
-    # simulation & postprocess
-    run_simulations=True,
-    simulate_config=None,
-    post_process=True,
-    post_process_config=None,
-    # NEW: Where to store logs and results
-    logs_base_dir=None
-):
-    """
-    Loops over df_buildings, calls create_idf_for_building for each building,
-    optionally runs E+ simulations in parallel, and merges results if
-    post_process=True. Window shading overrides can be passed via
-    ``user_config_shading`` and logged to ``assigned_shading_log``.
-
-    If logs_base_dir is provided, all assigned_*.csv and merged results go under that folder
-    (e.g. logs_base_dir/assigned, logs_base_dir/Sim_Results, etc.).
-    """
-    logger = logging.getLogger(__name__)
-
-    # A) Prepare dictionaries to store final picks for each module
-    assigned_geom_log       = {}
-    assigned_lighting_log   = {}
-    assigned_equip_log      = {}
-    assigned_dhw_log        = {}
-    assigned_fenez_log      = {}
-    assigned_hvac_log       = {}
-    assigned_vent_log       = {}
-    assigned_epw_log        = {}
-    assigned_groundtemp_log = {}
-    assigned_setzone_log    = {}
-    assigned_shading_log    = {}
-
-    # B) Create an IDF for each building
-    for idx, row in df_buildings.iterrows():
-        bldg_id = row.get("ogc_fid", idx)
-        logger.info(f"--- Creating IDF for building index {idx}, ogc_fid={bldg_id} ---")
-
-        idf_path = create_idf_for_building(
-            building_row=row,
-            building_index=idx,
-            scenario=scenario,
-            calibration_stage=calibration_stage,
-            strategy=strategy,
-            random_seed=random_seed,
-            # geometry
-            user_config_geom=user_config_geom,
-            assigned_geom_log=assigned_geom_log,
-            # lighting
-            user_config_lighting=user_config_lighting,
-            assigned_lighting_log=assigned_lighting_log,
-            # electric equipment
-            user_config_equipment=user_config_equipment,
-            assigned_equip_log=assigned_equip_log,
-            # DHW
-            user_config_dhw=user_config_dhw,
-            assigned_dhw_log=assigned_dhw_log,
-            # Fenestration
-            res_data=res_data,
-            nonres_data=nonres_data,
-            assigned_fenez_log=assigned_fenez_log,
-            # Window shading
-            user_config_shading=user_config_shading,
-            assigned_shading_log=assigned_shading_log,
-            # HVAC
-            user_config_hvac=user_config_hvac,
-            assigned_hvac_log=assigned_hvac_log,
-            # Vent
-            user_config_vent=user_config_vent,
-            assigned_vent_log=assigned_vent_log,
-            # zone sizing
-            assigned_setzone_log=assigned_setzone_log,
-            # ground temps
-            assigned_groundtemp_log=assigned_groundtemp_log,
-            # output definitions
-            output_definitions=output_definitions
-        )
-        # Store the final IDF filename in df_buildings
-        df_buildings.loc[idx, "idf_name"] = os.path.basename(idf_path)
-
-    # C) If we’re told to run simulations
-    if run_simulations:
-        logger.info("[create_idfs_for_all_buildings] => Running simulations ...")
-        if simulate_config is None:
-            simulate_config = {}
-
-        # Decide on a base_output_dir for sim results
-        if logs_base_dir:
-            sim_output_dir = os.path.join(logs_base_dir, "Sim_Results")
-        else:
-            sim_output_dir = simulate_config.get("base_output_dir", "output/Sim_Results")
-
-        idf_directory = idf_config["output_dir"]
-        iddfile       = idf_config["iddfile"]
-
-        simulate_all(
-            df_buildings=df_buildings,
-            idf_directory=idf_directory,
-            iddfile=iddfile,
-            base_output_dir=sim_output_dir,
-            user_config_epw=user_config_epw,
-            assigned_epw_log=assigned_epw_log,
-            num_workers=simulate_config.get("num_workers", 4)
-            # ep_force_overwrite=simulate_config.get("ep_force_overwrite", False)
-        )
-
-    # D) Post-processing
-    if post_process:
-        logger.info("[create_idfs_for_all_buildings] => Post-processing results & writing logs ...")
-
-        if post_process_config is None:
-            post_process_config = {
-                "base_output_dir": "output/Sim_Results",
-                "outputs": [
-                    {
-                        "convert_to_daily": False,
-                        "convert_to_monthly": False,
-                        "aggregator": "none",
-                        "output_csv": "output/results/merged_as_is.csv"
-                    }
-                ]
-            }
-
-        # If logs_base_dir is set, we override base_output_dir
-        if logs_base_dir:
-            post_process_config["base_output_dir"] = os.path.join(logs_base_dir, "Sim_Results")
-
-        base_output_dir = post_process_config.get("base_output_dir", "output/Sim_Results")
-        multiple_outputs = post_process_config.get("outputs", [])
-
-        # Possibly handle multiple post-process outputs
-        for proc_item in multiple_outputs:
-            convert_daily = proc_item.get("convert_to_daily", False)
-            convert_monthly = proc_item.get("convert_to_monthly", False)
-            aggregator = proc_item.get("aggregator", "mean")  # daily aggregator
-            out_csv = proc_item.get("output_csv", "output/results/merged_default.csv")
-
-            # If logs_base_dir is set and the out_csv is still something like "output/results/..."
-            # We can relocate it under logs_base_dir, e.g. logs_base_dir/results
-            # Let's do a check:
-            if logs_base_dir and "output/" in out_csv:
-                # redirect to logs_base_dir
-                # e.g. logs_base_dir/results/merged_default.csv
-                # you can pick your subfolder naming
-                rel_filename = out_csv.split("output/")[-1]  # e.g. results/merged_default.csv
-                out_csv = os.path.join(logs_base_dir, rel_filename)
-
-            # Make sure directory exists
-            os.makedirs(os.path.dirname(out_csv), exist_ok=True)
-
-            # Now merge the results
-            merge_all_results(
-                base_output_dir=base_output_dir,
-                output_csv=out_csv,
-                convert_to_daily=convert_daily,
-                daily_aggregator=aggregator,
-                convert_to_monthly=convert_monthly
-            )
-
-        # Write CSV logs for assigned parameters
-        _write_geometry_csv(assigned_geom_log, logs_base_dir)
-        _write_lighting_csv(assigned_lighting_log, logs_base_dir)
-        _write_equipment_csv(assigned_equip_log, logs_base_dir)
-        _write_fenestration_csv(assigned_fenez_log, logs_base_dir)
-        _write_dhw_csv(assigned_dhw_log, logs_base_dir)
-        _write_hvac_csv(assigned_hvac_log, logs_base_dir)
-        _write_vent_csv(assigned_vent_log, logs_base_dir)
-        _write_shading_csv(assigned_shading_log, logs_base_dir)
-        # (If needed, also EPW or groundtemp logs, do similarly)
-
-        logger.info("[create_idfs_for_all_buildings] => Done post-processing.")
-
-    return df_buildings  # includes "idf_name" column
-
-
-###############################################################################
-# Internal Helper Functions to Write Assigned Logs
-# -- Now accept logs_base_dir so we can place them in job_output_dir
-###############################################################################
-def _make_assigned_path(filename, logs_base_dir):
-    """Helper to build the path for assigned_*.csv, given logs_base_dir."""
-    if logs_base_dir:
-        assigned_dir = os.path.join(logs_base_dir, "assigned")
-    else:
-        assigned_dir = "output/assigned"
-
-    os.makedirs(assigned_dir, exist_ok=True)
-    return os.path.join(assigned_dir, filename)
-
-
-def _write_geometry_csv(assigned_geom_log, logs_base_dir):
-    rows = []
-    for bldg_id, param_dict in assigned_geom_log.items():
-        for param_name, param_val in param_dict.items():
-            rows.append({
-                "ogc_fid": bldg_id,
-                "param_name": param_name,
-                "assigned_value": param_val
-            })
-    if not rows:
-        return
-    df = pd.DataFrame(rows)
-    out_path = _make_assigned_path("assigned_geometry.csv", logs_base_dir)
-    df.to_csv(out_path, index=False)
-
-
-def _write_lighting_csv(assigned_lighting_log, logs_base_dir):
-    rows = []
-    for bldg_id, param_dict in assigned_lighting_log.items():
-        for param_name, subdict in param_dict.items():
-            assigned_val = subdict.get("assigned_value")
-            min_v = subdict.get("min_val")
-            max_v = subdict.get("max_val")
-            obj_name = subdict.get("object_name", "")
-            rows.append({
-                "ogc_fid": bldg_id,
-                "object_name": obj_name,
-                "param_name": param_name,
-                "assigned_value": assigned_val,
-                "min_val": min_v,
-                "max_val": max_v
-            })
-    if not rows:
-        return
-    df = pd.DataFrame(rows)
-    out_path = _make_assigned_path("assigned_lighting.csv", logs_base_dir)
-    df.to_csv(out_path, index=False)
-
-
-def _write_fenestration_csv(assigned_fenez_log, logs_base_dir):
-    rows = []
-    for bldg_id, param_dict in assigned_fenez_log.items():
-        for key, val in param_dict.items():
-            rows.append({
-                "ogc_fid": bldg_id,
-                "param_name": key,
-                "assigned_value": val
-            })
-    if not rows:
-        return
-    df = pd.DataFrame(rows)
-    out_path = _make_assigned_path("assigned_fenez_params.csv", logs_base_dir)
-    df.to_csv(out_path, index=False)
-
-
-def _write_dhw_csv(assigned_dhw_log, logs_base_dir):
-    rows = []
-    for bldg_id, param_dict in assigned_dhw_log.items():
-        for param_name, param_val in param_dict.items():
-            rows.append({
-                "ogc_fid": bldg_id,
-                "param_name": param_name,
-                "assigned_value": param_val
-            })
-    if not rows:
-        return
-    df = pd.DataFrame(rows)
-    out_path = _make_assigned_path("assigned_dhw_params.csv", logs_base_dir)
-    df.to_csv(out_path, index=False)
-
-
-def _write_hvac_csv(assigned_hvac_log, logs_base_dir):
-    rows = []
-    for bldg_id, param_dict in assigned_hvac_log.items():
-        for param_name, param_val in param_dict.items():
-            rows.append({
-                "ogc_fid": bldg_id,
-                "param_name": param_name,
-                "assigned_value": param_val
-            })
-    if not rows:
-        return
-    df = pd.DataFrame(rows)
-    out_path = _make_assigned_path("assigned_hvac_params.csv", logs_base_dir)
-    df.to_csv(out_path, index=False)
-
-
-def _write_vent_csv(assigned_vent_log, logs_base_dir):
-    rows = []
-    for bldg_id, param_dict in assigned_vent_log.items():
-        for param_name, param_val in param_dict.items():
-            rows.append({
-                "ogc_fid": bldg_id,
-                "param_name": param_name,
-                "assigned_value": param_val
-            })
-    if not rows:
-        return
-    df = pd.DataFrame(rows)
-    out_path = _make_assigned_path("assigned_ventilation.csv", logs_base_dir)
-    df.to_csv(out_path, index=False)
-
-
-def _write_equipment_csv(assigned_equip_log, logs_base_dir):
-    """Write ``assigned_equipment.csv`` in the same style as lighting.
-
-    ``assigned_equip_log`` is produced by ``assign_equipment_parameters`` and
-    stores a nested ``"assigned"`` dictionary for each building.  Each
-    parameter entry contains ``object_name``, ``assigned_value``, ``min_val`` and
-    ``max_val``.  We mirror ``_write_lighting_csv`` so that downstream scenario
-    functions can expect the same columns.
-    """
-
-    rows = []
-    for bldg_id, param_dict in assigned_equip_log.items():
-        # Older logs might only contain the inner dict.  Default to that format
-        assigned = param_dict.get("assigned", param_dict)
-        for param_name, subdict in assigned.items():
-            rows.append({
-                "ogc_fid": bldg_id,
-                "object_name": subdict.get("object_name", ""),
-                "param_name": param_name,
-                "assigned_value": subdict.get("assigned_value"),
-                "min_val": subdict.get("min_val"),
-                "max_val": subdict.get("max_val"),
-            })
-    if not rows:
-        return
-    df = pd.DataFrame(rows)
-    out_path = _make_assigned_path("assigned_equipment.csv", logs_base_dir)
-    df.to_csv(out_path, index=False)
-
-
-def _write_shading_csv(assigned_shading_log, logs_base_dir):
-    """Write ``assigned_shading_params.csv`` from ``assigned_shading_log``."""
-    rows = []
-    for window_id, param_dict in assigned_shading_log.items():
-        shading_params = param_dict.get("shading_params", param_dict)
-        for param_name, param_val in shading_params.items():
-            rows.append({
-                "window_id": window_id,
-                "param_name": param_name,
-                "assigned_value": param_val,
-            })
-    if not rows:
-        return
-    df = pd.DataFrame(rows)
-    out_path = _make_assigned_path("assigned_shading_params.csv", logs_base_dir)
-    df.to_csv(out_path, index=False)
 
 ------------------------------------------------------------
 
