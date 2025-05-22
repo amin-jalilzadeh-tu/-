@@ -1,4 +1,3 @@
-crashed => 'WINDOWPROPERTY:SHADINGCONTROL' is not in list
 
 
 D:\Documents\E_Plus_2030_py\idf_objects\wshading\assign_shading_values.py
