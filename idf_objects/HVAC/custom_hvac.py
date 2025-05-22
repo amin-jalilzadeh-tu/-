@@ -288,7 +288,10 @@ def add_HVAC_Ideal_to_all_zones(
         # ideal.Design_Specification_Outdoor_Air_Object_Name = "" # Can link DSOA if needed
 
         # Optional: Economizer / Heat Recovery
-        ideal.Outdoor_Air_Economizer_Type = "FixedDryBulb"
+        # EnergyPlus 22.x does not accept "FixedDryBulb" for this field
+        # (valid options are NoEconomizer, DifferentialDryBulb,
+        #  DifferentialEnthalpy). Use NoEconomizer for compatibility.
+        ideal.Outdoor_Air_Economizer_Type = "NoEconomizer"
         if hasattr(ideal, "Economizer_Maximum_Limit_Dry_Bulb_Temperature"):
             ideal.Economizer_Maximum_Limit_Dry_Bulb_Temperature = 18  # DegC
         else:
