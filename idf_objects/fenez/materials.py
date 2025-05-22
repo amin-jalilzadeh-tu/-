@@ -4,7 +4,7 @@ materials.py
 This module handles:
  1) Creating new MATERIAL & CONSTRUCTION objects in the IDF
     (including window materials).
- 2) Storing logs of the final picks (and ranges) in assigned_fenez_log
+ 2) Storing logs of the final picks (and any range fields) in assigned_fenez_log
     for possible CSV or JSON output.
  3) Optionally reassigning surfaces to the newly created constructions.
 
@@ -166,7 +166,7 @@ def update_construction_materials(
         mat_type = mat_data["obj_type"].upper()
         if mat_type == "MATERIAL":
             mat_obj = idf_obj.newidfobject("MATERIAL")
-            mat_obj.Name = mat_name
+            mat_obj.Name = mat_name  # Use the exact name from the lookup/dict
             mat_obj.Roughness = mat_data.get("Roughness", "MediumRough")
             mat_obj.Thickness = mat_data.get("Thickness", 0.1)
             mat_obj.Conductivity = mat_data.get("Conductivity", 1.0)
@@ -179,7 +179,7 @@ def update_construction_materials(
 
         elif mat_type == "MATERIAL:NOMASS":
             mat_obj = idf_obj.newidfobject("MATERIAL:NOMASS")
-            mat_obj.Name = mat_name
+            mat_obj.Name = mat_name  # Use the exact name from the lookup/dict
             mat_obj.Roughness = mat_data.get("Roughness", "MediumRough")
             mat_obj.Thermal_Resistance = mat_data.get("Thermal_Resistance", 0.5)
             mat_obj.Thermal_Absorptance = mat_data.get("Thermal_Absorptance", 0.9)
@@ -227,8 +227,6 @@ def update_construction_materials(
             wmat.UFactor = u_val
             wmat.Solar_Heat_Gain_Coefficient = shgc
             wmat.Visible_Transmittance = vt
-            # The built-in "Optical_Data_Type" field doesn't exist for SimpleGlazing in E+
-            # so we ignore mat_data["Optical_Data_Type"] here (or store it in a custom field if needed).
             return wmat.Name
 
         return None
@@ -236,37 +234,37 @@ def update_construction_materials(
     # 4) Create top-level fallback Materials & Constructions
     opq_name = None
     if mat_opq:
-        opq_name = create_opaque_material(idf, mat_opq, mat_opq["Name"])
+        # Use the dictionary's own "Name" if present
+        name_from_dict = mat_opq.get("Name", "TopOpaqueMaterialFallback")
+        opq_name = create_opaque_material(idf, mat_opq, name_from_dict)
         if assigned_fenez_log and building_id is not None and opq_name:
             assigned_fenez_log[building_id]["fenez_top_opaque_material_name"] = opq_name
 
     win_name = None
     if mat_win:
-        win_name = create_window_material(idf, mat_win, mat_win["Name"])
+        # Use the dictionary's own "Name" if present
+        name_from_dict = mat_win.get("Name", "TopWindowMaterialFallback")
+        win_name = create_window_material(idf, mat_win, name_from_dict)
         if assigned_fenez_log and building_id is not None and win_name:
             assigned_fenez_log[building_id]["fenez_top_window_material_name"] = win_name
 
-    
     # Create fallback Constructions (CEILING1C, Ext_Walls1C, etc.).
-    # These now mirror the per-element lookups. Each construction uses the
-    # element-specific material when available, otherwise it falls back to the
-    # top-level opaque material. Avoid creating duplicate materials by caching
-    # any new opaque layers we add here.
+    # Each construction uses the element-specific material when available,
+    # otherwise it falls back to the top-level opaque material.
+    # Avoid creating duplicate materials by caching.
 
     created_layers = {}
-
-    # Prevent duplicate top-level material names when reused for
-    # fallback constructions. If the top-level opaque material was
-    # created, cache its name so _layer_for_fallback won't recreate it.
     if opq_name:
         created_layers[opq_name] = opq_name
 
-
-
     def _layer_for_fallback(elem_key):
+        """
+        If we have a sub-element material, use its lookup name.
+        Otherwise fallback to the top-level opq_name.
+        """
         mat = elements_data.get(elem_key, {}).get("material_opaque")
         if not mat:
-            return opq_name
+            return opq_name  # fallback
 
         name = mat.get("Name", f"{elem_key}_Mat")
         if name not in created_layers:
@@ -274,12 +272,14 @@ def update_construction_materials(
         return created_layers[name]
 
     ceil_layer = _layer_for_fallback("flat_roof")
-    ext_layer = _layer_for_fallback("exterior_wall")
+    ext_layer  = _layer_for_fallback("exterior_wall")
     intw_layer = _layer_for_fallback("interior_wall")
-    roof_layer = _layer_for_fallback("flat_roof")
+    roof_layer = _layer_for_fallback("flat_roof")   # same as ceil_layer in this example
     grnd_layer = _layer_for_fallback("ground_floor")
     ifloor_layer = _layer_for_fallback("inter_floor")
 
+    # If any of these exist, create the fallback 1C constructions
+    # (CEILING1C, Ext_Walls1C, Int_Walls1C, etc.)
     if any([ceil_layer, ext_layer, intw_layer, roof_layer, grnd_layer, ifloor_layer]):
         if ceil_layer:
             c_ceil = idf.newidfobject("CONSTRUCTION")
@@ -311,12 +311,11 @@ def update_construction_materials(
             c_ifloor.Name = "IntFloor1C"
             c_ifloor.Outside_Layer = ifloor_layer
 
-
+    # Create a fallback Window1C construction if top-level window name exists
     if win_name:
         c_win = idf.newidfobject("CONSTRUCTION")
         c_win.Name = "Window1C"
         c_win.Outside_Layer = win_name
-
         if assigned_fenez_log and building_id is not None:
             assigned_fenez_log[building_id]["fenez_window1C_construction"] = c_win.Name
 
@@ -329,21 +328,21 @@ def update_construction_materials(
         opq_sub_name = None
         win_sub_name = None
 
-        # create opaque
+        # For the sub-element's opaque material, use its actual "Name" from the dictionary
         if mat_opq_sub:
-            sub_opq_name = f"{elem_name}_OpaqueMat"
+            sub_opq_name = mat_opq_sub.get("Name", f"{elem_name}_OpaqueMat")
             opq_sub_name = create_opaque_material(idf, mat_opq_sub, sub_opq_name)
             if assigned_fenez_log and building_id is not None and opq_sub_name:
                 assigned_fenez_log[building_id][f"fenez_{elem_name}_opq_material_name"] = opq_sub_name
 
-        # create window
+        # For the sub-element's window material
         if mat_win_sub:
-            sub_win_name = f"{elem_name}_WindowMat"
+            sub_win_name = mat_win_sub.get("Name", f"{elem_name}_WindowMat")
             win_sub_name = create_window_material(idf, mat_win_sub, sub_win_name)
             if assigned_fenez_log and building_id is not None and win_sub_name:
                 assigned_fenez_log[building_id][f"fenez_{elem_name}_win_material_name"] = win_sub_name
 
-        # create new Opaque Construction
+        # create new Opaque Construction for the sub-element
         if opq_sub_name:
             c_sub = idf.newidfobject("CONSTRUCTION")
             c_sub.Name = f"{elem_name}_Construction"
@@ -353,7 +352,7 @@ def update_construction_materials(
             if assigned_fenez_log and building_id is not None:
                 assigned_fenez_log[building_id][f"fenez_{elem_name}_construction_name"] = c_sub.Name
 
-        # Optionally: create a separate window construction
+        # create a separate window construction if we have a window material
         if win_sub_name:
             c_sub_win = idf.newidfobject("CONSTRUCTION")
             c_sub_win.Name = f"{elem_name}_WindowConst"
@@ -396,6 +395,7 @@ def assign_constructions_to_surfaces(idf, construction_map):
 
         if s_type == "WALL":
             if bc == "OUTDOORS":
+                # If sub-element 'exterior_wall' is in the map, use it; otherwise fallback
                 if "exterior_wall" in construction_map:
                     surface.Construction_Name = construction_map["exterior_wall"]
                 else:
@@ -411,7 +411,6 @@ def assign_constructions_to_surfaces(idf, construction_map):
 
         elif s_type in ["ROOF", "CEILING"]:
             if bc == "OUTDOORS":
-                # could match "flat_roof" if it exists
                 if "flat_roof" in construction_map:
                     surface.Construction_Name = construction_map["flat_roof"]
                 else:
@@ -422,7 +421,6 @@ def assign_constructions_to_surfaces(idf, construction_map):
                 else:
                     surface.Construction_Name = "IntFloor1C"
             else:
-                # fallback
                 surface.Construction_Name = "Roof1C"
 
         elif s_type == "FLOOR":
@@ -437,7 +435,6 @@ def assign_constructions_to_surfaces(idf, construction_map):
                 else:
                     surface.Construction_Name = "IntFloor1C"
             else:
-                # fallback
                 surface.Construction_Name = "GroundFloor1C"
 
         else:
@@ -451,6 +448,10 @@ def assign_constructions_to_surfaces(idf, construction_map):
         if "windows" in construction_map:
             fen.Construction_Name = construction_map["windows"]
         else:
+            # If you have e.g. "exterior_wall_window" in the map, you can do:
+            # if "exterior_wall_window" in construction_map:
+            #     fen.Construction_Name = construction_map["exterior_wall_window"]
+            # else: fallback
             fen.Construction_Name = "Window1C"
 
     print("[assign_constructions_to_surfaces] => Surfaces assigned via sub-element logic.")
