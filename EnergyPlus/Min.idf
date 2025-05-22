@@ -1,0 +1,508 @@
+!- Windows Line endings 
+
+Version,
+    22.2;                     !- Version Identifier
+
+SimulationControl,
+    Yes,                      !- Do Zone Sizing Calculation
+    Yes,                       !- Do System Sizing Calculation
+    Yes,                       !- Do Plant Sizing Calculation
+    No,                      !- Run Simulation for Sizing Periods
+    Yes,                      !- Run Simulation for Weather File Run Periods
+    No,                      !- Do HVAC Sizing Simulation for Sizing Periods
+    ;                        !- Maximum Number of HVAC Sizing Simulation Passes
+
+Timestep,
+    4;                        !- Number of Timesteps per Hour
+
+Site:Location,
+    Amsterdam_Netherlands,    !- Name
+    52.37,                    !- Latitude
+    4.89,                     !- Longitude
+    1,                        !- Time Zone
+    -2;                       !- Elevation
+
+
+
+Schedule:Compact,
+    ALWAYS22C,                !- Name
+    Temperature,              !- Schedule Type Limits Name
+    Through: 12/31,
+    For: AllDays,
+    Until: 24:00, 22.0;        !- Value
+
+
+SizingPeriod:DesignDay,
+    Netherlands Ann Htg 99.6% Condns DB,    !- Name
+    1,                        !- Month
+    21,                       !- Day of Month
+    WinterDesignDay,          !- Day Type
+    -5,                       !- Maximum DryBulb Temperature
+    0,                        !- Daily DryBulb Temperature Range
+    ,                         !- DryBulb Temperature Range Modifier Type
+    ,                         !- DryBulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,                  !- Humidity Condition Type
+    -5,                       !- Wetbulb or DewPoint at Maximum DryBulb
+    ,                         !- Humidity Condition Day Schedule Name
+    ,                         !- Humidity Ratio at Maximum DryBulb
+    ,                         !- Enthalpy at Maximum DryBulb
+    ,                         !- Daily WetBulb Temperature Range
+    102000,                   !- Barometric Pressure
+    4,                        !- Wind Speed
+    270,                      !- Wind Direction
+    No,                       !- Rain Indicator
+    No,                       !- Snow Indicator
+    No,                       !- Daylight Saving Time Indicator
+    ASHRAEClearSky,           !- Solar Model Indicator
+    ,                         !- Beam Solar Day Schedule Name
+    ,                         !- Diffuse Solar Day Schedule Name
+    ,                         !- ASHRAE Clear Sky Optical Depth for Beam Irradiance taub
+    ,                         !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance taud
+    0;                        !- Sky Clearness
+
+SizingPeriod:DesignDay,
+    Netherlands Ann Clg 1% Condns DB=>MWB,    !- Name
+    7,                        !- Month
+    21,                       !- Day of Month
+    SummerDesignDay,          !- Day Type
+    28,                       !- Maximum DryBulb Temperature
+    10,                       !- Daily DryBulb Temperature Range
+    ,                         !- DryBulb Temperature Range Modifier Type
+    ,                         !- DryBulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,                  !- Humidity Condition Type
+    17,                       !- Wetbulb or DewPoint at Maximum DryBulb
+    ,                         !- Humidity Condition Day Schedule Name
+    ,                         !- Humidity Ratio at Maximum DryBulb
+    ,                         !- Enthalpy at Maximum DryBulb
+    ,                         !- Daily WetBulb Temperature Range
+    102000,                   !- Barometric Pressure
+    3.5,                      !- Wind Speed
+    90,                       !- Wind Direction
+    No,                       !- Rain Indicator
+    No,                       !- Snow Indicator
+    No,                       !- Daylight Saving Time Indicator
+    ASHRAEClearSky,           !- Solar Model Indicator
+    ,                         !- Beam Solar Day Schedule Name
+    ,                         !- Diffuse Solar Day Schedule Name
+    ,                         !- ASHRAE Clear Sky Optical Depth for Beam Irradiance taub
+    ,                         !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance taud
+    1;                        !- Sky Clearness
+
+RunPeriod,
+    Run Period 1,             !- Name
+    1,                        !- Begin Month
+    1,                        !- Begin Day of Month
+    ,                         !- Begin Year
+    12,                       !- End Month
+    31,                       !- End Day of Month
+    ,                         !- End Year
+    Tuesday,                  !- Day of Week for Start Day
+    Yes,                      !- Use Weather File Holidays and Special Days
+    Yes,                      !- Use Weather File Daylight Saving Period
+    No,                       !- Apply Weekend Holiday Rule
+    Yes,                      !- Use Weather File Rain Indicators
+    Yes;                      !- Use Weather File Snow Indicators
+
+GlobalGeometryRules,
+    UpperLeftCorner,          !- Starting Vertex Position
+    CounterClockWise,         !- Vertex Entry Direction
+    Relative;                 !- Coordinate System
+
+
+
+Output:SQLite,
+  SimpleAndTabular;       !- Option Type
+
+
+Output:VariableDictionary,
+    Regular;                  !- Key Field
+
+Output:Table:SummaryReports,
+    AllSummary;               !- Report 1 Name
+
+OutputControl:Table:Style,
+    HTML;                     !- Column Separator
+
+
+
+
+Output:Variable,
+    *,                        !- Key Value
+    Site Diffuse Solar Radiation Rate per Area,    !- Variable Name
+    Daily;                 !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Boiler Heating Energy,    !- Variable Name 
+    Daily;                 !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Water Heater Heating Energy,  !- Variable Name 
+    Daily;                 !- Reporting Frequency
+
+
+! --- Request Meters for Entire Facility ---
+Output:Meter,
+  Heating:EnergyTransfer,
+  Hourly;
+
+Output:Meter,
+  Cooling:EnergyTransfer,
+  Hourly;
+
+
+
+
+
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Air System Sensible Heating Energy, !- Variable Name
+    Hourly;                    !- Reporting Frequency (or Daily, Monthly, Timestep)
+
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Air System Sensible Cooling Energy, !- Variable Name
+    Hourly;                    !- Reporting Frequency
+
+! --- Optional: Add if interested in rates ---
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Air System Sensible Heating Rate, !- Variable Name
+    Hourly;                    !- Reporting Frequency
+
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Air System Sensible Cooling Rate, !- Variable Name
+    Hourly;                    !- Reporting Frequency
+
+! --- Optional: Add for latent loads if needed ---
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Air System Latent Cooling Energy, !- Variable Name
+    Hourly;                    !- Reporting Frequency
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+! --- Infiltration ---
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Infiltration Standard Density Volume Flow Rate, !- Variable Name: Infiltration flow rate [m3/s] at standard conditions
+    Hourly;                    !- Reporting Frequency
+
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Infiltration Sensible Heat Loss Energy, !- Variable Name: Energy impact [J]
+    Hourly;                    !- Reporting Frequency
+
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Infiltration Sensible Heat Gain Energy, !- Variable Name: Energy impact [J]
+    Hourly;                    !- Reporting Frequency
+
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Infiltration Latent Heat Loss Energy, !- Variable Name: Energy impact [J]
+    Hourly;                    !- Reporting Frequency
+
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Infiltration Latent Heat Gain Energy, !- Variable Name: Energy impact [J]
+    Hourly;                    !- Reporting Frequency
+
+! --- Zone/Natural Ventilation (from ZoneVentilation:* objects) ---
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Ventilation Standard Density Volume Flow Rate, !- Variable Name: Ventilation flow rate [m3/s] at standard conditions
+    Hourly;                    !- Reporting Frequency
+
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Ventilation Sensible Heat Loss Energy, !- Variable Name: Energy impact [J]
+    Hourly;                    !- Reporting Frequency
+
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Ventilation Sensible Heat Gain Energy, !- Variable Name: Energy impact [J]
+    Hourly;                    !- Reporting Frequency
+
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Ventilation Latent Heat Loss Energy, !- Variable Name: Energy impact [J]
+    Hourly;                    !- Reporting Frequency
+
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Ventilation Latent Heat Gain Energy, !- Variable Name: Energy impact [J]
+    Hourly;                    !- Reporting Frequency
+
+! --- Mechanical Ventilation (Outdoor Air from HVAC System) ---
+! Note: Zone Mechanical Ventilation Standard Density Volume Flow Rate might not always be available.
+! Mass Flow Rate is generally more reliable. Check your .rdd file.
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Mechanical Ventilation Mass Flow Rate, !- Variable Name: Outdoor air mass flow from HVAC [kg/s]
+    Hourly;                    !- Reporting Frequency
+
+! --- Total Zone Outdoor Air ---
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Outdoor Air Volume Flow Rate, !- Variable Name: Total OA entering zone (infiltration + natural + mechanical) [m3/s] at current density
+    Hourly;                    !- Reporting Frequency
+
+! --- Temperatures ---
+Output:Variable,
+    *,                         !- Key Value: For all applicable zones
+    Zone Mean Air Temperature,  !- Variable Name: Indoor air temperature [C]
+    Hourly;                    !- Reporting Frequency
+
+Output:Variable,
+    Environment,               !- Key Value: Special key for site variables
+    Site Outdoor Air Drybulb Temperature, !- Variable Name: Outdoor air temperature [C]
+    Hourly;                    !- Reporting Frequency
+
+Output:Variable,
+    Environment,               !- Key Value: Special key for site variables
+    Site Outdoor Air Relative Humidity, !- Variable Name: Outdoor relative humidity [%]
+    Hourly;                    !- Reporting Frequency
+
+! --- Energy Meters (Building Level) ---
+! Note: These report facility totals directly.
+Output:Meter,
+    Infiltration:EnergyTransfer:Sensible, !- Meter Name: Sensible energy transfer due to infiltration [J]
+    Hourly;                    !- Reporting Frequency
+
+Output:Meter,
+    Infiltration:EnergyTransfer:Latent, !- Meter Name: Latent energy transfer due to infiltration [J]
+    Hourly;                    !- Reporting Frequency
+
+Output:Meter,
+    Ventilation:EnergyTransfer:Sensible, !- Meter Name: Sensible energy transfer due to ventilation (zone + mechanical) [J]
+    Hourly;                    !- Reporting Frequency
+
+Output:Meter,
+    Ventilation:EnergyTransfer:Latent, !- Meter Name: Latent energy transfer due to ventilation (zone + mechanical) [J]
+    Hourly;                    !- Reporting Frequency
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+! BEGINNING OF SUGGESTED ADDITIONS
+! Add these to your existing Output:Variable list
+
+! --- Solar Gains Through Windows ---
+Output:Variable,
+    *,                        !- Key Value (For all zones)
+    Zone Windows Total Transmitted Solar Radiation Rate,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Zone Windows Total Transmitted Solar Radiation Energy,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+! --- Conduction Through Surfaces (Opaque: Walls, Roofs, Floors etc.) ---
+! Note: For specific surfaces, replace '*' with the surface name.
+! Using '*' will output for ALL opaque heat transfer surfaces, which can be a lot of data.
+Output:Variable,
+    *,                        !- Key Value (For all zones, all opaque surfaces)
+    Surface Inside Face Conduction Heat Transfer Rate,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Surface Inside Face Conduction Heat Gain Energy,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Surface Inside Face Conduction Heat Loss Energy,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+! --- Conduction Through Windows (Frame and Glass) ---
+! Similar to opaque surfaces, '*' is for all windows.
+Output:Variable,
+    *,                        !- Key Value (For all zones, all windows)
+    Surface Window Heat Gain Rate,  !- Variable Name (Includes solar and conduction)
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Surface Window Heat Loss Rate,  !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Surface Window Heat Gain Energy,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Surface Window Heat Loss Energy,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+! --- Internal Gains ---
+Output:Variable,
+    *,                        !- Key Value (For all zones)
+    Zone People Sensible Heating Rate,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Zone People Sensible Heating Energy,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Zone People Latent Heat Gain Rate,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Zone People Latent Heat Gain Energy,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Zone Lights Sensible Heating Rate,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Zone Lights Sensible Heating Energy,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Zone Electric Equipment Sensible Heating Rate,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Zone Electric Equipment Sensible Heating Energy,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Zone Electric Equipment Latent Heat Gain Rate,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Zone Electric Equipment Latent Heat Gain Energy,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+! (Add similar for Gas Equipment, Hot Water Equipment, Steam Equipment if you have them in your model)
+
+! --- Overall Zone Heat Balance Components (Very useful for summaries) ---
+Output:Variable,
+    *,                        !- Key Value
+    Zone Total Internal Sensible Heat Gain Rate,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Zone Total Internal Sensible Heat Gain Energy,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Zone Total Internal Latent Heat Gain Rate,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Zone Total Internal Latent Heat Gain Energy,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+! --- Zone Air Heat Balance (provides a breakdown of where energy is going to/from the zone air) ---
+Output:Variable,
+    *,                        !- Key Value
+    Zone Air Heat Balance Surface Convection Rate,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Zone Air Heat Balance Interzone Air Transfer Rate,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Zone Air Heat Balance Outdoor Air Transfer Rate,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Zone Air Heat Balance System Air Transfer Rate,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Zone Air Heat Balance Internal Convective Heat Gain Rate,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value
+    Zone Air Heat Balance Air Energy Storage Rate,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+! --- Surface Temperatures (can be useful for diagnostics) ---
+Output:Variable,
+    *,                        !- Key Value (For all zones, all surfaces)
+    Surface Inside Face Temperature,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+Output:Variable,
+    *,                        !- Key Value (For all zones, all surfaces)
+    Surface Outside Face Temperature,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+! --- Mean Radiant Temperature ---
+Output:Variable,
+    *,                        !- Key Value
+    Zone Mean Radiant Temperature,    !- Variable Name
+    Hourly;                   !- Reporting Frequency
+
+! Add this to your existing Output:Table:Monthly list (or create a new section if you prefer)
+OUTPUT:TABLE:MONTHLY,
+    ZoneComponentLoadSummary, !- Report Name
+    2,                        !- Digits After Decimal
+    Zone Sensible Heating Energy, !- Variable or Meter 1 Name
+    SumOrAverage,             !- Aggregation Type for Variable or Meter 1
+    Zone Sensible Cooling Energy, !- Variable or Meter 2 Name
+    SumOrAverage,             !- Aggregation Type for Variable or Meter 2
+    Zone Latent Heating Energy, !- Variable or Meter 3 Name
+    SumOrAverage,             !- Aggregation Type for Variable or Meter 3
+    Zone Latent Cooling Energy, !- Variable or Meter 4 Name
+    SumOrAverage,             !- Aggregation Type for Variable or Meter 4
+    Zone Total Internal Latent Gain Energy, !- Variable or Meter 5 Name
+    SumOrAverage,             !- Aggregation Type for Variable or Meter 5
+    Zone Total Internal Sensible Heat Gain Energy, !- Variable or Meter 6 Name
+    SumOrAverage;             !- Aggregation Type for Variable or Meter 6
+
+! END OF SUGGESTED ADDITIONS
