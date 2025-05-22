@@ -4,7 +4,7 @@
 # for each floor in a building, plus optional interzone linking. 
 # --------------------------------------------------------------------------
 
-from .geometry import polygon_area, inward_offset_polygon
+from .geometry import polygon_area, polygon_area_signed, inward_offset_polygon
 
 def link_surfaces(surface_a, surface_b):
     """
@@ -82,13 +82,22 @@ def create_zone_surfaces(
         floor_surf.Sun_Exposure = "NoSun"
         floor_surf.Wind_Exposure = "NoWind"
 
-    # Reverse coords so the floor normal faces downward
-    floor_surf.setcoords(base_poly[::-1])
+    # Ensure floor normal faces downward (Tilt ~180)
+    from .geometry import polygon_area_signed
+    if polygon_area_signed(base_poly) > 0:
+        floor_coords = base_poly[::-1]
+    else:
+        floor_coords = base_poly
+    floor_surf.setcoords(floor_coords)
     created_surfaces.append(floor_surf)
 
     # ===== Walls =====
     # The top polygon is base_poly + wall_height in Z
     top_poly = [(p[0], p[1], p[2] + wall_height) for p in base_poly]
+    if polygon_area_signed(base_poly) < 0:
+        top_poly_for_roof = top_poly[::-1]
+    else:
+        top_poly_for_roof = top_poly
     for i in range(4):
         p1 = base_poly[i]
         p2 = base_poly[(i + 1) % 4]
@@ -140,7 +149,7 @@ def create_zone_surfaces(
         top_surf.Outside_Boundary_Condition = "Outdoors"
         top_surf.Sun_Exposure = "SunExposed"
         top_surf.Wind_Exposure = "WindExposed"
-        top_surf.setcoords(top_poly)
+        top_surf.setcoords(top_poly_for_roof)
         created_surfaces.append(top_surf)
     else:
         # For intermediate floors, we typically do "Ceiling" with "Adiabatic"
@@ -152,7 +161,7 @@ def create_zone_surfaces(
         top_surf.Outside_Boundary_Condition = "Adiabatic"
         top_surf.Sun_Exposure = "NoSun"
         top_surf.Wind_Exposure = "NoWind"
-        top_surf.setcoords(top_poly)
+        top_surf.setcoords(top_poly_for_roof)
         created_surfaces.append(top_surf)
 
     # Return a 4-tuple: (zone_name, base_poly, top_poly, created_surfaces)
@@ -309,14 +318,14 @@ def create_zones_with_perimeter_depth(
 
     # 5) Core
     #
-    # We pass a reversed polygon so each shared edge is reversed wrt the perimeter side:
-    core_poly_reversed = [A2, D2, C2, B2]
+    # Use the inner polygon with the same order so we can map walls directly
+    core_poly = [A2, B2, C2, D2]
     # All edges => "Surface" bc
     core_bc = ["Surface", "Surface", "Surface", "Surface"]
     zc, cbpoly, ctpoly, csurfs = create_zone_surfaces(
         idf,
         f"Zone{floor_i}_Core",
-        core_poly_reversed,
+        core_poly,
         wall_height,
         floor_bc,
         core_bc,
@@ -329,10 +338,8 @@ def create_zones_with_perimeter_depth(
     # We assume:
     #  - The perimeter zone "Wall_2" (index=2 => array position=3 in the surfaces array) 
     #    is the interior partition to the core.
-    #  - The matching core zone side is "Wall_x", using reversed polygon indexing logic.
-    #
-    # Because we reversed the core polygon, each perimeter edge B2->A2 lines up with A2->B2
-    # in the core. We just have to ensure we pick the correct wall indexes.
+    #  - The matching core zone side is "Wall_x", using the same polygon order so
+    #    each shared edge has opposite orientation.
 
     def get_wall(surfs, wall_idx):
         """
@@ -350,15 +357,15 @@ def create_zones_with_perimeter_depth(
     rear_interior  = get_wall(resurfs, 2)
     left_interior  = get_wall(lsurfs, 2)
 
-    # In the core zone, we have reversed the polygon. We'll map:
-    #   - front perimeter => core wall_3
-    #   - right perimeter => core wall_2
-    #   - rear perimeter  => core wall_1
-    #   - left perimeter  => core wall_0
-    core_wall_front = get_wall(csurfs, 3)
-    core_wall_right = get_wall(csurfs, 2)
-    core_wall_rear  = get_wall(csurfs, 1)
-    core_wall_left  = get_wall(csurfs, 0)
+    # Map each perimeter interior wall to the opposing core wall
+    #   - front perimeter => core wall_0
+    #   - right perimeter => core wall_1
+    #   - rear perimeter  => core wall_2
+    #   - left perimeter  => core wall_3
+    core_wall_front = get_wall(csurfs, 0)
+    core_wall_right = get_wall(csurfs, 1)
+    core_wall_rear  = get_wall(csurfs, 2)
+    core_wall_left  = get_wall(csurfs, 3)
 
     link_surfaces(front_interior, core_wall_front)
     link_surfaces(right_interior, core_wall_right)
