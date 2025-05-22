@@ -279,15 +279,15 @@ def add_shading_objects(
                     
                     # Slat control type, relevant if Shading_Type is a blind
                     if "Blind" in shading_ctrl.Shading_Type: # Covers InteriorBlind, ExteriorBlind, BetweenGlassBlind
-                        shading_ctrl.Type_of_Slats_Control_for_Blinds = shading_params.get("slat_control_type", "FixedSlatAngle") # E.g., FixedSlatAngle, ScheduledSlatAngle, BlockBeamSolar
+                        shading_ctrl.Type_of_Slat_Angle_Control_for_Blinds = shading_params.get("slat_control_type", "FixedSlatAngle") # E.g., FixedSlatAngle, ScheduledSlatAngle, BlockBeamSolar
 
                         # Set Fixed_Slat_Angle if control type is FixedSlatAngle
-                        if shading_ctrl.Type_of_Slats_Control_for_Blinds.lower() == "fixedslatangle":
+                        if shading_ctrl.Type_of_Slat_Angle_Control_for_Blinds.lower() == "fixedslatangle":
                             # Use the corrected field name: Fixed_Slat_Angle
                             shading_ctrl.Fixed_Slat_Angle = shading_params.get("slat_angle_deg", 45.0)
                         
                         # Example for ScheduledSlatAngle (add more logic if using this)
-                        # if shading_ctrl.Type_of_Slats_Control_for_Blinds.lower() == "scheduledslatangle":
+                        # if shading_ctrl.Type_of_Slat_Angle_Control_for_Blinds.lower() == "scheduledslatangle":
                         #     shading_ctrl.Slat_Angle_Schedule_Name = shading_params.get("slat_angle_schedule_name", "DefaultSlatAngleSchedule")
                         #     # Ensure "DefaultSlatAngleSchedule" exists or is created.
 
