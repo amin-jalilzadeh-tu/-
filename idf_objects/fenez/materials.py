@@ -255,6 +255,14 @@ def update_construction_materials(
 
     created_layers = {}
 
+    # Prevent duplicate top-level material names when reused for
+    # fallback constructions. If the top-level opaque material was
+    # created, cache its name so _layer_for_fallback won't recreate it.
+    if opq_name:
+        created_layers[opq_name] = opq_name
+
+
+
     def _layer_for_fallback(elem_key):
         mat = elements_data.get(elem_key, {}).get("material_opaque")
         if not mat:

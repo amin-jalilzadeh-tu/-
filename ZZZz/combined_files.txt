@@ -2009,15 +2009,24 @@ def update_construction_materials(
         if assigned_fenez_log and building_id is not None and win_name:
             assigned_fenez_log[building_id]["fenez_top_window_material_name"] = win_name
 
-        # Create fallback Constructions (CEILING1C, Ext_Walls1C, etc.).
-    # These now mirror the per-element lookups and use a sub-element material
-    # first before falling back to the top-level opaque material.
+    
+    # Create fallback Constructions (CEILING1C, Ext_Walls1C, etc.).
+    # These now mirror the per-element lookups. Each construction uses the
+    # element-specific material when available, otherwise it falls back to the
+    # top-level opaque material. Avoid creating duplicate materials by caching
+    # any new opaque layers we add here.
+
+    created_layers = {}
 
     def _layer_for_fallback(elem_key):
         mat = elements_data.get(elem_key, {}).get("material_opaque")
-        if mat:
-            return create_opaque_material(idf, mat, mat.get("Name", f"{elem_key}_Mat"))
-        return opq_name
+        if not mat:
+            return opq_name
+
+        name = mat.get("Name", f"{elem_key}_Mat")
+        if name not in created_layers:
+            created_layers[name] = create_opaque_material(idf, mat, name)
+        return created_layers[name]
 
     ceil_layer = _layer_for_fallback("flat_roof")
     ext_layer = _layer_for_fallback("exterior_wall")
@@ -2056,6 +2065,7 @@ def update_construction_materials(
             c_ifloor = idf.newidfobject("CONSTRUCTION")
             c_ifloor.Name = "IntFloor1C"
             c_ifloor.Outside_Layer = ifloor_layer
+
 
     if win_name:
         c_win = idf.newidfobject("CONSTRUCTION")
