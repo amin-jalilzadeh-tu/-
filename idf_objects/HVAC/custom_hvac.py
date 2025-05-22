@@ -129,7 +129,9 @@ def add_HVAC_Ideal_to_all_zones(
         # --- FIX from previous analysis: Correct field format ---
         ctrl_sched.Field_1 = "Through: 12/31"  # No comma
         ctrl_sched.Field_2 = "For: AllDays"     # No comma
-        ctrl_sched.Field_3 = "Until: 24:00,1;"  # Control Type 1 (Dual Setpoint), Semicolon at end
+        # Control Type 4 corresponds to ThermostatSetpoint:DualSetpoint
+        # which matches the thermostat object defined below.
+        ctrl_sched.Field_3 = "Until: 24:00,4;"
     else:
         print(f"[Custom HVAC Info] Found existing schedule: {control_type_sched_name}")
         # Optionally verify/update its fields here if needed
