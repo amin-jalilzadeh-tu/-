@@ -27,10 +27,10 @@ def load_buildings_from_db(filter_criteria=None, filter_by=None):
 
     # 1) Read DB credentials from environment
     db_user = os.getenv("DB_USER", "postgres")
-    db_password = os.getenv("DB_PASSWORD"#, #"")
+    db_password = os.getenv("DB_PASSWORD", "mypassword")
     db_host = os.getenv("DB_HOST", "db")
     db_port = os.getenv("DB_PORT", "5432")
-    db_name = os.getenv("DB_NAME"#, #"")
+    db_name = os.getenv("DB_NAME", "research")
 
     # 2) Create the connection string
     connection_string = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
