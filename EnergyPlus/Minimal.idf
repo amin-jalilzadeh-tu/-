@@ -506,3 +506,59 @@ OUTPUT:TABLE:MONTHLY,
     SumOrAverage;             !- Aggregation Type for Variable or Meter 6
 
 ! END OF SUGGESTED ADDITIONS
+
+
+
+
+
+
+
+
+
+
+
+
+Output:Variable,
+    *,                                          !- Key Value
+    Surface Shading Device Is On Time Fraction,  !- Variable Name
+    Hourly;                                     !- Reporting Frequency
+
+Output:Variable,
+    *,                                          !- Key Value
+    Window Shading Control Status,               !- Variable Name
+    Hourly;                                     !- Reporting Frequency
+
+Output:Variable,
+    *,                                          !- Key Value
+    Surface Window Blind Slat Angle,             !- Variable Name
+    Hourly;                                     !- Reporting Frequency
+
+Output:Variable,
+    *,                                          !- Key Value
+    Surface Outside Face Incident Solar Radiation Rate per Area, !- Variable Name
+    Hourly;                                     !- Reporting Frequency
+
+Output:Variable,
+    *,                                          !- Key Value
+    Surface Window Transmitted Solar Radiation Rate, !- Variable Name
+    Hourly;                                     !- Reporting Frequency
+
+Output:Variable,
+    *,                                          !- Key Value
+    Surface Window Transmitted Beam Solar Radiation Rate, !- Variable Name
+    Hourly;                                     !- Reporting Frequency
+
+Output:Variable,
+    *,                                          !- Key Value
+    Surface Window Transmitted Diffuse Solar Radiation Rate, !- Variable Name
+    Hourly;                                     !- Reporting Frequency
+
+Output:Variable,
+    *,                                          !- Key Value
+    Surface Window Shading Device Transmitted Diffuse Solar Radiation Rate, !- Variable Name
+    Hourly;                                     !- Reporting Frequency
+
+Output:Variable,
+    *,                                          !- Key Value
+    Surface Window Shading Device Absorbed Solar Radiation Rate, !- Variable Name
+    Hourly;                                     !- Reporting Frequency

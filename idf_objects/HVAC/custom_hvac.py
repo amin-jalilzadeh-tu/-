@@ -286,7 +286,7 @@ def add_HVAC_Ideal_to_all_zones(
         # Optional: Dehumidification/Humidification Control
         ideal.Dehumidification_Control_Type = "None" # Or None, Humidistat, etc.
         # ideal.Cooling_Sensible_Heat_Ratio = 0.7 # Example if needed
-        ideal.Humidification_Control_Type = "None " # Or None, Humidistat
+        ideal.Humidification_Control_Type = "None" # Or None, Humidistat
         # ideal.Design_Specification_Outdoor_Air_Object_Name = "" # Can link DSOA if needed
 
         # Optional: Economizer / Heat Recovery

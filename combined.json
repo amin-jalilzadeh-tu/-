@@ -61,7 +61,7 @@
   ],
   "geometry": [
     {
-      "building_id": 4136730,
+      "building_id": 413673,
       "param_name": "perimeter_depth",
       "min_val": 3.5,
       "max_val": 4.0,
@@ -81,7 +81,14 @@
       "building_type": "Meeting Function",
       "param_name": "has_core",
       "fixed_value": false
+    },
+    {
+      "building_id": 4136738,
+      "param_name": "has_core",
+      "fixed_value": false
     }
+
+    
   ],
   "hvac": [
     {
