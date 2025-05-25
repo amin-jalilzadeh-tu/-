@@ -48,17 +48,38 @@ def get_zone_floor_area_from_surfaces(idf: IDF, zone_name: str) -> float:
     This is a fallback if the ZONE object's Floor_Area is 'autocalculate' or not resolved.
     """
     total_floor_surface_area = 0.0
+    # Ensure we are getting the correct collection of surfaces
+    # geomeppy typically stores IDF objects in idf.idfobjects['BUILDINGSURFACE:DETAILED']
+    # or idf.idfobjects.get('BUILDINGSURFACE:DETAILED', [])
     surfaces = idf.idfobjects.get("BUILDINGSURFACE:DETAILED", [])
+    if not surfaces: # Fallback for older geomeppy or different structure
+        surfaces = idf.idfobjects.get("BuildingSurface:Detailed", [])
+
+
     for surface in surfaces:
         try:
-            if surface.Zone_Name.upper() == zone_name.upper() and \
-               getattr(surface, 'Surface_Type', '').lower() == 'floor':
+            # Ensure surface.Zone_Name exists and is a string before calling .upper()
+            surface_zone_name = getattr(surface, 'Zone_Name', None)
+            if surface_zone_name is None:
+                continue # Skip if no zone name
+
+            surface_type_attr = getattr(surface, 'Surface_Type', '').lower()
+            
+            if surface_zone_name.upper() == zone_name.upper() and surface_type_attr == 'floor':
                 # geomeppy's surface.area property should give the calculated area
-                surface_area = getattr(surface, 'area', 0.0) 
+                # For IDF objects directly, it might be 'Gross_Area' or similar if not using geomeppy's calculated properties
+                surface_area = getattr(surface, 'area', 0.0) # geomeppy property
+                if surface_area <= 1e-6 and hasattr(surface, 'Gross_Area'): # Fallback to raw IDF field if 'area' is not helpful
+                    try:
+                        surface_area = float(surface.Gross_Area)
+                    except (ValueError, TypeError):
+                        surface_area = 0.0
+
                 if isinstance(surface_area, (float, int)) and surface_area > 0:
                     total_floor_surface_area += surface_area
         except Exception as e:
-            print(f"[WARNING] Error accessing properties for surface '{getattr(surface, 'Name', 'UnknownSurface')}' in zone '{zone_name}': {e}")
+            surface_id = getattr(surface, 'Name', 'UnknownSurface')
+            print(f"[WARNING] Error accessing properties for surface '{surface_id}' in zone '{zone_name}': {e}")
             continue # Skip this surface if there's an issue
     
     if total_floor_surface_area > 1e-6: # Use a small threshold to consider it valid
@@ -91,6 +112,7 @@ def add_ventilation_to_idf(
     - Attempts to sum floor surface areas if ZONE object area is 'autocalculate'.
     - Dynamically sets DSOA Outdoor_Air_Flow_per_Zone_Floor_Area for System D based on
       base ventilation rates and f_ctrl.
+    - Passes zone_floor_area_m2 to create_ventilation_system for "Flow/Area" calculations.
     """
 
     # --- 1) Ensure key schedules exist ---
@@ -141,7 +163,6 @@ def add_ventilation_to_idf(
     flow_exponent = assigned_vent["flow_exponent"]
 
     # --- 6) Debug Print ---
-    # (Retained for verbosity, can be condensed if needed)
     print(
         f"[VENT PARAMS] Bldg={bldg_id}, Func={bldg_func}, AgeKey='{year_key}', Sys={system_type}\n"
         f"  LookupKeys: Infil='{infiltration_key}', Usage='{usage_key if usage_key else 'N/A'}'\n"
@@ -180,18 +201,14 @@ def add_ventilation_to_idf(
             try:
                 dsoa_obj = idf.newidfobject("DESIGNSPECIFICATION:OUTDOORAIR")
                 dsoa_obj.Name = dsoa_object_name_global
-                # Set Outdoor_Air_Method to "Sum" or "Maximum" if multiple criteria are used.
-                # If only Outdoor_Air_Flow_per_Zone_Floor_Area is dominant, "Flow/Area" could be used,
-                # but "Sum" is safer if other fields might get populated.
-                dsoa_obj.Outdoor_Air_Method = "Sum" 
+                # For "Flow/Area" method, this is the primary method.
+                dsoa_obj.Outdoor_Air_Method = "Flow/Area" # << CHANGED to Flow/Area for explicitness
             except Exception as e:
                 print(f"[ERROR] Building {bldg_id}: Failed to create {dsoa_object_name_global}: {e}")
                 dsoa_obj = None # Ensure dsoa_obj is None if creation fails
 
         if dsoa_obj: # Proceed only if DSOA object exists or was successfully created
             # Dynamically set DSOA Outdoor_Air_Flow_per_Zone_Floor_Area
-            # First, get the base design ventilation rate per m2 (before f_ctrl is applied at building level)
-            # This replicates logic from calc_required_ventilation_flow for base L/s/m2 rates
             base_design_rate_L_s_m2 = 0.0
             if bldg_func == "residential":
                 base_design_rate_L_s_m2 = 0.9 # Default L/s/m2 for residential
@@ -208,8 +225,11 @@ def add_ventilation_to_idf(
             # Convert L/s/m2 to m3/s/m2 for DSOA field
             dsoa_flow_per_area_m3_s_m2 = (base_design_rate_L_s_m2 * f_ctrl) / 1000.0
             
+            # The field name in geomeppy is Outdoor_Air_Flow_per_Zone_Floor_Area.
+            # EnergyPlus IDD for "Flow/Area" method expects "Outdoor Air Flow per Floor Area".
+            # Assuming geomeppy maps this correctly or the field name is suitable.
             dsoa_obj.Outdoor_Air_Flow_per_Zone_Floor_Area = dsoa_flow_per_area_m3_s_m2
-            # Set other DSOA rate fields to 0 if per-area is the sole driver, or manage via "Sum"
+            # Set other DSOA rate fields to 0 as "Flow/Area" is the sole driver
             dsoa_obj.Outdoor_Air_Flow_per_Person = 0.0 
             dsoa_obj.Outdoor_Air_Flow_per_Zone = 0.0
             dsoa_obj.Outdoor_Air_Flow_Air_Changes_per_Hour = 0.0
@@ -220,7 +240,11 @@ def add_ventilation_to_idf(
 
 
     # --- 10) Get Zones and Prepare Zone Information Map ---
+    # Ensure we get the correct collection name for ZONE objects
     zones_in_idf = idf.idfobjects.get("ZONE", [])
+    if not zones_in_idf: # Fallback for older geomeppy or different structure
+        zones_in_idf = idf.idfobjects.get("Zone", [])
+
     if not zones_in_idf:
         print(f"[VENT ERROR] Building {bldg_id}: No ZONE objects found. Cannot proceed."); return
 
@@ -236,12 +260,12 @@ def add_ventilation_to_idf(
                     'is_core' in zd_props and isinstance(zd_props['is_core'], bool)):
                 valid_zone_details = False; break
             temp_total_area += zd_props['area']
-        if valid_zone_details and temp_total_area > 0:
+        if valid_zone_details and temp_total_area > 1e-6: # Use a small threshold
             effective_zone_info_map = zone_details
             sum_of_individual_zone_areas = temp_total_area
         else: effective_zone_info_map = {}; sum_of_individual_zone_areas = 0.0 
     
-    if not effective_zone_info_map or sum_of_individual_zone_areas <= 0: 
+    if not effective_zone_info_map or sum_of_individual_zone_areas <= 1e-6: 
         print(f"[VENT INFO] Bldg {bldg_id}: Calculating zone areas/core status from IDF (zone_details not provided, invalid, or zero area).")
         sum_of_individual_zone_areas = 0.0; effective_zone_info_map = {} 
         for zone_obj in zones_in_idf:
@@ -271,8 +295,8 @@ def add_ventilation_to_idf(
                     print(f"[VENT WARNING] Bldg {bldg_id}: Error processing Floor_Area for zone '{zone_name_key}' (raw: '{raw_field_value_str}'): {e_conv}. Using 0.")
                     area_val = 0.0
             
-            if area_val <= 0 : # If still zero after all attempts
-                 print(f"[VENT WARNING] Bldg {bldg_id}: Zone '{zone_name_key}' final determined area is {area_val:.4f}. Using 0 for distribution if this persists for all zones.")
+            if area_val <= 1e-6 : # If still zero after all attempts
+                 print(f"[VENT WARNING] Bldg {bldg_id}: Zone '{zone_name_key}' final determined area is {area_val:.4f} m2. This might cause issues if it's the only zone or all zones have zero area.")
             
             effective_zone_info_map[zone_name_key] = {'area': area_val, 'is_core': "_core" in safe_lower(zone_name_key)}
             sum_of_individual_zone_areas += area_val
@@ -280,7 +304,7 @@ def add_ventilation_to_idf(
     use_equal_split_fallback = False
     final_total_area_for_proportions = sum_of_individual_zone_areas
 
-    if sum_of_individual_zone_areas <= 0:
+    if sum_of_individual_zone_areas <= 1e-6: # Use a small threshold
         print(f"[VENT ERROR] Bldg {bldg_id}: Sum of individual zone areas is {sum_of_individual_zone_areas}. Fallback active.")
         if total_bldg_floor_area_m2_input > 0 and num_zones > 0:
             use_equal_split_fallback = True
@@ -295,7 +319,7 @@ def add_ventilation_to_idf(
             effective_zone_info_map = temp_map_for_fallback
             final_total_area_for_proportions = total_bldg_floor_area_m2_input 
         else:
-            print(f"[VENT CRITICAL] Bldg {bldg_id}: Cannot distribute flows. Aborting."); return
+            print(f"[VENT CRITICAL] Bldg {bldg_id}: Cannot distribute flows. Sum of zone areas is zero and input building area is zero or no zones. Aborting."); return
 
     # --- 11) Log Building-Level Parameters ---
     if assigned_vent_log is not None:
@@ -331,16 +355,17 @@ def add_ventilation_to_idf(
         ventilation_for_this_zone_m3_s = 0.0
 
         if is_core_zone_curr:
-            infiltration_for_this_zone_m3_s = 0.0
+            infiltration_for_this_zone_m3_s = 0.0 # Core zones typically have no direct envelope infiltration
         else: 
-            if zone_floor_area_curr_m2 > 0: 
+            if zone_floor_area_curr_m2 > 1e-6: # Only calculate if area is positive
                 infiltration_L_s = infiltration_rate_at_1Pa_L_s_per_m2_floor_area * zone_floor_area_curr_m2
                 infiltration_for_this_zone_m3_s = infiltration_L_s / 1000.0
         
-        if final_total_area_for_proportions > 0 and zone_floor_area_curr_m2 >= 0:
-            proportion = zone_floor_area_curr_m2 / final_total_area_for_proportions
+        # Distribute total building mechanical ventilation proportionally to zone areas
+        if final_total_area_for_proportions > 1e-6 and zone_floor_area_curr_m2 >= 0: # Allow zero area zones to get zero flow if proportional
+            proportion = zone_floor_area_curr_m2 / final_total_area_for_proportions if final_total_area_for_proportions > 0 else 0
             ventilation_for_this_zone_m3_s = vent_flow_m3_s_total_building * proportion
-        elif num_zones > 0 : 
+        elif num_zones > 0 : # Fallback if total area for proportions is zero (e.g. all zones had zero area initially)
              ventilation_for_this_zone_m3_s = vent_flow_m3_s_total_building / num_zones
         
         fan_param_overrides = {}
@@ -352,8 +377,9 @@ def add_ventilation_to_idf(
             building_function=bldg_func,
             system_type=system_type,
             zone_name=zone_name_curr,
-            infiltration_m3_s=infiltration_for_this_zone_m3_s,
-            vent_flow_m3_s=ventilation_for_this_zone_m3_s,
+            infiltration_m3_s=infiltration_for_this_zone_m3_s, # This is TOTAL m3/s for the zone
+            vent_flow_m3_s=ventilation_for_this_zone_m3_s,     # This is TOTAL m3/s for the zone
+            zone_floor_area_m2=zone_floor_area_curr_m2,       # << PASSING ZONE AREA
             infiltration_sched_name=infiltration_sched_name,
             ventilation_sched_name=ventilation_sched_name,
             infiltration_model=infiltration_model,
@@ -372,11 +398,13 @@ def add_ventilation_to_idf(
             assigned_vent_log[bldg_id]["zones"][zone_name_curr] = {
                 "infiltration_object_name": iobj.Name if iobj else "N/A", 
                 "infiltration_object_type": iobj.key if iobj else "N/A",
-                "infiltration_flow_m3_s_DESIGN": infiltration_for_this_zone_m3_s,
+                "infiltration_flow_m3_s_DESIGN_TOTAL_ZONE": infiltration_for_this_zone_m3_s, # Log the total zone flow
+                "infiltration_flow_m3_s_m2_DESIGN_ZONE": (infiltration_for_this_zone_m3_s / zone_floor_area_curr_m2) if zone_floor_area_curr_m2 > 1e-6 else 0.0,
                 "infiltration_schedule_name": infiltration_sched_name,
                 "ventilation_object_name": vobj.Name if vobj else "N/A",
                 "ventilation_object_type": vobj.key if vobj else "N/A",
-                "ventilation_flow_m3_s_DESIGN": ventilation_for_this_zone_m3_s if vobj else 0.0,
+                "ventilation_flow_m3_s_DESIGN_TOTAL_ZONE": ventilation_for_this_zone_m3_s if vobj else 0.0, # Log the total zone flow
+                "ventilation_flow_m3_s_m2_DESIGN_ZONE": (ventilation_for_this_zone_m3_s / zone_floor_area_curr_m2) if vobj and zone_floor_area_curr_m2 > 1e-6 else 0.0,
                 "ventilation_schedule_name": ventilation_sched_name,
                 "zone_floor_area_m2_used_for_dist": zone_floor_area_curr_m2, 
                 "is_core_zone": is_core_zone_curr
@@ -385,4 +413,3 @@ def add_ventilation_to_idf(
             print(f"[VENT WARNING] Building ID {bldg_id} not in log for zone {zone_name_curr}")
 
     print(f"[VENTILATION] Completed ventilation setup for Building {bldg_id}.")
-

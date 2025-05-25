@@ -25,7 +25,7 @@ zone_sizing_lookup = {
             "heating_supply_air_temp_range": (50.0, 50.0),  # fixed
             "cooling_supply_air_hr_range": (0.009, 0.009),
             "heating_supply_air_hr_range": (0.004, 0.004),
-            "cooling_design_air_flow_method": "Flow/Zone",
+            "cooling_design_air_flow_method": "Flow/Area",
             "heating_design_air_flow_method": "DesignDayWithLimit"
         },
         "non_residential": {
@@ -34,7 +34,7 @@ zone_sizing_lookup = {
             "cooling_supply_air_hr_range": (0.0095, 0.0095),
             "heating_supply_air_hr_range": (0.0045, 0.0045),
             "cooling_design_air_flow_method": "DesignDay",
-            "heating_design_air_flow_method": "Flow/Zone"
+            "heating_design_air_flow_method": "Flow/Area"
         }
     }
 }
