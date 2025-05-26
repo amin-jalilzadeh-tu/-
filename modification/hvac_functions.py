@@ -148,7 +148,10 @@ def parse_building_hvac_params(df_bldg):
 
     for row in df_bldg.itertuples():
         name = row.param_name
-        val  = row.param_value
+        # The CSV from the assignment step uses 'assigned_value'
+        # rather than 'param_value'.  We read that column here so
+        # the function works with the raw assigned CSV.
+        val  = row.assigned_value
 
         if name.endswith("_range"):
             base_name = name.replace("_range", "")
@@ -189,7 +192,10 @@ def parse_zone_hvac_params(df_zone):
     for row in df_zone.itertuples():
         zname = row.zone_name
         pname = row.param_name
-        val   = row.param_value
+        # The assigned HVAC CSV stores the picked values under
+        # the column 'assigned_value'.  Use that column here so we
+        # don't raise an AttributeError when parsing the raw file.
+        val   = row.assigned_value
 
         results.append({
             "zone_name": zname,
