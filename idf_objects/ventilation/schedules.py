@@ -1,376 +1,262 @@
 # ventilation/schedules.py
 
-from typing import List, Tuple, Optional, Any # Keep Any for type hints
+import random
+import math # For isnan checks if needed
+from typing import List, Tuple, Optional, Any, Dict
 
 # Import IDF class for type hinting (assuming geomeppy is used)
 try:
     from geomeppy import IDF
-    # We cannot reliably get the IDFObject type at module level without an instance.
-    # Use Any or a more generic type hint for IDF objects within function signatures if needed.
 except ImportError:
     IDF = Any # Fallback if geomeppy not available
 
-# Helper function to ensure ScheduleTypeLimits exist
-def ensure_schedule_type_limits(idf: IDF, limits_name: str, numeric_type: str = "Continuous", unit_type: Optional[str] = None):
-    """Checks if ScheduleTypeLimits exists, creates it if not."""
-    # Use uppercase for case-insensitive check with getobject
+# Import the new schedule patterns lookup
+try:
+    from .schedule_lookup import SCHEDULE_LOOKUP
+except ImportError:
+    print("[ERROR] schedules.py: Could not import SCHEDULE_LOOKUP from .schedule_lookup. Ensure the file exists and is correct.")
+    SCHEDULE_LOOKUP: Dict = {} # Provide an empty dict to avoid crashes, but functionality will be limited
+
+
+# Type alias for chosen schedule patterns (with single values)
+ChosenSchedulePattern = List[Tuple[int, int, float]]
+# Type alias for ranged schedule patterns from the lookup
+RangedSchedulePattern = List[Tuple[int, int, Tuple[float, float]]]
+
+
+def ensure_schedule_type_limits(idf: IDF, limits_name: str, numeric_type: str = "Continuous", unit_type: Optional[str] = None) -> Optional[Any]:
+    """
+    Checks if ScheduleTypeLimits exists in the IDF, creates it if not.
+
+    Args:
+        idf: The geomeppy IDF object.
+        limits_name: The name for the ScheduleTypeLimits object (e.g., "Fraction", "Temperature").
+        numeric_type: The numeric type for the limits (e.g., "Continuous", "Discrete").
+        unit_type: The unit type for the limits (e.g., "Dimensionless", "Temperature").
+
+    Returns:
+        The ScheduleTypeLimits object or None if creation fails.
+    """
     if not idf.getobject("SCHEDULETYPELIMITS", limits_name.upper()):
-        print(f"[INFO] Creating ScheduleTypeLimits: {limits_name}")
+        print(f"[INFO] schedules.py: Creating ScheduleTypeLimits: {limits_name}")
         try:
-            lims = idf.newidfobject("SCHEDULETYPELIMITS")
-            lims.Name = limits_name
+            lims = idf.newidfobject("SCHEDULETYPELIMITS", Name=limits_name)
             lims.Numeric_Type = numeric_type
             if unit_type:
                 lims.Unit_Type = unit_type
-            # Set default lower/upper limits (often left blank in E+ for defaults)
-            # Example: lims.Lower_Limit_Value = 0.0
-            # Example: lims.Upper_Limit_Value = 1.0 # For Fraction type
+            # EnergyPlus defaults for Lower/Upper Limit Value are often sufficient.
+            # For "Fraction", common limits are 0.0 and 1.0.
+            if limits_name.lower() == "fraction":
+                 if not hasattr(lims, 'Lower_Limit_Value') or lims.Lower_Limit_Value == "":
+                     lims.Lower_Limit_Value = 0.0
+                 if not hasattr(lims, 'Upper_Limit_Value') or lims.Upper_Limit_Value == "":
+                     lims.Upper_Limit_Value = 1.0
             return lims
         except Exception as e:
-            print(f"[ERROR] Failed to create SCHEDULETYPELIMITS {limits_name}: {e}")
-            return None # Return None if creation failed
+            print(f"[ERROR] schedules.py: Failed to create SCHEDULETYPELIMITS {limits_name}: {e}")
+            return None
     return idf.getobject("SCHEDULETYPELIMITS", limits_name.upper())
 
 
-def create_always_on_schedule(idf: IDF, sched_name: str = "AlwaysOnSched") -> Optional[Any]: # Return type hint Any or specific eppy/geomeppy type if known
+def create_always_on_schedule(idf: IDF, sched_name: str = "AlwaysOnSched") -> Optional[Any]:
     """
-    Creates or retrieves a SCHEDULE:CONSTANT representing a value of 1.0 (Fraction).
+    Creates or retrieves a SCHEDULE:CONSTANT representing a value of 1.0,
+    typically used for "Fraction" type limits.
 
     Args:
         idf: The geomeppy IDF object.
         sched_name: The desired name for the schedule.
 
     Returns:
-        The schedule object or None if creation fails.
+        The SCHEDULE:CONSTANT object or None if creation fails.
     """
-    # Ensure the required ScheduleTypeLimits exists
-    limits_obj = ensure_schedule_type_limits(idf, "Fraction", numeric_type="Continuous", unit_type="Dimensionless")
+    limits_obj = ensure_schedule_type_limits(idf, "Fraction", unit_type="Dimensionless")
     if not limits_obj:
-        print(f"[ERROR] Could not ensure ScheduleTypeLimits 'Fraction' for {sched_name}.")
-        return None # Cannot create schedule without limits
+        print(f"[ERROR] schedules.py: Could not ensure ScheduleTypeLimits 'Fraction' for {sched_name}.")
+        return None
 
-    # Check if schedule already exists (case-insensitive check)
     existing = idf.getobject("SCHEDULE:CONSTANT", sched_name.upper())
     if existing:
         return existing
 
     try:
-        schedule = idf.newidfobject("SCHEDULE:CONSTANT")
-        schedule.Name = sched_name
-        schedule.Schedule_Type_Limits_Name = "Fraction" # Reference the limits object
+        schedule = idf.newidfobject("SCHEDULE:CONSTANT", Name=sched_name)
+        schedule.Schedule_Type_Limits_Name = "Fraction"
         schedule.Hourly_Value = 1.0
         return schedule
     except Exception as e:
-        print(f"[ERROR] Failed to create SCHEDULE:CONSTANT {sched_name}: {e}")
+        print(f"[ERROR] schedules.py: Failed to create SCHEDULE:CONSTANT {sched_name}: {e}")
         return None
 
 
-def create_day_night_schedule(idf: IDF, sched_name: str = "VentSched_DayNight") -> Optional[Any]:
+def _pick_value_from_range(value_range: Tuple[float, float], strategy: str) -> float:
     """
-    Creates or retrieves a SCHEDULE:COMPACT for Day/Night operation.
-    Example: 0.5 fraction at night (22:00-06:00), 1.0 during the day (06:00-22:00).
+    Helper to pick a single value from a (min_val, max_val) range based on strategy.
+    """
+    min_v, max_v = value_range
+    if not (isinstance(min_v, (int, float)) and isinstance(max_v, (int, float))):
+        print(f"[WARNING] schedules.py: Invalid range encountered: ({min_v}, {max_v}). Defaulting to 0.0.")
+        return 0.0
+    if math.isnan(min_v) or math.isnan(max_v):
+        print(f"[WARNING] schedules.py: NaN in range tuple ({min_v}, {max_v}). Defaulting to 0.0.")
+        return 0.0
+    if min_v > max_v:
+        print(f"[WARNING] schedules.py: Min value > Max value in range ({min_v}, {max_v}). Using min value.")
+        max_v = min_v
+
+    if strategy == "B":  # Random
+        return random.uniform(min_v, max_v)
+    elif strategy == "C":  # Minimum
+        return min_v
+    # Default to "A" (Midpoint) or if strategy is unknown
+    if strategy != "A":
+        print(f"[WARNING] schedules.py: Unknown pick strategy '{strategy}'. Defaulting to Midpoint.")
+    return (min_v + max_v) / 2.0
+
+
+def get_or_create_archetype_schedule(
+    idf: IDF,
+    target_schedule_name: str,
+    building_function: str,
+    archetype_key: str,
+    purpose: str,  # 'ventilation' or 'infiltration'
+    strategy: str,
+    schedule_type_limits_name: str = "Fraction"
+) -> Tuple[Optional[Any], Optional[ChosenSchedulePattern], Optional[ChosenSchedulePattern]]:
+    """
+    Retrieves or creates an archetype-specific SCHEDULE:COMPACT object.
+
+    This function looks up ranged patterns from SCHEDULE_LOOKUP, picks values
+    based on the strategy, creates the schedule if it doesn't exist, and
+    returns the schedule object along with the chosen patterns (for logging).
 
     Args:
         idf: The geomeppy IDF object.
-        sched_name: The desired name for the schedule.
+        target_schedule_name: The desired unique name for the schedule.
+        building_function: E.g., 'residential', 'non_residential'.
+        archetype_key: E.g., 'Apartment', 'Office Function', or 'default'.
+        purpose: E.g., 'ventilation', 'infiltration'.
+        strategy: Value picking strategy ('A', 'B', 'C').
+        schedule_type_limits_name: Name of the ScheduleTypeLimits object.
 
     Returns:
-        The schedule object or None if creation fails.
+        A tuple: (schedule_object, chosen_weekday_pattern, chosen_weekend_pattern).
+        Patterns are None if the schedule already existed or creation failed.
     """
-    limits_obj = ensure_schedule_type_limits(idf, "Fraction", numeric_type="Continuous", unit_type="Dimensionless")
+    # Ensure the ScheduleTypeLimits object exists
+    unit_type = "Dimensionless" if schedule_type_limits_name.lower() == "fraction" else None
+    if schedule_type_limits_name.lower() == "temperature":
+        unit_type = "Temperature"
+
+    limits_obj = ensure_schedule_type_limits(idf, schedule_type_limits_name, unit_type=unit_type)
     if not limits_obj:
-        print(f"[ERROR] Could not ensure ScheduleTypeLimits 'Fraction' for {sched_name}.")
-        return None
+        print(f"[ERROR] schedules.py: Could not ensure ScheduleTypeLimits '{schedule_type_limits_name}' for {target_schedule_name}.")
+        return None, None, None
 
-    existing = idf.getobject("SCHEDULE:COMPACT", sched_name.upper())
-    if existing:
-        return existing
+    # Check if schedule already exists
+    existing_sched = idf.getobject("SCHEDULE:COMPACT", target_schedule_name.upper()) or \
+                     idf.getobject("SCHEDULE:CONSTANT", target_schedule_name.upper())
+    if existing_sched:
+        print(f"[INFO] schedules.py: Schedule '{target_schedule_name}' already exists. Using existing.")
+        return existing_sched, None, None # Cannot return chosen patterns if it already existed
 
+    # 1. Look up the ranged patterns from SCHEDULE_LOOKUP
+    if not SCHEDULE_LOOKUP:
+        print(f"[ERROR] schedules.py: SCHEDULE_LOOKUP is empty. Cannot create archetype schedule {target_schedule_name}.")
+        return None, None, None
+
+    func_patterns = SCHEDULE_LOOKUP.get(building_function, {})
+    archetype_patterns = func_patterns.get(archetype_key, func_patterns.get("default", {}))
+    purpose_patterns = archetype_patterns.get(purpose, {})
+
+    if not purpose_patterns:
+        print(f"[WARNING] schedules.py: No specific pattern for '{building_function}/{archetype_key}/{purpose}'. "
+              f"Creating AlwaysOn schedule named '{target_schedule_name}'.")
+        sched = create_always_on_schedule(idf, target_schedule_name)
+        # Return a representative "chosen" pattern for AlwaysOn
+        always_on_pattern: ChosenSchedulePattern = [(0, 24, 1.0)]
+        return sched, always_on_pattern, always_on_pattern
+
+    ranged_weekday_pattern: Optional[RangedSchedulePattern] = purpose_patterns.get("weekday")
+    ranged_weekend_pattern: Optional[RangedSchedulePattern] = purpose_patterns.get("weekend")
+    ranged_allday_pattern: Optional[RangedSchedulePattern] = purpose_patterns.get("allday")
+
+    if ranged_allday_pattern:
+        ranged_weekday_pattern = ranged_allday_pattern
+        ranged_weekend_pattern = ranged_allday_pattern
+    
+    if not ranged_weekday_pattern or not ranged_weekend_pattern:
+        print(f"[ERROR] schedules.py: Incomplete ranged patterns for {target_schedule_name} "
+              f"({building_function}/{archetype_key}/{purpose}). Weekday/Allday and Weekend/Allday must be defined.")
+        # Fallback to AlwaysOn if patterns are malformed in lookup
+        sched = create_always_on_schedule(idf, target_schedule_name)
+        always_on_pattern = [(0, 24, 1.0)]
+        return sched, always_on_pattern, always_on_pattern
+
+    # 2. Convert ranged patterns to chosen patterns using strategy
+    chosen_weekday_pattern: ChosenSchedulePattern = []
+    for start_hr, end_hr, value_range in ranged_weekday_pattern:
+        chosen_value = _pick_value_from_range(value_range, strategy)
+        chosen_weekday_pattern.append((start_hr, end_hr, chosen_value))
+
+    chosen_weekend_pattern: ChosenSchedulePattern = []
+    for start_hr, end_hr, value_range in ranged_weekend_pattern:
+        chosen_value = _pick_value_from_range(value_range, strategy)
+        chosen_weekend_pattern.append((start_hr, end_hr, chosen_value))
+
+    # 3. Create the SCHEDULE:COMPACT object
     try:
-        schedule = idf.newidfobject("SCHEDULE:COMPACT")
-        schedule.Name = sched_name
-        schedule.Schedule_Type_Limits_Name = "Fraction"
-
-        # Define the schedule profile
-        schedule.Field_1 = "Through: 12/31"     # Apply for the whole year
-        schedule.Field_2 = "For: AllDays"        # Apply to all days
-        schedule.Field_3 = "Until: 06:00,0.5"    # Value from midnight until 6:00 is 0.5
-        schedule.Field_4 = "Until: 22:00,1.0"    # Value from 6:00 until 22:00 is 1.0
-        schedule.Field_5 = "Until: 24:00,0.5"    # Value from 22:00 until midnight is 0.5
-        return schedule
-    except Exception as e:
-        print(f"[ERROR] Failed to create SCHEDULE:COMPACT {sched_name}: {e}")
-        return None
-
-
-def create_workhours_schedule(idf: IDF, sched_name: str = "WorkHoursSched") -> Optional[Any]:
-    """
-    Creates or retrieves a SCHEDULE:COMPACT for typical Work Hours.
-      - Weekdays: 0.2 (unoccupied), 1.0 (09:00-17:00), 0.2 (unoccupied)
-      - Weekends/Holidays: 0.2 all day
-
-    Args:
-        idf: The geomeppy IDF object.
-        sched_name: The desired name for the schedule.
-
-    Returns:
-        The schedule object or None if creation fails.
-    """
-    limits_obj = ensure_schedule_type_limits(idf, "Fraction", numeric_type="Continuous", unit_type="Dimensionless")
-    if not limits_obj:
-        print(f"[ERROR] Could not ensure ScheduleTypeLimits 'Fraction' for {sched_name}.")
-        return None
-
-    existing = idf.getobject("SCHEDULE:COMPACT", sched_name.upper())
-    if existing:
-        return existing
-
-    try:
-        schedule = idf.newidfobject("SCHEDULE:COMPACT")
-        schedule.Name = sched_name
-        schedule.Schedule_Type_Limits_Name = "Fraction"
-
-        # Define the schedule profile
-        schedule.Field_1 = "Through: 12/31"                 # Apply for the whole year
-        schedule.Field_2 = "For: Weekdays"                   # Rules for weekdays
-        schedule.Field_3 = "Until: 09:00,0.2"                # Value until 9:00 is 0.2
-        schedule.Field_4 = "Until: 17:00,1.0"                # Value until 17:00 is 1.0
-        schedule.Field_5 = "Until: 24:00,0.2"                # Value until midnight is 0.2
-        schedule.Field_6 = "For: Saturday Sunday Holiday"  # Rules for weekends/holidays
-        schedule.Field_7 = "Until: 24:00,0.2"                # Value all day is 0.2
-        return schedule
-    except Exception as e:
-        print(f"[ERROR] Failed to create SCHEDULE:COMPACT {sched_name}: {e}")
-        return None
-
-
-# Define type hint for the pattern tuples
-SchedulePattern = List[Tuple[int, int, float]]
-
-def create_schedule_from_pattern(
-    idf: IDF,
-    sched_name: str,
-    pattern: SchedulePattern,
-    schedule_type_limits: str = "Fraction"
-) -> Optional[Any]:
-    """
-    Creates or retrieves a SCHEDULE:COMPACT from a single pattern applied to AllDays.
-
-    Args:
-        idf: geomeppy IDF instance.
-        sched_name: Name for the schedule in EnergyPlus.
-        pattern: List of (start_hour, end_hour, value) tuples defining the daily profile.
-                 Hours are 0-24. The pattern should cover the full 24 hours.
-                 Example: [(0, 6, 0.5), (6, 22, 1.0), (22, 24, 0.5)]
-                 Note: start_hour is inclusive, end_hour is exclusive in pattern logic,
-                       but for "Until: HH:MM,Value", HH:MM is the end time of the period.
-        schedule_type_limits: Name of the ScheduleTypeLimits object (e.g., "Fraction").
-
-    Returns:
-        The schedule object or None if creation fails.
-    """
-    # Ensure the ScheduleTypeLimits object exists (e.g., "Fraction", "Temperature")
-    # Determine unit_type for ensure_schedule_type_limits based on common schedule_type_limits names
-    limit_unit_type = "Dimensionless" # Default for Fraction
-    if schedule_type_limits.lower() == "temperature":
-        limit_unit_type = "Temperature"
-    elif schedule_type_limits.lower() == "on/off": # Or "Control Type"
-        limit_unit_type = "Dimensionless" # Or a specific control type unit if defined
-    # Add other common types as needed
-
-    limits_obj = ensure_schedule_type_limits(idf, schedule_type_limits, unit_type=limit_unit_type) # Ensure limits exist
-    if not limits_obj:
-        print(f"[ERROR] Could not ensure ScheduleTypeLimits '{schedule_type_limits}' for {sched_name}.")
-        return None
-
-    existing = idf.getobject("SCHEDULE:COMPACT", sched_name.upper())
-    if existing:
-        return existing
-
-    if not pattern:
-        print(f"[ERROR] Empty pattern provided for schedule {sched_name}. Cannot create.")
-        return None
-
-    try:
-        sched_obj = idf.newidfobject("SCHEDULE:COMPACT")
-        sched_obj.Name = sched_name
-        sched_obj.Schedule_Type_Limits_Name = schedule_type_limits
-
-        field_idx = 1
-        sched_obj[f"Field_{field_idx}"] = "Through: 12/31"
-        field_idx += 1
-        sched_obj[f"Field_{field_idx}"] = "For: AllDays"
-        field_idx += 1
-
-        # Sort pattern by end_hour just in case, though E+ compact schedule fields are sequential.
-        # The pattern [(0,6,0.5), (6,22,1.0), (22,24,0.5)] means:
-        # Until 06:00, value is 0.5 (covers 00:00 to 06:00)
-        # Until 22:00, value is 1.0 (covers 06:00 to 22:00)
-        # Until 24:00, value is 0.5 (covers 22:00 to 24:00)
-        sorted_pattern = sorted(pattern, key=lambda x: x[1]) # x[1] is end_hr
-
-        last_pattern_end_hour = 0
-        for (start_hr, end_hr, val) in sorted_pattern:
-            # Basic validation for pattern elements
-            if not (isinstance(start_hr, int) and isinstance(end_hr, int) and isinstance(val, (int, float))):
-                print(f"[WARNING] Invalid data types in pattern segment ({start_hr}, {end_hr}, {val}) for {sched_name}. Skipping.")
-                continue
-            # Ensure chronological order and valid hour ranges (0-24 for end_hr)
-            if end_hr <= last_pattern_end_hour or end_hr > 24 or start_hr < 0 or start_hr >= end_hr:
-                print(f"[WARNING] Invalid time segment ({start_hr}-{end_hr}) in pattern for {sched_name}. Last end hour was {last_pattern_end_hour}. Skipping segment.")
-                continue
-
-            # Format "Until: HH:MM,Value"
-            # Ensure HH is zero-padded if less than 10.
-            line_str = f"Until: {end_hr:02d}:00,{val:.4f}" # Format value for consistency (e.g., 4 decimal places)
-            
-            # Dynamically assign fields; geomeppy/eppy usually handle field count limits.
-            sched_obj[f"Field_{field_idx}"] = line_str
-            field_idx += 1
-            last_pattern_end_hour = end_hr
-
-        # Check if the pattern covers the full 24 hours based on the last segment's end_hr.
-        if last_pattern_end_hour < 24:
-            print(f"[WARNING] Pattern for schedule {sched_name} does not cover until 24:00. Last segment ended at {last_pattern_end_hour}:00. EnergyPlus might fill with the last value or error.")
-
-        return sched_obj
-    except Exception as e:
-        print(f"[ERROR] Failed to create SCHEDULE:COMPACT {sched_name} from pattern: {e}")
-        return None
-
-def create_schedule_from_weekday_weekend_pattern(
-    idf: IDF,
-    sched_name: str,
-    weekday_pattern: SchedulePattern,
-    weekend_pattern: SchedulePattern, # Can be the same as weekday_pattern if only one profile needed for all days
-    schedule_type_limits="Fraction"
-) -> Optional[Any]:
-    """
-    Creates or retrieves a SCHEDULE:COMPACT with different profiles for
-    Weekdays and Weekends/Holidays.
-
-    Args:
-        idf: geomeppy IDF instance.
-        sched_name: Name for the schedule in EnergyPlus.
-        weekday_pattern: List of (start_hr, end_hr, value) for Weekdays.
-        weekend_pattern: List of (start_hr, end_hr, value) for Sat/Sun/Holiday.
-        schedule_type_limits: Name of the ScheduleTypeLimits object.
-
-    Returns:
-        The schedule object or None if creation fails.
-    """
-    limit_unit_type = "Dimensionless"
-    if schedule_type_limits.lower() == "temperature": limit_unit_type = "Temperature"
-    # Add more type mappings as needed
-
-    limits_obj = ensure_schedule_type_limits(idf, schedule_type_limits, unit_type=limit_unit_type)
-    if not limits_obj:
-        print(f"[ERROR] Could not ensure ScheduleTypeLimits '{schedule_type_limits}' for {sched_name}.")
-        return None
-
-    existing = idf.getobject("SCHEDULE:COMPACT", sched_name.upper())
-    if existing:
-        return existing
-
-    if not weekday_pattern or not weekend_pattern: # Both patterns must be provided
-        print(f"[ERROR] Weekday or weekend pattern missing for schedule {sched_name}. Cannot create.")
-        return None
-
-    try:
-        sched_obj = idf.newidfobject("SCHEDULE:COMPACT")
-        sched_obj.Name = sched_name
-        sched_obj.Schedule_Type_Limits_Name = schedule_type_limits
-
+        sched_obj = idf.newidfobject("SCHEDULE:COMPACT", Name=target_schedule_name)
+        sched_obj.Schedule_Type_Limits_Name = schedule_type_limits_name
+        
         field_idx = 1
         sched_obj[f"Field_{field_idx}"] = "Through: 12/31"
         field_idx += 1
 
         # --- Weekday Rules ---
-        sched_obj[f"Field_{field_idx}"] = "For: Weekdays"
+        sched_obj[f"Field_{field_idx}"] = "For: Weekdays SummerDesignDay WinterDesignDay" # Apply to design days as well
         field_idx += 1
-        sorted_weekday = sorted(weekday_pattern, key=lambda x: x[1])
-        last_end_hour_wd = 0
-        for (start_hr, end_hr, val) in sorted_weekday:
-            if not (isinstance(start_hr, int) and isinstance(end_hr, int) and isinstance(val, (int, float))): continue # Skip malformed
-            if end_hr <= last_end_hour_wd or end_hr > 24 or start_hr < 0 or start_hr >= end_hr: continue # Basic validation
+        # Sort by end_hour for correct SCHEDULE:COMPACT format
+        sorted_chosen_weekday = sorted(chosen_weekday_pattern, key=lambda x: x[1])
+        last_wd_end_hour = 0
+        for _, end_hr, val in sorted_chosen_weekday:
+            if end_hr <= last_wd_end_hour: continue # Skip redundant/overlapping segments
             sched_obj[f"Field_{field_idx}"] = f"Until: {end_hr:02d}:00,{val:.4f}"
             field_idx += 1
-            last_end_hour_wd = end_hr
-        if last_end_hour_wd < 24: print(f"[WARNING] Weekday pattern for {sched_name} doesn't cover 24h. Last segment ended at {last_end_hour_wd}:00.")
+            last_wd_end_hour = end_hr
+        if last_wd_end_hour < 24 and sorted_chosen_weekday: # Ensure it covers 24h if pattern exists
+            # Fill the gap with the last value if not explicitly 24:00
+             sched_obj[f"Field_{field_idx}"] = f"Until: 24:00,{sorted_chosen_weekday[-1][2]:.4f}"
+             field_idx += 1
+
 
         # --- Weekend/Holiday Rules ---
-        # Note: EnergyPlus allows "For: Weekends", "For: Holidays", "For: AllOtherDays" etc.
-        # "Saturday Sunday Holiday" is a common combination.
-        sched_obj[f"Field_{field_idx}"] = "For: Saturday Sunday Holiday"
+        sched_obj[f"Field_{field_idx}"] = "For: Saturday Sunday Holiday AllOtherDays"
         field_idx += 1
-        sorted_weekend = sorted(weekend_pattern, key=lambda x: x[1])
-        last_end_hour_we = 0
-        for (start_hr, end_hr, val) in sorted_weekend:
-            if not (isinstance(start_hr, int) and isinstance(end_hr, int) and isinstance(val, (int, float))): continue
-            if end_hr <= last_end_hour_we or end_hr > 24 or start_hr < 0 or start_hr >= end_hr: continue # Basic validation
+        sorted_chosen_weekend = sorted(chosen_weekend_pattern, key=lambda x: x[1])
+        last_we_end_hour = 0
+        for _, end_hr, val in sorted_chosen_weekend:
+            if end_hr <= last_we_end_hour: continue # Skip redundant/overlapping segments
             sched_obj[f"Field_{field_idx}"] = f"Until: {end_hr:02d}:00,{val:.4f}"
             field_idx += 1
-            last_end_hour_we = end_hr
-        if last_end_hour_we < 24: print(f"[WARNING] Weekend pattern for {sched_name} doesn't cover 24h. Last segment ended at {last_end_hour_we}:00.")
+            last_we_end_hour = end_hr
+        if last_we_end_hour < 24 and sorted_chosen_weekend: # Ensure it covers 24h if pattern exists
+             sched_obj[f"Field_{field_idx}"] = f"Until: 24:00,{sorted_chosen_weekend[-1][2]:.4f}"
+             field_idx += 1
+        
+        print(f"[INFO] schedules.py: Created archetype schedule '{target_schedule_name}'.")
+        return sched_obj, chosen_weekday_pattern, chosen_weekend_pattern
 
-        return sched_obj
     except Exception as e:
-        print(f"[ERROR] Failed to create SCHEDULE:COMPACT {sched_name} from weekday/weekend patterns: {e}")
-        return None
+        print(f"[ERROR] schedules.py: Failed to create SCHEDULE:COMPACT {target_schedule_name} from archetype patterns: {e}")
+        # Attempt to create a fallback AlwaysOn schedule to prevent downstream errors
+        fallback_sched = create_always_on_schedule(idf, target_schedule_name + "_fallback_AlwaysOn")
+        if fallback_sched:
+            print(f"[WARNING] schedules.py: Created fallback AlwaysOn schedule: {fallback_sched.Name}")
+            always_on_pattern = [(0, 24, 1.0)]
+            return fallback_sched, always_on_pattern, always_on_pattern
+        return None, None, None
 
-
-def ensure_dynamic_schedule(
-    idf: IDF,
-    sched_name: str,
-    weekday_pattern: Optional[SchedulePattern] = None,
-    weekend_pattern: Optional[SchedulePattern] = None, # If None, and weekday_pattern is given, could apply weekday to AllDays
-    schedule_type_limits="Fraction"
-) -> Optional[Any]:
-    """
-    Convenience function to create/retrieve a schedule:
-      - If only weekday_pattern is provided (and weekend_pattern is None), applies it to AllDays.
-      - If both weekday_pattern and weekend_pattern are provided, creates a Weekday/Weekend schedule.
-      - If neither pattern is provided, falls back to creating an AlwaysOn schedule with the given sched_name.
-
-    Args:
-        idf: geomeppy IDF instance.
-        sched_name: Desired name for the schedule.
-        weekday_pattern: Optional pattern for weekdays.
-        weekend_pattern: Optional pattern for weekends. If None, weekday_pattern is used for AllDays.
-        schedule_type_limits: Name of the limits object.
-
-    Returns:
-        The created or retrieved schedule object, or None on failure.
-    """
-    # Check if schedule already exists (case-insensitive for both Compact and Constant)
-    existing_compact = idf.getobject("SCHEDULE:COMPACT", sched_name.upper())
-    if existing_compact:
-        return existing_compact
-    existing_constant = idf.getobject("SCHEDULE:CONSTANT", sched_name.upper())
-    if existing_constant:
-        # If a Constant schedule exists with this name:
-        # - If no patterns were provided, this is the intended AlwaysOn, so return it.
-        # - If patterns *were* provided, it's a conflict. Warn and return the Constant.
-        if not weekday_pattern and not weekend_pattern: # No new pattern, existing constant is fine
-            return existing_constant
-        else: # New patterns provided, but a constant with same name exists.
-            print(f"[WARNING] Dynamic patterns provided for '{sched_name}', but a SCHEDULE:CONSTANT with this name already exists. Returning the existing Constant schedule. Consider using a different name for the dynamic schedule.")
-            return existing_constant
-
-    # Create new schedule based on provided patterns
-    if weekday_pattern and weekend_pattern:
-        # Both weekday and weekend patterns are distinct
-        return create_schedule_from_weekday_weekend_pattern(
-            idf, sched_name, weekday_pattern, weekend_pattern, schedule_type_limits
-        )
-    elif weekday_pattern: # Only weekday pattern provided (weekend_pattern is None or implicitly same)
-        # Apply weekday_pattern to AllDays
-        return create_schedule_from_pattern(
-            idf, sched_name, weekday_pattern, schedule_type_limits
-        )
-    else: # No patterns provided, fallback to AlwaysOn (or Always Off if value is 0)
-        # This implies an "always 1.0" schedule if type limits are Fraction.
-        # If a different constant value is needed, this function would need modification or
-        # create_always_on_schedule would need a value parameter.
-        print(f"[INFO] No patterns provided for '{sched_name}'. Falling back to creating/retrieving an AlwaysOn (value 1.0) schedule.")
-        return create_always_on_schedule(idf, sched_name) # Assumes "Fraction" and value 1.0
+# Note: create_day_night_schedule and create_workhours_schedule can be kept for legacy use
+# or if a user explicitly wants these very generic schedules via overrides.
+# They are not part of the primary archetype-based schedule creation flow anymore.
