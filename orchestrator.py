@@ -458,88 +458,79 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
         with step_timer(logger, "structuring"):
             logger.info("[INFO] Performing structuring ...")
 
-            # Example: Fenestration
+            # --- Fenestration -------------------------------------------------
             from idf_objects.structuring.fenestration_structuring import transform_fenez_log_to_structured_with_ranges
             fenez_conf = structuring_cfg.get("fenestration", {})
-            fenez_in   = fenez_conf.get("csv_in",  "assigned/assigned_fenez_params.csv")
-            fenez_out  = fenez_conf.get("csv_out", "assigned/structured_fenez_params.csv")
-
+            fenez_in = fenez_conf.get("csv_in", "assigned/assigned_fenez_params.csv")
+            fenez_out = fenez_conf.get("csv_out", "assigned/structured_fenez_params.csv")
             if not os.path.isabs(fenez_in):
                 fenez_in = os.path.join(job_output_dir, fenez_in)
             if not os.path.isabs(fenez_out):
                 fenez_out = os.path.join(job_output_dir, fenez_out)
-
             if os.path.isfile(fenez_in):
                 transform_fenez_log_to_structured_with_ranges(csv_input=fenez_in, csv_output=fenez_out)
             else:
                 logger.warning(f"[STRUCTURING] Fenestration input CSV not found => {fenez_in}")
 
-            # Example: DHW
+            # --- DHW ---------------------------------------------------------
             from idf_objects.structuring.dhw_structuring import transform_dhw_log_to_structured
             dhw_conf = structuring_cfg.get("dhw", {})
-            dhw_in   = dhw_conf.get("csv_in",  "assigned/assigned_dhw_params.csv")
-            dhw_out  = dhw_conf.get("csv_out", "assigned/structured_dhw_params.csv")
-
+            dhw_in = dhw_conf.get("csv_in", "assigned/assigned_dhw_params.csv")
+            dhw_out = dhw_conf.get("csv_out", "assigned/structured_dhw_params.csv")
             if not os.path.isabs(dhw_in):
                 dhw_in = os.path.join(job_output_dir, dhw_in)
             if not os.path.isabs(dhw_out):
                 dhw_out = os.path.join(job_output_dir, dhw_out)
-
             if os.path.isfile(dhw_in):
                 transform_dhw_log_to_structured(dhw_in, dhw_out)
             else:
                 logger.warning(f"[STRUCTURING] DHW input CSV not found => {dhw_in}")
 
-            # Example: HVAC flatten
+            # --- HVAC flatten -----------------------------------------------
             from idf_objects.structuring.flatten_hvac import flatten_hvac_data, parse_assigned_value as parse_hvac
             hvac_conf = structuring_cfg.get("hvac", {})
-            hvac_in   = hvac_conf.get("csv_in",  "assigned/assigned_hvac_params.csv")
-            hvac_bld  = hvac_conf.get("build_out", "assigned/assigned_hvac_building.csv")
-            hvac_zone = hvac_conf.get("zone_out",  "assigned/assigned_hvac_zones.csv")
-
+            hvac_in = hvac_conf.get("csv_in", "assigned/assigned_hvac_params.csv")
+            hvac_bld = hvac_conf.get("build_out", "assigned/assigned_hvac_building.csv")
+            hvac_zone = hvac_conf.get("zone_out", "assigned/assigned_hvac_zones.csv")
             if not os.path.isabs(hvac_in):
                 hvac_in = os.path.join(job_output_dir, hvac_in)
             if not os.path.isabs(hvac_bld):
                 hvac_bld = os.path.join(job_output_dir, hvac_bld)
             if not os.path.isabs(hvac_zone):
                 hvac_zone = os.path.join(job_output_dir, hvac_zone)
-
             if os.path.isfile(hvac_in):
                 df_hvac = pd.read_csv(hvac_in)
                 df_hvac["assigned_value"] = df_hvac["assigned_value"].apply(parse_hvac)
                 flatten_hvac_data(
                     df_input=df_hvac,
                     out_build_csv=hvac_bld,
-                    out_zone_csv=hvac_zone
+                    out_zone_csv=hvac_zone,
                 )
             else:
                 logger.warning(f"[STRUCTURING] HVAC input CSV not found => {hvac_in}")
 
-            # Example: Vent flatten
+            # --- Vent flatten -----------------------------------------------
             from idf_objects.structuring.flatten_assigned_vent import flatten_ventilation_data, parse_assigned_value as parse_vent
             vent_conf = structuring_cfg.get("vent", {})
-            vent_in   = vent_conf.get("csv_in", "assigned/assigned_ventilation.csv")
-            vent_bld  = vent_conf.get("build_out", "assigned/assigned_vent_building.csv")
+            vent_in = vent_conf.get("csv_in", "assigned/assigned_ventilation.csv")
+            vent_bld = vent_conf.get("build_out", "assigned/assigned_vent_building.csv")
             vent_zone = vent_conf.get("zone_out", "assigned/assigned_vent_zones.csv")
-
             if not os.path.isabs(vent_in):
                 vent_in = os.path.join(job_output_dir, vent_in)
             if not os.path.isabs(vent_bld):
                 vent_bld = os.path.join(job_output_dir, vent_bld)
             if not os.path.isabs(vent_zone):
                 vent_zone = os.path.join(job_output_dir, vent_zone)
-
             if os.path.isfile(vent_in):
                 df_vent = pd.read_csv(vent_in)
                 df_vent["assigned_value"] = df_vent["assigned_value"].apply(parse_vent)
                 flatten_ventilation_data(
                     df_input=df_vent,
                     out_build_csv=vent_bld,
-                    out_zone_csv=vent_zone
+                    out_zone_csv=vent_zone,
                 )
             else:
                 logger.warning(f"[STRUCTURING] Vent input CSV not found => {vent_in}")
-
     else:
         logger.info("[INFO] Skipping structuring.")
 
