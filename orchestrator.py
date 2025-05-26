@@ -474,11 +474,11 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
             else:
                 logger.warning(f"[STRUCTURING] Fenestration input CSV not found => {fenez_in}")
 
-        # Example: DHW
-        from idf_objects.structuring.dhw_structuring import transform_dhw_log_to_structured
-        dhw_conf = structuring_cfg.get("dhw", {})
-        dhw_in   = dhw_conf.get("csv_in",  "assigned/assigned_dhw_params.csv")
-        dhw_out  = dhw_conf.get("csv_out", "assigned/structured_dhw_params.csv")
+            # Example: DHW
+            from idf_objects.structuring.dhw_structuring import transform_dhw_log_to_structured
+            dhw_conf = structuring_cfg.get("dhw", {})
+            dhw_in   = dhw_conf.get("csv_in",  "assigned/assigned_dhw_params.csv")
+            dhw_out  = dhw_conf.get("csv_out", "assigned/structured_dhw_params.csv")
 
             if not os.path.isabs(dhw_in):
                 dhw_in = os.path.join(job_output_dir, dhw_in)
@@ -490,12 +490,12 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
             else:
                 logger.warning(f"[STRUCTURING] DHW input CSV not found => {dhw_in}")
 
-        # Example: HVAC flatten
-        from idf_objects.structuring.flatten_hvac import flatten_hvac_data, parse_assigned_value as parse_hvac
-        hvac_conf = structuring_cfg.get("hvac", {})
-        hvac_in   = hvac_conf.get("csv_in",  "assigned/assigned_hvac_params.csv")
-        hvac_bld  = hvac_conf.get("build_out", "assigned/assigned_hvac_building.csv")
-        hvac_zone = hvac_conf.get("zone_out",  "assigned/assigned_hvac_zones.csv")
+            # Example: HVAC flatten
+            from idf_objects.structuring.flatten_hvac import flatten_hvac_data, parse_assigned_value as parse_hvac
+            hvac_conf = structuring_cfg.get("hvac", {})
+            hvac_in   = hvac_conf.get("csv_in",  "assigned/assigned_hvac_params.csv")
+            hvac_bld  = hvac_conf.get("build_out", "assigned/assigned_hvac_building.csv")
+            hvac_zone = hvac_conf.get("zone_out",  "assigned/assigned_hvac_zones.csv")
 
             if not os.path.isabs(hvac_in):
                 hvac_in = os.path.join(job_output_dir, hvac_in)
@@ -515,12 +515,12 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
             else:
                 logger.warning(f"[STRUCTURING] HVAC input CSV not found => {hvac_in}")
 
-        # Example: Vent flatten
-        from idf_objects.structuring.flatten_assigned_vent import flatten_ventilation_data, parse_assigned_value as parse_vent
-        vent_conf = structuring_cfg.get("vent", {})
-        vent_in   = vent_conf.get("csv_in", "assigned/assigned_ventilation.csv")
-        vent_bld  = vent_conf.get("build_out", "assigned/assigned_vent_building.csv")
-        vent_zone = vent_conf.get("zone_out", "assigned/assigned_vent_zones.csv")
+            # Example: Vent flatten
+            from idf_objects.structuring.flatten_assigned_vent import flatten_ventilation_data, parse_assigned_value as parse_vent
+            vent_conf = structuring_cfg.get("vent", {})
+            vent_in   = vent_conf.get("csv_in", "assigned/assigned_ventilation.csv")
+            vent_bld  = vent_conf.get("build_out", "assigned/assigned_vent_building.csv")
+            vent_zone = vent_conf.get("zone_out", "assigned/assigned_vent_zones.csv")
 
             if not os.path.isabs(vent_in):
                 vent_in = os.path.join(job_output_dir, vent_in)
@@ -812,18 +812,18 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
                 with open(mail_user_path, "r") as f:
                     mail_info = json.load(f)
 
-            mail_user_list = mail_info.get("mail_user", [])
-            if len(mail_user_list) > 0:
-                first_user = mail_user_list[0]
-                recipient_email = first_user.get("email", "")
-                if recipient_email:
-                    zip_path = zip_user_output(job_output_dir)
-                    send_results_email(zip_path, recipient_email)
-                    logger.info(f"[INFO] Emailed zip {zip_path} to {recipient_email}")
+                mail_user_list = mail_info.get("mail_user", [])
+                if len(mail_user_list) > 0:
+                    first_user = mail_user_list[0]
+                    recipient_email = first_user.get("email", "")
+                    if recipient_email:
+                        zip_path = zip_user_output(job_output_dir)
+                        send_results_email(zip_path, recipient_email)
+                        logger.info(f"[INFO] Emailed zip {zip_path} to {recipient_email}")
+                    else:
+                        logger.warning("[WARN] mail_user.json => missing 'email'")
                 else:
-                    logger.warning("[WARN] mail_user.json => missing 'email'")
-            else:
-                logger.warning("[WARN] mail_user.json => 'mail_user' list is empty.")
+                    logger.warning("[WARN] mail_user.json => 'mail_user' list is empty.")
             else:
                 logger.info("[INFO] No mail_user.json found, skipping email.")
     except Exception as e:
