@@ -271,15 +271,17 @@ def pick_value(base_val, p_min, p_max, picking_method):
 # ---------------------------------------------------------------------------
 def apply_building_level_vent(idf, vent_params):
     """
-    Applies building-level infiltration/vent parameters (like infiltration_base,
-    infiltration_total_m3_s, schedules, etc.) to the IDF in a "coarse" manner.
+    Applies building-level infiltration/vent parameters (like
+    ``infiltration_base_L_s_m2_10Pa`` and ``year_factor`` together with
+    schedule names) to the IDF in a "coarse" manner.
 
     Example usage:
         vent_params = {
-          "infiltration_base": 0.5,
-          "ventilation_total_m3_s": 0.01,
-          "infiltration_schedule_name": "AlwaysOnSched",
-          ...
+            "infiltration_base_L_s_m2_10Pa": 0.5,
+            "year_factor": 1.0,
+            "infiltration_schedule_name": "AlwaysOnSched",
+            "ventilation_schedule_name": "VentSched",
+            ...
         }
         apply_building_level_vent(my_idf, vent_params)
     """
@@ -288,11 +290,16 @@ def apply_building_level_vent(idf, vent_params):
     # "global infiltration" or "HVAC system infiltration" object in IDF
     # that you can set.
 
-    infiltration_base = vent_params.get("infiltration_base")
+    infiltration_base = vent_params.get("infiltration_base_L_s_m2_10Pa")
+    year_factor = vent_params.get("year_factor")
     infiltration_sched = vent_params.get("infiltration_schedule_name")
+    ventilation_sched = vent_params.get("ventilation_schedule_name")
     # etc.
 
-    print(f"[VENT] Applying building-level infiltration_base={infiltration_base}, schedule={infiltration_sched}")
+    print(
+        f"[VENT] Applying building-level infiltration_base_L_s_m2_10Pa={infiltration_base}, year_factor={year_factor},"
+        f" infiltration_sched={infiltration_sched}, ventilation_sched={ventilation_sched}"
+    )
 
     # If you have a top-level infiltration object or design object, you can find it:
     # e.g. "ZoneInfiltration:DesignFlowRate" object named "GlobalInfil" or similar
@@ -316,9 +323,10 @@ def apply_zone_level_vent(idf, df_zone_scen):
        [zone_name, param_name, param_value, ...]
     derived from scenario-based picks or from assigned_vent_zones.csv.
 
-    Each zone might have infiltration_object_name, infiltration_flow_m3_s,
-    infiltration_schedule_name, ventilation_object_name, ventilation_flow_m3_s,
-    ventilation_schedule_name, etc.
+    Each zone might have ``infiltration_object_name`` and associated values such
+    as ``infiltration_base_L_s_m2_10Pa`` or ``infiltration_flow_m3_s`` along with
+    ``year_factor``.  Schedule names (``infiltration_schedule_name`` and
+    ``ventilation_schedule_name``) can also be provided.
 
     We'll group by zone_name, create or update the infiltration/vent objects
     in IDF.
@@ -342,6 +350,8 @@ def apply_zone_level_vent(idf, df_zone_scen):
         infil_obj_type  = z_params.get(
             "infiltration_object_type", "ZONEINFILTRATION:DESIGNFLOWRATE"
         )
+        infil_base      = z_params.get("infiltration_base_L_s_m2_10Pa")
+        year_factor     = z_params.get("year_factor")
         infil_flow      = z_params.get("infiltration_flow_m3_s", 0.0)
         infil_schedule  = z_params.get("infiltration_schedule_name", "AlwaysOnSched")
         infil_model     = z_params.get("infiltration_model", "constant")
@@ -350,6 +360,10 @@ def apply_zone_level_vent(idf, df_zone_scen):
         zone_area       = z_params.get("zone_floor_area_m2_used_for_dist")
         if zone_area is None:
             zone_area = z_params.get("zone_floor_area_m2")
+
+        print(
+            f"    Infiltration params: base_L_s_m2_10Pa={infil_base}, year_factor={year_factor}, flow={infil_flow}, schedule={infil_schedule}"
+        )
 
         # find or create infiltration object
         if infil_obj_name:
@@ -399,6 +413,10 @@ def apply_zone_level_vent(idf, df_zone_scen):
         )
         vent_flow       = z_params.get("ventilation_flow_m3_s", 0.0)
         vent_schedule   = z_params.get("ventilation_schedule_name", "AlwaysOnSched")
+
+        print(
+            f"    Ventilation params: flow={vent_flow}, schedule={vent_schedule}"
+        )
 
         if vent_obj_name:
             vent_obj = find_or_create_object(idf, vent_obj_type, vent_obj_name)
