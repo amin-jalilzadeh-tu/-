@@ -808,6 +808,7 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
     try:
         with step_timer(logger, "zipping and email"):
             mail_user_path = os.path.join(user_configs_folder, "mail_user.json")
+            mail_info = {}
             if os.path.isfile(mail_user_path):
                 with open(mail_user_path, "r") as f:
                     mail_info = json.load(f)
