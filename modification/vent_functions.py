@@ -19,6 +19,11 @@ import os
 import random
 import pandas as pd
 
+# For weather-dependent infiltration coefficients
+from idf_objects.ventilation.create_ventilation_systems import (
+    apply_weather_coefficients,
+)
+
 
 # ---------------------------------------------------------------------------
 # 1) CREATE VENTILATION SCENARIOS
@@ -334,9 +339,17 @@ def apply_zone_level_vent(idf, df_zone_scen):
 
         # infiltration
         infil_obj_name  = z_params.get("infiltration_object_name")
-        infil_obj_type  = z_params.get("infiltration_object_type", "ZONEINFILTRATION:DESIGNFLOWRATE")
+        infil_obj_type  = z_params.get(
+            "infiltration_object_type", "ZONEINFILTRATION:DESIGNFLOWRATE"
+        )
         infil_flow      = z_params.get("infiltration_flow_m3_s", 0.0)
         infil_schedule  = z_params.get("infiltration_schedule_name", "AlwaysOnSched")
+        infil_model     = z_params.get("infiltration_model", "constant")
+        typical_delta_t = float(z_params.get("typical_delta_t", 10.0))
+        typical_wind    = float(z_params.get("typical_wind", 3.0))
+        zone_area       = z_params.get("zone_floor_area_m2_used_for_dist")
+        if zone_area is None:
+            zone_area = z_params.get("zone_floor_area_m2")
 
         # find or create infiltration object
         if infil_obj_name:
@@ -346,17 +359,44 @@ def apply_zone_level_vent(idf, df_zone_scen):
                 infil_obj.Name = infil_obj_name
             if hasattr(infil_obj, "Zone_or_ZoneList_Name"):
                 infil_obj.Zone_or_ZoneList_Name = z_name
-            if hasattr(infil_obj, "Design_Flow_Rate"):
-                try:
-                    infil_obj.Design_Flow_Rate = float(infil_flow)
-                except:
-                    pass
+            if hasattr(infil_obj, "Design_Flow_Rate_Calculation_Method"):
+                infil_obj.Design_Flow_Rate_Calculation_Method = "Flow/Area"
+
+            flow_per_area = 0.0
+            try:
+                flow_val = float(infil_flow)
+                if zone_area and float(zone_area) > 0:
+                    flow_per_area = flow_val / float(zone_area)
+            except Exception:
+                pass
+
             if hasattr(infil_obj, "Schedule_Name"):
                 infil_obj.Schedule_Name = infil_schedule
 
+            if infil_model.lower() == "weather":
+                apply_weather_coefficients(
+                    infil_obj,
+                    max(0.0, flow_per_area),
+                    typical_delta_t=typical_delta_t,
+                    typical_wind=typical_wind,
+                )
+            else:
+                if hasattr(infil_obj, "Design_Flow_Rate"):
+                    infil_obj.Design_Flow_Rate = max(0.0, flow_per_area)
+                if hasattr(infil_obj, "Constant_Term_Coefficient"):
+                    infil_obj.Constant_Term_Coefficient = 1.0
+                if hasattr(infil_obj, "Temperature_Term_Coefficient"):
+                    infil_obj.Temperature_Term_Coefficient = 0.0
+                if hasattr(infil_obj, "Velocity_Term_Coefficient"):
+                    infil_obj.Velocity_Term_Coefficient = 0.0
+                if hasattr(infil_obj, "Velocity_Squared_Term_Coefficient"):
+                    infil_obj.Velocity_Squared_Term_Coefficient = 0.0
+
         # ventilation
         vent_obj_name   = z_params.get("ventilation_object_name")
-        vent_obj_type   = z_params.get("ventilation_object_type", "ZONEVENTILATION:DESIGNFLOWRATE")
+        vent_obj_type   = z_params.get(
+            "ventilation_object_type", "ZONEVENTILATION:DESIGNFLOWRATE"
+        )
         vent_flow       = z_params.get("ventilation_flow_m3_s", 0.0)
         vent_schedule   = z_params.get("ventilation_schedule_name", "AlwaysOnSched")
 
@@ -366,11 +406,18 @@ def apply_zone_level_vent(idf, df_zone_scen):
                 vent_obj.Name = vent_obj_name
             if hasattr(vent_obj, "Zone_or_ZoneList_Name"):
                 vent_obj.Zone_or_ZoneList_Name = z_name
+            if hasattr(vent_obj, "Design_Flow_Rate_Calculation_Method"):
+                vent_obj.Design_Flow_Rate_Calculation_Method = "Flow/Area"
+
+            flow_per_area_v = 0.0
+            try:
+                vflow = float(vent_flow)
+                if zone_area and float(zone_area) > 0:
+                    flow_per_area_v = vflow / float(zone_area)
+            except Exception:
+                pass
             if hasattr(vent_obj, "Design_Flow_Rate"):
-                try:
-                    vent_obj.Design_Flow_Rate = float(vent_flow)
-                except:
-                    pass
+                vent_obj.Design_Flow_Rate = max(0.0, flow_per_area_v)
             if hasattr(vent_obj, "Schedule_Name"):
                 vent_obj.Schedule_Name = vent_schedule
 
