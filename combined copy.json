@@ -104,8 +104,7 @@
       "building_id": 413673,
       "param_name": "perimeter_depth",
       "min_val": 3.5,
-      "max_val": 4.0,
-      "fixed_value": true
+      "max_val": 4.0
     },
     {
       "building_id": 4136733,
@@ -179,16 +178,31 @@
       "hvac_excel": "excel_data/hvac_overrides.xlsx",
       "vent_excel": "excel_data/vent_overrides.xlsx"
     },
-
-
     "use_database": false,
-      "filter_by": "meestvoorkomendepostcode", 
-      "db_filter": {
-        "meestvoorkomendepostcode": ["3066HG"], 
-        "pand_id": ["0383100000001369", "0383100000001370", "5473VX"],
-        "pand_ids": ["XYZ123", "XYZ999"],
-        "bbox_xy": [120000.0, 487000.0, 121000.0, 488000.0],
-        "bbox_latlon": [51.873, 5.589, 51.878, 5.60]
+    "filter_by": "meestvoorkomendepostcode",
+    "db_filter": {
+      "meestvoorkomendepostcode": [
+        "3066HG"
+      ],
+      "pand_ids": [
+        "0383100000001369",
+        "0383100000001370",
+        "5473VX",
+        "XYZ123",
+        "XYZ999"
+      ],
+      "bbox_xy": [
+        120000.0,
+        487000.0,
+        121000.0,
+        488000.0
+      ],
+      "bbox_latlon": [
+        51.873,
+        5.589,
+        51.878,
+        5.6
+      ]
     },
     "excel_overrides": {
       "override_fenez_excel": false,
@@ -263,7 +277,6 @@
         "include_tables": true,
         "include_summary": true
       }
-
     },
     "structuring": {
       "perform_structuring": true,
@@ -287,17 +300,16 @@
       },
       "shading": {
         "csv_in": "assigned/assigned_shading_params.csv",
-        "csv_out": "assigned/structured_shading_params.csv"        
+        "csv_out": "assigned/structured_shading_params.csv"
       },
       "equipment": {
         "csv_in": "assigned/assigned_equipment.csv",
         "csv_out": "assigned/structured_equipment.csv"
+      }
     },
     "modification": {
       "perform_modification": true,
       "modify_config": {
-
-
         "idd_path": "EnergyPlus/Energy+.idd",
         "assigned_csv": {
           "hvac_building": "assigned/assigned_hvac_building.csv",
@@ -337,9 +349,13 @@
         "perform_validation": false,
         "validation_config": {
           "real_data_csv": "data/mock_merged_daily_mean.csv",
-          "sim_data_csv":  "results/merged_daily_mean.csv",
+          "sim_data_csv": "results/merged_daily_mean.csv",
           "bldg_ranges": {
-            "0": [0, 1, 2]
+            "0": [
+              0,
+              1,
+              2
+            ]
           },
           "variables_to_compare": [
             "Electricity:Facility [J](Hourly)",
@@ -352,55 +368,51 @@
         }
       }
     },
-
-    
-
-
-  "validation_base": {
-    "perform_validation": false,
-    "config": {
-      "real_data_csv": "data/mock_merged_daily_mean.csv",
-      "sim_data_csv":  "results/merged_daily_mean.csv",
-      "bldg_ranges": {
-        "0": [0,1,2,3]
-      },
-      "variables_to_compare": [
-        "Electricity:Facility [J](Hourly)",
-        "Heating:EnergyTransfer [J](Hourly)",
-        "Cooling:EnergyTransfer [J](Hourly)"
-      ],
-      "threshold_cv_rmse": 30.0,
-      "skip_plots": true,
-      "output_csv": "validation_report_base.csv"
-    }
-  },
-
-  "validation_scenarios": {
-    "perform_validation": false,
-    "config": {
-      "real_data_csv": "data/mock_merged_daily_mean.csv",
-      "sim_data_csv":  "results_scenarioes/merged_daily_mean_scenarios.csv",
-      "bldg_ranges": {
-        "0": [0,1,2]
-      },
-      "variables_to_compare": [
-        "Electricity:Facility [J](Hourly)",
-        "Heating:EnergyTransfer [J](Hourly)",
-        "Cooling:EnergyTransfer [J](Hourly)"
-      ],
-      "threshold_cv_rmse": 30.0,
-      "skip_plots": true,
-      "output_csv": "validation_report_scenarios.csv"
-    }
-  },
-
-
-
-
-
-
-
-
+    "validation_base": {
+      "perform_validation": false,
+      "config": {
+        "real_data_csv": "data/mock_merged_daily_mean.csv",
+        "sim_data_csv": "results/merged_daily_mean.csv",
+        "bldg_ranges": {
+          "0": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        "variables_to_compare": [
+          "Electricity:Facility [J](Hourly)",
+          "Heating:EnergyTransfer [J](Hourly)",
+          "Cooling:EnergyTransfer [J](Hourly)"
+        ],
+        "threshold_cv_rmse": 30.0,
+        "skip_plots": true,
+        "output_csv": "validation_report_base.csv"
+      }
+    },
+    "validation_scenarios": {
+      "perform_validation": false,
+      "config": {
+        "real_data_csv": "data/mock_merged_daily_mean.csv",
+        "sim_data_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+        "bldg_ranges": {
+          "0": [
+            0,
+            1,
+            2
+          ]
+        },
+        "variables_to_compare": [
+          "Electricity:Facility [J](Hourly)",
+          "Heating:EnergyTransfer [J](Hourly)",
+          "Cooling:EnergyTransfer [J](Hourly)"
+        ],
+        "threshold_cv_rmse": 30.0,
+        "skip_plots": true,
+        "output_csv": "validation_report_scenarios.csv"
+      }
+    },
     "sensitivity": {
       "perform_sensitivity": true,
       "scenario_folder": "scenarios",
@@ -449,7 +461,6 @@
       "best_params_folder": "calibrated",
       "history_folder": "calibrated"
     }
-  }
   },
   "shading_tree": [
     {
