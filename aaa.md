@@ -1,0 +1,4196 @@
+# 1. 
+
+4136737	2.51E+13	B	4	1	single pitched	50	25.5	230600.123	582500.456	6.5185	53.2235	9745EA	120	44	8	2018	2015 and later	0.35	non_residential	Two-and-a-half-story House	Meeting Function	shared	shared	facade	facade	135	S
+
+# 2.
+
+!- Linux Line endings 
+
+Version,
+
+    22.2;                     !- Version Identifier
+
+SimulationControl,
+
+    Yes,                      !- Do Zone Sizing Calculation
+
+    Yes,                      !- Do System Sizing Calculation
+
+    Yes,                      !- Do Plant Sizing Calculation
+
+    No,                       !- Run Simulation for Sizing Periods
+
+    Yes,                      !- Run Simulation for Weather File Run Periods
+
+    No,                       !- Do HVAC Sizing Simulation for Sizing Periods
+
+    ;                         !- Maximum Number of HVAC Sizing Simulation Passes
+
+BUILDING,
+
+    Sample_Building_1,        !- Name
+
+    0,                        !- North Axis
+
+    Suburbs,                  !- Terrain
+
+    0.04,                     !- Loads Convergence Tolerance Value
+
+    0.4,                      !- Temperature Convergence Tolerance Value
+
+    FullExterior,             !- Solar Distribution
+
+    25,                       !- Maximum Number of Warmup Days
+
+    1;                        !- Minimum Number of Warmup Days
+
+Timestep,
+
+    4;                        !- Number of Timesteps per Hour
+
+Site:Location,
+
+    Amsterdam_Netherlands,    !- Name
+
+    52.37,                    !- Latitude
+
+    4.89,                     !- Longitude
+
+    1,                        !- Time Zone
+
+    -2;                       !- Elevation
+
+SizingPeriod:DesignDay,
+
+    Netherlands Ann Htg 99.6% Condns DB,    !- Name
+
+    1,                        !- Month
+
+    21,                       !- Day of Month
+
+    WinterDesignDay,          !- Day Type
+
+    -5,                       !- Maximum DryBulb Temperature
+
+    0,                        !- Daily DryBulb Temperature Range
+
+    ,                         !- DryBulb Temperature Range Modifier Type
+
+    ,                         !- DryBulb Temperature Range Modifier Day Schedule Name
+
+    Wetbulb,                  !- Humidity Condition Type
+
+    -5,                       !- Wetbulb or DewPoint at Maximum DryBulb
+
+    ,                         !- Humidity Condition Day Schedule Name
+
+    ,                         !- Humidity Ratio at Maximum DryBulb
+
+    ,                         !- Enthalpy at Maximum DryBulb
+
+    ,                         !- Daily WetBulb Temperature Range
+
+    102000,                   !- Barometric Pressure
+
+    4,                        !- Wind Speed
+
+    270,                      !- Wind Direction
+
+    No,                       !- Rain Indicator
+
+    No,                       !- Snow Indicator
+
+    No,                       !- Daylight Saving Time Indicator
+
+    ASHRAEClearSky,           !- Solar Model Indicator
+
+    ,                         !- Beam Solar Day Schedule Name
+
+    ,                         !- Diffuse Solar Day Schedule Name
+
+    ,                         !- ASHRAE Clear Sky Optical Depth for Beam Irradiance taub
+
+    ,                         !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance taud
+
+    0;                        !- Sky Clearness
+
+SizingPeriod:DesignDay,
+
+    Netherlands Ann Clg 1% Condns DB=>MWB,    !- Name
+
+    7,                        !- Month
+
+    21,                       !- Day of Month
+
+    SummerDesignDay,          !- Day Type
+
+    28,                       !- Maximum DryBulb Temperature
+
+    10,                       !- Daily DryBulb Temperature Range
+
+    ,                         !- DryBulb Temperature Range Modifier Type
+
+    ,                         !- DryBulb Temperature Range Modifier Day Schedule Name
+
+    Wetbulb,                  !- Humidity Condition Type
+
+    17,                       !- Wetbulb or DewPoint at Maximum DryBulb
+
+    ,                         !- Humidity Condition Day Schedule Name
+
+    ,                         !- Humidity Ratio at Maximum DryBulb
+
+    ,                         !- Enthalpy at Maximum DryBulb
+
+    ,                         !- Daily WetBulb Temperature Range
+
+    102000,                   !- Barometric Pressure
+
+    3.5,                      !- Wind Speed
+
+    90,                       !- Wind Direction
+
+    No,                       !- Rain Indicator
+
+    No,                       !- Snow Indicator
+
+    No,                       !- Daylight Saving Time Indicator
+
+    ASHRAEClearSky,           !- Solar Model Indicator
+
+    ,                         !- Beam Solar Day Schedule Name
+
+    ,                         !- Diffuse Solar Day Schedule Name
+
+    ,                         !- ASHRAE Clear Sky Optical Depth for Beam Irradiance taub
+
+    ,                         !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance taud
+
+    1;                        !- Sky Clearness
+
+RunPeriod,
+
+    Run Period 1,             !- Name
+
+    1,                        !- Begin Month
+
+    1,                        !- Begin Day of Month
+
+    ,                         !- Begin Year
+
+    12,                       !- End Month
+
+    31,                       !- End Day of Month
+
+    ,                         !- End Year
+
+    Tuesday,                  !- Day of Week for Start Day
+
+    Yes,                      !- Use Weather File Holidays and Special Days
+
+    Yes,                      !- Use Weather File Daylight Saving Period
+
+    No,                       !- Apply Weekend Holiday Rule
+
+    Yes,                      !- Use Weather File Rain Indicators
+
+    Yes;                      !- Use Weather File Snow Indicators
+
+SITE:GROUNDTEMPERATURE:BUILDINGSURFACE,
+
+    2.03855183933738,         !- January Ground Temperature
+
+    4.544336483955579,        !- February Ground Temperature
+
+    4.2878664427907225,       !- March Ground Temperature
+
+    8.156330637072719,        !- April Ground Temperature
+
+    14.343293528235534,       !- May Ground Temperature
+
+    16.292951271655294,       !- June Ground Temperature
+
+    17.906378456932426,       !- July Ground Temperature
+
+    18.4965444595961,         !- August Ground Temperature
+
+    14.038314216048695,       !- September Ground Temperature
+
+    9.86477767790288,         !- October Ground Temperature
+
+    7.117124042462779,        !- November Ground Temperature
+
+    4.7045772663817065;       !- December Ground Temperature
+
+SCHEDULETYPELIMITS,
+
+    Temperature,              !- Name
+
+    -100,                     !- Lower Limit Value
+
+    200,                      !- Upper Limit Value
+
+    CONTINUOUS,               !- Numeric Type
+
+    Dimensionless;            !- Unit Type
+
+SCHEDULETYPELIMITS,
+
+    ControlType,              !- Name
+
+    0,                        !- Lower Limit Value
+
+    4,                        !- Upper Limit Value
+
+    DISCRETE,                 !- Numeric Type
+
+    Dimensionless;            !- Unit Type
+
+SCHEDULETYPELIMITS,
+
+    Fraction,                 !- Name
+
+    0,                        !- Lower Limit Value
+
+    1,                        !- Upper Limit Value
+
+    CONTINUOUS,               !- Numeric Type
+
+    Dimensionless;            !- Unit Type
+
+Schedule:Compact,
+
+    ALWAYS22C,                !- Name
+
+    Temperature,              !- Schedule Type Limits Name
+
+    Through: 12/31,           !- Field 1
+
+    For: AllDays,             !- Field 2
+
+    Until: 24:00,             !- Field 3
+
+    22.0;                     !- Field 4
+
+SCHEDULE:COMPACT,
+
+    LightsSchedule,           !- Name
+
+    Fraction,                 !- Schedule Type Limits Name
+
+    Through: 12/31,           !- Field 1
+
+    For: WeekDays,            !- Field 2
+
+    Until: 08:00,0.01,        !- Field 3
+
+    Until: 09:00,0.25,        !- Field 4
+
+    Until: 12:00,0.70,        !- Field 5
+
+    Until: 13:00,0.30,        !- Field 6
+
+    Until: 17:00,0.70,        !- Field 7
+
+    Until: 18:00,0.20,        !- Field 8
+
+    Until: 24:00,0.01,        !- Field 9
+
+    For: Saturday,            !- Field 10
+
+    Until: 24:00,0.01,        !- Field 11
+
+    For: Sunday,              !- Field 12
+
+    Until: 24:00,0.01;        !- Field 13
+
+SCHEDULE:COMPACT,
+
+    ParasiticSchedule,        !- Name
+
+    Fraction,                 !- Schedule Type Limits Name
+
+    Through: 12/31,           !- Field 1
+
+    For: AllDays,             !- Field 2
+
+    Until: 24:00,1.0;         !- Field 3
+
+SCHEDULE:COMPACT,
+
+    EquipSchedule,            !- Name
+
+    Fraction,                 !- Schedule Type Limits Name
+
+    Through: 12/31,           !- Field 1
+
+    For: WeekDays,            !- Field 2
+
+    Until: 08:00,0.02,        !- Field 3
+
+    Until: 09:00,0.20,        !- Field 4
+
+    Until: 12:00,0.50,        !- Field 5
+
+    Until: 13:00,0.15,        !- Field 6
+
+    Until: 17:00,0.50,        !- Field 7
+
+    Until: 18:00,0.10,        !- Field 8
+
+    Until: 24:00,0.02,        !- Field 9
+
+    For: Saturday,            !- Field 10
+
+    Until: 24:00,0.02,        !- Field 11
+
+    For: Sunday,              !- Field 12
+
+    Until: 24:00,0.02;        !- Field 13
+
+SCHEDULE:COMPACT,
+
+    MyDHW_1_UseFraction,      !- Name
+
+    Fraction,                 !- Schedule Type Limits Name
+
+    Through: 12/31,           !- Field 1
+
+    For: AllDays,             !- Field 2
+
+    Until: 06:00, 0.0,        !- Field 3
+
+    Until: 08:00, 0.70,       !- Field 4
+
+    Until: 10:00, 0.90,       !- Field 5
+
+    Until: 17:00, 0.24,       !- Field 6
+
+    Until: 21:00, 0.75,       !- Field 7
+
+    Until: 24:00, 0.70;       !- Field 8
+
+SCHEDULE:COMPACT,
+
+    MyDHW_1_Setpoint,         !- Name
+
+    Temperature,              !- Schedule Type Limits Name
+
+    Through: 12/31,           !- Field 1
+
+    For: AllDays,             !- Field 2
+
+    Until: 24:00, 59.343293528235534;    !- Field 3
+
+SCHEDULE:COMPACT,
+
+    HVAC_Avail_Sched,         !- Name
+
+    Fraction,                 !- Schedule Type Limits Name
+
+    Through: 12/31,           !- Field 1
+
+    For: WeekDays,            !- Field 2
+
+    Until: 08:00,0,           !- Field 3
+
+    Until: 12:00,1,           !- Field 4
+
+    Until: 13:00,0.8,         !- Field 5
+
+    Until: 18:00,1,           !- Field 6
+
+    Until: 24:00,0,           !- Field 7
+
+    For: Saturday,            !- Field 8
+
+    Until: 09:00,0,           !- Field 9
+
+    Until: 14:00,0.5,         !- Field 10
+
+    Until: 24:00,0,           !- Field 11
+
+    For: Sunday,              !- Field 12
+
+    Until: 24:00,0,           !- Field 13
+
+    For: SummerDesignDay,     !- Field 14
+
+    Until: 24:00,1,           !- Field 15
+
+    For: WinterDesignDay,     !- Field 16
+
+    Until: 24:00,1;;          !- Field 17
+
+SCHEDULE:COMPACT,
+
+    ZONE_HEATING_SETPOINTS,    !- Name
+
+    Temperature,              !- Schedule Type Limits Name
+
+    Through: 12/31,           !- Field 1
+
+    For: WeekDays,            !- Field 2
+
+    Until: 08:00,16,          !- Field 3
+
+    Until: 18:00,20,          !- Field 4
+
+    Until: 24:00,16,          !- Field 5
+
+    For: Saturday,            !- Field 6
+
+    Until: 08:00,16,          !- Field 7
+
+    Until: 18:00,20,          !- Field 8
+
+    Until: 24:00,16,          !- Field 9
+
+    For: Sunday,              !- Field 10
+
+    Until: 08:00,16,          !- Field 11
+
+    Until: 18:00,20,          !- Field 12
+
+    Until: 24:00,16,          !- Field 13
+
+    For: Holiday,             !- Field 14
+
+    Until: 08:00,16,          !- Field 15
+
+    Until: 18:00,20,          !- Field 16
+
+    Until: 24:00,16,          !- Field 17
+
+    For: SummerDesignDay,     !- Field 18
+
+    Until: 24:00,20,          !- Field 19
+
+    For: WinterDesignDay,     !- Field 20
+
+    Until: 24:00,20;;         !- Field 21
+
+SCHEDULE:COMPACT,
+
+    ZONE_COOLING_SETPOINTS,    !- Name
+
+    Temperature,              !- Schedule Type Limits Name
+
+    Through: 12/31,           !- Field 1
+
+    For: WeekDays,            !- Field 2
+
+    Until: 08:00,26,          !- Field 3
+
+    Until: 18:00,24,          !- Field 4
+
+    Until: 24:00,26,          !- Field 5
+
+    For: Saturday,            !- Field 6
+
+    Until: 08:00,26,          !- Field 7
+
+    Until: 18:00,24,          !- Field 8
+
+    Until: 24:00,26,          !- Field 9
+
+    For: Sunday,              !- Field 10
+
+    Until: 08:00,26,          !- Field 11
+
+    Until: 18:00,24,          !- Field 12
+
+    Until: 24:00,26,          !- Field 13
+
+    For: Holiday,             !- Field 14
+
+    Until: 08:00,26,          !- Field 15
+
+    Until: 18:00,24,          !- Field 16
+
+    Until: 24:00,26,          !- Field 17
+
+    For: SummerDesignDay,     !- Field 18
+
+    Until: 24:00,24,          !- Field 19
+
+    For: WinterDesignDay,     !- Field 20
+
+    Until: 24:00,24;;         !- Field 21
+
+SCHEDULE:COMPACT,
+
+    ZONE_CONTROL_TYPE_SCHEDULE,    !- Name
+
+    ControlType,              !- Schedule Type Limits Name
+
+    Through: 12/31,           !- Field 1
+
+    For: AllDays,             !- Field 2
+
+    Until: 24:00,4;;          !- Field 3
+
+SCHEDULE:COMPACT,
+
+    VentSched_Meeting_Function,    !- Name
+
+    Fraction,                 !- Schedule Type Limits Name
+
+    Through: 12/31,           !- Field 1
+
+    For: Weekdays SummerDesignDay WinterDesignDay,    !- Field 2
+
+    Until: 07:00,0.0793,      !- Field 3
+
+    Until: 18:00,0.9453,      !- Field 4
+
+    Until: 24:00,0.0498,      !- Field 5
+
+    For: Saturday Sunday Holiday AllOtherDays,    !- Field 6
+
+    Until: 24:00,0.0010;      !- Field 7
+
+SCHEDULE:COMPACT,
+
+    InfilSched_Meeting_Function,    !- Name
+
+    Fraction,                 !- Schedule Type Limits Name
+
+    Through: 12/31,           !- Field 1
+
+    For: Weekdays SummerDesignDay WinterDesignDay,    !- Field 2
+
+    Until: 07:00,0.8865,      !- Field 3
+
+    Until: 18:00,0.3745,      !- Field 4
+
+    Until: 24:00,0.9705,      !- Field 5
+
+    For: Saturday Sunday Holiday AllOtherDays,    !- Field 6
+
+    Until: 24:00,0.9547;      !- Field 7
+
+SCHEDULE:CONSTANT,
+
+    AlwaysOnSched,            !- Name
+
+    Fraction,                 !- Schedule Type Limits Name
+
+    1;                        !- Hourly Value
+
+MATERIAL,
+
+    Concrete_200mm,           !- Name
+
+    MediumRough,              !- Roughness
+
+    0.1993238883895144,       !- Thickness
+
+    5.985702e-02,             !- Conductivity
+
+    2335.228863319085,        !- Density
+
+    904.6983904291005,        !- Specific Heat
+
+    0.9,                      !- Thermal Absorptance
+
+    0.7,                      !- Solar Absorptance
+
+    0.7;                      !- Visible Absorptance
+
+MATERIAL:NOMASS,
+
+    NR_Roof_U0.3,             !- Name
+
+    MediumRough,              !- Roughness
+
+    3.33,                     !- Thermal Resistance
+
+    0.8988132264993403,       !- Thermal Absorptance
+
+    0.6954666334599856,       !- Solar Absorptance
+
+    0.7049122535251249;       !- Visible Absorptance
+
+MATERIAL:NOMASS,
+
+    NR_InternalFloor_R1.0,    !- Name
+
+    MediumSmooth,             !- Roughness
+
+    1,                        !- Thermal Resistance
+
+    0.8977654491421762,       !- Thermal Absorptance
+
+    0.6943404035884784,       !- Solar Absorptance
+
+    0.7001740248477691;       !- Visible Absorptance
+
+MATERIAL:NOMASS,
+
+    NR_InteriorWall_R0.5,     !- Name
+
+    MediumSmooth,             !- Roughness
+
+    0.5,                      !- Thermal Resistance
+
+    0.9049014178437244,       !- Thermal Absorptance
+
+    0.500972169189021,        !- Solar Absorptance
+
+    0.5000667601281357;       !- Visible Absorptance
+
+MATERIAL:NOMASS,
+
+    NR_GroundFloor_U0.3,      !- Name
+
+    MediumRough,              !- Roughness
+
+    0.7142857142857143,       !- Thermal Resistance
+
+    0.89778465334433,         !- Thermal Absorptance
+
+    0.6936848763831686,       !- Solar Absorptance
+
+    0.6938569494978537;       !- Visible Absorptance
+
+MATERIAL:NOMASS,
+
+    NR_Door_U1.2,             !- Name
+
+    MediumRough,              !- Roughness
+
+    0.83,                     !- Thermal Resistance
+
+    0.8963308761041986,       !- Thermal Absorptance
+
+    0.7054425318470495,       !- Solar Absorptance
+
+    0.7003115381950833;       !- Visible Absorptance
+
+WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM,
+
+    NR_Window_U1.4_SHGC0.45,    !- Name
+
+    1.4,                      !- UFactor
+
+    4.544771e-01,             !- Solar Heat Gain Coefficient
+
+    0.7;                      !- Visible Transmittance
+
+WINDOWMATERIAL:BLIND,
+
+    MyExternalLouvers_Zone1_RearPerimeter_Wall_0_window,    !- Name
+
+    Horizontal,               !- Slat Orientation
+
+    0.025,                    !- Slat Width
+
+    0.02,                     !- Slat Separation
+
+    0.001,                    !- Slat Thickness
+
+    45,                       !- Slat Angle
+
+    160,                      !- Slat Conductivity
+
+    0,                        !- Slat Beam Solar Transmittance
+
+    0.7,                      !- Front Side Slat Beam Solar Reflectance
+
+    0.7,                      !- Back Side Slat Beam Solar Reflectance
+
+    0,                        !- Slat Diffuse Solar Transmittance
+
+    0.7,                      !- Front Side Slat Diffuse Solar Reflectance
+
+    0.7,                      !- Back Side Slat Diffuse Solar Reflectance
+
+    0,                        !- Slat Beam Visible Transmittance
+
+    0.7,                      !- Front Side Slat Beam Visible Reflectance
+
+    0.7,                      !- Back Side Slat Beam Visible Reflectance
+
+    0,                        !- Slat Diffuse Visible Transmittance
+
+    0.7,                      !- Front Side Slat Diffuse Visible Reflectance
+
+    0.7,                      !- Back Side Slat Diffuse Visible Reflectance
+
+    0,                        !- Slat Infrared Hemispherical Transmittance
+
+    0.9,                      !- Front Side Slat Infrared Hemispherical Emissivity
+
+    0.9,                      !- Back Side Slat Infrared Hemispherical Emissivity
+
+    0.05,                     !- Blind to Glass Distance
+
+    0.5,                      !- Blind Top Opening Multiplier
+
+    0,                        !- Blind Bottom Opening Multiplier
+
+    0.5,                      !- Blind Left Side Opening Multiplier
+
+    0.5,                      !- Blind Right Side Opening Multiplier
+
+    0,                        !- Minimum Slat Angle
+
+    180;                      !- Maximum Slat Angle
+
+WINDOWMATERIAL:BLIND,
+
+    MyExternalLouvers_Zone1_LeftPerimeter_Wall_0_window,    !- Name
+
+    Horizontal,               !- Slat Orientation
+
+    0.025,                    !- Slat Width
+
+    0.02,                     !- Slat Separation
+
+    0.001,                    !- Slat Thickness
+
+    45,                       !- Slat Angle
+
+    160,                      !- Slat Conductivity
+
+    0,                        !- Slat Beam Solar Transmittance
+
+    0.7,                      !- Front Side Slat Beam Solar Reflectance
+
+    0.7,                      !- Back Side Slat Beam Solar Reflectance
+
+    0,                        !- Slat Diffuse Solar Transmittance
+
+    0.7,                      !- Front Side Slat Diffuse Solar Reflectance
+
+    0.7,                      !- Back Side Slat Diffuse Solar Reflectance
+
+    0,                        !- Slat Beam Visible Transmittance
+
+    0.7,                      !- Front Side Slat Beam Visible Reflectance
+
+    0.7,                      !- Back Side Slat Beam Visible Reflectance
+
+    0,                        !- Slat Diffuse Visible Transmittance
+
+    0.7,                      !- Front Side Slat Diffuse Visible Reflectance
+
+    0.7,                      !- Back Side Slat Diffuse Visible Reflectance
+
+    0,                        !- Slat Infrared Hemispherical Transmittance
+
+    0.9,                      !- Front Side Slat Infrared Hemispherical Emissivity
+
+    0.9,                      !- Back Side Slat Infrared Hemispherical Emissivity
+
+    0.05,                     !- Blind to Glass Distance
+
+    0.5,                      !- Blind Top Opening Multiplier
+
+    0,                        !- Blind Bottom Opening Multiplier
+
+    0.5,                      !- Blind Left Side Opening Multiplier
+
+    0.5,                      !- Blind Right Side Opening Multiplier
+
+    0,                        !- Minimum Slat Angle
+
+    180;                      !- Maximum Slat Angle
+
+CONSTRUCTION,
+
+    CEILING1C,                !- Name
+
+    NR_Roof_U0.3;             !- Outside Layer
+
+CONSTRUCTION,
+
+    Ext_Walls1C,              !- Name
+
+    Concrete_200mm;           !- Outside Layer
+
+CONSTRUCTION,
+
+    Int_Walls1C,              !- Name
+
+    NR_InteriorWall_R0.5;     !- Outside Layer
+
+CONSTRUCTION,
+
+    Roof1C,                   !- Name
+
+    NR_Roof_U0.3;             !- Outside Layer
+
+CONSTRUCTION,
+
+    GroundFloor1C,            !- Name
+
+    NR_GroundFloor_U0.3;      !- Outside Layer
+
+CONSTRUCTION,
+
+    IntFloor1C,               !- Name
+
+    NR_InternalFloor_R1.0;    !- Outside Layer
+
+CONSTRUCTION,
+
+    Window1C,                 !- Name
+
+    NR_Window_U1.4_SHGC0.45;    !- Outside Layer
+
+CONSTRUCTION,
+
+    ground_floor_Construction,    !- Name
+
+    NR_GroundFloor_U0.3;      !- Outside Layer
+
+CONSTRUCTION,
+
+    exterior_wall_Construction,    !- Name
+
+    Concrete_200mm;           !- Outside Layer
+
+CONSTRUCTION,
+
+    flat_roof_Construction,    !- Name
+
+    NR_Roof_U0.3;             !- Outside Layer
+
+CONSTRUCTION,
+
+    inter_floor_Construction,    !- Name
+
+    NR_InternalFloor_R1.0;    !- Outside Layer
+
+CONSTRUCTION,
+
+    interior_wall_Construction,    !- Name
+
+    NR_InteriorWall_R0.5;     !- Outside Layer
+
+CONSTRUCTION,
+
+    windows_Construction,     !- Name
+
+    NR_GroundFloor_U0.3;      !- Outside Layer
+
+CONSTRUCTION,
+
+    windows_WindowConst,      !- Name
+
+    NR_Window_U1.4_SHGC0.45;    !- Outside Layer
+
+CONSTRUCTION,
+
+    doors_Construction,       !- Name
+
+    NR_Door_U1.2;             !- Outside Layer
+
+GlobalGeometryRules,
+
+    UpperLeftCorner,          !- Starting Vertex Position
+
+    CounterClockWise,         !- Vertex Entry Direction
+
+    Relative;                 !- Coordinate System
+
+ZONE,
+
+    Zone1_FrontPerimeter,     !- Name
+
+    0,                        !- Direction of Relative North
+
+    0,                        !- X Origin
+
+    0,                        !- Y Origin
+
+    0,                        !- Z Origin
+
+    1,                        !- Type
+
+    1,                        !- Multiplier
+
+    autocalculate,            !- Ceiling Height
+
+    autocalculate,            !- Volume
+
+    autocalculate,            !- Floor Area
+
+    ,                         !- Zone Inside Convection Algorithm
+
+    ,                         !- Zone Outside Convection Algorithm
+
+    Yes;                      !- Part of Total Floor Area
+
+ZONE,
+
+    Zone1_RightPerimeter,     !- Name
+
+    0,                        !- Direction of Relative North
+
+    0,                        !- X Origin
+
+    0,                        !- Y Origin
+
+    0,                        !- Z Origin
+
+    1,                        !- Type
+
+    1,                        !- Multiplier
+
+    autocalculate,            !- Ceiling Height
+
+    autocalculate,            !- Volume
+
+    autocalculate,            !- Floor Area
+
+    ,                         !- Zone Inside Convection Algorithm
+
+    ,                         !- Zone Outside Convection Algorithm
+
+    Yes;                      !- Part of Total Floor Area
+
+ZONE,
+
+    Zone1_RearPerimeter,      !- Name
+
+    0,                        !- Direction of Relative North
+
+    0,                        !- X Origin
+
+    0,                        !- Y Origin
+
+    0,                        !- Z Origin
+
+    1,                        !- Type
+
+    1,                        !- Multiplier
+
+    autocalculate,            !- Ceiling Height
+
+    autocalculate,            !- Volume
+
+    autocalculate,            !- Floor Area
+
+    ,                         !- Zone Inside Convection Algorithm
+
+    ,                         !- Zone Outside Convection Algorithm
+
+    Yes;                      !- Part of Total Floor Area
+
+ZONE,
+
+    Zone1_LeftPerimeter,      !- Name
+
+    0,                        !- Direction of Relative North
+
+    0,                        !- X Origin
+
+    0,                        !- Y Origin
+
+    0,                        !- Z Origin
+
+    1,                        !- Type
+
+    1,                        !- Multiplier
+
+    autocalculate,            !- Ceiling Height
+
+    autocalculate,            !- Volume
+
+    autocalculate,            !- Floor Area
+
+    ,                         !- Zone Inside Convection Algorithm
+
+    ,                         !- Zone Outside Convection Algorithm
+
+    Yes;                      !- Part of Total Floor Area
+
+ZONE,
+
+    Zone1_Core,               !- Name
+
+    0,                        !- Direction of Relative North
+
+    0,                        !- X Origin
+
+    0,                        !- Y Origin
+
+    0,                        !- Z Origin
+
+    1,                        !- Type
+
+    1,                        !- Multiplier
+
+    autocalculate,            !- Ceiling Height
+
+    autocalculate,            !- Volume
+
+    autocalculate,            !- Floor Area
+
+    ,                         !- Zone Inside Convection Algorithm
+
+    ,                         !- Zone Outside Convection Algorithm
+
+    Yes;                      !- Part of Total Floor Area
+
+ZONELIST,
+
+    ALL_ZONES,                !- Name
+
+    Zone1_FrontPerimeter,     !- Zone 1 Name
+
+    Zone1_RightPerimeter,     !- Zone 2 Name
+
+    Zone1_RearPerimeter,      !- Zone 3 Name
+
+    Zone1_LeftPerimeter,      !- Zone 4 Name
+
+    Zone1_Core;               !- Zone 5 Name
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_FrontPerimeter_Floor,    !- Name
+
+    Floor,                    !- Surface Type
+
+    ground_floor_Construction,    !- Construction Name
+
+    Zone1_FrontPerimeter,     !- Zone Name
+
+    ,                         !- Space Name
+
+    Ground,                   !- Outside Boundary Condition
+
+    ,                         !- Outside Boundary Condition Object
+
+    NoSun,                    !- Sun Exposure
+
+    NoWind,                   !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -7.713892158398699,       !- Vertex 1 Xcoordinate
+
+    7.7138921583987,          !- Vertex 1 Ycoordinate
+
+    0,                        !- Vertex 1 Zcoordinate
+
+    0,                        !- Vertex 2 Xcoordinate
+
+    0,                        !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    -1.468734096418446,       !- Vertex 3 Xcoordinate
+
+    -3.330669e-16,            !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    -7.713892158398698,       !- Vertex 4 Xcoordinate
+
+    6.245158061980253,        !- Vertex 4 Ycoordinate
+
+    0;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_FrontPerimeter_Wall_0,    !- Name
+
+    Wall,                     !- Surface Type
+
+    interior_wall_Construction,    !- Construction Name
+
+    Zone1_FrontPerimeter,     !- Zone Name
+
+    ,                         !- Space Name
+
+    Adiabatic,                !- Outside Boundary Condition
+
+    ,                         !- Outside Boundary Condition Object
+
+    NoSun,                    !- Sun Exposure
+
+    NoWind,                   !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    0,                        !- Vertex 1 Xcoordinate
+
+    0,                        !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    0,                        !- Vertex 2 Xcoordinate
+
+    0,                        !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    -7.713892158398699,       !- Vertex 3 Xcoordinate
+
+    7.7138921583987,          !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    -7.713892158398699,       !- Vertex 4 Xcoordinate
+
+    7.7138921583987,          !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_FrontPerimeter_Wall_1,    !- Name
+
+    Wall,                     !- Surface Type
+
+    interior_wall_Construction,    !- Construction Name
+
+    Zone1_FrontPerimeter,     !- Zone Name
+
+    ,                         !- Space Name
+
+    Adiabatic,                !- Outside Boundary Condition
+
+    ,                         !- Outside Boundary Condition Object
+
+    NoSun,                    !- Sun Exposure
+
+    NoWind,                   !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -7.713892158398699,       !- Vertex 1 Xcoordinate
+
+    7.7138921583987,          !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    -7.713892158398699,       !- Vertex 2 Xcoordinate
+
+    7.7138921583987,          !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    -7.713892158398698,       !- Vertex 3 Xcoordinate
+
+    6.245158061980253,        !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    -7.713892158398698,       !- Vertex 4 Xcoordinate
+
+    6.245158061980253,        !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_FrontPerimeter_Wall_2,    !- Name
+
+    Wall,                     !- Surface Type
+
+    interior_wall_Construction,    !- Construction Name
+
+    Zone1_FrontPerimeter,     !- Zone Name
+
+    ,                         !- Space Name
+
+    Surface,                  !- Outside Boundary Condition
+
+    Zone1_Core_Wall_0,        !- Outside Boundary Condition Object
+
+    NoSun,                    !- Sun Exposure
+
+    NoWind,                   !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -7.713892158398698,       !- Vertex 1 Xcoordinate
+
+    6.245158061980253,        !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    -7.713892158398698,       !- Vertex 2 Xcoordinate
+
+    6.245158061980253,        !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    -1.468734096418446,       !- Vertex 3 Xcoordinate
+
+    -3.330669e-16,            !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    -1.468734096418446,       !- Vertex 4 Xcoordinate
+
+    -3.330669e-16,            !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_FrontPerimeter_Wall_3,    !- Name
+
+    Wall,                     !- Surface Type
+
+    interior_wall_Construction,    !- Construction Name
+
+    Zone1_FrontPerimeter,     !- Zone Name
+
+    ,                         !- Space Name
+
+    Adiabatic,                !- Outside Boundary Condition
+
+    ,                         !- Outside Boundary Condition Object
+
+    NoSun,                    !- Sun Exposure
+
+    NoWind,                   !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -1.468734096418446,       !- Vertex 1 Xcoordinate
+
+    -3.330669e-16,            !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    -1.468734096418446,       !- Vertex 2 Xcoordinate
+
+    -3.330669e-16,            !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    0,                        !- Vertex 3 Xcoordinate
+
+    0,                        !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    0,                        !- Vertex 4 Xcoordinate
+
+    0,                        !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_FrontPerimeter_Roof,    !- Name
+
+    Roof,                     !- Surface Type
+
+    flat_roof_Construction,    !- Construction Name
+
+    Zone1_FrontPerimeter,     !- Zone Name
+
+    ,                         !- Space Name
+
+    Outdoors,                 !- Outside Boundary Condition
+
+    ,                         !- Outside Boundary Condition Object
+
+    SunExposed,               !- Sun Exposure
+
+    WindExposed,              !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    0,                        !- Vertex 1 Xcoordinate
+
+    0,                        !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    -7.713892158398699,       !- Vertex 2 Xcoordinate
+
+    7.7138921583987,          !- Vertex 2 Ycoordinate
+
+    4,                        !- Vertex 2 Zcoordinate
+
+    -7.713892158398698,       !- Vertex 3 Xcoordinate
+
+    6.245158061980253,        !- Vertex 3 Ycoordinate
+
+    4,                        !- Vertex 3 Zcoordinate
+
+    -1.468734096418446,       !- Vertex 4 Xcoordinate
+
+    -3.330669e-16,            !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_RightPerimeter_Floor,    !- Name
+
+    Floor,                    !- Surface Type
+
+    ground_floor_Construction,    !- Construction Name
+
+    Zone1_RightPerimeter,     !- Zone Name
+
+    ,                         !- Space Name
+
+    Ground,                   !- Outside Boundary Condition
+
+    ,                         !- Outside Boundary Condition Object
+
+    NoSun,                    !- Sun Exposure
+
+    NoWind,                   !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -7.713892158398699,       !- Vertex 1 Xcoordinate
+
+    7.7138921583987,          !- Vertex 1 Ycoordinate
+
+    0,                        !- Vertex 1 Zcoordinate
+
+    -7.713892158398698,       !- Vertex 2 Xcoordinate
+
+    6.245158061980253,        !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    -1.402333e+01,            !- Vertex 3 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    -1.549207e+01,            !- Vertex 4 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 4 Ycoordinate
+
+    0;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_RightPerimeter_Wall_0,    !- Name
+
+    Wall,                     !- Surface Type
+
+    interior_wall_Construction,    !- Construction Name
+
+    Zone1_RightPerimeter,     !- Zone Name
+
+    ,                         !- Space Name
+
+    Adiabatic,                !- Outside Boundary Condition
+
+    ,                         !- Outside Boundary Condition Object
+
+    NoSun,                    !- Sun Exposure
+
+    NoWind,                   !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -7.713892158398699,       !- Vertex 1 Xcoordinate
+
+    7.7138921583987,          !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    -7.713892158398699,       !- Vertex 2 Xcoordinate
+
+    7.7138921583987,          !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    -1.549207e+01,            !- Vertex 3 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    -1.549207e+01,            !- Vertex 4 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_RightPerimeter_Wall_1,    !- Name
+
+    Wall,                     !- Surface Type
+
+    interior_wall_Construction,    !- Construction Name
+
+    Zone1_RightPerimeter,     !- Zone Name
+
+    ,                         !- Space Name
+
+    Adiabatic,                !- Outside Boundary Condition
+
+    ,                         !- Outside Boundary Condition Object
+
+    NoSun,                    !- Sun Exposure
+
+    NoWind,                   !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -1.549207e+01,            !- Vertex 1 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    -1.549207e+01,            !- Vertex 2 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    -1.402333e+01,            !- Vertex 3 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    -1.402333e+01,            !- Vertex 4 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_RightPerimeter_Wall_2,    !- Name
+
+    Wall,                     !- Surface Type
+
+    interior_wall_Construction,    !- Construction Name
+
+    Zone1_RightPerimeter,     !- Zone Name
+
+    ,                         !- Space Name
+
+    Surface,                  !- Outside Boundary Condition
+
+    Zone1_Core_Wall_1,        !- Outside Boundary Condition Object
+
+    NoSun,                    !- Sun Exposure
+
+    NoWind,                   !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -1.402333e+01,            !- Vertex 1 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    -1.402333e+01,            !- Vertex 2 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    -7.713892158398698,       !- Vertex 3 Xcoordinate
+
+    6.245158061980253,        !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    -7.713892158398698,       !- Vertex 4 Xcoordinate
+
+    6.245158061980253,        !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_RightPerimeter_Wall_3,    !- Name
+
+    Wall,                     !- Surface Type
+
+    interior_wall_Construction,    !- Construction Name
+
+    Zone1_RightPerimeter,     !- Zone Name
+
+    ,                         !- Space Name
+
+    Adiabatic,                !- Outside Boundary Condition
+
+    ,                         !- Outside Boundary Condition Object
+
+    NoSun,                    !- Sun Exposure
+
+    NoWind,                   !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -7.713892158398698,       !- Vertex 1 Xcoordinate
+
+    6.245158061980253,        !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    -7.713892158398698,       !- Vertex 2 Xcoordinate
+
+    6.245158061980253,        !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    -7.713892158398699,       !- Vertex 3 Xcoordinate
+
+    7.7138921583987,          !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    -7.713892158398699,       !- Vertex 4 Xcoordinate
+
+    7.7138921583987,          !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_RightPerimeter_Roof,    !- Name
+
+    Roof,                     !- Surface Type
+
+    flat_roof_Construction,    !- Construction Name
+
+    Zone1_RightPerimeter,     !- Zone Name
+
+    ,                         !- Space Name
+
+    Outdoors,                 !- Outside Boundary Condition
+
+    ,                         !- Outside Boundary Condition Object
+
+    SunExposed,               !- Sun Exposure
+
+    WindExposed,              !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -7.713892158398698,       !- Vertex 1 Xcoordinate
+
+    6.245158061980253,        !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    -7.713892158398699,       !- Vertex 2 Xcoordinate
+
+    7.7138921583987,          !- Vertex 2 Ycoordinate
+
+    4,                        !- Vertex 2 Zcoordinate
+
+    -1.549207e+01,            !- Vertex 3 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 3 Ycoordinate
+
+    4,                        !- Vertex 3 Zcoordinate
+
+    -1.402333e+01,            !- Vertex 4 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_RearPerimeter_Floor,    !- Name
+
+    Floor,                    !- Surface Type
+
+    ground_floor_Construction,    !- Construction Name
+
+    Zone1_RearPerimeter,      !- Zone Name
+
+    ,                         !- Space Name
+
+    Ground,                   !- Outside Boundary Condition
+
+    ,                         !- Outside Boundary Condition Object
+
+    NoSun,                    !- Sun Exposure
+
+    NoWind,                   !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -1.402333e+01,            !- Vertex 1 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 1 Ycoordinate
+
+    0,                        !- Vertex 1 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 2 Xcoordinate
+
+    -6.309440496633575,       !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 3 Xcoordinate
+
+    -7.778174593052022,       !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    -1.549207e+01,            !- Vertex 4 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 4 Ycoordinate
+
+    0;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_RearPerimeter_Wall_0,    !- Name
+
+    Wall,                     !- Surface Type
+
+    exterior_wall_Construction,    !- Construction Name
+
+    Zone1_RearPerimeter,      !- Zone Name
+
+    ,                         !- Space Name
+
+    Outdoors,                 !- Outside Boundary Condition
+
+    ,                         !- Outside Boundary Condition Object
+
+    SunExposed,               !- Sun Exposure
+
+    WindExposed,              !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -1.549207e+01,            !- Vertex 1 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    -1.549207e+01,            !- Vertex 2 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 3 Xcoordinate
+
+    -7.778174593052022,       !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 4 Xcoordinate
+
+    -7.778174593052022,       !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_RearPerimeter_Wall_1,    !- Name
+
+    Wall,                     !- Surface Type
+
+    interior_wall_Construction,    !- Construction Name
+
+    Zone1_RearPerimeter,      !- Zone Name
+
+    ,                         !- Space Name
+
+    Adiabatic,                !- Outside Boundary Condition
+
+    ,                         !- Outside Boundary Condition Object
+
+    NoSun,                    !- Sun Exposure
+
+    NoWind,                   !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -7.778174593052023,       !- Vertex 1 Xcoordinate
+
+    -7.778174593052022,       !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 2 Xcoordinate
+
+    -7.778174593052022,       !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 3 Xcoordinate
+
+    -6.309440496633575,       !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 4 Xcoordinate
+
+    -6.309440496633575,       !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_RearPerimeter_Wall_2,    !- Name
+
+    Wall,                     !- Surface Type
+
+    interior_wall_Construction,    !- Construction Name
+
+    Zone1_RearPerimeter,      !- Zone Name
+
+    ,                         !- Space Name
+
+    Surface,                  !- Outside Boundary Condition
+
+    Zone1_Core_Wall_2,        !- Outside Boundary Condition Object
+
+    NoSun,                    !- Sun Exposure
+
+    NoWind,                   !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -7.778174593052023,       !- Vertex 1 Xcoordinate
+
+    -6.309440496633575,       !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 2 Xcoordinate
+
+    -6.309440496633575,       !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    -1.402333e+01,            !- Vertex 3 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    -1.402333e+01,            !- Vertex 4 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_RearPerimeter_Wall_3,    !- Name
+
+    Wall,                     !- Surface Type
+
+    interior_wall_Construction,    !- Construction Name
+
+    Zone1_RearPerimeter,      !- Zone Name
+
+    ,                         !- Space Name
+
+    Adiabatic,                !- Outside Boundary Condition
+
+    ,                         !- Outside Boundary Condition Object
+
+    NoSun,                    !- Sun Exposure
+
+    NoWind,                   !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -1.402333e+01,            !- Vertex 1 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    -1.402333e+01,            !- Vertex 2 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    -1.549207e+01,            !- Vertex 3 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    -1.549207e+01,            !- Vertex 4 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_RearPerimeter_Roof,    !- Name
+
+    Roof,                     !- Surface Type
+
+    flat_roof_Construction,    !- Construction Name
+
+    Zone1_RearPerimeter,      !- Zone Name
+
+    ,                         !- Space Name
+
+    Outdoors,                 !- Outside Boundary Condition
+
+    ,                         !- Outside Boundary Condition Object
+
+    SunExposed,               !- Sun Exposure
+
+    WindExposed,              !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -7.778174593052023,       !- Vertex 1 Xcoordinate
+
+    -7.778174593052022,       !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 2 Xcoordinate
+
+    -6.309440496633575,       !- Vertex 2 Ycoordinate
+
+    4,                        !- Vertex 2 Zcoordinate
+
+    -1.402333e+01,            !- Vertex 3 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 3 Ycoordinate
+
+    4,                        !- Vertex 3 Zcoordinate
+
+    -1.549207e+01,            !- Vertex 4 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_LeftPerimeter_Floor,    !- Name
+
+    Floor,                    !- Surface Type
+
+    ground_floor_Construction,    !- Construction Name
+
+    Zone1_LeftPerimeter,      !- Zone Name
+
+    ,                         !- Space Name
+
+    Ground,                   !- Outside Boundary Condition
+
+    ,                         !- Outside Boundary Condition Object
+
+    NoSun,                    !- Sun Exposure
+
+    NoWind,                   !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    0,                        !- Vertex 1 Xcoordinate
+
+    0,                        !- Vertex 1 Ycoordinate
+
+    0,                        !- Vertex 1 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 2 Xcoordinate
+
+    -7.778174593052022,       !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 3 Xcoordinate
+
+    -6.309440496633575,       !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    -1.468734096418446,       !- Vertex 4 Xcoordinate
+
+    -3.330669e-16,            !- Vertex 4 Ycoordinate
+
+    0;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_LeftPerimeter_Wall_0,    !- Name
+
+    Wall,                     !- Surface Type
+
+    exterior_wall_Construction,    !- Construction Name
+
+    Zone1_LeftPerimeter,      !- Zone Name
+
+    ,                         !- Space Name
+
+    Outdoors,                 !- Outside Boundary Condition
+
+    ,                         !- Outside Boundary Condition Object
+
+    SunExposed,               !- Sun Exposure
+
+    WindExposed,              !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -7.778174593052023,       !- Vertex 1 Xcoordinate
+
+    -7.778174593052022,       !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 2 Xcoordinate
+
+    -7.778174593052022,       !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    0,                        !- Vertex 3 Xcoordinate
+
+    0,                        !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    0,                        !- Vertex 4 Xcoordinate
+
+    0,                        !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_LeftPerimeter_Wall_1,    !- Name
+
+    Wall,                     !- Surface Type
+
+    interior_wall_Construction,    !- Construction Name
+
+    Zone1_LeftPerimeter,      !- Zone Name
+
+    ,                         !- Space Name
+
+    Adiabatic,                !- Outside Boundary Condition
+
+    ,                         !- Outside Boundary Condition Object
+
+    NoSun,                    !- Sun Exposure
+
+    NoWind,                   !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    0,                        !- Vertex 1 Xcoordinate
+
+    0,                        !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    0,                        !- Vertex 2 Xcoordinate
+
+    0,                        !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    -1.468734096418446,       !- Vertex 3 Xcoordinate
+
+    -3.330669e-16,            !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    -1.468734096418446,       !- Vertex 4 Xcoordinate
+
+    -3.330669e-16,            !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_LeftPerimeter_Wall_2,    !- Name
+
+    Wall,                     !- Surface Type
+
+    interior_wall_Construction,    !- Construction Name
+
+    Zone1_LeftPerimeter,      !- Zone Name
+
+    ,                         !- Space Name
+
+    Surface,                  !- Outside Boundary Condition
+
+    Zone1_Core_Wall_3,        !- Outside Boundary Condition Object
+
+    NoSun,                    !- Sun Exposure
+
+    NoWind,                   !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -1.468734096418446,       !- Vertex 1 Xcoordinate
+
+    -3.330669e-16,            !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    -1.468734096418446,       !- Vertex 2 Xcoordinate
+
+    -3.330669e-16,            !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 3 Xcoordinate
+
+    -6.309440496633575,       !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 4 Xcoordinate
+
+    -6.309440496633575,       !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_LeftPerimeter_Wall_3,    !- Name
+
+    Wall,                     !- Surface Type
+
+    interior_wall_Construction,    !- Construction Name
+
+    Zone1_LeftPerimeter,      !- Zone Name
+
+    ,                         !- Space Name
+
+    Adiabatic,                !- Outside Boundary Condition
+
+    ,                         !- Outside Boundary Condition Object
+
+    NoSun,                    !- Sun Exposure
+
+    NoWind,                   !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -7.778174593052023,       !- Vertex 1 Xcoordinate
+
+    -6.309440496633575,       !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 2 Xcoordinate
+
+    -6.309440496633575,       !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 3 Xcoordinate
+
+    -7.778174593052022,       !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 4 Xcoordinate
+
+    -7.778174593052022,       !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_LeftPerimeter_Roof,    !- Name
+
+    Roof,                     !- Surface Type
+
+    flat_roof_Construction,    !- Construction Name
+
+    Zone1_LeftPerimeter,      !- Zone Name
+
+    ,                         !- Space Name
+
+    Outdoors,                 !- Outside Boundary Condition
+
+    ,                         !- Outside Boundary Condition Object
+
+    SunExposed,               !- Sun Exposure
+
+    WindExposed,              !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    0,                        !- Vertex 1 Xcoordinate
+
+    0,                        !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    -1.468734096418446,       !- Vertex 2 Xcoordinate
+
+    -3.330669e-16,            !- Vertex 2 Ycoordinate
+
+    4,                        !- Vertex 2 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 3 Xcoordinate
+
+    -6.309440496633575,       !- Vertex 3 Ycoordinate
+
+    4,                        !- Vertex 3 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 4 Xcoordinate
+
+    -7.778174593052022,       !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_Core_Floor,         !- Name
+
+    Floor,                    !- Surface Type
+
+    ground_floor_Construction,    !- Construction Name
+
+    Zone1_Core,               !- Zone Name
+
+    ,                         !- Space Name
+
+    Ground,                   !- Outside Boundary Condition
+
+    ,                         !- Outside Boundary Condition Object
+
+    NoSun,                    !- Sun Exposure
+
+    NoWind,                   !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -7.713892158398698,       !- Vertex 1 Xcoordinate
+
+    6.245158061980253,        !- Vertex 1 Ycoordinate
+
+    0,                        !- Vertex 1 Zcoordinate
+
+    -1.468734096418446,       !- Vertex 2 Xcoordinate
+
+    -3.330669e-16,            !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 3 Xcoordinate
+
+    -6.309440496633575,       !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    -1.402333e+01,            !- Vertex 4 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 4 Ycoordinate
+
+    0;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_Core_Wall_0,        !- Name
+
+    Wall,                     !- Surface Type
+
+    interior_wall_Construction,    !- Construction Name
+
+    Zone1_Core,               !- Zone Name
+
+    ,                         !- Space Name
+
+    Surface,                  !- Outside Boundary Condition
+
+    Zone1_FrontPerimeter_Wall_2,    !- Outside Boundary Condition Object
+
+    NoSun,                    !- Sun Exposure
+
+    NoWind,                   !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -1.468734096418446,       !- Vertex 1 Xcoordinate
+
+    -3.330669e-16,            !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    -1.468734096418446,       !- Vertex 2 Xcoordinate
+
+    -3.330669e-16,            !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    -7.713892158398698,       !- Vertex 3 Xcoordinate
+
+    6.245158061980253,        !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    -7.713892158398698,       !- Vertex 4 Xcoordinate
+
+    6.245158061980253,        !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_Core_Wall_1,        !- Name
+
+    Wall,                     !- Surface Type
+
+    interior_wall_Construction,    !- Construction Name
+
+    Zone1_Core,               !- Zone Name
+
+    ,                         !- Space Name
+
+    Surface,                  !- Outside Boundary Condition
+
+    Zone1_RightPerimeter_Wall_2,    !- Outside Boundary Condition Object
+
+    NoSun,                    !- Sun Exposure
+
+    NoWind,                   !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -7.713892158398698,       !- Vertex 1 Xcoordinate
+
+    6.245158061980253,        !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    -7.713892158398698,       !- Vertex 2 Xcoordinate
+
+    6.245158061980253,        !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    -1.402333e+01,            !- Vertex 3 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    -1.402333e+01,            !- Vertex 4 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_Core_Wall_2,        !- Name
+
+    Wall,                     !- Surface Type
+
+    interior_wall_Construction,    !- Construction Name
+
+    Zone1_Core,               !- Zone Name
+
+    ,                         !- Space Name
+
+    Surface,                  !- Outside Boundary Condition
+
+    Zone1_RearPerimeter_Wall_2,    !- Outside Boundary Condition Object
+
+    NoSun,                    !- Sun Exposure
+
+    NoWind,                   !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -1.402333e+01,            !- Vertex 1 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    -1.402333e+01,            !- Vertex 2 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 3 Xcoordinate
+
+    -6.309440496633575,       !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 4 Xcoordinate
+
+    -6.309440496633575,       !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_Core_Wall_3,        !- Name
+
+    Wall,                     !- Surface Type
+
+    interior_wall_Construction,    !- Construction Name
+
+    Zone1_Core,               !- Zone Name
+
+    ,                         !- Space Name
+
+    Surface,                  !- Outside Boundary Condition
+
+    Zone1_LeftPerimeter_Wall_2,    !- Outside Boundary Condition Object
+
+    NoSun,                    !- Sun Exposure
+
+    NoWind,                   !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -7.778174593052023,       !- Vertex 1 Xcoordinate
+
+    -6.309440496633575,       !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 2 Xcoordinate
+
+    -6.309440496633575,       !- Vertex 2 Ycoordinate
+
+    0,                        !- Vertex 2 Zcoordinate
+
+    -1.468734096418446,       !- Vertex 3 Xcoordinate
+
+    -3.330669e-16,            !- Vertex 3 Ycoordinate
+
+    0,                        !- Vertex 3 Zcoordinate
+
+    -1.468734096418446,       !- Vertex 4 Xcoordinate
+
+    -3.330669e-16,            !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+BUILDINGSURFACE:DETAILED,
+
+    Zone1_Core_Roof,          !- Name
+
+    Roof,                     !- Surface Type
+
+    flat_roof_Construction,    !- Construction Name
+
+    Zone1_Core,               !- Zone Name
+
+    ,                         !- Space Name
+
+    Outdoors,                 !- Outside Boundary Condition
+
+    ,                         !- Outside Boundary Condition Object
+
+    SunExposed,               !- Sun Exposure
+
+    WindExposed,              !- Wind Exposure
+
+    autocalculate,            !- View Factor to Ground
+
+    autocalculate,            !- Number of Vertices
+
+    -1.468734096418446,       !- Vertex 1 Xcoordinate
+
+    -3.330669e-16,            !- Vertex 1 Ycoordinate
+
+    4,                        !- Vertex 1 Zcoordinate
+
+    -7.713892158398698,       !- Vertex 2 Xcoordinate
+
+    6.245158061980253,        !- Vertex 2 Ycoordinate
+
+    4,                        !- Vertex 2 Zcoordinate
+
+    -1.402333e+01,            !- Vertex 3 Xcoordinate
+
+    -6.428243e-02,            !- Vertex 3 Ycoordinate
+
+    4,                        !- Vertex 3 Zcoordinate
+
+    -7.778174593052023,       !- Vertex 4 Xcoordinate
+
+    -6.309440496633575,       !- Vertex 4 Ycoordinate
+
+    4;                        !- Vertex 4 Zcoordinate
+
+FENESTRATIONSURFACE:DETAILED,
+
+    Zone1_RearPerimeter_Wall_0 window,    !- Name
+
+    Window,                   !- Surface Type
+
+    Window1C,                 !- Construction Name
+
+    Zone1_RearPerimeter_Wall_0,    !- Building Surface Name
+
+    ,                         !- Outside Boundary Condition Object
+
+    autocalculate,            !- View Factor to Ground
+
+    ,                         !- Frame and Divider Name
+
+    1.0,                      !- Multiplier
+
+    autocalculate,            !- Number of Vertices
+
+    -1.548821e+01,            !- Vertex 1 Xcoordinate
+
+    -6.813938e-02,            !- Vertex 1 Ycoordinate
+
+    2.6,                      !- Vertex 1 Zcoordinate
+
+    -1.548821e+01,            !- Vertex 2 Xcoordinate
+
+    -6.813938e-02,            !- Vertex 2 Ycoordinate
+
+    1.4,                      !- Vertex 2 Zcoordinate
+
+    -7.782031539131223,       !- Vertex 3 Xcoordinate
+
+    -7.774317646972822,       !- Vertex 3 Ycoordinate
+
+    1.4,                      !- Vertex 3 Zcoordinate
+
+    -7.782031539131223,       !- Vertex 4 Xcoordinate
+
+    -7.774317646972822,       !- Vertex 4 Ycoordinate
+
+    2.6;                      !- Vertex 4 Zcoordinate
+
+FENESTRATIONSURFACE:DETAILED,
+
+    Zone1_LeftPerimeter_Wall_0 window,    !- Name
+
+    Window,                   !- Surface Type
+
+    Window1C,                 !- Construction Name
+
+    Zone1_LeftPerimeter_Wall_0,    !- Building Surface Name
+
+    ,                         !- Outside Boundary Condition Object
+
+    autocalculate,            !- View Factor to Ground
+
+    ,                         !- Frame and Divider Name
+
+    1.0,                      !- Multiplier
+
+    autocalculate,            !- Number of Vertices
+
+    -7.774285505755497,       !- Vertex 1 Xcoordinate
+
+    -7.774285505755495,       !- Vertex 1 Ycoordinate
+
+    2.6,                      !- Vertex 1 Zcoordinate
+
+    -7.774285505755497,       !- Vertex 2 Xcoordinate
+
+    -7.774285505755495,       !- Vertex 2 Ycoordinate
+
+    1.4,                      !- Vertex 2 Zcoordinate
+
+    -3.889087e-03,            !- Vertex 3 Xcoordinate
+
+    -3.889087e-03,            !- Vertex 3 Ycoordinate
+
+    1.4,                      !- Vertex 3 Zcoordinate
+
+    -3.889087e-03,            !- Vertex 4 Xcoordinate
+
+    -3.889087e-03,            !- Vertex 4 Ycoordinate
+
+    2.6;                      !- Vertex 4 Zcoordinate
+
+WINDOWSHADINGCONTROL,
+
+    ShadingCtrl_Zone1_RearPerimeter_Wall_0_window,    !- Name
+
+    Zone1_RearPerimeter,      !- Zone Name
+
+    1,                        !- Shading Control Sequence Number
+
+    ExteriorBlind,            !- Shading Type
+
+    ,                         !- Construction with Shading Name
+
+    AlwaysOn,                 !- Shading Control Type
+
+    ,                         !- Schedule Name
+
+    ,                         !- Setpoint
+
+    No,                       !- Shading Control Is Scheduled
+
+    No,                       !- Glare Control Is Active
+
+    MyExternalLouvers_Zone1_RearPerimeter_Wall_0_window,    !- Shading Device Material Name
+
+    FixedSlatAngle,           !- Type of Slat Angle Control for Blinds
+
+    ,                         !- Slat Angle Schedule Name
+
+    ,                         !- Setpoint 2
+
+    ,                         !- Daylighting Control Object Name
+
+    Sequential,               !- Multiple Surface Control Type
+
+    Zone1_RearPerimeter_Wall_0 window;    !- Fenestration Surface 1 Name
+
+WINDOWSHADINGCONTROL,
+
+    ShadingCtrl_Zone1_LeftPerimeter_Wall_0_window,    !- Name
+
+    Zone1_LeftPerimeter,      !- Zone Name
+
+    1,                        !- Shading Control Sequence Number
+
+    ExteriorBlind,            !- Shading Type
+
+    ,                         !- Construction with Shading Name
+
+    AlwaysOn,                 !- Shading Control Type
+
+    ,                         !- Schedule Name
+
+    ,                         !- Setpoint
+
+    No,                       !- Shading Control Is Scheduled
+
+    No,                       !- Glare Control Is Active
+
+    MyExternalLouvers_Zone1_LeftPerimeter_Wall_0_window,    !- Shading Device Material Name
+
+    FixedSlatAngle,           !- Type of Slat Angle Control for Blinds
+
+    ,                         !- Slat Angle Schedule Name
+
+    ,                         !- Setpoint 2
+
+    ,                         !- Daylighting Control Object Name
+
+    Sequential,               !- Multiple Surface Control Type
+
+    Zone1_LeftPerimeter_Wall_0 window;    !- Fenestration Surface 1 Name
+
+LIGHTS,
+
+    Lights_ALL_ZONES,         !- Name
+
+    ALL_ZONES,                !- Zone or ZoneList or Space or SpaceList Name
+
+    LightsSchedule,           !- Schedule Name
+
+    Watts/Area,               !- Design Level Calculation Method
+
+    ,                         !- Lighting Level
+
+    4.092524414409712,        !- Watts per Zone Floor Area
+
+    ,                         !- Watts per Person
+
+    0.8,                      !- Return Air Fraction
+
+    0.1,                      !- Fraction Radiant
+
+    0.1,                      !- Fraction Visible
+
+    1,                        !- Fraction Replaceable
+
+    General,                  !- EndUse Subcategory
+
+    No,                       !- Return Air Fraction Calculated from Plenum Temperature
+
+    0,                        !- Return Air Fraction Function of Plenum Temperature Coefficient 1
+
+    0;                        !- Return Air Fraction Function of Plenum Temperature Coefficient 2
+
+ELECTRICEQUIPMENT,
+
+    Parasitic_ALL_ZONES,      !- Name
+
+    ALL_ZONES,                !- Zone or ZoneList or Space or SpaceList Name
+
+    ParasiticSchedule,        !- Schedule Name
+
+    Watts/Area,               !- Design Level Calculation Method
+
+    ,                         !- Design Level
+
+    1.348112e-01,             !- Watts per Zone Floor Area
+
+    ,                         !- Watts per Person
+
+    0,                        !- Fraction Latent
+
+    0.1,                      !- Fraction Radiant
+
+    0.8,                      !- Fraction Lost
+
+    General;                  !- EndUse Subcategory
+
+ELECTRICEQUIPMENT,
+
+    Equip_ALL_ZONES,          !- Name
+
+    ALL_ZONES,                !- Zone or ZoneList or Space or SpaceList Name
+
+    EquipSchedule,            !- Schedule Name
+
+    Watts/Area,               !- Design Level Calculation Method
+
+    ,                         !- Design Level
+
+    2.5387866216145683,       !- Watts per Zone Floor Area
+
+    ,                         !- Watts per Person
+
+    0,                        !- Fraction Latent
+
+    0.1,                      !- Fraction Radiant
+
+    0.8,                      !- Fraction Lost
+
+    General;                  !- EndUse Subcategory
+
+ZONEINFILTRATION:DESIGNFLOWRATE,
+
+    Infil_non__A_Zone1_FrontPerimeter,    !- Name
+
+    Zone1_FrontPerimeter,     !- Zone or ZoneList or Space or SpaceList Name
+
+    InfilSched_Meeting_Function,    !- Schedule Name
+
+    Flow/Area,                !- Design Flow Rate Calculation Method
+
+    1.110941e-04,             !- Design Flow Rate
+
+    ,                         !- Flow Rate per Floor Area
+
+    ,                         !- Flow Rate per Exterior Surface Area
+
+    ,                         !- Air Changes per Hour
+
+    0.5,                      !- Constant Term Coefficient
+
+    0.02,                     !- Temperature Term Coefficient
+
+    0.04,                     !- Velocity Term Coefficient
+
+    0;                        !- Velocity Squared Term Coefficient
+
+ZONEINFILTRATION:DESIGNFLOWRATE,
+
+    Infil_non__A_Zone1_RightPerimeter,    !- Name
+
+    Zone1_RightPerimeter,     !- Zone or ZoneList or Space or SpaceList Name
+
+    InfilSched_Meeting_Function,    !- Schedule Name
+
+    Flow/Area,                !- Design Flow Rate Calculation Method
+
+    1.110941e-04,             !- Design Flow Rate
+
+    ,                         !- Flow Rate per Floor Area
+
+    ,                         !- Flow Rate per Exterior Surface Area
+
+    ,                         !- Air Changes per Hour
+
+    0.5,                      !- Constant Term Coefficient
+
+    0.02,                     !- Temperature Term Coefficient
+
+    0.04,                     !- Velocity Term Coefficient
+
+    0;                        !- Velocity Squared Term Coefficient
+
+ZONEINFILTRATION:DESIGNFLOWRATE,
+
+    Infil_non__A_Zone1_RearPerimeter,    !- Name
+
+    Zone1_RearPerimeter,      !- Zone or ZoneList or Space or SpaceList Name
+
+    InfilSched_Meeting_Function,    !- Schedule Name
+
+    Flow/Area,                !- Design Flow Rate Calculation Method
+
+    1.110941e-04,             !- Design Flow Rate
+
+    ,                         !- Flow Rate per Floor Area
+
+    ,                         !- Flow Rate per Exterior Surface Area
+
+    ,                         !- Air Changes per Hour
+
+    0.5,                      !- Constant Term Coefficient
+
+    0.02,                     !- Temperature Term Coefficient
+
+    0.04,                     !- Velocity Term Coefficient
+
+    0;                        !- Velocity Squared Term Coefficient
+
+ZONEINFILTRATION:DESIGNFLOWRATE,
+
+    Infil_non__A_Zone1_LeftPerimeter,    !- Name
+
+    Zone1_LeftPerimeter,      !- Zone or ZoneList or Space or SpaceList Name
+
+    InfilSched_Meeting_Function,    !- Schedule Name
+
+    Flow/Area,                !- Design Flow Rate Calculation Method
+
+    1.110941e-04,             !- Design Flow Rate
+
+    ,                         !- Flow Rate per Floor Area
+
+    ,                         !- Flow Rate per Exterior Surface Area
+
+    ,                         !- Air Changes per Hour
+
+    0.5,                      !- Constant Term Coefficient
+
+    0.02,                     !- Temperature Term Coefficient
+
+    0.04,                     !- Velocity Term Coefficient
+
+    0;                        !- Velocity Squared Term Coefficient
+
+ZONEINFILTRATION:DESIGNFLOWRATE,
+
+    Infil_non__A_Zone1_Core,    !- Name
+
+    Zone1_Core,               !- Zone or ZoneList or Space or SpaceList Name
+
+    InfilSched_Meeting_Function,    !- Schedule Name
+
+    Flow/Area,                !- Design Flow Rate Calculation Method
+
+    0,                        !- Design Flow Rate
+
+    ,                         !- Flow Rate per Floor Area
+
+    ,                         !- Flow Rate per Exterior Surface Area
+
+    ,                         !- Air Changes per Hour
+
+    0.5,                      !- Constant Term Coefficient
+
+    0.02,                     !- Temperature Term Coefficient
+
+    0.04,                     !- Velocity Term Coefficient
+
+    0;                        !- Velocity Squared Term Coefficient
+
+ZONEVENTILATION:DESIGNFLOWRATE,
+
+    Vent_non__A_Zone1_FrontPerimeter,    !- Name
+
+    Zone1_FrontPerimeter,     !- Zone or ZoneList or Space or SpaceList Name
+
+    VentSched_Meeting_Function,    !- Schedule Name
+
+    Flow/Area,                !- Design Flow Rate Calculation Method
+
+    9.671647e-04,             !- Design Flow Rate
+
+    ,                         !- Flow Rate per Floor Area
+
+    ,                         !- Flow Rate per Person
+
+    ,                         !- Air Changes per Hour
+
+    Natural,                  !- Ventilation Type
+
+    0,                        !- Fan Pressure Rise
+
+    1,                        !- Fan Total Efficiency
+
+    1,                        !- Constant Term Coefficient
+
+    0,                        !- Temperature Term Coefficient
+
+    0,                        !- Velocity Term Coefficient
+
+    0,                        !- Velocity Squared Term Coefficient
+
+    -100,                     !- Minimum Indoor Temperature
+
+    ,                         !- Minimum Indoor Temperature Schedule Name
+
+    100,                      !- Maximum Indoor Temperature
+
+    ,                         !- Maximum Indoor Temperature Schedule Name
+
+    -100,                     !- Delta Temperature
+
+    ,                         !- Delta Temperature Schedule Name
+
+    -100,                     !- Minimum Outdoor Temperature
+
+    ,                         !- Minimum Outdoor Temperature Schedule Name
+
+    100,                      !- Maximum Outdoor Temperature
+
+    ,                         !- Maximum Outdoor Temperature Schedule Name
+
+    40;                       !- Maximum Wind Speed
+
+ZONEVENTILATION:DESIGNFLOWRATE,
+
+    Vent_non__A_Zone1_RightPerimeter,    !- Name
+
+    Zone1_RightPerimeter,     !- Zone or ZoneList or Space or SpaceList Name
+
+    VentSched_Meeting_Function,    !- Schedule Name
+
+    Flow/Area,                !- Design Flow Rate Calculation Method
+
+    9.671647e-04,             !- Design Flow Rate
+
+    ,                         !- Flow Rate per Floor Area
+
+    ,                         !- Flow Rate per Person
+
+    ,                         !- Air Changes per Hour
+
+    Natural,                  !- Ventilation Type
+
+    0,                        !- Fan Pressure Rise
+
+    1,                        !- Fan Total Efficiency
+
+    1,                        !- Constant Term Coefficient
+
+    0,                        !- Temperature Term Coefficient
+
+    0,                        !- Velocity Term Coefficient
+
+    0,                        !- Velocity Squared Term Coefficient
+
+    -100,                     !- Minimum Indoor Temperature
+
+    ,                         !- Minimum Indoor Temperature Schedule Name
+
+    100,                      !- Maximum Indoor Temperature
+
+    ,                         !- Maximum Indoor Temperature Schedule Name
+
+    -100,                     !- Delta Temperature
+
+    ,                         !- Delta Temperature Schedule Name
+
+    -100,                     !- Minimum Outdoor Temperature
+
+    ,                         !- Minimum Outdoor Temperature Schedule Name
+
+    100,                      !- Maximum Outdoor Temperature
+
+    ,                         !- Maximum Outdoor Temperature Schedule Name
+
+    40;                       !- Maximum Wind Speed
+
+ZONEVENTILATION:DESIGNFLOWRATE,
+
+    Vent_non__A_Zone1_RearPerimeter,    !- Name
+
+    Zone1_RearPerimeter,      !- Zone or ZoneList or Space or SpaceList Name
+
+    VentSched_Meeting_Function,    !- Schedule Name
+
+    Flow/Area,                !- Design Flow Rate Calculation Method
+
+    9.671647e-04,             !- Design Flow Rate
+
+    ,                         !- Flow Rate per Floor Area
+
+    ,                         !- Flow Rate per Person
+
+    ,                         !- Air Changes per Hour
+
+    Natural,                  !- Ventilation Type
+
+    0,                        !- Fan Pressure Rise
+
+    1,                        !- Fan Total Efficiency
+
+    1,                        !- Constant Term Coefficient
+
+    0,                        !- Temperature Term Coefficient
+
+    0,                        !- Velocity Term Coefficient
+
+    0,                        !- Velocity Squared Term Coefficient
+
+    -100,                     !- Minimum Indoor Temperature
+
+    ,                         !- Minimum Indoor Temperature Schedule Name
+
+    100,                      !- Maximum Indoor Temperature
+
+    ,                         !- Maximum Indoor Temperature Schedule Name
+
+    -100,                     !- Delta Temperature
+
+    ,                         !- Delta Temperature Schedule Name
+
+    -100,                     !- Minimum Outdoor Temperature
+
+    ,                         !- Minimum Outdoor Temperature Schedule Name
+
+    100,                      !- Maximum Outdoor Temperature
+
+    ,                         !- Maximum Outdoor Temperature Schedule Name
+
+    40;                       !- Maximum Wind Speed
+
+ZONEVENTILATION:DESIGNFLOWRATE,
+
+    Vent_non__A_Zone1_LeftPerimeter,    !- Name
+
+    Zone1_LeftPerimeter,      !- Zone or ZoneList or Space or SpaceList Name
+
+    VentSched_Meeting_Function,    !- Schedule Name
+
+    Flow/Area,                !- Design Flow Rate Calculation Method
+
+    9.671647e-04,             !- Design Flow Rate
+
+    ,                         !- Flow Rate per Floor Area
+
+    ,                         !- Flow Rate per Person
+
+    ,                         !- Air Changes per Hour
+
+    Natural,                  !- Ventilation Type
+
+    0,                        !- Fan Pressure Rise
+
+    1,                        !- Fan Total Efficiency
+
+    1,                        !- Constant Term Coefficient
+
+    0,                        !- Temperature Term Coefficient
+
+    0,                        !- Velocity Term Coefficient
+
+    0,                        !- Velocity Squared Term Coefficient
+
+    -100,                     !- Minimum Indoor Temperature
+
+    ,                         !- Minimum Indoor Temperature Schedule Name
+
+    100,                      !- Maximum Indoor Temperature
+
+    ,                         !- Maximum Indoor Temperature Schedule Name
+
+    -100,                     !- Delta Temperature
+
+    ,                         !- Delta Temperature Schedule Name
+
+    -100,                     !- Minimum Outdoor Temperature
+
+    ,                         !- Minimum Outdoor Temperature Schedule Name
+
+    100,                      !- Maximum Outdoor Temperature
+
+    ,                         !- Maximum Outdoor Temperature Schedule Name
+
+    40;                       !- Maximum Wind Speed
+
+ZONEVENTILATION:DESIGNFLOWRATE,
+
+    Vent_non__A_Zone1_Core,    !- Name
+
+    Zone1_Core,               !- Zone or ZoneList or Space or SpaceList Name
+
+    VentSched_Meeting_Function,    !- Schedule Name
+
+    Flow/Area,                !- Design Flow Rate Calculation Method
+
+    9.671647e-04,             !- Design Flow Rate
+
+    ,                         !- Flow Rate per Floor Area
+
+    ,                         !- Flow Rate per Person
+
+    ,                         !- Air Changes per Hour
+
+    Natural,                  !- Ventilation Type
+
+    0,                        !- Fan Pressure Rise
+
+    1,                        !- Fan Total Efficiency
+
+    1,                        !- Constant Term Coefficient
+
+    0,                        !- Temperature Term Coefficient
+
+    0,                        !- Velocity Term Coefficient
+
+    0,                        !- Velocity Squared Term Coefficient
+
+    -100,                     !- Minimum Indoor Temperature
+
+    ,                         !- Minimum Indoor Temperature Schedule Name
+
+    100,                      !- Maximum Indoor Temperature
+
+    ,                         !- Maximum Indoor Temperature Schedule Name
+
+    -100,                     !- Delta Temperature
+
+    ,                         !- Delta Temperature Schedule Name
+
+    -100,                     !- Minimum Outdoor Temperature
+
+    ,                         !- Minimum Outdoor Temperature Schedule Name
+
+    100,                      !- Maximum Outdoor Temperature
+
+    ,                         !- Maximum Outdoor Temperature Schedule Name
+
+    40;                       !- Maximum Wind Speed
+
+DESIGNSPECIFICATION:OUTDOORAIR,
+
+    DSOA_Global,              !- Name
+
+    Sum,                      !- Outdoor Air Method
+
+    0.00236,                  !- Outdoor Air Flow per Person
+
+    0.000305,                 !- Outdoor Air Flow per Zone Floor Area
+
+    0,                        !- Outdoor Air Flow per Zone
+
+    0;                        !- Outdoor Air Flow Air Changes per Hour
+
+DESIGNSPECIFICATION:ZONEAIRDISTRIBUTION,
+
+    DSZAD_Global,             !- Name
+
+    1,                        !- Zone Air Distribution Effectiveness in Cooling Mode
+
+    1,                        !- Zone Air Distribution Effectiveness in Heating Mode
+
+    ,                         !- Zone Air Distribution Effectiveness Schedule Name
+
+    0.3,                      !- Zone Secondary Recirculation Fraction
+
+    0;                        !- Minimum Zone Ventilation Efficiency
+
+SIZING:ZONE,
+
+    ALL_ZONES,                !- Zone or ZoneList Name
+
+    SupplyAirTemperature,     !- Zone Cooling Design Supply Air Temperature Input Method
+
+    12.07710367867476,        !- Zone Cooling Design Supply Air Temperature
+
+    ,                         !- Zone Cooling Design Supply Air Temperature Difference
+
+    SupplyAirTemperature,     !- Zone Heating Design Supply Air Temperature Input Method
+
+    43.481121613185266,       !- Zone Heating Design Supply Air Temperature
+
+    ,                         !- Zone Heating Design Supply Air Temperature Difference
+
+    9.143933e-03,             !- Zone Cooling Design Supply Air Humidity Ratio
+
+    4.462532e-03,             !- Zone Heating Design Supply Air Humidity Ratio
+
+    DSOA_Global,              !- Design Specification Outdoor Air Object Name
+
+    1,                        !- Zone Heating Sizing Factor
+
+    1,                        !- Zone Cooling Sizing Factor
+
+    DesignDay,                !- Cooling Design Air Flow Method
+
+    0,                        !- Cooling Design Air Flow Rate
+
+    0.000762,                 !- Cooling Minimum Air Flow per Zone Floor Area
+
+    0,                        !- Cooling Minimum Air Flow
+
+    0.2,                      !- Cooling Minimum Air Flow Fraction
+
+    DesignDay,                !- Heating Design Air Flow Method
+
+    0,                        !- Heating Design Air Flow Rate
+
+    0.002032,                 !- Heating Maximum Air Flow per Zone Floor Area
+
+    0.1415762,                !- Heating Maximum Air Flow
+
+    0.3,                      !- Heating Maximum Air Flow Fraction
+
+    DSZAD_Global,             !- Design Specification Zone Air Distribution Object Name
+
+    No,                       !- Account for Dedicated Outdoor Air System
+
+    NeutralSupplyAir,         !- Dedicated Outdoor Air System Control Strategy
+
+    autosize,                 !- Dedicated Outdoor Air Low Setpoint Temperature for Design
+
+    autosize,                 !- Dedicated Outdoor Air High Setpoint Temperature for Design
+
+    Sensible Load Only No Latent Load,    !- Zone Load Sizing Method
+
+    HumidityRatioDifference,    !- Zone Latent Cooling Design Supply Air Humidity Ratio Input Method
+
+    ,                         !- Zone Dehumidification Design Supply Air Humidity Ratio
+
+    0.005,                    !- Zone Cooling Design Supply Air Humidity Ratio Difference
+
+    HumidityRatioDifference,    !- Zone Latent Heating Design Supply Air Humidity Ratio Input Method
+
+    ,                         !- Zone Humidification Design Supply Air Humidity Ratio
+
+    0.005;                    !- Zone Humidification Design Supply Air Humidity Ratio Difference
+
+ZONECONTROL:THERMOSTAT,
+
+    Zone1_FrontPerimeter_CONTROLS,    !- Name
+
+    Zone1_FrontPerimeter,     !- Zone or ZoneList Name
+
+    ZONE_CONTROL_TYPE_SCHEDULE,    !- Control Type Schedule Name
+
+    ThermostatSetpoint:DualSetpoint,    !- Control 1 Object Type
+
+    Zone1_FrontPerimeter_SETPOINTS,    !- Control 1 Name
+
+    ,                         !- Control 2 Object Type
+
+    ,                         !- Control 2 Name
+
+    ,                         !- Control 3 Object Type
+
+    ,                         !- Control 3 Name
+
+    ,                         !- Control 4 Object Type
+
+    ,                         !- Control 4 Name
+
+    0;                        !- Temperature Difference Between Cutout And Setpoint
+
+ZONECONTROL:THERMOSTAT,
+
+    Zone1_RightPerimeter_CONTROLS,    !- Name
+
+    Zone1_RightPerimeter,     !- Zone or ZoneList Name
+
+    ZONE_CONTROL_TYPE_SCHEDULE,    !- Control Type Schedule Name
+
+    ThermostatSetpoint:DualSetpoint,    !- Control 1 Object Type
+
+    Zone1_RightPerimeter_SETPOINTS,    !- Control 1 Name
+
+    ,                         !- Control 2 Object Type
+
+    ,                         !- Control 2 Name
+
+    ,                         !- Control 3 Object Type
+
+    ,                         !- Control 3 Name
+
+    ,                         !- Control 4 Object Type
+
+    ,                         !- Control 4 Name
+
+    0;                        !- Temperature Difference Between Cutout And Setpoint
+
+ZONECONTROL:THERMOSTAT,
+
+    Zone1_RearPerimeter_CONTROLS,    !- Name
+
+    Zone1_RearPerimeter,      !- Zone or ZoneList Name
+
+    ZONE_CONTROL_TYPE_SCHEDULE,    !- Control Type Schedule Name
+
+    ThermostatSetpoint:DualSetpoint,    !- Control 1 Object Type
+
+    Zone1_RearPerimeter_SETPOINTS,    !- Control 1 Name
+
+    ,                         !- Control 2 Object Type
+
+    ,                         !- Control 2 Name
+
+    ,                         !- Control 3 Object Type
+
+    ,                         !- Control 3 Name
+
+    ,                         !- Control 4 Object Type
+
+    ,                         !- Control 4 Name
+
+    0;                        !- Temperature Difference Between Cutout And Setpoint
+
+ZONECONTROL:THERMOSTAT,
+
+    Zone1_LeftPerimeter_CONTROLS,    !- Name
+
+    Zone1_LeftPerimeter,      !- Zone or ZoneList Name
+
+    ZONE_CONTROL_TYPE_SCHEDULE,    !- Control Type Schedule Name
+
+    ThermostatSetpoint:DualSetpoint,    !- Control 1 Object Type
+
+    Zone1_LeftPerimeter_SETPOINTS,    !- Control 1 Name
+
+    ,                         !- Control 2 Object Type
+
+    ,                         !- Control 2 Name
+
+    ,                         !- Control 3 Object Type
+
+    ,                         !- Control 3 Name
+
+    ,                         !- Control 4 Object Type
+
+    ,                         !- Control 4 Name
+
+    0;                        !- Temperature Difference Between Cutout And Setpoint
+
+ZONECONTROL:THERMOSTAT,
+
+    Zone1_Core_CONTROLS,      !- Name
+
+    Zone1_Core,               !- Zone or ZoneList Name
+
+    ZONE_CONTROL_TYPE_SCHEDULE,    !- Control Type Schedule Name
+
+    ThermostatSetpoint:DualSetpoint,    !- Control 1 Object Type
+
+    Zone1_Core_SETPOINTS,     !- Control 1 Name
+
+    ,                         !- Control 2 Object Type
+
+    ,                         !- Control 2 Name
+
+    ,                         !- Control 3 Object Type
+
+    ,                         !- Control 3 Name
+
+    ,                         !- Control 4 Object Type
+
+    ,                         !- Control 4 Name
+
+    0;                        !- Temperature Difference Between Cutout And Setpoint
+
+THERMOSTATSETPOINT:DUALSETPOINT,
+
+    Zone1_FrontPerimeter_SETPOINTS,    !- Name
+
+    ZONE_HEATING_SETPOINTS,    !- Heating Setpoint Temperature Schedule Name
+
+    ZONE_COOLING_SETPOINTS;    !- Cooling Setpoint Temperature Schedule Name
+
+THERMOSTATSETPOINT:DUALSETPOINT,
+
+    Zone1_RightPerimeter_SETPOINTS,    !- Name
+
+    ZONE_HEATING_SETPOINTS,    !- Heating Setpoint Temperature Schedule Name
+
+    ZONE_COOLING_SETPOINTS;    !- Cooling Setpoint Temperature Schedule Name
+
+THERMOSTATSETPOINT:DUALSETPOINT,
+
+    Zone1_RearPerimeter_SETPOINTS,    !- Name
+
+    ZONE_HEATING_SETPOINTS,    !- Heating Setpoint Temperature Schedule Name
+
+    ZONE_COOLING_SETPOINTS;    !- Cooling Setpoint Temperature Schedule Name
+
+THERMOSTATSETPOINT:DUALSETPOINT,
+
+    Zone1_LeftPerimeter_SETPOINTS,    !- Name
+
+    ZONE_HEATING_SETPOINTS,    !- Heating Setpoint Temperature Schedule Name
+
+    ZONE_COOLING_SETPOINTS;    !- Cooling Setpoint Temperature Schedule Name
+
+THERMOSTATSETPOINT:DUALSETPOINT,
+
+    Zone1_Core_SETPOINTS,     !- Name
+
+    ZONE_HEATING_SETPOINTS,    !- Heating Setpoint Temperature Schedule Name
+
+    ZONE_COOLING_SETPOINTS;    !- Cooling Setpoint Temperature Schedule Name
+
+ZONEHVAC:IDEALLOADSAIRSYSTEM,
+
+    Zone1_FrontPerimeter_Ideal_Loads,    !- Name
+
+    HVAC_Avail_Sched,         !- Availability Schedule Name
+
+    Zone1_FrontPerimeter_INLETS,    !- Zone Supply Air Node Name
+
+    ,                         !- Zone Exhaust Air Node Name
+
+    ,                         !- System Inlet Air Node Name
+
+    66.71646764117767,        !- Maximum Heating Supply Air Temperature
+
+    13.585902543310588,       !- Minimum Cooling Supply Air Temperature
+
+    0.0156,                   !- Maximum Heating Supply Air Humidity Ratio
+
+    0.0077,                   !- Minimum Cooling Supply Air Humidity Ratio
+
+    LimitFlowRateAndCapacity,    !- Heating Limit
+
+    Autosize,                 !- Maximum Heating Air Flow Rate
+
+    Autosize,                 !- Maximum Sensible Heating Capacity
+
+    LimitFlowRateAndCapacity,    !- Cooling Limit
+
+    Autosize,                 !- Maximum Cooling Air Flow Rate
+
+    Autosize,                 !- Maximum Total Cooling Capacity
+
+    ,                         !- Heating Availability Schedule Name
+
+    ,                         !- Cooling Availability Schedule Name
+
+    None,                     !- Dehumidification Control Type
+
+    0.7,                      !- Cooling Sensible Heat Ratio
+
+    None,                     !- Humidification Control Type
+
+    ,                         !- Design Specification Outdoor Air Object Name
+
+    ,                         !- Outdoor Air Inlet Node Name
+
+    None,                     !- Demand Controlled Ventilation Type
+
+    NoEconomizer,             !- Outdoor Air Economizer Type
+
+    None,                     !- Heat Recovery Type
+
+    0.70,                     !- Sensible Heat Recovery Effectiveness
+
+    0.65;                     !- Latent Heat Recovery Effectiveness
+
+ZONEHVAC:IDEALLOADSAIRSYSTEM,
+
+    Zone1_RightPerimeter_Ideal_Loads,    !- Name
+
+    HVAC_Avail_Sched,         !- Availability Schedule Name
+
+    Zone1_RightPerimeter_INLETS,    !- Zone Supply Air Node Name
+
+    ,                         !- Zone Exhaust Air Node Name
+
+    ,                         !- System Inlet Air Node Name
+
+    66.71646764117767,        !- Maximum Heating Supply Air Temperature
+
+    13.585902543310588,       !- Minimum Cooling Supply Air Temperature
+
+    0.0156,                   !- Maximum Heating Supply Air Humidity Ratio
+
+    0.0077,                   !- Minimum Cooling Supply Air Humidity Ratio
+
+    LimitFlowRateAndCapacity,    !- Heating Limit
+
+    Autosize,                 !- Maximum Heating Air Flow Rate
+
+    Autosize,                 !- Maximum Sensible Heating Capacity
+
+    LimitFlowRateAndCapacity,    !- Cooling Limit
+
+    Autosize,                 !- Maximum Cooling Air Flow Rate
+
+    Autosize,                 !- Maximum Total Cooling Capacity
+
+    ,                         !- Heating Availability Schedule Name
+
+    ,                         !- Cooling Availability Schedule Name
+
+    None,                     !- Dehumidification Control Type
+
+    0.7,                      !- Cooling Sensible Heat Ratio
+
+    None,                     !- Humidification Control Type
+
+    ,                         !- Design Specification Outdoor Air Object Name
+
+    ,                         !- Outdoor Air Inlet Node Name
+
+    None,                     !- Demand Controlled Ventilation Type
+
+    NoEconomizer,             !- Outdoor Air Economizer Type
+
+    None,                     !- Heat Recovery Type
+
+    0.70,                     !- Sensible Heat Recovery Effectiveness
+
+    0.65;                     !- Latent Heat Recovery Effectiveness
+
+ZONEHVAC:IDEALLOADSAIRSYSTEM,
+
+    Zone1_RearPerimeter_Ideal_Loads,    !- Name
+
+    HVAC_Avail_Sched,         !- Availability Schedule Name
+
+    Zone1_RearPerimeter_INLETS,    !- Zone Supply Air Node Name
+
+    ,                         !- Zone Exhaust Air Node Name
+
+    ,                         !- System Inlet Air Node Name
+
+    66.71646764117767,        !- Maximum Heating Supply Air Temperature
+
+    13.585902543310588,       !- Minimum Cooling Supply Air Temperature
+
+    0.0156,                   !- Maximum Heating Supply Air Humidity Ratio
+
+    0.0077,                   !- Minimum Cooling Supply Air Humidity Ratio
+
+    LimitFlowRateAndCapacity,    !- Heating Limit
+
+    Autosize,                 !- Maximum Heating Air Flow Rate
+
+    Autosize,                 !- Maximum Sensible Heating Capacity
+
+    LimitFlowRateAndCapacity,    !- Cooling Limit
+
+    Autosize,                 !- Maximum Cooling Air Flow Rate
+
+    Autosize,                 !- Maximum Total Cooling Capacity
+
+    ,                         !- Heating Availability Schedule Name
+
+    ,                         !- Cooling Availability Schedule Name
+
+    None,                     !- Dehumidification Control Type
+
+    0.7,                      !- Cooling Sensible Heat Ratio
+
+    None,                     !- Humidification Control Type
+
+    ,                         !- Design Specification Outdoor Air Object Name
+
+    ,                         !- Outdoor Air Inlet Node Name
+
+    None,                     !- Demand Controlled Ventilation Type
+
+    NoEconomizer,             !- Outdoor Air Economizer Type
+
+    None,                     !- Heat Recovery Type
+
+    0.70,                     !- Sensible Heat Recovery Effectiveness
+
+    0.65;                     !- Latent Heat Recovery Effectiveness
+
+ZONEHVAC:IDEALLOADSAIRSYSTEM,
+
+    Zone1_LeftPerimeter_Ideal_Loads,    !- Name
+
+    HVAC_Avail_Sched,         !- Availability Schedule Name
+
+    Zone1_LeftPerimeter_INLETS,    !- Zone Supply Air Node Name
+
+    ,                         !- Zone Exhaust Air Node Name
+
+    ,                         !- System Inlet Air Node Name
+
+    66.71646764117767,        !- Maximum Heating Supply Air Temperature
+
+    13.585902543310588,       !- Minimum Cooling Supply Air Temperature
+
+    0.0156,                   !- Maximum Heating Supply Air Humidity Ratio
+
+    0.0077,                   !- Minimum Cooling Supply Air Humidity Ratio
+
+    LimitFlowRateAndCapacity,    !- Heating Limit
+
+    Autosize,                 !- Maximum Heating Air Flow Rate
+
+    Autosize,                 !- Maximum Sensible Heating Capacity
+
+    LimitFlowRateAndCapacity,    !- Cooling Limit
+
+    Autosize,                 !- Maximum Cooling Air Flow Rate
+
+    Autosize,                 !- Maximum Total Cooling Capacity
+
+    ,                         !- Heating Availability Schedule Name
+
+    ,                         !- Cooling Availability Schedule Name
+
+    None,                     !- Dehumidification Control Type
+
+    0.7,                      !- Cooling Sensible Heat Ratio
+
+    None,                     !- Humidification Control Type
+
+    ,                         !- Design Specification Outdoor Air Object Name
+
+    ,                         !- Outdoor Air Inlet Node Name
+
+    None,                     !- Demand Controlled Ventilation Type
+
+    NoEconomizer,             !- Outdoor Air Economizer Type
+
+    None,                     !- Heat Recovery Type
+
+    0.70,                     !- Sensible Heat Recovery Effectiveness
+
+    0.65;                     !- Latent Heat Recovery Effectiveness
+
+ZONEHVAC:IDEALLOADSAIRSYSTEM,
+
+    Zone1_Core_Ideal_Loads,    !- Name
+
+    HVAC_Avail_Sched,         !- Availability Schedule Name
+
+    Zone1_Core_INLETS,        !- Zone Supply Air Node Name
+
+    ,                         !- Zone Exhaust Air Node Name
+
+    ,                         !- System Inlet Air Node Name
+
+    66.71646764117767,        !- Maximum Heating Supply Air Temperature
+
+    13.585902543310588,       !- Minimum Cooling Supply Air Temperature
+
+    0.0156,                   !- Maximum Heating Supply Air Humidity Ratio
+
+    0.0077,                   !- Minimum Cooling Supply Air Humidity Ratio
+
+    LimitFlowRateAndCapacity,    !- Heating Limit
+
+    Autosize,                 !- Maximum Heating Air Flow Rate
+
+    Autosize,                 !- Maximum Sensible Heating Capacity
+
+    LimitFlowRateAndCapacity,    !- Cooling Limit
+
+    Autosize,                 !- Maximum Cooling Air Flow Rate
+
+    Autosize,                 !- Maximum Total Cooling Capacity
+
+    ,                         !- Heating Availability Schedule Name
+
+    ,                         !- Cooling Availability Schedule Name
+
+    None,                     !- Dehumidification Control Type
+
+    0.7,                      !- Cooling Sensible Heat Ratio
+
+    None,                     !- Humidification Control Type
+
+    ,                         !- Design Specification Outdoor Air Object Name
+
+    ,                         !- Outdoor Air Inlet Node Name
+
+    None,                     !- Demand Controlled Ventilation Type
+
+    NoEconomizer,             !- Outdoor Air Economizer Type
+
+    None,                     !- Heat Recovery Type
+
+    0.70,                     !- Sensible Heat Recovery Effectiveness
+
+    0.65;                     !- Latent Heat Recovery Effectiveness
+
+ZONEHVAC:EQUIPMENTLIST,
+
+    Zone1_FrontPerimeter_EQUIPMENT,    !- Name
+
+    SequentialLoad,           !- Load Distribution Scheme
+
+    ZoneHVAC:IdealLoadsAirSystem,    !- Zone Equipment 1 Object Type
+
+    Zone1_FrontPerimeter_Ideal_Loads,    !- Zone Equipment 1 Name
+
+    1,                        !- Zone Equipment 1 Cooling Sequence
+
+    1;                        !- Zone Equipment 1 Heating or NoLoad Sequence
+
+ZONEHVAC:EQUIPMENTLIST,
+
+    Zone1_RightPerimeter_EQUIPMENT,    !- Name
+
+    SequentialLoad,           !- Load Distribution Scheme
+
+    ZoneHVAC:IdealLoadsAirSystem,    !- Zone Equipment 1 Object Type
+
+    Zone1_RightPerimeter_Ideal_Loads,    !- Zone Equipment 1 Name
+
+    1,                        !- Zone Equipment 1 Cooling Sequence
+
+    1;                        !- Zone Equipment 1 Heating or NoLoad Sequence
+
+ZONEHVAC:EQUIPMENTLIST,
+
+    Zone1_RearPerimeter_EQUIPMENT,    !- Name
+
+    SequentialLoad,           !- Load Distribution Scheme
+
+    ZoneHVAC:IdealLoadsAirSystem,    !- Zone Equipment 1 Object Type
+
+    Zone1_RearPerimeter_Ideal_Loads,    !- Zone Equipment 1 Name
+
+    1,                        !- Zone Equipment 1 Cooling Sequence
+
+    1;                        !- Zone Equipment 1 Heating or NoLoad Sequence
+
+ZONEHVAC:EQUIPMENTLIST,
+
+    Zone1_LeftPerimeter_EQUIPMENT,    !- Name
+
+    SequentialLoad,           !- Load Distribution Scheme
+
+    ZoneHVAC:IdealLoadsAirSystem,    !- Zone Equipment 1 Object Type
+
+    Zone1_LeftPerimeter_Ideal_Loads,    !- Zone Equipment 1 Name
+
+    1,                        !- Zone Equipment 1 Cooling Sequence
+
+    1;                        !- Zone Equipment 1 Heating or NoLoad Sequence
+
+ZONEHVAC:EQUIPMENTLIST,
+
+    Zone1_Core_EQUIPMENT,     !- Name
+
+    SequentialLoad,           !- Load Distribution Scheme
+
+    ZoneHVAC:IdealLoadsAirSystem,    !- Zone Equipment 1 Object Type
+
+    Zone1_Core_Ideal_Loads,    !- Zone Equipment 1 Name
+
+    1,                        !- Zone Equipment 1 Cooling Sequence
+
+    1;                        !- Zone Equipment 1 Heating or NoLoad Sequence
+
+ZONEHVAC:EQUIPMENTCONNECTIONS,
+
+    Zone1_FrontPerimeter,     !- Zone Name
+
+    Zone1_FrontPerimeter_EQUIPMENT,    !- Zone Conditioning Equipment List Name
+
+    Zone1_FrontPerimeter_INLETS,    !- Zone Air Inlet Node or NodeList Name
+
+    ,                         !- Zone Air Exhaust Node or NodeList Name
+
+    Zone1_FrontPerimeter_NODE,    !- Zone Air Node Name
+
+    Zone1_FrontPerimeter_OUTLET;    !- Zone Return Air Node or NodeList Name
+
+ZONEHVAC:EQUIPMENTCONNECTIONS,
+
+    Zone1_RightPerimeter,     !- Zone Name
+
+    Zone1_RightPerimeter_EQUIPMENT,    !- Zone Conditioning Equipment List Name
+
+    Zone1_RightPerimeter_INLETS,    !- Zone Air Inlet Node or NodeList Name
+
+    ,                         !- Zone Air Exhaust Node or NodeList Name
+
+    Zone1_RightPerimeter_NODE,    !- Zone Air Node Name
+
+    Zone1_RightPerimeter_OUTLET;    !- Zone Return Air Node or NodeList Name
+
+ZONEHVAC:EQUIPMENTCONNECTIONS,
+
+    Zone1_RearPerimeter,      !- Zone Name
+
+    Zone1_RearPerimeter_EQUIPMENT,    !- Zone Conditioning Equipment List Name
+
+    Zone1_RearPerimeter_INLETS,    !- Zone Air Inlet Node or NodeList Name
+
+    ,                         !- Zone Air Exhaust Node or NodeList Name
+
+    Zone1_RearPerimeter_NODE,    !- Zone Air Node Name
+
+    Zone1_RearPerimeter_OUTLET;    !- Zone Return Air Node or NodeList Name
+
+ZONEHVAC:EQUIPMENTCONNECTIONS,
+
+    Zone1_LeftPerimeter,      !- Zone Name
+
+    Zone1_LeftPerimeter_EQUIPMENT,    !- Zone Conditioning Equipment List Name
+
+    Zone1_LeftPerimeter_INLETS,    !- Zone Air Inlet Node or NodeList Name
+
+    ,                         !- Zone Air Exhaust Node or NodeList Name
+
+    Zone1_LeftPerimeter_NODE,    !- Zone Air Node Name
+
+    Zone1_LeftPerimeter_OUTLET;    !- Zone Return Air Node or NodeList Name
+
+ZONEHVAC:EQUIPMENTCONNECTIONS,
+
+    Zone1_Core,               !- Zone Name
+
+    Zone1_Core_EQUIPMENT,     !- Zone Conditioning Equipment List Name
+
+    Zone1_Core_INLETS,        !- Zone Air Inlet Node or NodeList Name
+
+    ,                         !- Zone Air Exhaust Node or NodeList Name
+
+    Zone1_Core_NODE,          !- Zone Air Node Name
+
+    Zone1_Core_OUTLET;        !- Zone Return Air Node or NodeList Name
+
+NODELIST,
+
+    Zone1_FrontPerimeter_INLETS,    !- Name
+
+    Zone1_FrontPerimeter_INLET;    !- Node 1 Name
+
+NODELIST,
+
+    Zone1_RightPerimeter_INLETS,    !- Name
+
+    Zone1_RightPerimeter_INLET;    !- Node 1 Name
+
+NODELIST,
+
+    Zone1_RearPerimeter_INLETS,    !- Name
+
+    Zone1_RearPerimeter_INLET;    !- Node 1 Name
+
+NODELIST,
+
+    Zone1_LeftPerimeter_INLETS,    !- Name
+
+    Zone1_LeftPerimeter_INLET;    !- Node 1 Name
+
+NODELIST,
+
+    Zone1_Core_INLETS,        !- Name
+
+    Zone1_Core_INLET;         !- Node 1 Name
+
+WATERHEATER:MIXED,
+
+    MyDHW_1_WaterHeater,      !- Name
+
+    0.2643933221395361,       !- Tank Volume
+
+    MyDHW_1_Setpoint,         !- Setpoint Temperature Schedule Name
+
+    2,                        !- Deadband Temperature Difference
+
+    80,                       !- Maximum Temperature Limit
+
+    CYCLE,                    !- Heater Control Type
+
+    4462.532254829088,        !- Heater Maximum Capacity
+
+    ,                         !- Heater Minimum Capacity
+
+    0,                        !- Heater Ignition Minimum Flow Rate
+
+    0,                        !- Heater Ignition Delay
+
+    NaturalGas,               !- Heater Fuel Type
+
+    0.9,                      !- Heater Thermal Efficiency
+
+    ,                         !- Part Load Factor Curve Name
+
+    0,                        !- Off Cycle Parasitic Fuel Consumption Rate
+
+    Electricity,              !- Off Cycle Parasitic Fuel Type
+
+    0,                        !- Off Cycle Parasitic Heat Fraction to Tank
+
+    0,                        !- On Cycle Parasitic Fuel Consumption Rate
+
+    Electricity,              !- On Cycle Parasitic Fuel Type
+
+    0,                        !- On Cycle Parasitic Heat Fraction to Tank
+
+    SCHEDULE,                 !- Ambient Temperature Indicator
+
+    Always22C,                !- Ambient Temperature Schedule Name
+
+    ,                         !- Ambient Temperature Zone Name
+
+    ,                         !- Ambient Temperature Outdoor Air Node Name
+
+    5,                        !- Off Cycle Loss Coefficient to Ambient Temperature
+
+    1,                        !- Off Cycle Loss Fraction to Zone
+
+    5,                        !- On Cycle Loss Coefficient to Ambient Temperature
+
+    1,                        !- On Cycle Loss Fraction to Zone
+
+    6.711572e-06,             !- Peak Use Flow Rate
+
+    MyDHW_1_UseFraction,      !- Use Flow Rate Fraction Schedule Name
+
+    ,                         !- Cold Water Supply Temperature Schedule Name
+
+    ,                         !- Use Side Inlet Node Name
+
+    ,                         !- Use Side Outlet Node Name
+
+    1,                        !- Use Side Effectiveness
+
+    ,                         !- Source Side Inlet Node Name
+
+    ,                         !- Source Side Outlet Node Name
+
+    1,                        !- Source Side Effectiveness
+
+    autosize,                 !- Use Side Design Flow Rate
+
+    autosize,                 !- Source Side Design Flow Rate
+
+    1.5,                      !- Indirect Water Heating Recovery Time
+
+    IndirectHeatPrimarySetpoint,    !- Source Side Flow Control Mode
+
+    ,                         !- Indirect Alternate Setpoint Temperature Schedule Name
+
+    General;                  !- EndUse Subcategory
+
+# 3.
+
+
+Data for BuildingID 1:
+    BuildingID                                                                                                  VariableName  03/02  12:00:00  03/07  10:00:00  04/01  02:00:00  04/12  04:00:00  04/23  22:00:00  05/02  05:00:00  06/17  07:00:00  06/28  17:00:00  11/29 00:00:00  12/28  07:00:00
+476          1                                                                            Cooling:EnergyTransfer [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     1.052272e+05    0.000000e+00         0.000000
+477          1                                                                              Electricity:Facility [J](Daily)               NaN              NaN              NaN              NaN              NaN              NaN              NaN              NaN    1.627355e+07              NaN
+478          1                                          Environment:Site Diffuse Solar Radiation Rate per Area [W/m2](Daily)              NaN              NaN              NaN              NaN              NaN              NaN              NaN              NaN    2.176042e+01              NaN
+479          1                                                  Environment:Site Outdoor Air Drybulb Temperature [C](Hourly)     8.975000e+00     7.525000e+00         0.700000         7.137500        12.775000         5.225000        13.437500     1.788750e+01    8.250000e+00         5.187500
+480          1                                                    Environment:Site Outdoor Air Relative Humidity [%](Hourly)     7.075000e+01     8.762500e+01        94.000000        85.125000        66.125000        93.875000        77.250000     6.512500e+01    7.625000e+01        95.625000
+481          1                                                                            Heating:EnergyTransfer [J](Hourly)     8.757400e+06     1.686059e+07         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+482          1                                                    MYDHW_1_WATERHEATER:Water Heater Heating Energy [J](Daily)              NaN              NaN              NaN              NaN              NaN              NaN              NaN              NaN    6.465318e+07              NaN
+483          1                                          ZONE1_CORE:Zone Air Heat Balance Air Energy Storage Rate [W](Hourly)     7.252020e-02     8.650648e+02        26.368148       -16.307236      -105.186010       -33.613614       110.574536    -5.435659e+01   -4.482261e+01        -3.107000
+484          1                               ZONE1_CORE:Zone Air Heat Balance Internal Convective Heat Gain Rate [W](Hourly)     4.042706e+00     1.916768e+02         4.042706         4.042706         4.042706         4.042706         4.042706     1.916768e+02    4.042706e+00         4.042706
+485          1                                      ZONE1_CORE:Zone Air Heat Balance Interzone Air Transfer Rate [W](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+486          1                                        ZONE1_CORE:Zone Air Heat Balance Outdoor Air Transfer Rate [W](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+487          1                                          ZONE1_CORE:Zone Air Heat Balance Surface Convection Rate [W](Hourly)    -1.153425e+03    -1.464750e+03        19.267586       -18.635522      -105.038449       -37.187950       108.867612    -2.490427e+02   -4.709182e+01        -6.773561
+488          1                                         ZONE1_CORE:Zone Air Heat Balance System Air Transfer Rate [W](Hourly)     1.161839e+03     2.103722e+03         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+489          1                                                ZONE1_CORE:Zone Air System Sensible Cooling Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+490          1                                                  ZONE1_CORE:Zone Air System Sensible Cooling Rate [W](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+491          1                                                ZONE1_CORE:Zone Air System Sensible Heating Energy [J](Hourly)     4.182620e+06     7.573400e+06         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+492          1                                                  ZONE1_CORE:Zone Air System Sensible Heating Rate [W](Hourly)     1.161839e+03     2.103722e+03         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+493          1                                              ZONE1_CORE:Zone Infiltration Latent Heat Gain Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+494          1                                              ZONE1_CORE:Zone Infiltration Latent Heat Loss Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+495          1                                            ZONE1_CORE:Zone Infiltration Sensible Heat Gain Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+496          1                                            ZONE1_CORE:Zone Infiltration Sensible Heat Loss Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+497          1                                 ZONE1_CORE:Zone Infiltration Standard Density Volume Flow Rate [m3/s](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+498          1                                                              ZONE1_CORE:Zone Mean Air Temperature [C](Hourly)     2.000000e+01     1.895966e+01         6.550460         8.594714        11.562037        12.214440        16.578901     2.354399e+01    9.042707e+00         6.036587
+499          1                                                          ZONE1_CORE:Zone Mean Radiant Temperature [C](Hourly)     1.746664e+01     1.614690e+01         6.618079         8.513712        11.178632        12.123439        17.009755     2.271174e+01    8.838645e+00         5.967121
+500          1                                          ZONE1_CORE:Zone Mechanical Ventilation Mass Flow Rate [kg/s](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+501          1                                               ZONE1_CORE:Zone Ventilation Latent Heat Gain Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+502          1                                               ZONE1_CORE:Zone Ventilation Latent Heat Loss Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+503          1                                             ZONE1_CORE:Zone Ventilation Sensible Heat Gain Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+504          1                                             ZONE1_CORE:Zone Ventilation Sensible Heat Loss Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+505          1                                  ZONE1_CORE:Zone Ventilation Standard Density Volume Flow Rate [m3/s](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+506          1                                  ZONE1_CORE:Zone Windows Total Transmitted Solar Radiation Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+507          1                                    ZONE1_CORE:Zone Windows Total Transmitted Solar Radiation Rate [W](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+508          1                                ZONE1_CORE_FLOOR:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)    -1.268250e+03    -1.149977e+03       143.571851       -32.006690      -281.407485       204.078203       -59.805468    -6.137021e+02   -1.584917e+02      -114.114763
+509          1                                                  ZONE1_CORE_FLOOR:Surface Inside Face Temperature [C](Hourly)     1.578296e+01     1.471096e+01         6.855032         8.446431        10.706937        12.493580        16.835013     2.185539e+01    8.553652e+00         5.738885
+510          1                                                 ZONE1_CORE_FLOOR:Surface Outside Face Temperature [C](Hourly)     4.287866e+00     4.287866e+00         8.156331         8.156331         8.156331        14.343294        16.292951     1.629295e+01    7.117124e+00         4.704577
+511          1                                 ZONE1_CORE_ROOF:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)    -2.930693e+01    -1.862291e+02      -146.207362      -143.898485      -107.825281      -299.626766       101.100410     1.881083e+02   -6.946879e+01       -25.088405
+512          1                                                   ZONE1_CORE_ROOF:Surface Inside Face Temperature [C](Hourly)     1.794358e+01     1.651889e+01         6.332541         8.266614        11.064527        11.650829        17.134444     2.313392e+01    8.744835e+00         5.917777
+513          1                    ZONE1_CORE_ROOF:Surface Outside Face Incident Solar Radiation Rate per Area [W/m2](Hourly)     4.709488e+02     5.902902e+01         0.000000         0.000000         0.000000         0.000000       211.600426     3.572131e+02    0.000000e+00         0.000000
+514          1                                                  ZONE1_CORE_ROOF:Surface Outside Face Temperature [C](Hourly)     1.670521e+01     8.649738e+00         0.154522         2.186156         6.508350        -1.009957        21.406461     3.108247e+01    5.809418e+00         4.857661
+515          1                               ZONE1_CORE_WALL_0:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)     4.019966e+01     8.215568e+00        -7.773512       -13.174040       -12.334940        -1.717518       -17.189013    -1.028542e+00   -1.130501e+01       -11.937617
+516          1                                                 ZONE1_CORE_WALL_0:Surface Inside Face Temperature [C](Hourly)     1.814660e+01     1.682516e+01         6.565913         8.451293        11.185186        12.129808        16.854535     2.287180e+01    8.811409e+00         5.904860
+517          1                                                ZONE1_CORE_WALL_0:Surface Outside Face Temperature [C](Hourly)     1.871555e+01     1.694144e+01         6.455894         8.264840        11.010608        12.105500        16.611258     2.285724e+01    8.651408e+00         5.735905
+518          1                               ZONE1_CORE_WALL_1:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)     4.059858e+01     8.447629e+00        -7.841595       -13.302663       -12.479510        -1.736594       -17.348159    -1.042981e+00   -1.142140e+01       -12.052283
+519          1                                                 ZONE1_CORE_WALL_1:Surface Inside Face Temperature [C](Hourly)     1.814592e+01     1.682508e+01         6.566022         8.451377        11.185086        12.129791        16.854759     2.287162e+01    8.811422e+00         5.904952
+520          1                                                ZONE1_CORE_WALL_1:Surface Outside Face Temperature [C](Hourly)     1.871466e+01     1.694342e+01         6.456170         8.265021        11.010262        12.105463        16.611730     2.285701e+01    8.651421e+00         5.736113
+521          1                               ZONE1_CORE_WALL_2:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)     4.251058e+00    -4.922469e+01        20.707197        83.770592       122.380875        20.615652        47.033148     7.123138e+01    8.744584e+01        75.668045
+522          1                                                 ZONE1_CORE_WALL_2:Surface Inside Face Temperature [C](Hourly)     1.801793e+01     1.661210e+01         6.702809         8.917079        11.805604        12.234681        17.115504     2.314932e+01    9.284794e+00         6.336955
+523          1                                                ZONE1_CORE_WALL_2:Surface Outside Face Temperature [C](Hourly)     1.807810e+01     1.591541e+01         6.995880        10.102693        13.537673        12.526456        17.781169     2.415746e+01    1.052242e+01         7.407892
+524          1                               ZONE1_CORE_WALL_3:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)     5.825388e+01    -3.425045e+01        30.023810        87.130551       128.836164        19.238190       100.048823     9.348756e+00    8.768518e+01        75.678476
+525          1                                                 ZONE1_CORE_WALL_3:Surface Inside Face Temperature [C](Hourly)     1.821097e+01     1.666670e+01         6.745051         8.927878        11.828661        12.226332        17.323053     2.291033e+01    9.281278e+00         6.333055
+526          1                                                ZONE1_CORE_WALL_3:Surface Outside Face Temperature [C](Hourly)     1.902705e+01     1.618689e+01         7.165652        10.148482        13.633514        12.495838        18.724628     2.304130e+01    1.050965e+01         7.393228
+527          1                                ZONE1_FRONTPERIMETER:Zone Air Heat Balance Air Energy Storage Rate [W](Hourly)     5.148380e-02     1.155888e+02         4.540005        -1.926374       -15.647986        -4.297360        14.620392    -7.121226e+00   -6.074236e+00        -0.241793
+528          1                     ZONE1_FRONTPERIMETER:Zone Air Heat Balance Internal Convective Heat Gain Rate [W](Hourly)     5.258683e-01     2.493299e+01         0.525868         0.525868         0.525868         0.525868         0.525868     2.493299e+01    5.258683e-01         0.525868
+529          1                            ZONE1_FRONTPERIMETER:Zone Air Heat Balance Interzone Air Transfer Rate [W](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+530          1                              ZONE1_FRONTPERIMETER:Zone Air Heat Balance Outdoor Air Transfer Rate [W](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+531          1                                ZONE1_FRONTPERIMETER:Zone Air Heat Balance Surface Convection Rate [W](Hourly)    -2.185815e+02    -3.051717e+02         3.655181        -2.228660       -15.325660        -4.793915        14.280948    -3.245237e+01   -6.327841e+00        -0.726460
+532          1                               ZONE1_FRONTPERIMETER:Zone Air Heat Balance System Air Transfer Rate [W](Hourly)     2.195606e+02     3.875829e+02         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+533          1                                      ZONE1_FRONTPERIMETER:Zone Air System Sensible Cooling Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+534          1                                        ZONE1_FRONTPERIMETER:Zone Air System Sensible Cooling Rate [W](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+535          1                                      ZONE1_FRONTPERIMETER:Zone Air System Sensible Heating Energy [J](Hourly)     7.904181e+05     1.395298e+06         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+536          1                                        ZONE1_FRONTPERIMETER:Zone Air System Sensible Heating Rate [W](Hourly)     2.195606e+02     3.875829e+02         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+537          1                                    ZONE1_FRONTPERIMETER:Zone Infiltration Latent Heat Gain Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+538          1                                    ZONE1_FRONTPERIMETER:Zone Infiltration Latent Heat Loss Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+539          1                                  ZONE1_FRONTPERIMETER:Zone Infiltration Sensible Heat Gain Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+540          1                                  ZONE1_FRONTPERIMETER:Zone Infiltration Sensible Heat Loss Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+541          1                       ZONE1_FRONTPERIMETER:Zone Infiltration Standard Density Volume Flow Rate [m3/s](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+542          1                                                    ZONE1_FRONTPERIMETER:Zone Mean Air Temperature [C](Hourly)     2.000000e+01     1.840403e+01         6.384341         8.209528        11.105282        12.131502        16.388742     2.311848e+01    8.673607e+00         5.691210
+543          1                                                ZONE1_FRONTPERIMETER:Zone Mean Radiant Temperature [C](Hourly)     1.855259e+01     1.671568e+01         6.435125         8.197697        10.908835        12.085974        16.589189     2.277915e+01    8.579993e+00         5.676614
+544          1                                ZONE1_FRONTPERIMETER:Zone Mechanical Ventilation Mass Flow Rate [kg/s](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+545          1                                     ZONE1_FRONTPERIMETER:Zone Ventilation Latent Heat Gain Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+546          1                                     ZONE1_FRONTPERIMETER:Zone Ventilation Latent Heat Loss Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+547          1                                   ZONE1_FRONTPERIMETER:Zone Ventilation Sensible Heat Gain Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+548          1                                   ZONE1_FRONTPERIMETER:Zone Ventilation Sensible Heat Loss Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+549          1                        ZONE1_FRONTPERIMETER:Zone Ventilation Standard Density Volume Flow Rate [m3/s](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+550          1                        ZONE1_FRONTPERIMETER:Zone Windows Total Transmitted Solar Radiation Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+551          1                          ZONE1_FRONTPERIMETER:Zone Windows Total Transmitted Solar Radiation Rate [W](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+552          1                      ZONE1_FRONTPERIMETER_FLOOR:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)    -1.720284e+02    -1.494285e+02        20.206733        -0.583644       -32.397587        26.047458        -2.882513    -7.749259e+01   -1.701325e+01       -11.041908
+553          1                                        ZONE1_FRONTPERIMETER_FLOOR:Surface Inside Face Temperature [C](Hourly)     1.627466e+01     1.469992e+01         6.748342         8.196998        10.413767        12.528328        16.493802     2.169257e+01    8.302593e+00         5.473968
+554          1                                       ZONE1_FRONTPERIMETER_FLOOR:Surface Outside Face Temperature [C](Hourly)     4.287866e+00     4.287866e+00         8.156331         8.156331         8.156331        14.343294        16.292951     1.629295e+01    7.117124e+00         4.704577
+555          1                       ZONE1_FRONTPERIMETER_ROOF:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)    -6.559240e+00    -2.482333e+01       -18.303976       -17.668048       -13.170291       -38.573729        14.188908     2.415161e+01   -8.232097e+00        -2.408228
+556          1                                         ZONE1_FRONTPERIMETER_ROOF:Surface Inside Face Temperature [C](Hourly)     1.884414e+01     1.671508e+01         6.098049         7.916981        10.780294        11.515803        16.789653     2.323386e+01    8.480353e+00         5.639879
+557          1          ZONE1_FRONTPERIMETER_ROOF:Surface Outside Face Incident Solar Radiation Rate per Area [W/m2](Hourly)     4.709488e+02     5.902902e+01         0.000000         0.000000         0.000000         0.000000       211.600426     3.572131e+02    0.000000e+00         0.000000
+558          1                                        ZONE1_FRONTPERIMETER_ROOF:Surface Outside Face Temperature [C](Hourly)     1.671341e+01     8.651362e+00         0.152108         2.177617         6.502001        -1.014651        21.398838     3.107938e+01    5.806204e+00         4.857580
+559          1                     ZONE1_FRONTPERIMETER_WALL_0:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)     2.060622e+00    -1.204805e+02        -6.708157         2.398955        21.373161         6.473867       -20.931021     1.184962e+01    8.780941e+00         0.293760
+560          1                                       ZONE1_FRONTPERIMETER_WALL_0:Surface Inside Face Temperature [C](Hourly)     1.878974e+01     1.692204e+01         6.427387         8.206051        10.954121        12.096057        16.559316     2.283897e+01    8.601665e+00         5.682461
+561          1                                      ZONE1_FRONTPERIMETER_WALL_0:Surface Outside Face Temperature [C](Hourly)     1.881335e+01     1.554153e+01         6.350522         8.233539        11.199022        12.170237        16.319481     2.297474e+01    8.702280e+00         5.685827
+562          1                     ZONE1_FRONTPERIMETER_WALL_1:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)     2.963025e-01    -1.642037e+01        -0.918837         0.328354         2.884992         0.872106        -2.810435     1.578901e+00    1.192773e+00         0.041451
+563          1                                       ZONE1_FRONTPERIMETER_WALL_1:Surface Inside Face Temperature [C](Hourly)     1.890099e+01     1.701584e+01         6.422408         8.208663        10.974567        12.101025        16.542627     2.286870e+01    8.611244e+00         5.683873
+564          1                                      ZONE1_FRONTPERIMETER_WALL_1:Surface Outside Face Temperature [C](Hourly)     1.892621e+01     1.561835e+01         6.344208         8.236608        11.220101        12.175247        16.303439     2.300308e+01    8.712757e+00         5.687401
+565          1                     ZONE1_FRONTPERIMETER_WALL_2:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)    -4.019966e+01    -8.215568e+00         7.773512        13.174040        12.334940         1.717518        17.189013     1.028542e+00    1.130501e+01        11.937617
+566          1                                       ZONE1_FRONTPERIMETER_WALL_2:Surface Inside Face Temperature [C](Hourly)     1.871555e+01     1.694144e+01         6.455894         8.264840        11.010608        12.105500        16.611258     2.285724e+01    8.651408e+00         5.735905
+567          1                                      ZONE1_FRONTPERIMETER_WALL_2:Surface Outside Face Temperature [C](Hourly)     1.814660e+01     1.682516e+01         6.565913         8.451293        11.185186        12.129808        16.854535     2.287180e+01    8.811409e+00         5.904860
+568          1                     ZONE1_FRONTPERIMETER_WALL_3:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)     2.963025e-01    -1.642037e+01        -0.918837         0.328354         2.884992         0.872106        -2.810435     1.578901e+00    1.192773e+00         0.041451
+569          1                                       ZONE1_FRONTPERIMETER_WALL_3:Surface Inside Face Temperature [C](Hourly)     1.890099e+01     1.701584e+01         6.422408         8.208663        10.974567        12.101025        16.542627     2.286870e+01    8.611244e+00         5.683873
+570          1                                      ZONE1_FRONTPERIMETER_WALL_3:Surface Outside Face Temperature [C](Hourly)     1.892621e+01     1.561835e+01         6.344208         8.236608        11.220101        12.175247        16.303439     2.300308e+01    8.712757e+00         5.687401
+571          1                                 ZONE1_LEFTPERIMETER:Zone Air Heat Balance Air Energy Storage Rate [W](Hourly)     1.262036e-10     5.010607e+01        -1.307842        -2.728988        -8.744775        -3.458300        22.892717    -6.562202e+00   -5.859049e+00        -1.160337
+572          1                      ZONE1_LEFTPERIMETER:Zone Air Heat Balance Internal Convective Heat Gain Rate [W](Hourly)     5.307116e-01     2.516263e+01         0.530712         0.530712         0.530712         0.530712         0.530712     2.516263e+01    5.307116e-01         0.530712
+573          1                             ZONE1_LEFTPERIMETER:Zone Air Heat Balance Interzone Air Transfer Rate [W](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+574          1                               ZONE1_LEFTPERIMETER:Zone Air Heat Balance Outdoor Air Transfer Rate [W](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+575          1                                 ZONE1_LEFTPERIMETER:Zone Air Heat Balance Surface Convection Rate [W](Hourly)    -2.805207e+02    -8.793106e+02        -1.342222        -3.080539        -9.216139        -3.610227        22.712192    -3.176671e+01   -6.276386e+00        -1.618108
+576          1                                ZONE1_LEFTPERIMETER:Zone Air Heat Balance System Air Transfer Rate [W](Hourly)     2.799900e+02     9.000258e+02         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+577          1                                       ZONE1_LEFTPERIMETER:Zone Air System Sensible Cooling Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+578          1                                         ZONE1_LEFTPERIMETER:Zone Air System Sensible Cooling Rate [W](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+579          1                                       ZONE1_LEFTPERIMETER:Zone Air System Sensible Heating Energy [J](Hourly)     1.007964e+06     3.240093e+06         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+580          1                                         ZONE1_LEFTPERIMETER:Zone Air System Sensible Heating Rate [W](Hourly)     2.799900e+02     9.000258e+02         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+581          1                                     ZONE1_LEFTPERIMETER:Zone Infiltration Latent Heat Gain Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+582          1                                     ZONE1_LEFTPERIMETER:Zone Infiltration Latent Heat Loss Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+583          1                                   ZONE1_LEFTPERIMETER:Zone Infiltration Sensible Heat Gain Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+584          1                                   ZONE1_LEFTPERIMETER:Zone Infiltration Sensible Heat Loss Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+585          1                        ZONE1_LEFTPERIMETER:Zone Infiltration Standard Density Volume Flow Rate [m3/s](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+586          1                                                     ZONE1_LEFTPERIMETER:Zone Mean Air Temperature [C](Hourly)     2.000000e+01     1.921437e+01         7.232816        10.465773        14.123643        12.501641        18.589917     2.310333e+01    1.084864e+01         7.685200
+587          1                                                 ZONE1_LEFTPERIMETER:Zone Mean Radiant Temperature [C](Hourly)     1.842035e+01     1.530183e+01         7.273670        10.418320        13.991104        12.554568        18.846597     2.282916e+01    1.076688e+01         7.637066
+588          1                                 ZONE1_LEFTPERIMETER:Zone Mechanical Ventilation Mass Flow Rate [kg/s](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+589          1                                      ZONE1_LEFTPERIMETER:Zone Ventilation Latent Heat Gain Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+590          1                                      ZONE1_LEFTPERIMETER:Zone Ventilation Latent Heat Loss Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+591          1                                    ZONE1_LEFTPERIMETER:Zone Ventilation Sensible Heat Gain Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+592          1                                    ZONE1_LEFTPERIMETER:Zone Ventilation Sensible Heat Loss Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+593          1                         ZONE1_LEFTPERIMETER:Zone Ventilation Standard Density Volume Flow Rate [m3/s](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+594          1                         ZONE1_LEFTPERIMETER:Zone Windows Total Transmitted Solar Radiation Energy [J](Hourly)     1.994393e+06     1.422797e+05         0.000000         0.000000         0.000000         0.000000    813590.755149     5.749249e+05    0.000000e+00         0.000000
+595          1                           ZONE1_LEFTPERIMETER:Zone Windows Total Transmitted Solar Radiation Rate [W](Hourly)     5.539981e+02     3.952214e+01         0.000000         0.000000         0.000000         0.000000       225.997432     1.597013e+02    0.000000e+00         0.000000
+596          1                       ZONE1_LEFTPERIMETER_FLOOR:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)    -1.824428e+02    -1.398794e+02        10.081360       -26.910785       -69.687784        20.868237       -34.684760    -8.199902e+01   -4.327041e+01       -34.426368
+597          1                                         ZONE1_LEFTPERIMETER_FLOOR:Surface Inside Face Temperature [C](Hourly)     1.688431e+01     1.394559e+01         7.460281        10.014339        12.967803        12.902482        18.687700     2.195443e+01    1.010465e+01         7.081486
+598          1                                        ZONE1_LEFTPERIMETER_FLOOR:Surface Outside Face Temperature [C](Hourly)     4.287866e+00     4.287866e+00         8.156331         8.156331         8.156331        14.343294        16.292951     1.629295e+01    7.117124e+00         4.704577
+599          1                        ZONE1_LEFTPERIMETER_ROOF:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)    -8.645112e+00    -2.312114e+01       -21.049513       -24.437021       -22.358184       -40.237651         6.607677     2.338366e+01   -1.484159e+01        -8.368847
+600          1                                          ZONE1_LEFTPERIMETER_ROOF:Surface Inside Face Temperature [C](Hourly)     1.950139e+01     1.608464e+01         6.935729        10.097205        13.767164        11.952565        19.340902     2.355871e+01    1.060968e+01         7.551912
+601          1           ZONE1_LEFTPERIMETER_ROOF:Surface Outside Face Incident Solar Radiation Rate per Area [W/m2](Hourly)     4.709488e+02     5.902902e+01         0.000000         0.000000         0.000000         0.000000       211.600426     3.572131e+02    0.000000e+00         0.000000
+602          1                                         ZONE1_LEFTPERIMETER_ROOF:Surface Outside Face Temperature [C](Hourly)     1.671870e+01     8.642414e+00         0.160318         2.231425         6.570518        -0.999118        21.467779     3.108543e+01    5.832477e+00         4.858151
+603          1                                 ZONE1_LEFTPERIMETER_WALL_0 WINDOW:Surface Inside Face Temperature [C](Hourly)     1.977103e+01     1.475916e+01         5.739765         9.198739        13.086611        10.722295        18.663164     2.250278e+01    9.813196e+00         6.823482
+604          1  ZONE1_LEFTPERIMETER_WALL_0 WINDOW:Surface Outside Face Incident Solar Radiation Rate per Area [W/m2](Hourly)     7.200299e+02     3.385545e+01         0.000000         0.000000         0.000000         0.000000       271.915231     9.336987e+01    0.000000e+00         0.000000
+605          1                                ZONE1_LEFTPERIMETER_WALL_0 WINDOW:Surface Outside Face Temperature [C](Hourly)     1.988926e+01     8.220056e+00         0.638524         5.766481        10.916824         3.916475        20.247013     1.939102e+01    7.525113e+00         4.854192
+606          1                       ZONE1_LEFTPERIMETER_WALL_0 WINDOW:Surface Shading Device Is On Time Fraction [](Hourly)     1.000000e+00     1.000000e+00         1.000000         1.000000         1.000000         1.000000         1.000000     1.000000e+00    1.000000e+00         1.000000
+607          1                               ZONE1_LEFTPERIMETER_WALL_0 WINDOW:Surface Window Blind Slat Angle [deg](Hourly)     4.500000e+01     4.500000e+01        45.000000        45.000000        45.000000        45.000000        45.000000     4.500000e+01    4.500000e+01        45.000000
+608          1                                 ZONE1_LEFTPERIMETER_WALL_0 WINDOW:Surface Window Heat Gain Energy [J](Hourly)     2.239940e+06     0.000000e+00         0.000000         0.000000         0.000000         0.000000    929137.764268     4.558319e+05    0.000000e+00         0.000000
+609          1                                   ZONE1_LEFTPERIMETER_WALL_0 WINDOW:Surface Window Heat Gain Rate [W](Hourly)     6.222057e+02     0.000000e+00         0.000000         0.000000         0.000000         0.000000       258.093823     1.266200e+02    0.000000e+00         0.000000
+610          1                                 ZONE1_LEFTPERIMETER_WALL_0 WINDOW:Surface Window Heat Loss Energy [J](Hourly)     0.000000e+00     2.854918e+05    346965.637038    250198.472805    178394.261233    465612.679306         0.000000     0.000000e+00    1.918287e+05    128006.251109
+611          1                                   ZONE1_LEFTPERIMETER_WALL_0 WINDOW:Surface Window Heat Loss Rate [W](Hourly)     0.000000e+00     7.930327e+01        96.379344        69.499576        49.553961       129.336855         0.000000     0.000000e+00    5.328575e+01        35.557292
+612          1     ZONE1_LEFTPERIMETER_WALL_0 WINDOW:Surface Window Shading Device Absorbed Solar Radiation Rate [W](Hourly)     3.821921e+03     1.726283e+02         0.000000         0.000000         0.000000         0.000000      1423.674279     4.467077e+02    0.000000e+00         0.000000
+613          1            ZONE1_LEFTPERIMETER_WALL_0 WINDOW:Surface Window Transmitted Beam Solar Radiation Rate [W](Hourly)     3.187486e+02     2.436026e+00         0.000000         0.000000         0.000000         0.000000        86.192219     0.000000e+00    0.000000e+00         0.000000
+614          1         ZONE1_LEFTPERIMETER_WALL_0 WINDOW:Surface Window Transmitted Diffuse Solar Radiation Rate [W](Hourly)     2.352495e+02     3.708612e+01         0.000000         0.000000         0.000000         0.000000       139.805213     1.597013e+02    0.000000e+00         0.000000
+615          1                 ZONE1_LEFTPERIMETER_WALL_0 WINDOW:Surface Window Transmitted Solar Radiation Rate [W](Hourly)     5.539981e+02     3.952214e+01         0.000000         0.000000         0.000000         0.000000       225.997432     1.597013e+02    0.000000e+00         0.000000
+616          1                      ZONE1_LEFTPERIMETER_WALL_0:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)    -5.997114e+02    -5.470367e+02       148.262944       212.623935       253.540578       170.884193       -30.540982    -9.104027e+01    1.918941e+02       164.044447
+617          1                                        ZONE1_LEFTPERIMETER_WALL_0:Surface Inside Face Temperature [C](Hourly)     1.696844e+01     1.431457e+01         8.056157        11.436454        15.145315        13.431952        18.864972     2.265912e+01    1.169331e+01         8.437762
+618          1         ZONE1_LEFTPERIMETER_WALL_0:Surface Outside Face Incident Solar Radiation Rate per Area [W/m2](Hourly)     7.200299e+02     3.385545e+01         0.000000         0.000000         0.000000         0.000000       271.915231     9.336987e+01    0.000000e+00         0.000000
+619          1                                       ZONE1_LEFTPERIMETER_WALL_0:Surface Outside Face Temperature [C](Hourly)     2.904570e+01     8.422469e+00         1.608686         6.567734        11.780110         5.161193        25.408350     2.263360e+01    7.565707e+00         4.877219
+620          1                      ZONE1_LEFTPERIMETER_WALL_1:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)    -8.109142e-01    -6.519213e+00         0.213569         0.539566         1.748610         0.688840        -4.699927     1.594729e+00    1.182883e+00         0.238303
+621          1                                        ZONE1_LEFTPERIMETER_WALL_1:Surface Inside Face Temperature [C](Hourly)     1.935362e+01     1.625385e+01         7.291441        10.486752        14.098938        12.575978        19.066773     2.309439e+01    1.084144e+01         7.696749
+622          1                                       ZONE1_LEFTPERIMETER_WALL_1:Surface Outside Face Temperature [C](Hourly)     1.928460e+01     1.569902e+01         7.309617        10.532673        14.247757        12.634603        18.666775     2.323011e+01    1.094212e+01         7.717030
+623          1                      ZONE1_LEFTPERIMETER_WALL_2:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)    -5.825388e+01     3.425045e+01       -30.023810       -87.130551      -128.836164       -19.238190      -100.048823    -9.348756e+00   -8.768518e+01       -75.678476
+624          1                                        ZONE1_LEFTPERIMETER_WALL_2:Surface Inside Face Temperature [C](Hourly)     1.902705e+01     1.618689e+01         7.165652        10.148482        13.633514        12.495838        18.724628     2.304130e+01    1.050965e+01         7.393228
+625          1                                       ZONE1_LEFTPERIMETER_WALL_2:Surface Outside Face Temperature [C](Hourly)     1.821097e+01     1.666670e+01         6.745051         8.927878        11.828661        12.226332        17.323053     2.291033e+01    9.281278e+00         6.333055
+626          1                      ZONE1_LEFTPERIMETER_WALL_3:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)    -8.109142e-01    -6.519213e+00         0.213569         0.539566         1.748610         0.688840        -4.699927     1.594729e+00    1.182883e+00         0.238303
+627          1                                        ZONE1_LEFTPERIMETER_WALL_3:Surface Inside Face Temperature [C](Hourly)     1.935362e+01     1.625385e+01         7.291441        10.486752        14.098938        12.575978        19.066773     2.309439e+01    1.084144e+01         7.696749
+628          1                                       ZONE1_LEFTPERIMETER_WALL_3:Surface Outside Face Temperature [C](Hourly)     1.928460e+01     1.569902e+01         7.309617        10.532673        14.247757        12.634603        18.666775     2.323011e+01    1.094212e+01         7.717030
+629          1                                 ZONE1_REARPERIMETER:Zone Air Heat Balance Air Energy Storage Rate [W](Hourly)     1.041886e-02     5.510378e+01        -1.306307        -2.916594        -9.043253        -3.547568        13.378381     4.877963e-14   -5.805938e+00        -1.168221
+630          1                      ZONE1_REARPERIMETER:Zone Air Heat Balance Internal Convective Heat Gain Rate [W](Hourly)     5.258694e-01     2.493304e+01         0.525869         0.525869         0.525869         0.525869         0.525869     2.493304e+01    5.258694e-01         0.525869
+631          1                             ZONE1_REARPERIMETER:Zone Air Heat Balance Interzone Air Transfer Rate [W](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+632          1                               ZONE1_REARPERIMETER:Zone Air Heat Balance Outdoor Air Transfer Rate [W](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+633          1                                 ZONE1_REARPERIMETER:Zone Air Heat Balance Surface Convection Rate [W](Hourly)    -5.487811e+02    -8.743454e+02        -1.327733        -3.291406        -9.488340        -3.698361        13.141429     4.296722e+00   -6.219327e+00        -1.621725
+634          1                                ZONE1_REARPERIMETER:Zone Air Heat Balance System Air Transfer Rate [W](Hourly)     5.496023e+02     9.011052e+02         0.000000         0.000000         0.000000         0.000000         0.000000    -2.922977e+01    0.000000e+00         0.000000
+635          1                                       ZONE1_REARPERIMETER:Zone Air System Sensible Cooling Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     1.052272e+05    0.000000e+00         0.000000
+636          1                                         ZONE1_REARPERIMETER:Zone Air System Sensible Cooling Rate [W](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     2.922977e+01    0.000000e+00         0.000000
+637          1                                       ZONE1_REARPERIMETER:Zone Air System Sensible Heating Energy [J](Hourly)     1.978568e+06     3.243979e+06         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+638          1                                         ZONE1_REARPERIMETER:Zone Air System Sensible Heating Rate [W](Hourly)     5.496023e+02     9.011052e+02         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+639          1                                     ZONE1_REARPERIMETER:Zone Infiltration Latent Heat Gain Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+640          1                                     ZONE1_REARPERIMETER:Zone Infiltration Latent Heat Loss Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+641          1                                   ZONE1_REARPERIMETER:Zone Infiltration Sensible Heat Gain Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+642          1                                   ZONE1_REARPERIMETER:Zone Infiltration Sensible Heat Loss Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+643          1                        ZONE1_REARPERIMETER:Zone Infiltration Standard Density Volume Flow Rate [m3/s](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+644          1                                                     ZONE1_REARPERIMETER:Zone Mean Air Temperature [C](Hourly)     2.000000e+01     1.891634e+01         7.025008        10.412261        14.012548        12.540943        17.650064     2.400000e+01    1.086423e+01         7.703216
+645          1                                                 ZONE1_REARPERIMETER:Zone Mean Radiant Temperature [C](Hourly)     1.727425e+01     1.499374e+01         7.072116        10.364398        13.879347        12.590036        17.832778     2.402135e+01    1.078192e+01         7.654381
+646          1                                 ZONE1_REARPERIMETER:Zone Mechanical Ventilation Mass Flow Rate [kg/s](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+647          1                                      ZONE1_REARPERIMETER:Zone Ventilation Latent Heat Gain Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+648          1                                      ZONE1_REARPERIMETER:Zone Ventilation Latent Heat Loss Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+649          1                                    ZONE1_REARPERIMETER:Zone Ventilation Sensible Heat Gain Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+650          1                                    ZONE1_REARPERIMETER:Zone Ventilation Sensible Heat Loss Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+651          1                         ZONE1_REARPERIMETER:Zone Ventilation Standard Density Volume Flow Rate [m3/s](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+652          1                         ZONE1_REARPERIMETER:Zone Windows Total Transmitted Solar Radiation Energy [J](Hourly)     1.115488e+06     1.324062e+05         0.000000         0.000000         0.000000         0.000000    373902.216285     1.175041e+06    0.000000e+00         0.000000
+653          1                           ZONE1_REARPERIMETER:Zone Windows Total Transmitted Solar Radiation Rate [W](Hourly)     3.098579e+02     3.677949e+01         0.000000         0.000000         0.000000         0.000000       103.861727     3.264004e+02    0.000000e+00         0.000000
+654          1                       ZONE1_REARPERIMETER_FLOOR:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)    -1.653343e+02    -1.347030e+02        12.393136       -26.035337       -67.718664        20.238308       -20.158842    -9.810927e+01   -4.305805e+01       -34.320742
+655          1                                         ZONE1_REARPERIMETER_FLOOR:Surface Inside Face Temperature [C](Hourly)     1.580820e+01     1.367384e+01         7.292789         9.970447        12.874901        12.933108        17.697600     2.312911e+01    1.011737e+01         7.096013
+656          1                                        ZONE1_REARPERIMETER_FLOOR:Surface Outside Face Temperature [C](Hourly)     4.287866e+00     4.287866e+00         8.156331         8.156331         8.156331        14.343294        16.292951     1.629295e+01    7.117124e+00         4.704577
+657          1                        ZONE1_REARPERIMETER_ROOF:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)    -5.095717e+00    -2.196204e+01       -20.254037       -24.058326       -21.829016       -39.976929         9.989869     1.908036e+01   -1.475207e+01        -8.345765
+658          1                                          ZONE1_REARPERIMETER_ROOF:Surface Inside Face Temperature [C](Hourly)     1.836409e+01     1.577218e+01         6.737727        10.045364        13.659072        11.988431        18.192215     2.491519e+01    1.062478e+01         7.569224
+659          1           ZONE1_REARPERIMETER_ROOF:Surface Outside Face Incident Solar Radiation Rate per Area [W/m2](Hourly)     4.709488e+02     5.902902e+01         0.000000         0.000000         0.000000         0.000000       211.600426     3.572131e+02    0.000000e+00         0.000000
+660          1                                         ZONE1_REARPERIMETER_ROOF:Surface Outside Face Temperature [C](Hourly)     1.670878e+01     8.637953e+00         0.158333         2.230171         6.568056        -0.997819        21.437360     3.111332e+01    5.832662e+00         4.858156
+661          1                                 ZONE1_REARPERIMETER_WALL_0 WINDOW:Surface Inside Face Temperature [C](Hourly)     1.769915e+01     1.448990e+01         5.608449         9.184195        13.025804        10.787668        16.937830     2.471708e+01    9.851570e+00         6.863250
+662          1  ZONE1_REARPERIMETER_WALL_0 WINDOW:Surface Outside Face Incident Solar Radiation Rate per Area [W/m2](Hourly)     3.743717e+02     3.027132e+01         0.000000         0.000000         0.000000         0.000000        69.315622     4.009590e+02    0.000000e+00         0.000000
+663          1                                ZONE1_REARPERIMETER_WALL_0 WINDOW:Surface Outside Face Temperature [C](Hourly)     1.277945e+01     8.022887e+00         0.633765         5.746817        10.849969         4.001665        14.336813     2.683505e+01    7.526430e+00         4.854226
+664          1                       ZONE1_REARPERIMETER_WALL_0 WINDOW:Surface Shading Device Is On Time Fraction [](Hourly)     1.000000e+00     1.000000e+00         1.000000         1.000000         1.000000         1.000000         1.000000     1.000000e+00    1.000000e+00         1.000000
+665          1                               ZONE1_REARPERIMETER_WALL_0 WINDOW:Surface Window Blind Slat Angle [deg](Hourly)     4.500000e+01     4.500000e+01        45.000000        45.000000        45.000000        45.000000        45.000000     4.500000e+01    4.500000e+01        45.000000
+666          1                                 ZONE1_REARPERIMETER_WALL_0 WINDOW:Surface Window Heat Gain Energy [J](Hourly)     9.885673e+05     0.000000e+00         0.000000         0.000000         0.000000         0.000000    245072.744587     1.371009e+06    0.000000e+00         0.000000
+667          1                                   ZONE1_REARPERIMETER_WALL_0 WINDOW:Surface Window Heat Gain Rate [W](Hourly)     2.746020e+02     0.000000e+00         0.000000         0.000000         0.000000         0.000000        68.075762     3.808359e+02    0.000000e+00         0.000000
+668          1                                 ZONE1_REARPERIMETER_WALL_0 WINDOW:Surface Window Heat Loss Energy [J](Hourly)     0.000000e+00     2.842484e+05    335600.530680    247996.691073    175466.439527    462754.024511         0.000000     0.000000e+00    1.926402e+05    129511.407588
+669          1                                   ZONE1_REARPERIMETER_WALL_0 WINDOW:Surface Window Heat Loss Rate [W](Hourly)     0.000000e+00     7.895790e+01        93.222370        68.887970        48.740678       128.542785         0.000000     0.000000e+00    5.351117e+01        35.975391
+670          1     ZONE1_REARPERIMETER_WALL_0 WINDOW:Surface Window Shading Device Absorbed Solar Radiation Rate [W](Hourly)     1.862259e+03     1.513228e+02         0.000000         0.000000         0.000000         0.000000       336.127952     2.045472e+03    0.000000e+00         0.000000
+671          1            ZONE1_REARPERIMETER_WALL_0 WINDOW:Surface Window Transmitted Beam Solar Radiation Rate [W](Hourly)     1.090333e+02     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     1.167607e+02    0.000000e+00         0.000000
+672          1         ZONE1_REARPERIMETER_WALL_0 WINDOW:Surface Window Transmitted Diffuse Solar Radiation Rate [W](Hourly)     2.008245e+02     3.677949e+01         0.000000         0.000000         0.000000         0.000000       103.861727     2.096397e+02    0.000000e+00         0.000000
+673          1                 ZONE1_REARPERIMETER_WALL_0 WINDOW:Surface Window Transmitted Solar Radiation Rate [W](Hourly)     3.098579e+02     3.677949e+01         0.000000         0.000000         0.000000         0.000000       103.861727     3.264004e+02    0.000000e+00         0.000000
+674          1                      ZONE1_REARPERIMETER_WALL_0:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)    -6.082391e+02    -5.566253e+02       130.296677       204.047946       240.132575       168.631708        50.143919    -2.063334e+02    1.891293e+02       161.745453
+675          1                                        ZONE1_REARPERIMETER_WALL_0:Surface Inside Face Temperature [C](Hourly)     1.592371e+01     1.394196e+01         7.778737        11.352542        14.986606        13.461837        18.133350     2.342488e+01    1.170104e+01         8.448848
+676          1         ZONE1_REARPERIMETER_WALL_0:Surface Outside Face Incident Solar Radiation Rate per Area [W/m2](Hourly)     3.743744e+02     3.027151e+01         0.000000         0.000000         0.000000         0.000000        69.315983     4.009617e+02    0.000000e+00         0.000000
+677          1                                       ZONE1_REARPERIMETER_WALL_0:Surface Outside Face Temperature [C](Hourly)     1.604877e+01     8.067765e+00         1.561533         6.695502        12.124447         5.330769        15.989471     3.592495e+01    7.578159e+00         4.876960
+678          1                      ZONE1_REARPERIMETER_WALL_1:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)    -2.071617e+00    -6.804824e+00         0.207254         0.581427         1.826010         0.713145        -2.709874     7.965808e-01    1.183144e+00         0.242190
+679          1                                        ZONE1_REARPERIMETER_WALL_1:Surface Inside Face Temperature [C](Hourly)     1.823635e+01     1.593167e+01         7.084541        10.432089        13.984716        12.612707        17.940647     2.443384e+01    1.085726e+01         7.714961
+680          1                                       ZONE1_REARPERIMETER_WALL_1:Surface Outside Face Temperature [C](Hourly)     1.806004e+01     1.535253e+01         7.102180        10.481573        14.140122        12.673401        17.710017     2.450163e+01    1.095796e+01         7.735573
+681          1                      ZONE1_REARPERIMETER_WALL_2:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)    -4.251058e+00     4.922469e+01       -20.707197       -83.770592      -122.380875       -20.615652       -47.033148    -7.123138e+01   -8.744584e+01       -75.668045
+682          1                                        ZONE1_REARPERIMETER_WALL_2:Surface Inside Face Temperature [C](Hourly)     1.807810e+01     1.591541e+01         6.995880        10.102693        13.537673        12.526456        17.781169     2.415746e+01    1.052242e+01         7.407892
+683          1                                       ZONE1_REARPERIMETER_WALL_2:Surface Outside Face Temperature [C](Hourly)     1.801793e+01     1.661210e+01         6.702809         8.917079        11.805604        12.234681        17.115504     2.314932e+01    9.284794e+00         6.336955
+684          1                      ZONE1_REARPERIMETER_WALL_3:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)    -2.071625e+00    -6.804851e+00         0.207255         0.581429         1.826018         0.713148        -2.709885     7.965840e-01    1.183149e+00         0.242191
+685          1                                        ZONE1_REARPERIMETER_WALL_3:Surface Inside Face Temperature [C](Hourly)     1.823635e+01     1.593167e+01         7.084541        10.432089        13.984716        12.612707        17.940647     2.443384e+01    1.085726e+01         7.714961
+686          1                                       ZONE1_REARPERIMETER_WALL_3:Surface Outside Face Temperature [C](Hourly)     1.806004e+01     1.535253e+01         7.102180        10.481573        14.140122        12.673401        17.710017     2.450163e+01    1.095796e+01         7.735573
+687          1                                ZONE1_RIGHTPERIMETER:Zone Air Heat Balance Air Energy Storage Rate [W](Hourly)     5.161601e-02     1.166297e+02         4.580386        -1.943838       -15.783540        -4.337177        14.756673    -7.188105e+00   -6.127946e+00        -0.244104
+688          1                     ZONE1_RIGHTPERIMETER:Zone Air Heat Balance Internal Convective Heat Gain Rate [W](Hourly)     5.307127e-01     2.516268e+01         0.530713         0.530713         0.530713         0.530713         0.530713     2.516268e+01    5.307127e-01         0.530713
+689          1                            ZONE1_RIGHTPERIMETER:Zone Air Heat Balance Interzone Air Transfer Rate [W](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+690          1                              ZONE1_RIGHTPERIMETER:Zone Air Heat Balance Outdoor Air Transfer Rate [W](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+691          1                                ZONE1_RIGHTPERIMETER:Zone Air Heat Balance Surface Convection Rate [W](Hourly)    -2.206145e+02    -3.078985e+02         3.687296        -2.248955       -15.458967        -4.838248        14.414059    -3.275253e+01   -6.384050e+00        -0.733222
+692          1                               ZONE1_RIGHTPERIMETER:Zone Air Heat Balance System Air Transfer Rate [W](Hourly)     2.216195e+02     3.910614e+02         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+693          1                                      ZONE1_RIGHTPERIMETER:Zone Air System Sensible Cooling Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+694          1                                        ZONE1_RIGHTPERIMETER:Zone Air System Sensible Cooling Rate [W](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+695          1                                      ZONE1_RIGHTPERIMETER:Zone Air System Sensible Heating Energy [J](Hourly)     7.978300e+05     1.407821e+06         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+696          1                                        ZONE1_RIGHTPERIMETER:Zone Air System Sensible Heating Rate [W](Hourly)     2.216195e+02     3.910614e+02         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+697          1                                    ZONE1_RIGHTPERIMETER:Zone Infiltration Latent Heat Gain Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+698          1                                    ZONE1_RIGHTPERIMETER:Zone Infiltration Latent Heat Loss Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+699          1                                  ZONE1_RIGHTPERIMETER:Zone Infiltration Sensible Heat Gain Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+700          1                                  ZONE1_RIGHTPERIMETER:Zone Infiltration Sensible Heat Loss Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+701          1                       ZONE1_RIGHTPERIMETER:Zone Infiltration Standard Density Volume Flow Rate [m3/s](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+702          1                                                    ZONE1_RIGHTPERIMETER:Zone Mean Air Temperature [C](Hourly)     2.000000e+01     1.840700e+01         6.384660         8.209775        11.105006        12.131500        16.389163     2.311850e+01    8.673707e+00         5.691487
+703          1                                                ZONE1_RIGHTPERIMETER:Zone Mean Radiant Temperature [C](Hourly)     1.855144e+01     1.671780e+01         6.435461         8.197948        10.908475        12.085938        16.589766     2.277888e+01    8.580039e+00         5.676891
+704          1                                ZONE1_RIGHTPERIMETER:Zone Mechanical Ventilation Mass Flow Rate [kg/s](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+705          1                                     ZONE1_RIGHTPERIMETER:Zone Ventilation Latent Heat Gain Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+706          1                                     ZONE1_RIGHTPERIMETER:Zone Ventilation Latent Heat Loss Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+707          1                                   ZONE1_RIGHTPERIMETER:Zone Ventilation Sensible Heat Gain Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+708          1                                   ZONE1_RIGHTPERIMETER:Zone Ventilation Sensible Heat Loss Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+709          1                        ZONE1_RIGHTPERIMETER:Zone Ventilation Standard Density Volume Flow Rate [m3/s](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+710          1                        ZONE1_RIGHTPERIMETER:Zone Windows Total Transmitted Solar Radiation Energy [J](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+711          1                          ZONE1_RIGHTPERIMETER:Zone Windows Total Transmitted Solar Radiation Rate [W](Hourly)     0.000000e+00     0.000000e+00         0.000000         0.000000         0.000000         0.000000         0.000000     0.000000e+00    0.000000e+00         0.000000
+712          1                      ZONE1_RIGHTPERIMETER_FLOOR:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)    -1.736043e+02    -1.508382e+02        20.388946        -0.592204       -32.692441        26.287866        -2.915684    -7.820490e+01   -1.717101e+01       -11.147189
+713          1                                        ZONE1_RIGHTPERIMETER_FLOOR:Surface Inside Face Temperature [C](Hourly)     1.627405e+01     1.470221e+01         6.748614         8.197218        10.413519        12.528297        16.494259     2.169246e+01    8.302664e+00         5.474214
+714          1                                       ZONE1_RIGHTPERIMETER_FLOOR:Surface Outside Face Temperature [C](Hourly)     4.287866e+00     4.287866e+00         8.156331         8.156331         8.156331        14.343294        16.292951     1.629295e+01    7.117124e+00         4.704577
+715          1                       ZONE1_RIGHTPERIMETER_ROOF:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)    -6.617415e+00    -2.506019e+01       -18.473651       -17.831634       -13.290671       -38.929080        14.318014     2.437473e+01   -8.308169e+00        -2.431304
+716          1                                         ZONE1_RIGHTPERIMETER_ROOF:Surface Inside Face Temperature [C](Hourly)     1.884341e+01     1.671775e+01         6.098392         7.917253        10.779983        11.515804        16.790182     2.323365e+01    8.480430e+00         5.640166
+717          1          ZONE1_RIGHTPERIMETER_ROOF:Surface Outside Face Incident Solar Radiation Rate per Area [W/m2](Hourly)     4.709488e+02     5.902902e+01         0.000000         0.000000         0.000000         0.000000       211.600426     3.572131e+02    0.000000e+00         0.000000
+718          1                                        ZONE1_RIGHTPERIMETER_ROOF:Surface Outside Face Temperature [C](Hourly)     1.671340e+01     8.651404e+00         0.152111         2.177624         6.501995        -1.014651        21.398850     3.107937e+01    5.806205e+00         4.857580
+719          1                     ZONE1_RIGHTPERIMETER_WALL_0:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)     2.064812e+00    -1.214820e+02        -6.760919         2.418138        21.546505         6.527997       -21.107650     1.195081e+01    8.850606e+00         0.296234
+720          1                                       ZONE1_RIGHTPERIMETER_WALL_0:Surface Inside Face Temperature [C](Hourly)     1.878895e+01     1.692466e+01         6.427726         8.206329        10.953813        12.096035        16.559866     2.283879e+01    8.601748e+00         5.682762
+721          1                                      ZONE1_RIGHTPERIMETER_WALL_0:Surface Outside Face Temperature [C](Hourly)     1.881242e+01     1.554418e+01         6.350897         8.233808        11.198660        12.170217        16.320007     2.297460e+01    8.702323e+00         5.686129
+722          1                     ZONE1_RIGHTPERIMETER_WALL_1:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)     2.945647e-01    -1.642029e+01        -0.918423         0.328222         2.884518         0.872135        -2.810738     1.579230e+00    1.192303e+00         0.041455
+723          1                                       ZONE1_RIGHTPERIMETER_WALL_1:Surface Inside Face Temperature [C](Hourly)     1.890027e+01     1.701860e+01         6.422749         8.208944        10.974253        12.101004        16.543172     2.286855e+01    8.611327e+00         5.684177
+724          1                                      ZONE1_RIGHTPERIMETER_WALL_1:Surface Outside Face Temperature [C](Hourly)     1.892534e+01     1.562112e+01         6.344585         8.236878        11.219746        12.175229        16.303958     2.300295e+01    8.712801e+00         5.687705
+725          1                     ZONE1_RIGHTPERIMETER_WALL_2:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)    -4.059858e+01    -8.447629e+00         7.841595        13.302663        12.479510         1.736594        17.348159     1.042981e+00    1.142140e+01        12.052283
+726          1                                       ZONE1_RIGHTPERIMETER_WALL_2:Surface Inside Face Temperature [C](Hourly)     1.871466e+01     1.694342e+01         6.456170         8.265021        11.010262        12.105463        16.611730     2.285701e+01    8.651421e+00         5.736113
+727          1                                      ZONE1_RIGHTPERIMETER_WALL_2:Surface Outside Face Temperature [C](Hourly)     1.814592e+01     1.682508e+01         6.566022         8.451377        11.185086        12.129791        16.854759     2.287162e+01    8.811422e+00         5.904952
+728          1                     ZONE1_RIGHTPERIMETER_WALL_3:Surface Inside Face Conduction Heat Transfer Rate [W](Hourly)     2.945635e-01    -1.642023e+01        -0.918419         0.328220         2.884507         0.872132        -2.810727     1.579224e+00    1.192299e+00         0.041455
+729          1                                       ZONE1_RIGHTPERIMETER_WALL_3:Surface Inside Face Temperature [C](Hourly)     1.890027e+01     1.701860e+01         6.422749         8.208944        10.974253        12.101004        16.543172     2.286855e+01    8.611327e+00         5.684177
+730          1                                      ZONE1_RIGHTPERIMETER_WALL_3:Surface Outside Face Temperature [C](Hourly)     1.892534e+01     1.562112e+01         6.344585         8.236878        11.219746        12.175229        16.303958     2.300295e+01    8.712801e+00         5.687705
