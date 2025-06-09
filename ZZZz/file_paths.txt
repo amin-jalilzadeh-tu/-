@@ -1,5 +1,3 @@
-
-
 D:\Documents\E_Plus_2030_py\idf_creation.py
 
 D:\Documents\E_Plus_2030_py\idf_objects\HVAC\assign_hvac_values.py
@@ -15,6 +13,10 @@ D:\Documents\E_Plus_2030_py\modification\main_modifi.py
 D:\Documents\E_Plus_2030_py\modification\hvac_functions.py
 D:\Documents\E_Plus_2030_py\modification\vent_functions.py
 D:\Documents\E_Plus_2030_py\modification\common_utils.py
+
+
+D:\Documents\E_Plus_2030_py\idf_objects\structuring\flatten_assigned_vent.py
+D:\Documents\E_Plus_2030_py\idf_objects\structuring\flatten_hvac.py
 
 
 D:\Documents\E_Plus_2030_py\orchestrator.py
