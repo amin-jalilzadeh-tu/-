@@ -35,6 +35,25 @@
       "override_year_to": 2020
     }
   ],
+  "equipment": [
+    {
+      "param_name": "equip_wm2",
+      "min_val": 3.0,
+      "max_val": 7.0
+    },
+    {
+      "param_name": "tD",
+      "description": "Schedule value for day occupancy (W)",
+      "min_val": 400.0,
+      "max_val": 800.0
+    },
+    {
+      "param_name": "tN",
+      "description": "Schedule value for night occupancy (W)",
+      "min_val": 150.0,
+      "max_val": 350.0
+    }
+  ],
   "shading": [
     {
       "param_name": "slat_angle_deg",
@@ -273,7 +292,10 @@
       "shading": {
         "csv_in": "assigned/assigned_shading_params.csv",
         "csv_out": "assigned/structured_shading_params.csv"        
-      }
+      },
+      "equipment": {
+        "csv_in": "assigned/assigned_equipment.csv",
+        "csv_out": "assigned/structured_equipment.csv"
     },
     "modification": {
       "perform_modification": true,
@@ -289,7 +311,8 @@
           "vent_zones": "assigned/assigned_vent_zones.csv",
           "elec": "assigned/assigned_lighting.csv",
           "fenez": "assigned/structured_fenez_params.csv",
-          "shading": "assigned/structured_shading_params.csv"
+          "shading": "assigned/structured_shading_params.csv",
+           "equip": "assigned/structured_equipment.csv"
         },
         "scenario_csv": {
           "hvac": "scenarios/scenario_params_hvac.csv",
@@ -297,7 +320,8 @@
           "vent": "scenarios/scenario_params_vent.csv",
           "elec": "scenarios/scenario_params_elec.csv",
           "fenez": "scenarios/scenario_params_fenez.csv",
-          "shading": "scenarios/scenario_params_shading.csv"
+          "shading": "scenarios/scenario_params_shading.csv",
+          "equip": "scenarios/scenario_params_equipment.csv"
         },
         "output_idf_dir": "scenario_idfs",
         "building_id": 4136733,
@@ -429,6 +453,7 @@
       "best_params_folder": "calibrated",
       "history_folder": "calibrated"
     }
+  }
   },
   "shading_tree": [
     {

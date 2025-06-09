@@ -528,7 +528,22 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
                 logger.warning("[STRUCTURING] 'shading' configuration not found in structuring settings.")
 
 
+            # --- Equipment --------------------------------------------------
+            from idf_objects.structuring.equipment_structuring import transform_equipment_log_to_structured
+            equip_conf = structuring_cfg.get("equipment", {})
+            user_equip_rules = safe_load_subjson("equipment.json", "equipment") or []
+            
+            if equip_conf:
+                equip_in = patch_if_relative(equip_conf.get("csv_in"))
+                equip_out = patch_if_relative(equip_conf.get("csv_out"))
 
+                transform_equipment_log_to_structured(
+                    csv_input=equip_in,
+                    csv_output=equip_out,
+                    user_equipment_rules=user_equip_rules
+                )
+            else:
+                logger.warning("[STRUCTURING] 'equipment' configuration not found in structuring settings.")
 
 
 

@@ -104,6 +104,7 @@ from modification.fenez_functions2 import (
 # NEW: Import the shading functions
 from modification.shading_functions import create_shading_scenarios, apply_shading_params_to_idf
 
+from modification.equipment_functions import create_equipment_scenarios, apply_equipment_params_to_idf
 
 
 # ---------------------------------------------------------------------------
@@ -247,6 +248,12 @@ def run_modification_workflow(config):
     # NEW: Load assigned shading data
     df_shading = load_assigned_csv(assigned_csvs["shading"]) if "shading" in assigned_csvs else None
 
+    #  Load assigned CSV data
+    df_equip = load_assigned_csv(assigned_csvs["equip"]) if "equip" in assigned_csvs else None
+    
+
+
+
     # -----------------------------------------------------------------------
     # 3) Filter data for this building
     # -----------------------------------------------------------------------
@@ -263,9 +270,14 @@ def run_modification_workflow(config):
     df_elec_sub     = filter_for_building(df_elec)
     df_fenez_sub    = filter_for_building(df_fenez)
 
+
+
     # NEW: Filter shading data. It uses 'window_id', not 'ogc_fid'.
     # We assume for now that all windows in the base IDF belong to the target building.
     df_shading_sub = df_shading.copy() if df_shading is not None else pd.DataFrame()
+
+    df_equip_sub = filter_for_building(df_equip)
+
 
 
     # -----------------------------------------------------------------------
@@ -350,7 +362,16 @@ def run_modification_workflow(config):
         )
 
 
-
+    # eequip
+    if not df_equip_sub.empty:
+        create_equipment_scenarios(
+            df_equipment_input=df_equip_sub,
+            building_id=building_id,
+            num_scenarios=num_scenarios,
+            picking_method=picking_method,
+            random_seed=42,
+            scenario_csv_out=scenario_csvs["equip"]
+        )
 
     # -----------------------------------------------------------------------
     # 5) Load scenario CSV => group by scenario_index
@@ -367,6 +388,7 @@ def run_modification_workflow(config):
     df_fenez_scen = safe_load_scenario(scenario_csvs["fenez"])
     # NEW: Load shading scenarios
     df_shading_scen = safe_load_scenario(scenario_csvs["shading"])
+    df_equip_scen = safe_load_scenario(scenario_csvs["equip"])
 
 
     hvac_groups  = df_hvac_scen.groupby("scenario_index")  if not df_hvac_scen.empty  else None
@@ -377,6 +399,7 @@ def run_modification_workflow(config):
 
     # NEW: Group shading scenarios
     shading_groups = df_shading_scen.groupby("scenario_index") if not df_shading_scen.empty else None
+    equip_groups = df_equip_scen.groupby("scenario_index") if not df_equip_scen.empty else None
 
 
     # -----------------------------------------------------------------------
@@ -392,6 +415,8 @@ def run_modification_workflow(config):
         fenez_df  = fenez_groups.get_group(i)if fenez_groups and i in fenez_groups.groups else pd.DataFrame()
         # NEW: Get the shading data for this specific scenario
         shading_df = shading_groups.get_group(i) if shading_groups and i in shading_groups.groups else pd.DataFrame()
+        equip_df = equip_groups.get_group(i) if equip_groups and i in equip_groups.groups else pd.DataFrame()
+
 
         hvac_bld_df   = hvac_df[hvac_df["zone_name"].isna()]
         hvac_zone_df  = hvac_df[hvac_df["zone_name"].notna()]
@@ -430,7 +455,8 @@ def run_modification_workflow(config):
 
         # NEW: Apply shading parameters
         apply_shading_params_to_idf(idf, shading_df)
-        
+        apply_equipment_params_to_idf(idf, equip_df)
+
         # Save scenario IDF
         scenario_idf_name = f"building_{building_id}_scenario_{i}.idf"
         scenario_idf_path = os.path.join(scenario_idf_dir, scenario_idf_name)
