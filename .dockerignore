@@ -28,3 +28,4 @@ samples/
 # node_modules if you had a JS front-end
 
 node_modules/
+output/
