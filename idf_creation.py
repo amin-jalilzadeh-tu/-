@@ -722,12 +722,14 @@ def _write_shading_csv(assigned_shading_log, logs_base_dir):
         strategy = data_for_window.get("strategy_used", "")
         control_name = data_for_window.get("shading_control_name_assigned", "")
         blind_mat_name = data_for_window.get("blind_material_name_used", "")
+        bldg_id = data_for_window.get("ogc_fid")
 
         if not shading_params and not status:
             continue
 
         base_row_info = {
             "window_id": window_id,
+            "ogc_fid": bldg_id,
             "shading_type_key": type_key,
             "strategy": strategy,
             "creation_status": status,
