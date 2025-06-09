@@ -500,12 +500,17 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
                 hvac_zone = os.path.join(job_output_dir, hvac_zone)
             if os.path.isfile(hvac_in):
                 df_hvac = pd.read_csv(hvac_in)
-                df_hvac["assigned_value"] = df_hvac["assigned_value"].apply(parse_hvac)
-                flatten_hvac_data(
-                    df_input=df_hvac,
-                    out_build_csv=hvac_bld,
-                    out_zone_csv=hvac_zone,
-                )
+                if "assigned_value" in df_hvac.columns:
+                    df_hvac["assigned_value"] = df_hvac["assigned_value"].apply(parse_hvac)
+                    flatten_hvac_data(
+                        df_input=df_hvac,
+                        out_build_csv=hvac_bld,
+                        out_zone_csv=hvac_zone,
+                    )
+                else:
+                    logger.warning(
+                        f"[STRUCTURING] 'assigned_value' column missing in {hvac_in}. Skipping HVAC flatten."
+                    )
             else:
                 logger.warning(f"[STRUCTURING] HVAC input CSV not found => {hvac_in}")
 
@@ -523,12 +528,17 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
                 vent_zone = os.path.join(job_output_dir, vent_zone)
             if os.path.isfile(vent_in):
                 df_vent = pd.read_csv(vent_in)
-                df_vent["assigned_value"] = df_vent["assigned_value"].apply(parse_vent)
-                flatten_ventilation_data(
-                    df_input=df_vent,
-                    out_build_csv=vent_bld,
-                    out_zone_csv=vent_zone,
-                )
+                if "assigned_value" in df_vent.columns:
+                    df_vent["assigned_value"] = df_vent["assigned_value"].apply(parse_vent)
+                    flatten_ventilation_data(
+                        df_input=df_vent,
+                        out_build_csv=vent_bld,
+                        out_zone_csv=vent_zone,
+                    )
+                else:
+                    logger.warning(
+                        f"[STRUCTURING] 'assigned_value' column missing in {vent_in}. Skipping ventilation flatten."
+                    )
             else:
                 logger.warning(f"[STRUCTURING] Vent input CSV not found => {vent_in}")
     else:
