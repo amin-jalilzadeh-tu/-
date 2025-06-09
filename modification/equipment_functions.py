@@ -60,7 +60,12 @@ def create_equipment_scenarios(
     rows = []
     for s in range(num_scenarios):
         for row in df_bldg.itertuples():
-            base_val = row.assigned_value
+            # Equipment CSV may store the chosen value under 'assigned_value'
+            # or 'param_value' depending on preprocessing.
+            if hasattr(row, "assigned_value"):
+                base_val = row.assigned_value
+            else:
+                base_val = row.param_value
             p_min = getattr(row, "min_val", None)
             p_max = getattr(row, "max_val", None)
             new_val = pick_value(base_val, p_min, p_max, picking_method)

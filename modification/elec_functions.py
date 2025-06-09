@@ -65,7 +65,11 @@ def create_elec_scenarios(
             obj_name = row.object_name
             p_name   = row.param_name
 
-            base_val = row.assigned_value
+            # Input CSVs may use 'assigned_value' or already rename to 'param_value'
+            if hasattr(row, "assigned_value"):
+                base_val = row.assigned_value
+            else:
+                base_val = row.param_value
             p_min    = row.min_val
             p_max    = row.max_val
 
