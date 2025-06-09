@@ -150,10 +150,14 @@ def update_construction_materials(
         "MATERIAL:NOMASS",
         "WINDOWMATERIAL:GLAZING",
         "WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM",
-        "CONSTRUCTION"
+        "CONSTRUCTION",
     ]:
         for obj in idf.idfobjects[obj_type][:]:
-            idf.removeidfobject(obj)
+            try:
+                idf.removeidfobject(obj)
+            except ValueError:
+                # Object might have been removed earlier; ignore
+                pass
 
     def create_opaque_material(idf_obj, mat_data, mat_name):
         """
@@ -172,7 +176,10 @@ def update_construction_materials(
         if mat_type in ["MATERIAL", "MATERIAL:NOMASS"]:
             for obj in idf_obj.idfobjects[mat_type]:
                 if obj.Name == mat_name:
-                    idf_obj.removeidfobject(obj)
+                    try:
+                        idf_obj.removeidfobject(obj)
+                    except ValueError:
+                        pass
 
         if mat_type == "MATERIAL":
             mat_obj = idf_obj.newidfobject("MATERIAL")
@@ -213,7 +220,10 @@ def update_construction_materials(
         if wtype in ["WINDOWMATERIAL:GLAZING", "WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM"]:
             for obj in idf_obj.idfobjects[wtype]:
                 if obj.Name == mat_name:
-                    idf_obj.removeidfobject(obj)
+                    try:
+                        idf_obj.removeidfobject(obj)
+                    except ValueError:
+                        pass
 
         if wtype == "WINDOWMATERIAL:GLAZING":
             wmat = idf_obj.newidfobject("WINDOWMATERIAL:GLAZING")
