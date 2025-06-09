@@ -111,7 +111,11 @@ def parse_building_dhw_params(df_bldg):
 
     for row in df_bldg.itertuples():
         name = row.param_name
-        val  = row.assigned_value
+        # Accept both 'assigned_value' (raw CSV) and 'param_value' (structured CSV)
+        if hasattr(row, "assigned_value"):
+            val = row.assigned_value
+        else:
+            val = row.param_value
 
         if name.endswith("_range"):
             base_name = name.replace("_range", "")
