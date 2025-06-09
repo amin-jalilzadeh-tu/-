@@ -18,7 +18,11 @@ def add_ground_temperatures(
     # Remove existing ground temperature objects
     existing_ground_temps = idf.idfobjects["SITE:GROUNDTEMPERATURE:BUILDINGSURFACE"]
     for temp in existing_ground_temps[:]:
-        idf.removeidfobject(temp)
+        try:
+            idf.removeidfobject(temp)
+        except ValueError:
+            # Ignore if the object was already removed
+            pass
 
     # 1) Assign new monthly temps
     final_temps = assign_ground_temperatures(
