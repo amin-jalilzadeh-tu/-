@@ -372,7 +372,11 @@ def parse_building_dhw_params(df_bldg):
 
     for row in df_bldg.itertuples():
         name = row.param_name
-        val  = row.assigned_value
+        # Accept both 'assigned_value' (raw CSV) and 'param_value' (structured CSV)
+        if hasattr(row, "assigned_value"):
+            val = row.assigned_value
+        else:
+            val = row.param_value
 
         if name.endswith("_range"):
             base_name = name.replace("_range", "")
@@ -793,7 +797,11 @@ def create_elec_scenarios(
             obj_name = row.object_name
             p_name   = row.param_name
 
-            base_val = row.assigned_value
+            # Input CSVs may use 'assigned_value' or already rename to 'param_value'
+            if hasattr(row, "assigned_value"):
+                base_val = row.assigned_value
+            else:
+                base_val = row.param_value
             p_min    = row.min_val
             p_max    = row.max_val
 
@@ -1172,7 +1180,12 @@ def create_equipment_scenarios(
     rows = []
     for s in range(num_scenarios):
         for row in df_bldg.itertuples():
-            base_val = row.assigned_value
+            # Equipment CSV may store the chosen value under 'assigned_value'
+            # or 'param_value' depending on preprocessing.
+            if hasattr(row, "assigned_value"):
+                base_val = row.assigned_value
+            else:
+                base_val = row.param_value
             p_min = getattr(row, "min_val", None)
             p_max = getattr(row, "max_val", None)
             new_val = pick_value(base_val, p_min, p_max, picking_method)
@@ -1861,7 +1874,12 @@ def parse_building_hvac_params(df_bldg):
         # The CSV from the assignment step uses 'assigned_value'
         # rather than 'param_value'.  We read that column here so
         # the function works with the raw assigned CSV.
-        val  = row.assigned_value
+        # Support both raw assigned CSVs (assigned_value column)
+        # and structured CSVs (param_value column)
+        if hasattr(row, "assigned_value"):
+            val = row.assigned_value
+        else:
+            val = row.param_value
 
         if name.endswith("_range"):
             base_name = name.replace("_range", "")
@@ -1905,7 +1923,10 @@ def parse_zone_hvac_params(df_zone):
         # The assigned HVAC CSV stores the picked values under
         # the column 'assigned_value'.  Use that column here so we
         # don't raise an AttributeError when parsing the raw file.
-        val   = row.assigned_value
+        if hasattr(row, "assigned_value"):
+            val = row.assigned_value
+        else:
+            val = row.param_value
 
         results.append({
             "zone_name": zname,
