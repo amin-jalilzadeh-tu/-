@@ -1,3101 +1,695 @@
-File: D:\Documents\E_Plus_2030_py\modification\common_utils.py
-============================================================
-# common_utils.py
-
-import os
-import random
-import pandas as pd
-
-# =============================================================================
-# 1) CHOOSE EITHER EPPY OR GEOMEPPY:
-# -----------------------------------------------------------------------------
-# If using Eppy, uncomment these and comment out the Geomeppy lines:
-# from eppy.modeleditor import IDF
-
-# If using Geomeppy (to allow set_wwr, getsurfaces, etc.), uncomment these:
-from geomeppy import IDF as GeomIDF
-
-# =============================================================================
-# 2) "Assigned" CSV Loading
-# -----------------------------------------------------------------------------
-def load_assigned_csv(csv_path):
-    """
-    Loads a generic CSV file containing assigned parameters for a building or zone.
-    For example:
-      D:/Documents/E_Plus_2030_py/output/assigned/assigned_dhw_params.csv
-      D:/Documents/E_Plus_2030_py/output/assigned/assigned_hvac_building.csv
-      etc.
-
-    Returns:
-      A Pandas DataFrame with the file contents.
-    """
-    if not os.path.isfile(csv_path):
-        raise FileNotFoundError(f"Cannot find CSV at: {csv_path}")
-    df = pd.read_csv(csv_path)
-    return df
-
-
-def filter_for_building(df_main, df_zone=None, building_id=None):
-    """
-    If 'df_zone' is provided, filters both dataframes by ogc_fid == building_id.
-    If building_id is None, returns df_main (and df_zone) unfiltered.
-
-    This is useful if you have a building-level CSV and a zone-level CSV
-    and want to isolate data for a particular ogc_fid.
-    """
-    if building_id is not None:
-        df_main_sub = df_main[df_main["ogc_fid"] == building_id].copy()
-        if df_zone is not None:
-            df_zone_sub = df_zone[df_zone["ogc_fid"] == building_id].copy()
-        else:
-            df_zone_sub = None
-    else:
-        df_main_sub = df_main.copy()
-        df_zone_sub = df_zone.copy() if df_zone is not None else None
-
-    return df_main_sub, df_zone_sub
-
-
-# =============================================================================
-# 3) Helpers for Generating Scenario Parameter Sets
-# -----------------------------------------------------------------------------
-def to_float_or_none(x):
-    """
-    Attempts to convert x to float. If it fails (or is NaN), returns None.
-    """
-    try:
-        return float(x)
-    except (ValueError, TypeError):
-        return None
-
-
-def pick_value_in_range(base_val, param_min, param_max,
-                        method="random_uniform", scale_factor=0.5):
-    """
-    Picks a new value given:
-      - base_val: original numeric value (fallback if range is invalid)
-      - param_min, param_max: numeric range
-      - method: 
-         "random_uniform" => uniform in [param_min, param_max]
-         "scale_around_base" => base_val * random(1 - scale_factor, 1 + scale_factor)
-         "offset_half" => base_val +/- up to 50% of half the total range
-      - scale_factor: used if method="scale_around_base"
-
-    Returns a float. If range invalid, returns base_val.
-    """
-    base_val_f = to_float_or_none(base_val)
-    if base_val_f is None:
-        base_val_f = 0.0
-
-    min_f = to_float_or_none(param_min)
-    max_f = to_float_or_none(param_max)
-
-    if method == "random_uniform":
-        if min_f is not None and max_f is not None and min_f < max_f:
-            return random.uniform(min_f, max_f)
-        else:
-            return base_val_f
-
-    elif method == "scale_around_base":
-        low_factor = 1.0 - scale_factor
-        high_factor = 1.0 + scale_factor
-        factor = random.uniform(low_factor, high_factor)
-        return base_val_f * factor
-
-    elif method == "offset_half":
-        if min_f is not None and max_f is not None:
-            half_span = (max_f - min_f) / 2.0 * 0.5
-            offset = random.uniform(-half_span, half_span)
-            return base_val_f + offset
-        else:
-            return base_val_f
-
-    # Default => return base_val
-    return base_val_f
-
-
-# If some params are always strings (like schedule names), define them here:
-STRING_PARAMS = [
-    "system_type",
-    "fan_control_mode",
-    "schedule_name",
-    "ventilation_schedule_name",
-    "infiltration_schedule_name",
-    # Add more as needed...
-]
-
-
-def define_building_param_strategy(df_main_sub,
-                                   picking_method="random_uniform",
-                                   scale_factor=0.5):
-    """
-    Loops over rows in df_main_sub to build {param_name -> new_value}.
-    For each row, we call pick_value_in_range(...) only if param_name is numeric.
-
-    If param_name is in STRING_PARAMS, we do NOT randomly pick numeric ranges.
-    Instead, we keep the original value as str.
-    """
-    final_param_dict = {}
-
-    for idx, row in df_main_sub.iterrows():
-        param_name = row.get("param_name", None)
-        if not param_name:
-            continue
-
-        base_val = row.get("param_value", None)  # or row.get("assigned_value", None)
-        p_min = row.get("param_min", None)
-        p_max = row.get("param_max", None)
-
-        # 1) If param_name is in STRING_PARAMS => keep as string
-        if param_name.lower() in STRING_PARAMS:
-            final_param_dict[param_name] = str(base_val)
-            continue
-
-        # 2) If param_name is numeric => pick from range
-        new_val = pick_value_in_range(
-            base_val=base_val,
-            param_min=p_min,
-            param_max=p_max,
-            method=picking_method,
-            scale_factor=scale_factor
-        )
-        final_param_dict[param_name] = new_val
-
-    return final_param_dict
-
-
-def generate_multiple_param_sets(df_main_sub, num_sets=5,
-                                 picking_method="random_uniform",
-                                 scale_factor=0.5):
-    """
-    Calls define_building_param_strategy(...) multiple times to create 
-    'num_sets' scenario dicts, e.g. for random draws in [param_min, param_max].
-
-    Returns: list of dicts => each dict is {param_name -> new_value}
-    """
-    all_scenarios = []
-    for _ in range(num_sets):
-        scenario = define_building_param_strategy(
-            df_main_sub=df_main_sub,
-            picking_method=picking_method,
-            scale_factor=scale_factor
-        )
-        all_scenarios.append(scenario)
-    return all_scenarios
-
-
-def save_param_scenarios_to_csv(all_scenarios, building_id,
-                                out_csv="scenario_params.csv"):
-    """
-    Writes each scenario's picks to CSV with columns:
-      [scenario_index, ogc_fid, param_name, assigned_value]
-
-    This is how we form the "scenario_index" concept for grouping later.
-    """
-    rows = []
-    for i, scenario_dict in enumerate(all_scenarios):
-        for p_name, val in scenario_dict.items():
-            rows.append({
-                "scenario_index": i,
-                "ogc_fid": building_id,
-                "param_name": p_name,
-                "assigned_value": val
-            })
-
-    df_out = pd.DataFrame(rows)
-    os.makedirs(os.path.dirname(out_csv), exist_ok=True)
-    df_out.to_csv(out_csv, index=False)
-    print(f"[INFO] Saved scenario picks => {out_csv}")
-
-
-# =============================================================================
-# 4) IDF Load/Save with Geomeppy
-# -----------------------------------------------------------------------------
-def load_idf(base_idf_path, idd_path):
-    """
-    Loads an existing IDF file from disk using Geomeppy (or Eppy, if desired).
-    Adjust path as needed.
-    """
-    if not os.path.isfile(idd_path):
-        raise FileNotFoundError(f"IDD file not found at: {idd_path}")
-    if not os.path.isfile(base_idf_path):
-        raise FileNotFoundError(f"IDF file not found at: {base_idf_path}")
-
-    # With Geomeppy:
-    GeomIDF.setiddname(idd_path)
-    idf = GeomIDF(base_idf_path)
-    return idf
-
-
-def save_idf(idf, out_path):
-    """
-    Saves the modified IDF to out_path, creating directories as needed.
-    """
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    idf.saveas(out_path)
-    print(f"[INFO] Saved modified IDF => {out_path}")
-
-
-# =============================================================================
-# 5) Loading a "Scenario" CSV (already-defined picks)
-# -----------------------------------------------------------------------------
-def load_scenario_csv(scenario_csv):
-    """
-    Reads a CSV that presumably has columns:
-      - scenario_index
-      - ogc_fid
-      - param_name
-      - assigned_value
-    or something similar.
-
-    The caller can then do: df.groupby("scenario_index") to iterate over scenarios.
-    """
-    if not os.path.isfile(scenario_csv):
-        raise FileNotFoundError(f"Cannot find scenario CSV at: {scenario_csv}")
-    df = pd.read_csv(scenario_csv)
-    return df
-
-------------------------------------------------------------
-
-File: D:\Documents\E_Plus_2030_py\modification\dhw_functions.py
+File: D:\Documents\E_Plus_2030_py\idf_objects\structuring\dhw_structuring.py
 ============================================================
 """
-dhw_functions.py
+dhw_structuring.py
 
-Contains:
-  1) create_dhw_scenarios(...)
-     - Generates scenario param DataFrame with columns like:
-         scenario_index, ogc_fid, param_name, param_value, param_min, param_max, picking_method
-       for each building's DHW parameters.
+Transforms the "assigned_dhw_params.csv" file into a structured CSV, merging
+range data (e.g. "R_value_range") with the final assigned values. Also
+captures E+ object type/name if present.
 
-  2) apply_dhw_params_to_idf(...)
-     - Creates or updates schedules (UseFraction, Setpoint) and a WATERHEATER:MIXED object,
-       partially preserving existing schedule time blocks if they exist.
+Usage (standalone):
+    python dhw_structuring.py
 
-In particular:
- - We ensure "Ambient_Temperature_Indicator" is set on WATERHEATER:MIXED, 
-   so no error about missing property.
- - We do partial schedule editing in `_create_or_update_dhw_schedules()`.
+Or import and call "transform_dhw_log_to_structured(...)" from your main code.
 """
 
-import os
-import random
 import pandas as pd
-from eppy.modeleditor import IDF  # or adapt for geomeppy
-
-
-##############################################################################
-# 1) CREATE DHW SCENARIOS
-##############################################################################
-
-def create_dhw_scenarios(
-    df_dhw_input,
-    building_id,
-    num_scenarios=5,
-    picking_method="random_uniform",
-    random_seed=42,
-    scenario_csv_out=None
-):
-    """
-    Generates a scenario-level DataFrame from assigned_dhw_params.csv rows 
-    for the given building. If param_name ends in "_range", we parse min/max.
-    Otherwise it's a fixed value. Then for each scenario, we can randomly pick
-    param_value in [param_min, param_max] if picking_method="random_uniform".
-
-    Columns in the final DF:
-      [scenario_index, ogc_fid, param_name, param_value, param_min, param_max, picking_method]
-
-    If scenario_csv_out is given, writes the CSV. Otherwise returns the DF only.
-    """
-    if random_seed is not None:
-        random.seed(random_seed)
-
-    # Filter for this building
-    df_bldg = df_dhw_input[df_dhw_input["ogc_fid"] == building_id].copy()
-    if df_bldg.empty:
-        print(f"[create_dhw_scenarios] No DHW data for ogc_fid={building_id}.")
-        return pd.DataFrame()
-
-    # Parse param dictionary => list of {param_name, param_value, param_min, param_max}
-    param_list = parse_building_dhw_params(df_bldg)
-
-    scenario_rows = []
-    for scn_i in range(num_scenarios):
-        for p in param_list:
-            p_name = p["param_name"]
-            base_val = p["param_value"]
-            p_min = p["param_min"]
-            p_max = p["param_max"]
-
-            new_val = pick_value(base_val, p_min, p_max, picking_method)
-
-            scenario_rows.append({
-                "scenario_index": scn_i,
-                "ogc_fid": building_id,
-                "param_name": p_name,
-                "param_value": new_val,
-                "param_min": p_min,
-                "param_max": p_max,
-                "picking_method": picking_method
-            })
-
-    df_scen = pd.DataFrame(scenario_rows)
-    if scenario_csv_out:
-        os.makedirs(os.path.dirname(scenario_csv_out), exist_ok=True)
-        df_scen.to_csv(scenario_csv_out, index=False)
-        print(f"[create_dhw_scenarios] Wrote => {scenario_csv_out}")
-
-    return df_scen
-
-
-def parse_building_dhw_params(df_bldg):
-    """
-    Helper to parse the building-level DHW params from assigned_dhw_params.csv.
-
-    We expect lines like:
-      param_name, assigned_value
-      param_name_range, (xx, yy)
-
-    We'll produce a list of dict e.g.:
-      [
-        {
-          "param_name": "setpoint_c",
-          "param_value": 58.0,
-          "param_min": 55.0,
-          "param_max": 60.0
-        },
-        ...
-      ]
-    """
-
-    param_map = {}  # e.g. "setpoint_c" => { "value": X, "min": Y, "max": Z }
-
-    for row in df_bldg.itertuples():
-        name = row.param_name
-        # Accept both 'assigned_value' (raw CSV) and 'param_value' (structured CSV)
-        if hasattr(row, "assigned_value"):
-            val = row.assigned_value
-        else:
-            val = row.param_value
-
-        if name.endswith("_range"):
-            base_name = name.replace("_range", "")
-            if base_name not in param_map:
-                param_map[base_name] = {"value": None, "min": None, "max": None}
-            t = parse_tuple(val)
-            if t and len(t) == 2:
-                param_map[base_name]["min"] = t[0]
-                param_map[base_name]["max"] = t[1]
-        else:
-            if name not in param_map:
-                param_map[name] = {"value": None, "min": None, "max": None}
-            param_map[name]["value"] = val
-
-    # Convert param_map to a list
-    result = []
-    for p_name, dct in param_map.items():
-        result.append({
-            "param_name": p_name,
-            "param_value": dct["value"],
-            "param_min": dct["min"],
-            "param_max": dct["max"]
-        })
-    return result
-
-
-def parse_tuple(val):
-    """
-    If val is like "(145.0, 145.0)", parse to (145.0, 145.0). Otherwise None.
-    """
-    if not isinstance(val, str):
-        return None
-    s = val.strip()
-    if not (s.startswith("(") and s.endswith(")")):
-        return None
-    try:
-        inner = s[1:-1]  # remove parens
-        parts = inner.split(",")
-        if len(parts) != 2:
-            return None
-        p1 = float(parts[0])
-        p2 = float(parts[1])
-        return (p1, p2)
-    except:
-        return None
-
-
-def pick_value(base_val, p_min, p_max, picking_method):
-    """
-    If picking_method=="random_uniform" and p_min/p_max are numeric and p_min!=p_max,
-    pick random in [p_min, p_max]. Otherwise return base_val.
-    """
-    try:
-        base_f = float(base_val)
-    except:
-        base_f = None
-
-    if picking_method == "random_uniform" and p_min is not None and p_max is not None:
-        try:
-            fmin = float(p_min)
-            fmax = float(p_max)
-            if fmax != fmin:
-                import random
-                return random.uniform(fmin, fmax)
-        except:
-            pass
-    return base_val
-
-
-##############################################################################
-# 2) APPLY BUILDING-LEVEL DHW PARAMS (with partial schedule editing)
-##############################################################################
-
-def apply_dhw_params_to_idf(idf, param_dict, suffix="MyDHW"):
-    """
-    Takes a dictionary of DHW parameter picks, e.g.:
-      {
-        "setpoint_c": 58.9,
-        "default_tank_volume_liters": 277.5,
-        "default_heater_capacity_w": 4223.2,
-        "sched_morning": 0.62,
-        "sched_peak": 0.98,
-        "sched_afternoon": 0.20,
-        "sched_evening": 0.68,
-        "heater_fuel_type": "Electricity",
-        "heater_eff": 0.9,
-        ...
-      }
-
-    Then:
-      1) Partially creates/updates a usage fraction schedule <suffix>_UseFraction
-         ( preserving existing time blocks if present ).
-      2) Partially creates/updates a setpoint schedule <suffix>_Setpoint 
-         ( also preserving existing time blocks ).
-      3) Creates or updates a WATERHEATER:MIXED object <suffix>_WaterHeater
-         with the new volume, capacity, etc. 
-         Ensures Ambient_Temperature_Indicator is set so you don't get the 
-         "missing required property" error.
-    """
-
-    # 1) Create/Update Schedules
-    frac_sched_name, setpoint_sched_name = _create_or_update_dhw_schedules(
-        idf,
-        suffix,
-        setpoint_c=param_dict.get("setpoint_c", 60.0),
-        morning_val=param_dict.get("sched_morning", 0.7),
-        peak_val=param_dict.get("sched_peak", 1.0),
-        afternoon_val=param_dict.get("sched_afternoon", 0.2),
-        evening_val=param_dict.get("sched_evening", 0.8)
-    )
-
-    # 2) WaterHeater:Mixed
-    wh_name = f"{suffix}_WaterHeater"
-    existing_wh = [
-        obj for obj in idf.idfobjects["WATERHEATER:MIXED"] 
-        if obj.Name.upper() == wh_name.upper()
-    ]
-    if existing_wh:
-        wh_obj = existing_wh[0]
-    else:
-        wh_obj = idf.newidfobject("WATERHEATER:MIXED", Name=wh_name)
-
-    # Fill in fields (ensuring we set Ambient_Temperature_Indicator!)
-    tank_volume_m3 = (param_dict.get("default_tank_volume_liters", 200.0)) / 1000.0
-    heater_capacity_w = param_dict.get("default_heater_capacity_w", 4000.0)
-    fuel_type = param_dict.get("heater_fuel_type", "Electricity")
-    eff = param_dict.get("heater_eff", 0.9)
-
-    wh_obj.Tank_Volume = tank_volume_m3
-    wh_obj.Setpoint_Temperature_Schedule_Name = setpoint_sched_name
-    wh_obj.Heater_Maximum_Capacity = heater_capacity_w
-    wh_obj.Use_Flow_Rate_Fraction_Schedule_Name = frac_sched_name
-    wh_obj.Heater_Fuel_Type = fuel_type
-    wh_obj.Heater_Thermal_Efficiency = eff
-
-    # Avoid the missing AmbientTemperatureIndicator error:
-    # If your E+ version requires it, we set it explicitly:
-    if not hasattr(wh_obj, "Ambient_Temperature_Indicator"):
-        print("[DHW WARNING] This IDF object or IDD may not have 'Ambient_Temperature_Indicator' field!")
-    else:
-        # For example, set to "Schedule"
-        wh_obj.Ambient_Temperature_Indicator = "Schedule"
-        # Then define or point to a schedule for the ambient temp:
-        if not hasattr(wh_obj, "Ambient_Temperature_Schedule_Name"):
-            print("[DHW WARNING] IDD has no Ambient_Temperature_Schedule_Name field. Check version!")
-        else:
-            # Provide a schedule for ambient if needed:
-            wh_obj.Ambient_Temperature_Schedule_Name = "Always22C"  # or any custom schedule
-
-    print(f"[DHW] Updated WaterHeater '{wh_obj.Name}' => "
-          f"Volume={tank_volume_m3:.3f} m3, "
-          f"Capacity={heater_capacity_w} W, "
-          f"SetpointSched={setpoint_sched_name}, FlowFracSched={frac_sched_name}, "
-          f"Fuel={fuel_type}, Eff={eff}, "
-          f"AmbientTempIndicator={getattr(wh_obj,'Ambient_Temperature_Indicator','N/A')}")
-
-
-##############################################################################
-# PARTIAL SCHEDULE UPDATES FOR DHW
-##############################################################################
-
-def _create_or_update_dhw_schedules(
-    idf,
-    suffix,
-    setpoint_c=60.0,
-    morning_val=0.7,
-    peak_val=1.0,
-    afternoon_val=0.2,
-    evening_val=0.8
-):
-    """
-    Creates or partially updates two schedules:
-      1) <suffix>_UseFraction => usage fraction schedule
-         with typical time-of-day patterns (0.0 until 06:00, morning, peak, etc.)
-      2) <suffix>_Setpoint => constant setpoint (setpoint_c) all day
-
-    If the schedule doesn't exist, we create it from scratch. 
-    If it does exist, we parse each "Until: HH:MM, old_val" line 
-    and only update the numeric portion, preserving time blocks.
-
-    Returns (fraction_sched_name, setpoint_sched_name).
-    """
-    frac_sched_name = f"{suffix}_UseFraction"
-    frac_sch = idf.getobject("SCHEDULE:COMPACT", frac_sched_name.upper())
-    if not frac_sch:
-        # Create from scratch with standard blocks
-        frac_sch = idf.newidfobject("SCHEDULE:COMPACT", Name=frac_sched_name)
-        frac_sch.Schedule_Type_Limits_Name = "Fraction"
-        frac_sch.Field_1 = "Through: 12/31"
-        frac_sch.Field_2 = "For: AllDays"
-        # a typical pattern:
-        frac_sch.Field_3 = "Until: 06:00, 0.0"
-        frac_sch.Field_4 = f"Until: 08:00,{morning_val:.2f}"
-        frac_sch.Field_5 = f"Until: 10:00,{peak_val:.2f}"
-        frac_sch.Field_6 = f"Until: 17:00,{afternoon_val:.2f}"
-        frac_sch.Field_7 = f"Until: 21:00,{evening_val:.2f}"
-        frac_sch.Field_8 = f"Until: 24:00,{morning_val:.2f}"
-        print(f"[DHW] Created new fraction schedule '{frac_sched_name}' with standard blocks.")
-    else:
-        # Partial update: parse each line
-        frac_sch.Schedule_Type_Limits_Name = "Fraction"
-        _partially_update_fraction_schedule(
-            frac_sch,
-            morning_val=morning_val,
-            peak_val=peak_val,
-            afternoon_val=afternoon_val,
-            evening_val=evening_val
-        )
-
-    setpoint_sched_name = f"{suffix}_Setpoint"
-    setpoint_sch = idf.getobject("SCHEDULE:COMPACT", setpoint_sched_name.upper())
-    if not setpoint_sch:
-        # create from scratch
-        setpoint_sch = idf.newidfobject("SCHEDULE:COMPACT", Name=setpoint_sched_name)
-        setpoint_sch.Schedule_Type_Limits_Name = "Temperature"
-        setpoint_sch.Field_1 = "Through: 12/31"
-        setpoint_sch.Field_2 = "For: AllDays"
-        setpoint_sch.Field_3 = f"Until: 24:00,{setpoint_c:.2f}"
-        print(f"[DHW] Created new setpoint schedule '{setpoint_sched_name}' = {setpoint_c} °C all day.")
-    else:
-        # partial update
-        setpoint_sch.Schedule_Type_Limits_Name = "Temperature"
-        _partially_update_setpoint_schedule(setpoint_sch, setpoint_c)
-
-    return frac_sched_name, setpoint_sched_name
-
-
-def _partially_update_fraction_schedule(sched_obj, 
-                                        morning_val=0.7, 
-                                        peak_val=1.0, 
-                                        afternoon_val=0.2, 
-                                        evening_val=0.8):
-    """
-    Loops over existing "Until: HH:MM, old_val" lines in a fraction schedule, 
-    and overwrites the numeric portion based on time-of-day:
-
-       0 <= time < 6  => 0.0
-       6 <= time < 8  => morning_val
-       8 <= time <10  => peak_val
-       10<= time <17 => afternoon_val
-       17<= time <21 => evening_val
-       21<= time <=24 => morning_val
-
-    If the schedule has more or fewer time blocks, 
-    each block is updated according to where its 'Until: HH:MM' 
-    fits in these intervals.
-    """
-    field_count = len(sched_obj.fieldvalues)
-    for i in range(field_count):
-        line_str = sched_obj.fieldvalues[i]
-        if not isinstance(line_str, str):
-            continue
-        if "until:" not in line_str.lower():
-            continue
-
-        time_str, old_val = parse_schedule_until_line(line_str)
-        if time_str is None:
-            continue
-
-        mins = _time_to_minutes(time_str)
-        new_val = _pick_fraction_for_time(mins, morning_val, peak_val, afternoon_val, evening_val)
-        sched_obj.fieldvalues[i] = f"Until: {time_str},{new_val:.2f}"
-
-    print(f"[DHW] Updated usage fraction schedule '{sched_obj.Name}' with new daypattern.")
-
-
-def _partially_update_setpoint_schedule(sched_obj, setpoint_c):
-    """
-    Loops over existing "Until: HH:MM, old_val" lines, 
-    sets all numeric portions to `setpoint_c`.
-    """
-    field_count = len(sched_obj.fieldvalues)
-    for i in range(field_count):
-        line_str = sched_obj.fieldvalues[i]
-        if not isinstance(line_str, str):
-            continue
-        if "until:" not in line_str.lower():
-            continue
-
-        time_str, old_val = parse_schedule_until_line(line_str)
-        if time_str is None:
-            continue
-
-        sched_obj.fieldvalues[i] = f"Until: {time_str},{setpoint_c:.2f}"
-
-    print(f"[DHW] Updated setpoint schedule '{sched_obj.Name}' => {setpoint_c} °C for all blocks.")
-
-
-def parse_schedule_until_line(line_str: str):
-    """
-    Parses a single line like "Until: 07:00, 15.0".
-    Returns (time_str, float_value).
-    If parsing fails, returns (None, None).
-    """
-    if not isinstance(line_str, str):
-        return (None, None)
-    line_str = line_str.strip()
-    if not line_str.lower().startswith("until:"):
-        return (None, None)
-
-    try:
-        remainder = line_str.split("Until:", 1)[1].strip()  # e.g. "07:00,15.0"
-        time_part, val_str = remainder.split(",", 1)
-        time_str = time_part.strip()
-        val_float = float(val_str.strip())
-        return (time_str, val_float)
-    except:
-        return (None, None)
-
-
-def _time_to_minutes(tstr):
-    """
-    Converts "HH:MM" to integer minutes. 
-    E.g. "06:00" => 360, "10:30" => 630. 
-    Returns 9999 if parsing fails.
-    """
-    try:
-        parts = tstr.split(":")
-        hh = int(parts[0])
-        mm = int(parts[1]) if len(parts) > 1 else 0
-        return hh * 60 + mm
-    except:
-        return 9999
-
-
-def _pick_fraction_for_time(mins, morning_val, peak_val, afternoon_val, evening_val):
-    """
-    Returns the usage fraction based on intervals:
-      0 <= t < 360(6:00) => 0.0
-      360 <= t < 480(8:00) => morning_val
-      480 <= t < 600(10:00) => peak_val
-      600 <= t < 1020(17:00) => afternoon_val
-      1020<= t <1260(21:00) => evening_val
-      >=1260 => morning_val
-    Adjust as you wish.
-    """
-    if mins < 360:   # before 06:00
-        return 0.0
-    elif mins < 480: # 06:00 - 08:00
-        return morning_val
-    elif mins < 600: # 08:00 - 10:00
-        return peak_val
-    elif mins < 1020: # 10:00 - 17:00
-        return afternoon_val
-    elif mins < 1260: # 17:00 - 21:00
-        return evening_val
-    else:            # 21:00 - 24:00
-        return morning_val
-
-------------------------------------------------------------
-
-File: D:\Documents\E_Plus_2030_py\modification\elec_functions.py
-============================================================
-"""
-elec_functions.py
-
-Provides functions for applying lighting + parasitic equipment parameters
-to an EnergyPlus IDF, analogous to hvac_functions or vent_functions.
-
-Contents:
-  1) create_elec_scenarios(...)
-     - Takes df_lighting with columns [ogc_fid, object_name, param_name, assigned_value, min_val, max_val],
-       generates scenario picks, and writes them to CSV.
-
-  2) apply_building_level_elec(idf, param_dict)
-     - A building-level approach: lumps all lighting/EQ loads into one or two IDF objects (LIGHTS, ELECTRICEQUIPMENT),
-       referencing an existing zone list and referencing "LightsSchedule" or "ParasiticSchedule".
-
-  3) apply_object_level_elec(idf, df_lighting)
-     - A row-by-row approach: reads from a scenario DataFrame and updates each LIGHTS/ELECTRICEQUIPMENT object directly.
-"""
-
+import ast
 import os
-import random
-import pandas as pd
 
-# ---------------------------------------------------------------------------
-# 1) CREATE ELEC SCENARIOS
-# ---------------------------------------------------------------------------
-def create_elec_scenarios(
-    df_lighting,
-    building_id,
-    num_scenarios=5,
-    picking_method="random_uniform",
-    random_seed=42,
-    scenario_csv_out=None
+def transform_dhw_log_to_structured(
+    csv_input="output/assigned/assigned_dhw_params.csv",
+    csv_output="output/assigned/structured_dhw_params.csv",
 ):
     """
-    Generates a scenario-level DataFrame from "assigned_lighting.csv" rows:
-      Each row has: ogc_fid, object_name, param_name, assigned_value, min_val, max_val
+    Reads the 'flat' DHW CSV with columns (ogc_fid, param_name, assigned_value).
+    Produces a 'structured' CSV with columns:
+       ogc_fid, sub_key, eplus_object_type, eplus_object_name,
+       param_name, param_value, param_min, param_max
 
-    If picking_method=="random_uniform" and min_val < max_val, picks a random float in [min_val, max_val].
-    Otherwise keeps assigned_value as is.
-
-    Final columns in df_scen:
-      scenario_index, ogc_fid, object_name, param_name, param_value,
-      param_min, param_max, picking_method
-
-    If scenario_csv_out is provided, we write it to that CSV.
-
-    Returns:
-      pd.DataFrame: the scenario DataFrame
-    """
-    if random_seed is not None:
-        random.seed(random_seed)
-
-    # filter for the building
-    df_bldg = df_lighting[df_lighting["ogc_fid"] == building_id].copy()
-    if df_bldg.empty:
-        print(f"[create_elec_scenarios] No lighting data found for building {building_id}")
-        return pd.DataFrame()
-
-    scenario_rows = []
-
-    # For each scenario
-    for s in range(num_scenarios):
-        for row in df_bldg.itertuples():
-            obj_name = row.object_name
-            p_name   = row.param_name
-
-            # Input CSVs may use 'assigned_value' or already rename to 'param_value'
-            if hasattr(row, "assigned_value"):
-                base_val = row.assigned_value
-            else:
-                base_val = row.param_value
-            p_min    = row.min_val
-            p_max    = row.max_val
-
-            new_val  = pick_value(base_val, p_min, p_max, picking_method)
-
-            scenario_rows.append({
-                "scenario_index":  s,
-                "ogc_fid":         building_id,
-                "object_name":     obj_name,
-                "param_name":      p_name,
-                "param_value":     new_val,
-                "param_min":       p_min,
-                "param_max":       p_max,
-                "picking_method":  picking_method
-            })
-
-    df_scen = pd.DataFrame(scenario_rows)
-
-    if scenario_csv_out:
-        os.makedirs(os.path.dirname(scenario_csv_out), exist_ok=True)
-        df_scen.to_csv(scenario_csv_out, index=False)
-        print(f"[create_elec_scenarios] Wrote scenario file => {scenario_csv_out}")
-
-    return df_scen
-
-
-def pick_value(base_val, p_min, p_max, picking_method):
-    """
-    If picking_method=="random_uniform" and p_min/p_max are numeric and p_min< p_max,
-    pick a random float in [p_min, p_max].
-    Otherwise keep base_val as is.
-    """
-    try:
-        base_float = float(base_val)
-    except:
-        base_float = None
-
-    if picking_method == "random_uniform":
-        try:
-            fmin = float(p_min)
-            fmax = float(p_max)
-            if fmax > fmin:
-                return random.uniform(fmin, fmax)
-        except:
-            pass
-    # fallback
-    return base_val
-
-# ---------------------------------------------------------------------------
-# 2) APPLY BUILDING-LEVEL ELECTRICAL PARAMETERS
-# ---------------------------------------------------------------------------
-def apply_building_level_elec(idf, param_dict, zonelist_name="ALL_ZONES"):
-    """
-    Interprets a dictionary of lighting/electrical parameters, e.g.:
-
-      param_dict = {
-        "lights_wm2": 19.2788535969,
-        "parasitic_wm2": 0.285,
-        "lights_fraction_radiant": 0.7,
-        "lights_fraction_visible": 0.2,
-        "lights_fraction_replaceable": 1.0,
-        "equip_fraction_radiant": 0.0,
-        "equip_fraction_lost": 1.0,
-        "lights_schedule_name": "LightsSchedule",      # <--- optional override
-        "equip_schedule_name": "ParasiticSchedule"     # <--- optional override
-      }
-
-    Then we create or update:
-      - One LIGHTS object for the entire building (via `zonelist_name`).
-      - One ELECTRICEQUIPMENT object for parasitic loads.
-
-    We reference existing schedules (e.g. "LightsSchedule" or "ParasiticSchedule")
-    from the base IDF (instead of "AlwaysOn").
+    Key logic:
+      - If param_name ends with "_range", parse min/max from assigned_value
+        and store them in memory.
+      - If param_name is the same as the range version minus "_range",
+        unify them in one row => param_value + param_min + param_max.
+      - If param_name includes '.obj_type' or '.Name', we store them
+        so we can fill eplus_object_type/eplus_object_name in final row.
     """
 
-    # Extract numeric picks
-    lights_wm2          = float(param_dict.get("lights_wm2", 10.0))
-    parasitic_wm2       = float(param_dict.get("parasitic_wm2", 0.285))
-    lights_frac_radiant = float(param_dict.get("lights_fraction_radiant", 0.7))
-    lights_frac_visible = float(param_dict.get("lights_fraction_visible", 0.2))
-    lights_frac_replace = float(param_dict.get("lights_fraction_replaceable", 1.0))
-    lights_frac_return  = float(param_dict.get("lights_fraction_return_air", 0.0))
-    equip_frac_radiant  = float(param_dict.get("equip_fraction_radiant", 0.0))
-    equip_frac_lost     = float(param_dict.get("equip_fraction_lost", 1.0))
+    df = pd.read_csv(csv_input)
 
-    # Which schedules to use (must exist in your base IDF).
-    # If param_dict doesn't have them, we default to "LightsSchedule" / "ParasiticSchedule".
-    lights_sched_name = param_dict.get("lights_schedule_name", "LightsSchedule")
-    equip_sched_name  = param_dict.get("equip_schedule_name",  "ParasiticSchedule")
+    # We'll keep data in a nested dictionary:
+    # final_dict[(ogc_fid, sub_key, base_param)] = {
+    #    "value": <float or str>,
+    #    "min": <float or None>,
+    #    "max": <float or None>,
+    #    "obj_type": <str or None>,
+    #    "obj_name": <str or None>
+    # }
+    final_dict = {}
 
-    print("[ELEC] => Building-level electrical picks:")
-    print(f"  lights_wm2={lights_wm2}, parasitic_wm2={parasitic_wm2}")
-    print(f"  lights_frac_radiant={lights_frac_radiant}, visible={lights_frac_visible}, replaceable={lights_frac_replace}, return_air={lights_frac_return}")
-    print(f"  equip_frac_radiant={equip_frac_radiant}, equip_frac_lost={equip_frac_lost}")
-    print(f"  schedules => lights={lights_sched_name}, equip={equip_sched_name}")
+    def get_subdict(fid, s_key, base_param):
+        if (fid, s_key, base_param) not in final_dict:
+            final_dict[(fid, s_key, base_param)] = {
+                "value": None,
+                "min": None,
+                "max": None,
+                "obj_type": None,
+                "obj_name": None
+            }
+        return final_dict[(fid, s_key, base_param)]
 
-    # Create/update LIGHTS object
-    lights_obj_name = f"Lights_{zonelist_name}"
-    lights_obj = _create_or_update_lights_object(
-        idf=idf,
-        obj_name=lights_obj_name,
-        zone_or_zonelist=zonelist_name,
-        lights_wm2=lights_wm2,
-        frac_radiant=lights_frac_radiant,
-        frac_visible=lights_frac_visible,
-        frac_replace=lights_frac_replace,
-        frac_return=lights_frac_return,
-        lights_schedule_name=lights_sched_name
-    )
+    for i, row in df.iterrows():
+        # Must have these columns
+        if "ogc_fid" not in row or "param_name" not in row or "assigned_value" not in row:
+            continue
 
-    # Create/update ELECTRICEQUIPMENT object
-    equip_obj_name = f"Equip_{zonelist_name}"
-    equip_obj = _create_or_update_equip_object(
-        idf=idf,
-        obj_name=equip_obj_name,
-        zone_or_zonelist=zonelist_name,
-        equip_wm2=parasitic_wm2,
-        frac_radiant=equip_frac_radiant,
-        frac_lost=equip_frac_lost,
-        equip_schedule_name=equip_sched_name
-    )
+        ogc_fid = row["ogc_fid"]
+        param_name = str(row["param_name"])
+        assigned_value = row["assigned_value"]
 
-    return lights_obj, equip_obj
+        # If you only want to transform "dhw_" lines, you could do:
+        # if not param_name.startswith("dhw_"):
+        #     continue
 
+        # Attempt sub_key parse. If we see "dhw_waterheater.obj_type" => sub_key="dhw_waterheater", field="obj_type"
+        # If param_name has no dot => sub_key="dhw_top" or something default
+        sub_key = "dhw_top"
+        field = param_name
+        if '.' in param_name:
+            parts = param_name.split('.', 1)
+            sub_key, field = parts[0], parts[1]
+        # e.g. sub_key="dhw_waterheater", field="obj_type"
 
-def _create_or_update_lights_object(
-    idf,
-    obj_name,
-    zone_or_zonelist="ALL_ZONES",
-    lights_wm2=10.0,
-    frac_radiant=0.7,
-    frac_visible=0.2,
-    frac_replace=1.0,
-    frac_return=0.0,
-    lights_schedule_name="LightsSchedule"
-):
-    """
-    Creates/updates a LIGHTS object with 'Watts/Area' method,
-    referencing an existing schedule (lights_schedule_name).
-    """
-    existing = [
-        lt for lt in idf.idfobjects["LIGHTS"]
-        if lt.Name.upper() == obj_name.upper()
-    ]
-    if existing:
-        lights_obj = existing[0]
-    else:
-        lights_obj = idf.newidfobject("LIGHTS", Name=obj_name)
+        if field.endswith("_range"):
+            # e.g. "setpoint_c_range"
+            base_param = field[:-6]  # remove "_range"
+            subd = get_subdict(ogc_fid, sub_key, base_param)
 
-    # zone or zone list
-    if hasattr(lights_obj, "Zone_or_ZoneList_or_Space_or_SpaceList_Name"):
-        lights_obj.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zone_or_zonelist
-    else:
-        lights_obj.Zone_or_ZoneList_Name = zone_or_zonelist
-
-    # design method
-    lights_obj.Design_Level_Calculation_Method = "Watts/Area"
-    lights_obj.Watts_per_Zone_Floor_Area = lights_wm2
-
-    # use the existing lighting schedule from your base IDF
-    lights_obj.Schedule_Name = lights_schedule_name
-
-    # fractions
-    if hasattr(lights_obj, "Fraction_Radiant"):
-        lights_obj.Fraction_Radiant = frac_radiant
-    if hasattr(lights_obj, "Fraction_Visible"):
-        lights_obj.Fraction_Visible = frac_visible
-    if hasattr(lights_obj, "Fraction_Replaceable"):
-        lights_obj.Fraction_Replaceable = frac_replace
-    if hasattr(lights_obj, "Return_Air_Fraction"):
-        lights_obj.Return_Air_Fraction = frac_return
-
-    return lights_obj
-
-
-def _create_or_update_equip_object(
-    idf,
-    obj_name,
-    zone_or_zonelist="ALL_ZONES",
-    equip_wm2=0.285,
-    frac_radiant=0.0,
-    frac_lost=1.0,
-    equip_schedule_name="ParasiticSchedule"
-):
-    """
-    Creates/updates an ELECTRICEQUIPMENT object with 'Watts/Area' method,
-    referencing an existing schedule (equip_schedule_name).
-    """
-    existing = [
-        eq for eq in idf.idfobjects["ELECTRICEQUIPMENT"]
-        if eq.Name.upper() == obj_name.upper()
-    ]
-    if existing:
-        equip_obj = existing[0]
-    else:
-        equip_obj = idf.newidfobject("ELECTRICEQUIPMENT", Name=obj_name)
-
-    if hasattr(equip_obj, "Zone_or_ZoneList_or_Space_or_SpaceList_Name"):
-        equip_obj.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zone_or_zonelist
-    else:
-        equip_obj.Zone_or_ZoneList_Name = zone_or_zonelist
-
-    equip_obj.Design_Level_Calculation_Method = "Watts/Area"
-    equip_obj.Watts_per_Zone_Floor_Area = equip_wm2
-
-    # use the existing equipment schedule from your base IDF
-    equip_obj.Schedule_Name = equip_schedule_name
-
-    # fraction fields
-    if hasattr(equip_obj, "Fraction_Radiant"):
-        equip_obj.Fraction_Radiant = frac_radiant
-    if hasattr(equip_obj, "Fraction_Lost"):
-        equip_obj.Fraction_Lost = frac_lost
-
-    return equip_obj
-
-# ---------------------------------------------------------------------------
-# 3) APPLY OBJECT-LEVEL ELECTRIC PARAMETERS
-# ---------------------------------------------------------------------------
-def apply_object_level_elec(idf, df_lighting):
-    """
-    Reads a scenario DataFrame with columns:
-      [ogc_fid, object_name, param_name, param_value, param_min, param_max, ...]
-    For each object_name, we parse param_name=>param_value pairs
-    and update or create the corresponding IDF object.
-
-    e.g. assigned_lighting.csv might have:
-      ogc_fid, object_name, param_name, assigned_value, ...
-      4136730, LIGHTS, lights_wm2, 19.2788535969
-      4136730, ELECTRICEQUIPMENT, parasitic_wm2, 0.285
-      4136730, LIGHTS.Fraction_Radiant, lights_fraction_radiant, 0.7
-      ...
-
-    Steps:
-      1) group by object_name
-      2) build a param_dict
-      3) update the IDF object accordingly
-    """
-    object_groups = df_lighting.groupby("object_name")
-
-    for obj_name, group_df in object_groups:
-        print(f"[ELEC] Handling object_name='{obj_name}' with {len(group_df)} rows.")
-        param_dict = {}
-        for row in group_df.itertuples():
-            p_name = row.param_name
-            val    = row.param_value
-            # attempt float
+            # parse assigned_value => (minVal, maxVal)
             try:
-                param_dict[p_name] = float(val)
+                tval = ast.literal_eval(str(assigned_value))
+                if isinstance(tval, (list, tuple)) and len(tval) == 2:
+                    subd["min"], subd["max"] = tval
             except:
-                param_dict[p_name] = val
+                pass
 
-        # Decide how to update the IDF object
-        if obj_name.upper() == "LIGHTS":
-            _update_generic_lights_obj(idf, "LIGHTS", param_dict)
-        elif obj_name.upper() == "ELECTRICEQUIPMENT":
-            _update_generic_equip_obj(idf, "ELECTRICEQUIPMENT", param_dict)
-        elif "SCHEDULE" in obj_name.upper():
-            pass  # e.g. "LIGHTS_SCHEDULE": your code for schedule logic
+        elif field in ("obj_type", "Name"):
+            # E+ object pointer
+            # We'll store them in base_param="EPOBJ"
+            base_param = "EPOBJ"
+            subd = get_subdict(ogc_fid, sub_key, base_param)
+
+            if field == "obj_type":
+                subd["obj_type"] = assigned_value
+            else:  # "Name"
+                subd["obj_name"] = assigned_value
+
         else:
-            print(f"[ELEC WARNING] Unknown object_name='{obj_name}', skipping or handle differently.")
+            # normal param => e.g. "setpoint_c"
+            base_param = field
+            subd = get_subdict(ogc_fid, sub_key, base_param)
+            subd["value"] = assigned_value
 
+    # Now we have a dict that merges range with final value, object type, etc.
+    # We'll produce final rows with columns we want:
+    structured_rows = []
+    for (fid, s_key, base_param), valdict in final_dict.items():
+        # If base_param == "EPOBJ", that means it's the object reference (obj_type, obj_name)
+        # We'll handle them below if you want them as separate param rows or
+        # or you can attach them to everything else. Let's do the approach
+        # where we have "param_name" = "obj_type", "param_name" = "Name" as separate lines
+        # or you can skip them as normal param lines. We'll do a combination approach.
 
-def _update_generic_lights_obj(idf, obj_name, param_dict):
-    """
-    Example for updating a LIGHTS object named `obj_name`.
-    param_dict might have "lights_wm2", "lights_fraction_radiant", etc.
-    """
-    existing = [lt for lt in idf.idfobjects["LIGHTS"] if lt.Name.upper() == obj_name.upper()]
-    if existing:
-        lights_obj = existing[0]
-    else:
-        lights_obj = idf.newidfobject("LIGHTS", Name=obj_name)
-
-    if "lights_wm2" in param_dict:
-        lights_obj.Design_Level_Calculation_Method = "Watts/Area"
-        lights_obj.Watts_per_Zone_Floor_Area = float(param_dict["lights_wm2"])
-
-    if "lights_fraction_radiant" in param_dict and hasattr(lights_obj, "Fraction_Radiant"):
-        lights_obj.Fraction_Radiant = float(param_dict["lights_fraction_radiant"])
-
-    if "lights_fraction_visible" in param_dict and hasattr(lights_obj, "Fraction_Visible"):
-        lights_obj.Fraction_Visible = float(param_dict["lights_fraction_visible"])
-
-    if "lights_fraction_replaceable" in param_dict and hasattr(lights_obj, "Fraction_Replaceable"):
-        lights_obj.Fraction_Replaceable = float(param_dict["lights_fraction_replaceable"])
-
-    if "lights_fraction_return_air" in param_dict and hasattr(lights_obj, "Return_Air_Fraction"):
-        lights_obj.Return_Air_Fraction = float(param_dict["lights_fraction_return_air"])
-
-
-def _update_generic_equip_obj(idf, obj_name, param_dict):
-    """
-    Example for updating an ELECTRICEQUIPMENT object. param_dict might have:
-      "parasitic_wm2", "equip_fraction_radiant", "equip_fraction_lost", etc.
-    """
-    existing = [eq for eq in idf.idfobjects["ELECTRICEQUIPMENT"] if eq.Name.upper() == obj_name.upper()]
-    if existing:
-        equip_obj = existing[0]
-    else:
-        equip_obj = idf.newidfobject("ELECTRICEQUIPMENT", Name=obj_name)
-
-    if "parasitic_wm2" in param_dict:
-        equip_obj.Design_Level_Calculation_Method = "Watts/Area"
-        equip_obj.Watts_per_Zone_Floor_Area = float(param_dict["parasitic_wm2"])
-
-    if "equip_fraction_radiant" in param_dict and hasattr(equip_obj, "Fraction_Radiant"):
-        equip_obj.Fraction_Radiant = float(param_dict["equip_fraction_radiant"])
-
-    if "equip_fraction_lost" in param_dict and hasattr(equip_obj, "Fraction_Lost"):
-        equip_obj.Fraction_Lost = float(param_dict["equip_fraction_lost"])
-
-------------------------------------------------------------
-
-File: D:\Documents\E_Plus_2030_py\modification\equipment_functions.py
-============================================================
-"""equipment_functions.py
-
-Provides helper functions for scenario generation and IDF updates for
-building-level electric equipment loads. The overall style mirrors
-``elec_functions.py`` but focuses on generic ELECTRICEQUIPMENT objects
-that are separate from lighting/parasitic loads.
-"""
-
-import os
-import pandas as pd
-from idf_objects.eequip.schedules import create_equipment_schedule
-
-
-# ---------------------------------------------------------------------------
-# 1) CREATE EQUIPMENT SCENARIOS
-# ---------------------------------------------------------------------------
-def create_equipment_scenarios(
-    df_equipment,
-    building_id,
-    num_scenarios=5,
-    picking_method="random_uniform",
-    random_seed=42,
-    scenario_csv_out=None,
-):
-    """Build a scenario DataFrame from ``assigned_equipment.csv`` rows.
-
-    ``assigned_equipment.csv`` now mirrors the lighting format and provides the
-    columns ``object_name``, ``param_name``, ``assigned_value``, ``min_val`` and
-    ``max_val``.  This function creates ``num_scenarios`` copies of those rows
-    and, when ``picking_method == "random_uniform"`` and numeric bounds are
-    valid, draws a random value within ``[min_val, max_val]`` for each scenario
-    row.  Otherwise the original ``assigned_value`` is kept.
-
-    Parameters
-    ----------
-    df_equipment : pd.DataFrame
-        Rows for a single building with at least the columns ``ogc_fid``,
-        ``object_name``, ``param_name``, ``assigned_value``, ``min_val`` and
-        ``max_val``.
-    building_id : int
-        ID of the building we are processing.
-    num_scenarios : int, default 5
-        How many scenario rows to generate.
-    picking_method : str, default "random_uniform"
-        Value selection strategy. Currently supports ``random_uniform`` only.
-    random_seed : int, optional
-        Seed for the random generator.
-    scenario_csv_out : str, optional
-        Path to write ``scenario_params_equipment.csv``.
-    """
-    if random_seed is not None:
-        import random
-        random.seed(random_seed)
-
-    df_bldg = df_equipment[df_equipment["ogc_fid"] == building_id].copy()
-    if df_bldg.empty:
-        print(f"[create_equipment_scenarios] No equipment data for building {building_id}")
-        return pd.DataFrame()
-
-    rows = []
-    for s in range(num_scenarios):
-        for row in df_bldg.itertuples():
-            # Equipment CSV may store the chosen value under 'assigned_value'
-            # or 'param_value' depending on preprocessing.
-            if hasattr(row, "assigned_value"):
-                base_val = row.assigned_value
-            else:
-                base_val = row.param_value
-            p_min = getattr(row, "min_val", None)
-            p_max = getattr(row, "max_val", None)
-            new_val = pick_value(base_val, p_min, p_max, picking_method)
-
-            rows.append({
-                "scenario_index": s,
-                "ogc_fid": building_id,
-                "object_name": getattr(row, "object_name", ""),
-                "param_name": row.param_name,
-                "param_value": new_val,
-                "param_min": p_min,
-                "param_max": p_max,
-                "picking_method": picking_method,
-            })
-    df_scen = pd.DataFrame(rows)
-
-    if scenario_csv_out:
-        os.makedirs(os.path.dirname(scenario_csv_out), exist_ok=True)
-        df_scen.to_csv(scenario_csv_out, index=False)
-        print(f"[create_equipment_scenarios] Wrote => {scenario_csv_out}")
-
-    return df_scen
-
-
-def pick_value(base_val, p_min, p_max, picking_method):
-    """Return a value based on ``picking_method`` and numeric bounds."""
-
-    if picking_method == "random_uniform":
-        try:
-            fmin = float(p_min)
-            fmax = float(p_max)
-            if fmax > fmin:
-                import random
-                return random.uniform(fmin, fmax)
-        except Exception:
-            pass
-    return base_val
-
-
-# ---------------------------------------------------------------------------
-# 2) APPLY BUILDING-LEVEL EQUIPMENT PARAMETERS
-# ---------------------------------------------------------------------------
-def apply_building_level_equipment(idf, param_dict, zonelist_name="ALL_ZONES"):
-    """Create or update a single ELECTRICEQUIPMENT object.
-
-    ``param_dict`` typically contains at least ``equip_wm2``. Optional keys
-    ``building_category`` and ``sub_type`` allow schedule generation using
-    :func:`create_equipment_schedule`.
-    """
-    equip_wm2 = float(param_dict.get("equip_wm2", 3.0))
-    frac_latent = param_dict.get("equip_fraction_latent")
-    frac_radiant = param_dict.get("equip_fraction_radiant")
-    frac_lost = param_dict.get("equip_fraction_lost")
-    bcat = param_dict.get("building_category", "Non-Residential")
-    subtype = param_dict.get("sub_type", "Other Use Function")
-
-    sched_name = create_equipment_schedule(
-        idf,
-        building_category=bcat,
-        sub_type=subtype,
-        schedule_name="EquipSchedule",
-    )
-
-    obj_name = f"Equip_{zonelist_name}"
-    existing = [
-        eq for eq in idf.idfobjects["ELECTRICEQUIPMENT"]
-        if eq.Name.upper() == obj_name.upper()
-    ]
-    equip_obj = existing[0] if existing else idf.newidfobject("ELECTRICEQUIPMENT", Name=obj_name)
-
-    if hasattr(equip_obj, "Zone_or_ZoneList_or_Space_or_SpaceList_Name"):
-        equip_obj.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zonelist_name
-    else:
-        equip_obj.Zone_or_ZoneList_Name = zonelist_name
-
-    equip_obj.Schedule_Name = sched_name
-    equip_obj.Design_Level_Calculation_Method = "Watts/Area"
-    equip_obj.Watts_per_Zone_Floor_Area = equip_wm2
-    if frac_latent is not None and hasattr(equip_obj, "Fraction_Latent"):
-        equip_obj.Fraction_Latent = float(frac_latent)
-    if frac_radiant is not None and hasattr(equip_obj, "Fraction_Radiant"):
-        equip_obj.Fraction_Radiant = float(frac_radiant)
-    if frac_lost is not None and hasattr(equip_obj, "Fraction_Lost"):
-        equip_obj.Fraction_Lost = float(frac_lost)
-
-    return equip_obj
-
-
-# ---------------------------------------------------------------------------
-# 3) APPLY OBJECT-LEVEL EQUIPMENT PARAMETERS
-# ---------------------------------------------------------------------------
-def apply_object_level_equipment(idf, df_equipment):
-    """Update ELECTRICEQUIPMENT objects row by row from a scenario DataFrame."""
-    for row in df_equipment.itertuples():
-        obj_name = row.object_name if hasattr(row, "object_name") else "ELECTRICEQUIPMENT"
-        p_name = row.param_name
-        val = row.param_value
-
-        existing = [eq for eq in idf.idfobjects["ELECTRICEQUIPMENT"] if eq.Name.upper() == obj_name.upper()]
-        equip_obj = existing[0] if existing else idf.newidfobject("ELECTRICEQUIPMENT", Name=obj_name)
-
-        if p_name == "equip_wm2":
-            equip_obj.Design_Level_Calculation_Method = "Watts/Area"
-            equip_obj.Watts_per_Zone_Floor_Area = float(val)
-        elif p_name == "Schedule_Name":
-            equip_obj.Schedule_Name = val
-        elif p_name == "equip_fraction_latent" and hasattr(equip_obj, "Fraction_Latent"):
-            equip_obj.Fraction_Latent = float(val)
-        elif p_name == "equip_fraction_radiant" and hasattr(equip_obj, "Fraction_Radiant"):
-            equip_obj.Fraction_Radiant = float(val)
-        elif p_name == "equip_fraction_lost" and hasattr(equip_obj, "Fraction_Lost"):
-            equip_obj.Fraction_Lost = float(val)
+        if base_param == "EPOBJ":
+            # object-level
+            # param row for obj_type
+            if valdict["obj_type"] is not None:
+                structured_rows.append({
+                    "ogc_fid": fid,
+                    "sub_key": s_key,
+                    "eplus_object_type": valdict["obj_type"],
+                    "eplus_object_name": valdict["obj_name"],
+                    "param_name": "obj_type",
+                    "param_value": valdict["obj_type"],
+                    "param_min": None,
+                    "param_max": None
+                })
+            # param row for Name
+            if valdict["obj_name"] is not None:
+                structured_rows.append({
+                    "ogc_fid": fid,
+                    "sub_key": s_key,
+                    "eplus_object_type": valdict["obj_type"],
+                    "eplus_object_name": valdict["obj_name"],
+                    "param_name": "Name",
+                    "param_value": valdict["obj_name"],
+                    "param_min": None,
+                    "param_max": None
+                })
         else:
-            # Generic setter if attribute exists
-            if hasattr(equip_obj, p_name):
+            # normal param => occupant_density, setpoint_c, etc.
+            param_val = valdict["value"]
+            param_min = valdict["min"]
+            param_max = valdict["max"]
+
+            # we might want to parse them as floats
+            def try_float(x):
                 try:
-                    setattr(equip_obj, p_name, float(val))
-                except Exception:
-                    setattr(equip_obj, p_name, val)
+                    return float(x)
+                except:
+                    return x
 
-    return
+            param_val = try_float(param_val)
+            param_min = try_float(param_min)
+            param_max = try_float(param_max)
 
-------------------------------------------------------------
+            # find if there's an "EPOBJ" for this sub_key => attach eplus_object_type/eplus_object_name
+            ep_obj = final_dict.get((fid, s_key, "EPOBJ"), {})
+            eplus_type = ep_obj.get("obj_type", None)
+            eplus_name = ep_obj.get("obj_name", None)
 
-File: D:\Documents\E_Plus_2030_py\modification\fenez_functions2.py
-============================================================
-"""
-fenez_functions2.py
-
-This module provides functions for applying fenestration & envelope parameters 
-to an EnergyPlus IDF, analogous to HVAC or Vent modules.
-
-Contents:
-  1) apply_building_level_fenez(...) => calls update_construction_materials, 
-     assign_constructions_to_surfaces, add_fenestration, etc.
-  2) apply_object_level_fenez(...)  => advanced approach that processes 
-     'structured_fenez_params.csv' row by row, updating IDF objects directly.
-  3) create_fenez_scenarios(...)    => (NEW) generates a scenario-level DataFrame
-     with sub_key, param_min, param_max, etc., for each scenario, potentially 
-     applying random picks or custom selection logic. This can be saved as
-     'scenario_params_fenez.csv'.
-"""
-
-import random
-import pandas as pd
-
-# -----------------------------------------------------------------------
-#  Imports from your local modules (assumed to exist)
-# -----------------------------------------------------------------------
-from idf_objects.fenez.materials import (
-    update_construction_materials,
-    assign_constructions_to_surfaces
-)
-from idf_objects.fenez.fenestration import add_fenestration
-
-
-##############################################################################
-# 1) BUILDING-LEVEL FENESTRATION
-##############################################################################
-def apply_building_level_fenez(
-    idf,
-    building_row,
-    scenario="scenario1",
-    calibration_stage="pre_calibration",
-    strategy="A",
-    random_seed=None,
-    user_config_fenez=None,
-    assigned_fenez_log=None,
-    add_windows=True,
-    use_computed_wwr=False,
-    include_doors_in_wwr=False
-):
-    """
-    A high-level function to:
-      1) Generate new Materials & Constructions from fenestration data 
-         (using update_construction_materials).
-      2) Assign those Constructions to surfaces (assign_constructions_to_surfaces).
-      3) Optionally call add_fenestration(...) to set WWR or create new windows.
-
-    building_row:
-      - A dict (or Series) with "ogc_fid", "building_function", "age_range", etc.
-
-    user_config_fenez:
-      - A merged fenestration dictionary for this building (like res_data or nonres_data).
-
-    assigned_fenez_log:
-      - If provided, logs final picks (R-values, thickness, WWR, etc.).
-
-    add_windows:
-      - If True, calls add_fenestration(...) to create new windows or set WWR.
-
-    use_computed_wwr, include_doors_in_wwr:
-      - Passed to add_fenestration(...) for computing WWR from sub-element areas, etc.
-
-    Returns:
-      construction_map : dict, mapping sub-element => construction name
-    """
-    if random_seed is not None:
-        random.seed(random_seed)
-
-    ########################################################################
-    # 1) Update constructions & materials
-    ########################################################################
-    construction_map = update_construction_materials(
-        idf=idf,
-        building_row=building_row,
-        building_index=None,  # or your building index
-        scenario=scenario,
-        calibration_stage=calibration_stage,
-        strategy=strategy,
-        random_seed=random_seed,
-        user_config_fenez=user_config_fenez,  # <= the dictionary with final picks
-        assigned_fenez_log=assigned_fenez_log
-    )
-
-    # 2) Assign them to surfaces
-    assign_constructions_to_surfaces(idf, construction_map)
-
-    ########################################################################
-    # 3) Optionally add fenestration (windows, WWR, etc.)
-    ########################################################################
-    if add_windows:
-        bldg_func = str(building_row.get("building_function", "residential")).lower()
-
-        # We'll pass user_config_fenez to either res_data or nonres_data depending on building_function
-        res_dict = None
-        nonres_dict = None
-
-        if bldg_func == "residential":
-            res_dict = user_config_fenez
-        else:
-            nonres_dict = user_config_fenez
-
-        add_fenestration(
-            idf=idf,
-            building_row=building_row,
-            scenario=scenario,
-            calibration_stage=calibration_stage,
-            strategy=strategy,
-            random_seed=random_seed,
-            res_data=res_dict,
-            nonres_data=nonres_dict,
-            assigned_fenez_log=assigned_fenez_log,
-            use_computed_wwr=use_computed_wwr,
-            include_doors_in_wwr=include_doors_in_wwr
-        )
-
-    return construction_map
-
-
-##############################################################################
-# 2) OBJECT-LEVEL FENESTRATION
-##############################################################################
-def apply_object_level_fenez(idf, df_fenez):
-    """
-    Reads 'structured_fenez_params.csv' row by row. 
-    Each row might specify:
-       - ogc_fid
-       - sub_key (like "top_opq", "exterior_wall_opq", etc.)
-       - eplus_object_type (MATERIAL, MATERIAL:NOMASS, WINDOWMATERIAL:GLAZING, ...)
-       - eplus_object_name (the intended name to create or update)
-       - param_name (Thickness, Conductivity, R_value, U_value, roughness, etc.)
-       - param_value
-       - param_min, param_max
-
-    Then we can group by (eplus_object_type, eplus_object_name) 
-    to create or update that object in the IDF, assigning fields accordingly.
-    
-    Example usage:
-       df_struct = pd.read_csv("structured_fenez_params.csv")
-       apply_object_level_fenez(my_idf, df_struct)
-    """
-
-    group_cols = ["eplus_object_type", "eplus_object_name"]
-    grouped = df_fenez.groupby(group_cols)
-
-    for (obj_type, obj_name), group_df in grouped:
-        print(f"[FENEZ] Handling {obj_type} => '{obj_name}' with {len(group_df)} rows.")
-
-        # 1) Attempt to find or create the object in IDF
-        obj_type_upper = obj_type.upper() if isinstance(obj_type, str) else None
-        if not obj_type_upper or obj_type_upper not in idf.idfobjects:
-            print(f"[FENEZ WARNING] IDF has no object type '{obj_type_upper}', skipping.")
-            continue
-
-        # search by Name
-        existing_obj = [
-            o for o in idf.idfobjects[obj_type_upper]
-            if hasattr(o, "Name") and str(o.Name).upper() == str(obj_name).upper()
-        ]
-        if existing_obj:
-            eplus_obj = existing_obj[0]
-        else:
-            # create new
-            eplus_obj = idf.newidfobject(obj_type_upper)
-            if hasattr(eplus_obj, "Name"):
-                eplus_obj.Name = obj_name
-            else:
-                print(f"[FENEZ WARNING] {obj_type_upper} has no 'Name' field? object creation is partial.")
-                # might continue or skip
-
-        # 2) row by row => param_name => param_value
-        for row in group_df.itertuples():
-            p_name = row.param_name
-            val    = row.param_value
-
-            # Attempt float conversion if numeric
-            try:
-                val_float = float(val)
-            except (ValueError, TypeError):
-                val_float = None  # probably string
-
-            # A few example mappings or direct sets:
-            if p_name and isinstance(p_name, str):
-                p_lower = p_name.lower()
-
-                # handle certain known string fields
-                if p_lower in ["roughness", "optical_data_type", "solar_diffusing"]:
-                    if hasattr(eplus_obj, p_name):
-                        setattr(eplus_obj, p_name, str(val))
-                    else:
-                        field_name = _match_field_name(eplus_obj, p_name)
-                        if field_name:
-                            setattr(eplus_obj, field_name, str(val))
-                        else:
-                            print(f"[FENEZ WARNING] No direct field match for param_name='{p_name}'. Skipping.")
-
-                # handle certain known numeric fields
-                elif p_lower in [
-                    "thickness", "conductivity", "density", "specific_heat",
-                    "thermal_resistance", "solar_transmittance", 
-                    "front_solar_reflectance", "back_solar_reflectance",
-                    "visible_transmittance", "front_visible_reflectance",
-                    "back_visible_reflectance", "front_ir_emissivity",
-                    "back_ir_emissivity", "dirt_correction_factor"
-                ]:
-                    field_name = _match_field_name(eplus_obj, p_name)
-                    if field_name and val_float is not None:
-                        setattr(eplus_obj, field_name, val_float)
-                elif p_lower in ["r_value", "u_value"]:
-                    # these are computed or not direct fields
-                    # you'd have to recalc thickness or conduction
-                    # skipping direct assignment
-                    pass
-                else:
-                    # fallback attempt
-                    field_name = _match_field_name(eplus_obj, p_name)
-                    if field_name:
-                        setattr(eplus_obj, field_name, val_float if val_float is not None else val)
-                    else:
-                        print(f"[FENEZ WARNING] No direct field match for param_name='{p_name}'. Skipping.")
-
-        print(f"[FENEZ] Updated {obj_type} => '{obj_name}' with new fields.")
-
-
-def _match_field_name(eplus_obj, param_name):
-    """
-    A small helper to guess the correct IDF field name from param_name 
-    if there's a mismatch. If param_name exactly matches the IDF field, 
-    you can skip this step. Otherwise, we do a dict-based approach 
-    for typical window materials, etc.
-    """
-
-    map_dict = {
-        "front_solar_reflectance": "Front_Side_Solar_Reflectance_at_Normal_Incidence",
-        "back_solar_reflectance":  "Back_Side_Solar_Reflectance_at_Normal_Incidence",
-        "front_visible_reflectance": "Front_Side_Visible_Reflectance_at_Normal_Incidence",
-        "back_visible_reflectance":  "Back_Side_Visible_Reflectance_at_Normal_Incidence",
-        "front_ir_emissivity": "Front_Side_Infrared_Hemispherical_Emissivity",
-        "back_ir_emissivity":  "Back_Side_Infrared_Hemispherical_Emissivity",
-        "solar_transmittance": "Solar_Transmittance_at_Normal_Incidence",
-        "visible_transmittance": "Visible_Transmittance_at_Normal_Incidence",
-        "dirt_correction_factor": "Dirt_Correction_Factor_for_Solar_and_Visible_Transmittance"
-    }
-
-    p_lower = param_name.lower()
-    if p_lower in map_dict:
-        candidate_field = map_dict[p_lower]
-        if hasattr(eplus_obj, candidate_field):
-            return candidate_field
-        else:
-            return None
-
-    # direct match
-    if hasattr(eplus_obj, param_name):
-        return param_name
-
-    return None
-
-
-##############################################################################
-# 3) CREATE FENESTRATION SCENARIOS (NEW)
-##############################################################################
-def create_fenez_scenarios(
-    df_struct_fenez,
-    building_id,
-    num_scenarios=5,
-    picking_method="random_uniform",
-    scenario_start_index=0,
-    random_seed=42,
-    scenario_csv_out=None
-):
-    """
-    Generates a scenario-level DataFrame from a "structured" fenestration DataFrame.
-
-    Arguments:
-      df_struct_fenez: pd.DataFrame
-        Expected to contain columns like:
-          ['ogc_fid','sub_key','eplus_object_type','eplus_object_name',
-           'param_name','param_value','param_min','param_max']
-        Typically read from "structured_fenez_params.csv".
-
-      building_id: int (or str)
-        Which building's data to filter from df_struct_fenez (ogc_fid).
-
-      num_scenarios: int
-        How many scenario sets to generate.
-
-      picking_method: str
-        E.g. "random_uniform", "fixed", "some_other_method" ...
-        Used to decide how param_value is recalculated.
-
-      scenario_start_index: int
-        If you already have scenario indexes used up, you can start from another offset.
-
-      random_seed: int
-        Seed for reproducible random picks.
-
-      scenario_csv_out: str or None
-        If not None, write the final DataFrame to this path as CSV.
-
-    Returns:
-      df_scenarios: pd.DataFrame
-        Columns:
-          scenario_index, ogc_fid, sub_key, eplus_object_type, eplus_object_name,
-          param_name, param_value, param_min, param_max, picking_method
-
-        This can be saved as "scenario_params_fenez.csv" or merged with other scenario param files.
-
-    Example usage:
-      df_struct = pd.read_csv("output/assigned/structured_fenez_params.csv")
-      df_scen = create_fenez_scenarios(
-          df_struct_fenez=df_struct,
-          building_id=4136730,
-          num_scenarios=3,
-          picking_method="random_uniform",
-          scenario_csv_out="output/scenarios/scenario_params_fenez.csv"
-      )
-      # => returns a DF and writes it to scenario_params_fenez.csv
-    """
-    if random_seed is not None:
-        random.seed(random_seed)
-
-    # 1) Filter the structured data for this building
-    df_bldg = df_struct_fenez.loc[df_struct_fenez["ogc_fid"] == building_id].copy()
-    if df_bldg.empty:
-        print(f"[create_fenez_scenarios] No fenestration data found for ogc_fid={building_id}.")
-        return pd.DataFrame()
-
-    scenario_rows = []
-
-    # 2) Loop over the number of scenarios
-    for i in range(num_scenarios):
-        scenario_i = scenario_start_index + i
-
-        # 3) For each param in df_bldg, pick a new param_value
-        for row in df_bldg.itertuples():
-            sub_key = row.sub_key
-            eplus_type = row.eplus_object_type
-            eplus_name = row.eplus_object_name
-            param_name = row.param_name
-
-            # base value, min, max
-            base_val = row.param_value
-            p_min = row.param_min
-            p_max = row.param_max
-
-            # compute new value
-            new_val = base_val  # default fallback
-
-            if picking_method == "random_uniform":
-                if p_min is not None and p_max is not None:
-                    try:
-                        # Attempt float cast
-                        fmin = float(p_min)
-                        fmax = float(p_max)
-                        # pick random
-                        # if min == max, it stays the same
-                        if fmax >= fmin:
-                            new_val = random.uniform(fmin, fmax)
-                        else:
-                            # fallback if min>max
-                            new_val = base_val
-                    except:
-                        pass
-                else:
-                    # no range => keep base_val
-                    pass
-
-            elif picking_method == "fixed":
-                # keep base_val as is, or override with your own logic
-                new_val = base_val
-
-            else:
-                # if you have some other picking method
-                new_val = base_val
-
-            row_dict = {
-                "scenario_index": scenario_i,
-                "ogc_fid": building_id,
-                "sub_key": sub_key,
+            structured_rows.append({
+                "ogc_fid": fid,
+                "sub_key": s_key,
                 "eplus_object_type": eplus_type,
                 "eplus_object_name": eplus_name,
-                "param_name": param_name,
-                "param_value": new_val,
-                "param_min": p_min,
-                "param_max": p_max,
-                "picking_method": picking_method
-            }
-            scenario_rows.append(row_dict)
+                "param_name": base_param,
+                "param_value": param_val,
+                "param_min": param_min,
+                "param_max": param_max
+            })
 
-    # 4) Convert to DataFrame
-    df_scenarios = pd.DataFrame(scenario_rows)
+    # Convert to DataFrame
+    df_struct = pd.DataFrame(structured_rows)
 
-    # 5) Optionally write CSV
-    if scenario_csv_out:
-        df_scenarios.to_csv(scenario_csv_out, index=False)
-        print(f"[create_fenez_scenarios] Wrote scenario params to {scenario_csv_out}")
+    # Sort if you like
+    df_struct.sort_values(by=["ogc_fid", "sub_key", "param_name"], inplace=True)
 
-    return df_scenarios
+    # Write
+    os.makedirs(os.path.dirname(csv_output), exist_ok=True)
+    df_struct.to_csv(csv_output, index=False)
+    print(f"[transform_dhw_log_to_structured] => Wrote structured CSV to {csv_output}")
+
+
+def main():
+    """
+    Example CLI entry point:
+      - Reads 'D:/Documents/E_Plus_2030_py/output/assigned/assigned_dhw_params.csv'
+      - Transforms it, merges range fields, extracts E+ object references,
+      - Writes 'D:/Documents/E_Plus_2030_py/output/assigned/structured_dhw_params.csv'
+    """
+    csv_in = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_dhw_params.csv"
+    csv_out = r"D:\Documents\E_Plus_2030_py\output\assigned\structured_dhw_params.csv"
+
+    transform_dhw_log_to_structured(
+        csv_input=csv_in,
+        csv_output=csv_out
+    )
+
+if __name__ == "__main__":
+    main()
 
 ------------------------------------------------------------
 
-File: D:\Documents\E_Plus_2030_py\modification\hvac_functions.py
+File: D:\Documents\E_Plus_2030_py\idf_objects\structuring\fenestration_structuring.py
 ============================================================
 """
-hvac_functions.py
+fenestration_structuring.py
 
-Provides functions for:
-  1) create_hvac_scenarios(...)
-     - Generates scenario data (potentially random) for building-level and zone-level HVAC,
-       merging assigned_hvac_building.csv and assigned_hvac_zones.csv.
-  2) apply_building_level_hvac(...)
-     - Updates building-wide HVAC schedules (heating/cooling setpoints) and
-       Ideal Loads supply air temps.
-  3) apply_zone_level_hvac(...)
-     - For each zone, applies or creates zone-level HVAC objects (like IdealLoads),
-       sets setpoint schedules or thermostats, etc.
+This module provides a function to transform the flat 'assigned_fenez_params.csv'
+into a structured CSV that merges final assigned values with min/max ranges
+for each parameter, and associates them with E+ object type/name.
 
-In this revised version, `_modify_schedule_compact()` is updated to parse 
-existing "Until: HH:MM, value" lines and only update the numeric portion, 
-preserving the schedule's time blocks. 
+You can run it stand-alone or call it from your main script.
+
+Usage:
+    from idf_objects.structuring.fenestration_structuring import transform_fenez_log_to_structured_with_ranges
+
+    transform_fenez_log_to_structured_with_ranges(
+        csv_input="output/assigned/assigned_fenez_params.csv",
+        csv_output="output/assigned/structured_fenez_params.csv"
+    )
 """
 
-import os
-import random
 import pandas as pd
+import ast  # For safely parsing "(4.0, 5.0)" as a Python tuple
 
-from eppy.modeleditor import IDF  # or adapt as needed
-
-
-##############################################################################
-# 1) CREATE HVAC SCENARIOS
-##############################################################################
-def create_hvac_scenarios(
-    df_building,
-    df_zones,
-    building_id,
-    num_scenarios=5,
-    picking_method="random_uniform",
-    random_seed=42,
-    scenario_csv_out=None
+def transform_fenez_log_to_structured_with_ranges(
+    csv_input="output/assigned/assigned_fenez_params.csv",
+    csv_output="output/assigned/structured_fenez_params.csv",
 ):
     """
-    Generates a scenario-level DataFrame for HVAC from two CSVs:
-      - df_building => assigned_hvac_building.csv
-      - df_zones    => assigned_hvac_zones.csv
+    Reads the 'flat' fenestration/material CSV (with param_name & assigned_value),
+    and outputs a 'structured' CSV that:
 
-    Each of these has columns like:
-      df_building: [ogc_fid, param_name, param_value] plus any param_name_range rows
-      df_zones:    [ogc_fid, zone_name, param_name, param_value]
+      - Merges final assigned value + min/max range into one row per parameter.
+      - Does NOT skip params that have empty or None values.
+      - Always includes a row for any param that appears in the CSV, even if
+        there's no final value or no range.
 
-    We parse param_min / param_max from "xxx_range" lines for building-level, then
-    produce a "long" DataFrame with columns:
-      [scenario_index, ogc_fid, zone_name, param_name, param_value, param_min, param_max, picking_method]
+    Final columns in the output CSV:
+        ogc_fid, sub_key, eplus_object_type, eplus_object_name,
+        param_name, param_value, param_min, param_max
 
-    Example:
-      heating_day_setpoint = 10.64 (with range (10.0, 11.0))
-      => param_value might be a random pick in [10.0, 11.0] if picking_method=="random_uniform".
-
-    Finally, we optionally save to scenario_csv_out (e.g. "scenario_params_hvac.csv").
-
-    Return:
-      df_scen (pd.DataFrame)
-    """
-    if random_seed is not None:
-        random.seed(random_seed)
-
-    # 1) Filter for this building
-    df_bldg = df_building[df_building["ogc_fid"] == building_id].copy()
-    df_zone = df_zones[df_zones["ogc_fid"] == building_id].copy()
-
-    if df_bldg.empty and df_zone.empty:
-        print(f"[create_hvac_scenarios] No HVAC data found for ogc_fid={building_id}.")
-        return pd.DataFrame()
-
-    # 2) Parse building-level HVAC params (with param_min/param_max)
-    bldg_params = parse_building_hvac_params(df_bldg)
-
-    # 3) Parse zone-level HVAC params (generally no param_min/param_max)
-    zone_params = parse_zone_hvac_params(df_zone)
-
-    scenario_rows = []
-
-    # 4) For each scenario, pick new param_value for each building-level param
-    for scenario_i in range(num_scenarios):
-        # (A) Building-level
-        for p in bldg_params:
-            p_name = p["param_name"]
-            base_val = p["param_value"]
-            p_min = p["param_min"]
-            p_max = p["param_max"]
-
-            new_val = pick_value(base_val, p_min, p_max, picking_method)
-
-            scenario_rows.append({
-                "scenario_index": scenario_i,
-                "ogc_fid": building_id,
-                "zone_name": None,  # building-level
-                "param_name": p_name,
-                "param_value": new_val,
-                "param_min": p_min,
-                "param_max": p_max,
-                "picking_method": picking_method
-            })
-
-        # (B) zone-level
-        for z in zone_params:
-            z_name  = z["zone_name"]
-            p_name  = z["param_name"]
-            base_val = z["param_value"]
-            new_val = pick_value(base_val, None, None, picking_method)
-
-            scenario_rows.append({
-                "scenario_index": scenario_i,
-                "ogc_fid": building_id,
-                "zone_name": z_name,
-                "param_name": p_name,
-                "param_value": new_val,
-                "param_min": None,
-                "param_max": None,
-                "picking_method": picking_method
-            })
-
-    # 5) Convert to DataFrame
-    df_scen = pd.DataFrame(scenario_rows)
-
-    # 6) Optionally write to CSV
-    if scenario_csv_out:
-        os.makedirs(os.path.dirname(scenario_csv_out), exist_ok=True)
-        df_scen.to_csv(scenario_csv_out, index=False)
-        print(f"[create_hvac_scenarios] Wrote scenario HVAC params => {scenario_csv_out}")
-
-    return df_scen
-
-
-def parse_building_hvac_params(df_bldg):
-    """
-    Helper to parse building-level HVAC parameters from assigned_hvac_building.csv
-    into a list of dict with:
-      [
-        {
-          "param_name": "heating_day_setpoint",
-          "param_value": 10.64,
-          "param_min": 10.0,
-          "param_max": 11.0
-        }, ...
-      ]
-    If we see "heating_day_setpoint_range" => store param_min/param_max in the dict
-    for "heating_day_setpoint", etc.
-    """
-    param_map = {}  # "heating_day_setpoint" => {value: X, min: Y, max: Z}
-
-    for row in df_bldg.itertuples():
-        name = row.param_name
-        # The CSV from the assignment step uses 'assigned_value'
-        # rather than 'param_value'.  We read that column here so
-        # the function works with the raw assigned CSV.
-        # Support both raw assigned CSVs (assigned_value column)
-        # and structured CSVs (param_value column)
-        if hasattr(row, "assigned_value"):
-            val = row.assigned_value
-        else:
-            val = row.param_value
-
-        if name.endswith("_range"):
-            base_name = name.replace("_range", "")
-            if base_name not in param_map:
-                param_map[base_name] = {"param_value": None, "param_min": None, "param_max": None}
-
-            t = parse_tuple(val)
-            if t and len(t) == 2:
-                param_map[base_name]["param_min"] = t[0]
-                param_map[base_name]["param_max"] = t[1]
-        else:
-            if name not in param_map:
-                param_map[name] = {"param_value": None, "param_min": None, "param_max": None}
-            param_map[name]["param_value"] = val
-
-    # Convert to list
-    result = []
-    for p_name, dct in param_map.items():
-        result.append({
-            "param_name":  p_name,
-            "param_value": dct["param_value"],
-            "param_min":   dct["param_min"],
-            "param_max":   dct["param_max"]
-        })
-    return result
-
-
-def parse_zone_hvac_params(df_zone):
-    """
-    Helper for zone-level HVAC: typically no range columns, so param_min/param_max = None.
-    Returns a list of dicts => 
-      [
-        {"zone_name": "Zone1", "param_name": "hvac_object_name", "param_value": "Zone1 Ideal Loads"},
-        ...
-      ]
-    """
-    results = []
-    for row in df_zone.itertuples():
-        zname = row.zone_name
-        pname = row.param_name
-        # The assigned HVAC CSV stores the picked values under
-        # the column 'assigned_value'.  Use that column here so we
-        # don't raise an AttributeError when parsing the raw file.
-        if hasattr(row, "assigned_value"):
-            val = row.assigned_value
-        else:
-            val = row.param_value
-
-        results.append({
-            "zone_name": zname,
-            "param_name": pname,
-            "param_value": val
-        })
-    return results
-
-
-def parse_tuple(val):
-    """
-    If val is like "(10.0, 11.0)", parse to (10.0, 11.0). Otherwise None.
-    """
-    if not isinstance(val, str):
-        return None
-    val_str = val.strip()
-    if not (val_str.startswith("(") and val_str.endswith(")")):
-        return None
-    try:
-        inner = val_str[1:-1]
-        parts = inner.split(",")
-        if len(parts) != 2:
-            return None
-        p1 = float(parts[0])
-        p2 = float(parts[1])
-        return (p1, p2)
-    except:
-        return None
-
-
-def pick_value(base_val, p_min, p_max, picking_method):
-    """
-    If picking_method=="random_uniform" and p_min/p_max are numeric,
-    pick randomly in [p_min, p_max]. Otherwise keep base_val as is.
-    """
-    # Attempt float
-    try:
-        base_f = float(base_val)
-    except:
-        base_f = None
-
-    if picking_method == "random_uniform" and p_min is not None and p_max is not None:
-        try:
-            fmin = float(p_min)
-            fmax = float(p_max)
-            if fmax >= fmin:
-                return random.uniform(fmin, fmax)
-        except:
-            pass
-        return base_val
-
-    return base_val
-
-
-##############################################################################
-# 2) APPLY BUILDING-LEVEL HVAC
-##############################################################################
-
-def apply_building_level_hvac(idf, param_dict):
-    """
-    param_dict is a dictionary of building-level HVAC parameters, e.g.:
-      {
-        "heating_day_setpoint": 10.64,
-        "heating_night_setpoint": 15.02,
-        "cooling_day_setpoint": 25.6,
-        "cooling_night_setpoint": 26.44,
-        "max_heating_supply_air_temp": 52.36,
-        "min_cooling_supply_air_temp": 13.35,
-        ...
-      }
-
-    This function:
-      1) Updates "ZONE HEATING SETPOINTS" schedule (if day/night keys exist).
-      2) Updates "ZONE COOLING SETPOINTS" schedule (if day/night keys exist).
-      3) For each ZONEHVAC:IDEALLOADSAIRSYSTEM, sets supply air temps if present.
+    - "sub_key" is something like "windows_opq" or "exterior_wall_win",
+      derived from e.g. "fenez_exterior_wall_opq.Thickness".
+    - "eplus_object_type" and "eplus_object_name" come from lines like 
+      "fenez_exterior_wall_opq.obj_type" and "fenez_exterior_wall_opq.Name".
+    - "param_name" is the base parameter (like "Thickness"), or just "wwr",
+      or "obj_type" if you want to store them as param rows.
+    - "param_value" is the final assigned numeric or string value.
+    - "param_min" and "param_max" come from lines that end with "_range".
     """
 
-    # (1) Heating Setpoint Schedules
-    if "heating_day_setpoint" in param_dict or "heating_night_setpoint" in param_dict:
-        h_day = param_dict.get("heating_day_setpoint", 20.0)
-        h_night = param_dict.get("heating_night_setpoint", 15.0)
-        _modify_schedule_compact(
-            idf,
-            schedule_name="ZONE HEATING SETPOINTS",
-            day_value=h_day,
-            night_value=h_night,
-            day_start="07:00",
-            day_end="19:00"
-        )
+    df = pd.read_csv(csv_input)
 
-    # (2) Cooling Setpoint Schedules
-    if "cooling_day_setpoint" in param_dict or "cooling_night_setpoint" in param_dict:
-        c_day = param_dict.get("cooling_day_setpoint", 24.0)
-        c_night = param_dict.get("cooling_night_setpoint", 27.0)
-        _modify_schedule_compact(
-            idf,
-            schedule_name="ZONE COOLING SETPOINTS",
-            day_value=c_day,
-            night_value=c_night,
-            day_start="07:00",
-            day_end="19:00"
-        )
+    # We'll keep track of data in a nested dict:
+    # final_dict[(ogc_fid, sub_key)] = {
+    #   "obj_type": <str or None>,
+    #   "obj_name": <str or None>,
+    #   "params": {
+    #       "Thickness": {
+    #          "value": <final assigned value or None>,
+    #          "min": <float or None>,
+    #          "max": <float or None>
+    #       },
+    #       "Conductivity": {...},
+    #       etc.
+    #   }
+    # }
 
-    # (3) Ideal Loads Supply Temps
-    max_heat = param_dict.get("max_heating_supply_air_temp", None)
-    min_cool = param_dict.get("min_cooling_supply_air_temp", None)
-    if (max_heat is not None) or (min_cool is not None):
-        _set_ideal_loads_supply_temps_all_zones(
-            idf,
-            max_heating_temp=max_heat,
-            min_cooling_temp=min_cool
-        )
+    final_dict = {}
 
+    def get_subdict(fid, s_key):
+        """Helper to retrieve or create the dictionary entry for (fid, s_key)."""
+        if (fid, s_key) not in final_dict:
+            final_dict[(fid, s_key)] = {
+                "obj_type": None,
+                "obj_name": None,
+                "params": {}
+            }
+        return final_dict[(fid, s_key)]
 
-def _set_ideal_loads_supply_temps_all_zones(idf, max_heating_temp=None, min_cooling_temp=None):
-    """
-    Loops over all ZONEHVAC:IDEALLOADSAIRSYSTEM objects, sets:
-      Maximum_Heating_Supply_Air_Temperature = max_heating_temp
-      Minimum_Cooling_Supply_Air_Temperature = min_cooling_temp
-    if provided.
-    """
-    if "ZONEHVAC:IDEALLOADSAIRSYSTEM" not in idf.idfobjects:
-        return
-
-    ideal_objs = idf.idfobjects["ZONEHVAC:IDEALLOADSAIRSYSTEM"]
-    for ideal in ideal_objs:
-        if max_heating_temp is not None:
-            ideal.Maximum_Heating_Supply_Air_Temperature = max_heating_temp
-        if min_cooling_temp is not None:
-            ideal.Minimum_Cooling_Supply_Air_Temperature = min_cooling_temp
-
-        print(f"[HVAC] Updated '{ideal.Name}' => MaxHeat={max_heating_temp}, MinCool={min_cooling_temp}")
-
-
-##############################################################################
-# PARTIAL SCHEDULE EDITING: UPDATED _modify_schedule_compact
-##############################################################################
-
-def parse_schedule_until_line(line_str: str):
-    """
-    Parses a single line like "Until: 07:00, 15.0".
-    Returns (time_str, float_value).
-    If parsing fails, returns (None, None).
-    """
-    if not isinstance(line_str, str):
-        return (None, None)
-    line_str = line_str.strip()
-    if not line_str.lower().startswith("until:"):
-        return (None, None)
-
-    # Remove "Until:"
-    try:
-        remainder = line_str.split("Until:", 1)[1].strip()  # e.g. "07:00, 15.0"
-        # Split on comma
-        time_part, val_str = remainder.split(",", 1)
-        time_str = time_part.strip()
-        val_float = float(val_str.strip())
-        return (time_str, val_float)
-    except:
-        return (None, None)
-
-
-def _modify_schedule_compact(
-    idf,
-    schedule_name,
-    day_value,
-    night_value,
-    day_start="07:00",
-    day_end="19:00"
-):
-    """
-    Partially modifies an existing SCHEDULE:COMPACT by parsing each 'Until:' field,
-    preserving its time range, but swapping out the numeric value for day_value or
-    night_value based on whether time < day_start, time < day_end, or beyond day_end.
-
-    If the schedule does not exist, we log a warning and skip.
-
-    NOTE: This is a simplistic approach to day vs. night assignment:
-      - If the field's 'Until' time is < day_start => night_value
-      - Else if < day_end => day_value
-      - Else => night_value again
-
-    That way we preserve however many time blocks the schedule had—only numeric values
-    get replaced. If you want a different approach, adapt the logic below.
-    """
-    sched_obj = idf.getobject("SCHEDULE:COMPACT", schedule_name.upper())
-    if not sched_obj:
-        print(f"[WARN] schedule '{schedule_name}' not found; skipping.")
-        return
-
-    # We'll parse day_start/day_end into HH:MM integer comparisons for convenience
-    def time_to_minutes(tstr):
-        # "07:00" => 7*60 + 0 = 420
-        parts = tstr.split(":")
-        h = int(parts[0])
-        m = int(parts[1]) if len(parts) > 1 else 0
-        return h * 60 + m
-
-    day_start_mins = time_to_minutes(day_start)
-    day_end_mins   = time_to_minutes(day_end)
-
-    # FieldValues is the raw list of all fields after the object name & type
-    # Typically, Field_1 might be "Through: 12/31", Field_2 = "For: AllDays",
-    # then subsequent fields are "Until: HH:MM, Value".
-    for i in range(len(sched_obj.fieldvalues)):
-        field_str = sched_obj.fieldvalues[i]
-
-        # parse "Until:" lines
-        time_str, old_val = parse_schedule_until_line(field_str)
-        if time_str is None:
-            # Not an "Until:" line or parse failed, skip
+    for i, row in df.iterrows():
+        # Must have these columns
+        if "ogc_fid" not in row or "param_name" not in row or "assigned_value" not in row:
             continue
 
-        # Convert time_str -> minutes
-        mins = 9999
-        try:
-            mins = time_to_minutes(time_str)
-        except:
-            pass
+        ogc_fid = row["ogc_fid"]
+        param_name = str(row["param_name"])
+        assigned_value = row["assigned_value"]
 
-        # Now pick day or night
-        if mins < day_start_mins:
-            new_val = night_value
-        elif mins < day_end_mins:
-            new_val = day_value
+        # We only transform if param_name starts with "fenez_"
+        # (Otherwise, skip non-fenestration logs.)
+        if not param_name.startswith("fenez_"):
+            continue
+
+        # Remove the "fenez_" prefix => e.g. "doors_opq.Thermal_Resistance_range"
+        remainder = param_name[len("fenez_"):]  # e.g. "doors_opq.Thermal_Resistance_range"
+
+        if "." in remainder:
+            sub_key, field = remainder.split(".", 1)
         else:
-            new_val = night_value
+            # e.g. "wwr", "roughness" => treat them as sub_key=<that word>, no field
+            sub_key = remainder
+            field = None
 
-        # Overwrite the field with the same time, new numeric
-        sched_obj.fieldvalues[i] = f"Until: {time_str},{new_val:.2f}"
+        # Retrieve or create sub-dict for (ogc_fid, sub_key)
+        subd = get_subdict(ogc_fid, sub_key)
 
-    print(f"[HVAC] Updated schedule '{schedule_name}' with day={day_value}, night={night_value}")
+        # (A) If this row indicates the E+ object type => e.g. "obj_type"
+        if field == "obj_type":
+            subd["obj_type"] = assigned_value
+
+        # (B) If this row indicates the E+ object name => e.g. "Name"
+        elif field == "Name":
+            subd["obj_name"] = assigned_value
+
+        # (C) If the field ends with "_range", parse as (min,max)
+        elif field and field.endswith("_range"):
+            # e.g. "Thermal_Resistance_range"
+            base_param = field.replace("_range", "")  # => "Thermal_Resistance"
+
+            if base_param not in subd["params"]:
+                subd["params"][base_param] = {"value": None, "min": None, "max": None}
+
+            # assigned_value might be something like "(4.0, 5.0)" or maybe "None"
+            try:
+                maybe_tuple = ast.literal_eval(str(assigned_value))
+                if isinstance(maybe_tuple, (list, tuple)) and len(maybe_tuple) == 2:
+                    min_val, max_val = maybe_tuple
+                    subd["params"][base_param]["min"] = min_val
+                    subd["params"][base_param]["max"] = max_val
+            except:
+                pass  # If parse fails or it's "None", we leave them as None
+
+        # (D) If it's a 'normal' field => param_name like "Thermal_Resistance" or "wwr"
+        else:
+            if field is None:
+                # e.g. remainder="wwr". We'll store param_name = "wwr"
+                p_name = sub_key  # "wwr"
+                if p_name not in subd["params"]:
+                    subd["params"][p_name] = {"value": None, "min": None, "max": None}
+                subd["params"][p_name]["value"] = assigned_value
+            else:
+                # e.g. field="Thermal_Resistance", assigned_value=4.23
+                if field not in subd["params"]:
+                    subd["params"][field] = {"value": None, "min": None, "max": None}
+                subd["params"][field]["value"] = assigned_value
+
+    # Now finalize. We'll produce a row for **every** param in subd["params"].
+    structured_rows = []
+    for (fid, s_key), info in final_dict.items():
+        obj_type = info["obj_type"]
+        obj_name = info["obj_name"]
+        params = info["params"]  # e.g. { "Thickness": {"value":..., "min":..., "max":...} }
+
+        if not params:
+            # If no params => skip. (Or you can make a row with param_name="(none)".)
+            continue
+
+        for p_name, pvals in params.items():
+            param_value = pvals["value"]
+            param_min   = pvals["min"]
+            param_max   = pvals["max"]
+
+            structured_rows.append({
+                "ogc_fid":            fid,
+                "sub_key":            s_key,
+                "eplus_object_type":  obj_type,
+                "eplus_object_name":  obj_name,
+                "param_name":         p_name,
+                "param_value":        param_value,
+                "param_min":          param_min,
+                "param_max":          param_max
+            })
+
+    # Convert to DataFrame
+    df_out = pd.DataFrame(structured_rows)
+
+    # Attempt to convert param_value, param_min, param_max to float if possible
+    def try_float(x):
+        try:
+            return float(x)
+        except:
+            return x
+
+    for col in ["param_value", "param_min", "param_max"]:
+        df_out[col] = df_out[col].apply(try_float)
+
+    # Save
+    df_out.to_csv(csv_output, index=False)
+    print(f"[transform_fenez_log_to_structured_with_ranges] => wrote: {csv_output}")
 
 
-##############################################################################
-# 3) APPLY ZONE-LEVEL HVAC
-##############################################################################
-def apply_zone_level_hvac(idf, df_zone_scen):
-    """
-    Accepts a DataFrame with columns [zone_name, param_name, param_value] 
-    for each zone. E.g.:
-      zone_name=Zone1_FrontPerimeter, param_name=hvac_object_name, 
-        param_value=Zone1_FrontPerimeter Ideal Loads
-      zone_name=Zone1_FrontPerimeter, param_name=heating_setpoint_schedule, 
-        param_value=ZONE HEATING SETPOINTS
-      ...
+if __name__ == "__main__":
+    # Example direct CLI usage:
+    transform_fenez_log_to_structured_with_ranges(
+        csv_input="output/assigned/assigned_fenez_params.csv",
+        csv_output="output/assigned/structured_fenez_params.csv"
+    )
 
-    Then you can create or update the zone's HVAC objects accordingly.
-    """
 
-    grouped = df_zone_scen.groupby("zone_name")
-
-    for z_name, z_df in grouped:
-        print(f"[HVAC] => Zone={z_name}, {len(z_df)} param rows")
-
-        zone_params = {}
-        for row in z_df.itertuples():
-            pname = row.param_name
-            pval  = row.param_value
-            zone_params[pname] = pval
-
-        hvac_obj_name  = zone_params.get("hvac_object_name")
-        hvac_obj_type  = zone_params.get("hvac_object_type", "ZONEHVAC:IDEALLOADSAIRSYSTEM")
-
-        # Example for schedules:
-        heating_sched  = zone_params.get("heating_setpoint_schedule")
-        cooling_sched  = zone_params.get("cooling_setpoint_schedule")
-
-        # Create or find the zone hvac system
-        if hvac_obj_name:
-            hvac_obj = find_or_create_object(idf, hvac_obj_type, hvac_obj_name)
-            if hasattr(hvac_obj, "Zone_Name"):
-                hvac_obj.Zone_Name = z_name
-            print(f"[HVAC] Created or found {hvac_obj_type} => '{hvac_obj_name}' for zone {z_name}")
-
-        # If you want to manipulate thermostats or schedules:
-        if heating_sched or cooling_sched:
-            print(f"[HVAC] For zone={z_name}, link heating_sched={heating_sched}, cooling_sched={cooling_sched}")
-            # Implement or skip
-
-##############################################################################
-# Utility: find/create an object
-##############################################################################
-def find_or_create_object(idf, obj_type_upper, obj_name):
-    """
-    Utility to find an existing object in IDF by type & name, or create a new one.
-    E.g.: find_or_create_object(idf, "ZONEHVAC:IDEALLOADSAIRSYSTEM", "Zone1_Core Ideal Loads")
-    """
-    obj_type_upper = obj_type_upper.upper()
-    if obj_type_upper not in idf.idfobjects:
-        # If IDF doesn't have that object class, attempt creation
-        new_obj = idf.newidfobject(obj_type_upper)
-        new_obj.Name = obj_name
-        return new_obj
-
-    existing = [
-        o for o in idf.idfobjects[obj_type_upper]
-        if hasattr(o, "Name") and str(o.Name) == str(obj_name)
-    ]
-    if existing:
-        return existing[0]
-    else:
-        new_obj = idf.newidfobject(obj_type_upper)
-        new_obj.Name = obj_name
-        return new_obj
 
 ------------------------------------------------------------
 
-File: D:\Documents\E_Plus_2030_py\modification\main_modifi.py
+File: D:\Documents\E_Plus_2030_py\idf_objects\structuring\flatten_assigned_vent.py
 ============================================================
 """
-main_modifi.py
+flatten_assigned_vent.py
 
-Handles the generation of scenario-based IDFs for sensitivity, surrogate, 
-calibration, or any parametric runs.
+Transforms the "assigned_ventilation.csv" file (which has [ogc_fid, param_name, assigned_value])
+into two structured CSVs:
+  1) assigned_vent_building.csv
+  2) assigned_vent_zones.csv
 
-Workflow Outline:
-  1) Loads "assigned"/"structured" CSV data for HVAC, DHW, Vent, Elec, Fenestration.
-  2) Generates multiple scenario picks (random or other) -> scenario_params_*.csv
-  3) Loads scenario CSVs, loops over scenario_index, applies them to IDFs
-  4) Optionally runs simulations, post-processes, and does validation
+Usage:
+    python flatten_assigned_vent.py
+or
+    from idf_objects.structuring.flatten_assigned_vent import main
+    main()
 """
 
-import os
 import pandas as pd
+import ast
+import os
 
-# ---------------------------------------------------------------------------
-# Local modules
-# ---------------------------------------------------------------------------
-from modification.common_utils import (
-    load_assigned_csv,
-    load_scenario_csv,
-    load_idf,
-    save_idf,
-    generate_multiple_param_sets,
-    save_param_scenarios_to_csv
-)
-
-# HVAC
-from modification.hvac_functions import (
-    create_hvac_scenarios,
-    apply_building_level_hvac,
-    apply_zone_level_hvac
-)
-
-# DHW
-from modification.dhw_functions import apply_dhw_params_to_idf
-
-# Elec
-from modification.elec_functions import (
-    create_elec_scenarios,
-    apply_building_level_elec,
-    apply_object_level_elec
-)
-
-# Equipment
-from modification.equipment_functions import (
-    create_equipment_scenarios,
-    apply_building_level_equipment,
-    apply_object_level_equipment,
-)
-
-# Fenestration
-from modification.fenez_functions2 import (
-    create_fenez_scenarios,
-    apply_object_level_fenez
-)
-
-# Vent
-from modification.vent_functions import (
-    create_vent_scenarios,
-    apply_building_level_vent,
-    apply_zone_level_vent
-)
-
-
-def run_modification_workflow(config):
+def parse_assigned_value(value_str):
     """
-    Main orchestration function that:
-      - Loads assigned/structured CSV data for each system (HVAC, DHW, Vent, Elec, Fenez)
-      - Creates multiple scenario picks
-      - Applies them to a base IDF, generating scenario IDFs
-      - Optionally runs simulations, post-process, and validation.
+    Safely convert the string in 'assigned_value' into a Python dict,
+    e.g. literal_eval("{'infiltration_base': 1.23}")
     """
-    # -----------------------------------------------------------------------
-    # 1) Extract from config
-    # -----------------------------------------------------------------------
-    base_idf_path   = config["base_idf_path"]
-    idd_path        = config["idd_path"]
-    assigned_csvs   = config["assigned_csv"]
-    scenario_csvs   = config["scenario_csv"]
-    building_id     = config["building_id"]
-    num_scenarios   = config["num_scenarios"]
-    picking_method  = config["picking_method"]
-    scale_factor    = config.get("picking_scale_factor", 1.0)
-    output_idf_dir  = config["output_idf_dir"]
-
-    os.makedirs(output_idf_dir, exist_ok=True)
-
-    # -----------------------------------------------------------------------
-    # 2) HVAC CSV (either building+zones or single 'hvac')
-    # -----------------------------------------------------------------------
-    df_hvac_bld_sub = pd.DataFrame()
-    df_hvac_zn_sub  = pd.DataFrame()
-    has_hvac_data   = False
-
-    if "hvac_building" in assigned_csvs and "hvac_zones" in assigned_csvs:
-        path_bld = assigned_csvs["hvac_building"]
-        path_zn  = assigned_csvs["hvac_zones"]
-
-        df_hvac_bld_all = load_assigned_csv(path_bld)
-        df_hvac_zn_all  = load_assigned_csv(path_zn)
-        df_hvac_bld_sub = df_hvac_bld_all[df_hvac_bld_all["ogc_fid"] == building_id].copy()
-        df_hvac_zn_sub  = df_hvac_zn_all[df_hvac_zn_all["ogc_fid"] == building_id].copy()
-        has_hvac_data = True
-    elif "hvac" in assigned_csvs:
-        # single CSV
-        path_hvac_single = assigned_csvs["hvac"]
-        df_hvac_all = load_assigned_csv(path_hvac_single)
-        df_hvac_bld_sub = df_hvac_all[df_hvac_all["ogc_fid"] == building_id].copy()
-        has_hvac_data = True
-
-    # -----------------------------------------------------------------------
-    # 3) DHW
-    # -----------------------------------------------------------------------
-    df_dhw_all = load_assigned_csv(assigned_csvs["dhw"])
-    df_dhw_sub = df_dhw_all[df_dhw_all["ogc_fid"] == building_id].copy()
-
-    # -----------------------------------------------------------------------
-    # 4) Vent (either building+zones or single 'vent')
-    # -----------------------------------------------------------------------
-    df_vent_bld_sub = pd.DataFrame()
-    df_vent_zn_sub  = pd.DataFrame()
-    has_vent_data   = False
-
-    if "vent_building" in assigned_csvs and "vent_zones" in assigned_csvs:
-        vent_bld_path = assigned_csvs["vent_building"]
-        vent_zn_path  = assigned_csvs["vent_zones"]
-        df_vent_bld_all = load_assigned_csv(vent_bld_path)
-        df_vent_zn_all  = load_assigned_csv(vent_zn_path)
-        df_vent_bld_sub = df_vent_bld_all[df_vent_bld_all["ogc_fid"] == building_id].copy()
-        df_vent_zn_sub  = df_vent_zn_all[df_vent_zn_all["ogc_fid"] == building_id].copy()
-        has_vent_data = True
-    elif "vent" in assigned_csvs:
-        vent_single_path = assigned_csvs["vent"]
-        df_vent_all = load_assigned_csv(vent_single_path)
-        df_vent_bld_sub = df_vent_all[df_vent_all["ogc_fid"] == building_id].copy()
-        has_vent_data = True
-
-    # -----------------------------------------------------------------------
-    # 5) Elec
-    # -----------------------------------------------------------------------
-    df_elec_all = load_assigned_csv(assigned_csvs["elec"])
-    df_elec_sub = df_elec_all[df_elec_all["ogc_fid"] == building_id].copy()
-
-    # -----------------------------------------------------------------------
-    # 6) Equipment
-    # -----------------------------------------------------------------------
-    df_equip_all = load_assigned_csv(assigned_csvs["equip"])
-    df_equip_sub = df_equip_all[df_equip_all["ogc_fid"] == building_id].copy()
-
-    # -----------------------------------------------------------------------
-    # 7) Fenestration
-    # -----------------------------------------------------------------------
-    df_fenez_all = load_assigned_csv(assigned_csvs["fenez"])
-    df_fenez_sub = df_fenez_all[df_fenez_all["ogc_fid"] == building_id].copy()
-
-    # -----------------------------------------------------------------------
-    # 7) Generate scenario picks for each system
-    # -----------------------------------------------------------------------
-
-    # 7A) HVAC
-    if has_hvac_data and (not df_hvac_bld_sub.empty or not df_hvac_zn_sub.empty):
-        from modification.hvac_functions import create_hvac_scenarios
-        df_scen_hvac = create_hvac_scenarios(
-            df_building=df_hvac_bld_sub,
-            df_zones=df_hvac_zn_sub,
-            building_id=building_id,
-            num_scenarios=num_scenarios,
-            picking_method=picking_method,
-            random_seed=42,
-            scenario_csv_out=scenario_csvs["hvac"]
-        )
-    else:
-        df_scen_hvac = pd.DataFrame()
-        if "hvac" in assigned_csvs and not df_hvac_bld_sub.empty:
-            hvac_scenarios = generate_multiple_param_sets(
-                df_main_sub=df_hvac_bld_sub,
-                num_sets=num_scenarios,
-                picking_method=picking_method,
-                scale_factor=scale_factor
-            )
-            save_param_scenarios_to_csv(hvac_scenarios, building_id, scenario_csvs["hvac"])
-
-    # 7B) DHW
-    # If you prefer a param_min/param_max approach, import create_dhw_scenarios. 
-    # Otherwise, fallback to generate_multiple_param_sets:
-    from modification.dhw_functions import create_dhw_scenarios
-    df_scen_dhw = create_dhw_scenarios(
-        df_dhw_input=df_dhw_sub,
-        building_id=building_id,
-        num_scenarios=num_scenarios,
-        picking_method=picking_method,
-        random_seed=42,
-        scenario_csv_out=scenario_csvs["dhw"]
-    )
-
-    # If older approach:
-    # dhw_scenarios = generate_multiple_param_sets(df_main_sub=df_dhw_sub, ...)
-    # save_param_scenarios_to_csv(dhw_scenarios, building_id, scenario_csvs["dhw"])
-
-    # 7C) Vent
-    if has_vent_data and (not df_vent_bld_sub.empty or not df_vent_zn_sub.empty):
-        df_scen_vent = create_vent_scenarios(
-            df_building=df_vent_bld_sub,
-            df_zones=df_vent_zn_sub,
-            building_id=building_id,
-            num_scenarios=num_scenarios,
-            picking_method=picking_method,
-            random_seed=42,
-            scenario_csv_out=scenario_csvs["vent"]
-        )
-    else:
-        df_scen_vent = pd.DataFrame()
-
-    # 7D) Elec => "create_elec_scenarios" for param_min/param_max approach
-    df_scen_elec = create_elec_scenarios(
-        df_lighting=df_elec_sub,
-        building_id=building_id,
-        num_scenarios=num_scenarios,
-        picking_method=picking_method,
-        random_seed=42,
-        scenario_csv_out=scenario_csvs["elec"]
-    )
-
-    # 7E) Equipment
-    df_scen_equip = create_equipment_scenarios(
-        df_equipment=df_equip_sub,
-        building_id=building_id,
-        num_scenarios=num_scenarios,
-        picking_method=picking_method,
-        random_seed=42,
-        scenario_csv_out=scenario_csvs["equip"]
-    )
-
-    # 7F) Fenestration
-    df_scen_fenez = create_fenez_scenarios(
-        df_struct_fenez=df_fenez_sub,
-        building_id=building_id,
-        num_scenarios=num_scenarios,
-        picking_method=picking_method,
-        random_seed=42,
-        scenario_csv_out=scenario_csvs["fenez"]
-    )
-
-    # -----------------------------------------------------------------------
-    # 8) Load scenario CSVs back, group by scenario_index
-    # -----------------------------------------------------------------------
-    df_hvac_scen  = load_scenario_csv(scenario_csvs["hvac"])  if os.path.isfile(scenario_csvs["hvac"])  else pd.DataFrame()
-    df_dhw_scen   = load_scenario_csv(scenario_csvs["dhw"])   if os.path.isfile(scenario_csvs["dhw"])   else pd.DataFrame()
-    df_vent_scen  = load_scenario_csv(scenario_csvs["vent"])  if os.path.isfile(scenario_csvs["vent"])  else pd.DataFrame()
-    df_elec_scen  = load_scenario_csv(scenario_csvs["elec"])  if os.path.isfile(scenario_csvs["elec"])  else pd.DataFrame()
-    df_equip_scen = load_scenario_csv(scenario_csvs["equip"]) if os.path.isfile(scenario_csvs["equip"]) else pd.DataFrame()
-    df_fenez_scen = load_scenario_csv(scenario_csvs["fenez"]) if os.path.isfile(scenario_csvs["fenez"]) else pd.DataFrame()
-
-    hvac_groups  = df_hvac_scen.groupby("scenario_index")  if not df_hvac_scen.empty  else None
-    dhw_groups   = df_dhw_scen.groupby("scenario_index")   if not df_dhw_scen.empty   else None
-    vent_groups  = df_vent_scen.groupby("scenario_index")  if not df_vent_scen.empty  else None
-    elec_groups  = df_elec_scen.groupby("scenario_index")  if not df_elec_scen.empty  else None
-    equip_groups = df_equip_scen.groupby("scenario_index") if not df_equip_scen.empty else None
-    fenez_groups = df_fenez_scen.groupby("scenario_index") if not df_fenez_scen.empty else None
-
-    # -----------------------------------------------------------------------
-    # 9) For each scenario, load base IDF, apply parameters, save new IDF
-    # -----------------------------------------------------------------------
-    for i in range(num_scenarios):
-        print(f"\n--- Creating scenario #{i} for building {building_id} ---")
-
-        # 9A) Pull sub-DataFrames
-        hvac_df = hvac_groups.get_group(i) if hvac_groups and i in hvac_groups.groups else pd.DataFrame()
-        dhw_df  = dhw_groups.get_group(i)  if dhw_groups  and i in dhw_groups.groups  else pd.DataFrame()
-        vent_df = vent_groups.get_group(i) if vent_groups and i in vent_groups.groups else pd.DataFrame()
-        elec_df = elec_groups.get_group(i) if elec_groups and i in elec_groups.groups else pd.DataFrame()
-        equip_df = equip_groups.get_group(i) if equip_groups and i in equip_groups.groups else pd.DataFrame()
-        fenez_df= fenez_groups.get_group(i)if fenez_groups and i in fenez_groups.groups else pd.DataFrame()
-
-        # 9B) For HVAC: building-level vs. zone-level
-        hvac_bld_df  = hvac_df[hvac_df["zone_name"].isna()]   if not hvac_df.empty else pd.DataFrame()
-        hvac_zone_df = hvac_df[hvac_df["zone_name"].notna()]  if not hvac_df.empty else pd.DataFrame()
-        hvac_params  = _make_param_dict(hvac_bld_df)
-
-        # 9C) Convert to param dict for DHW
-        dhw_params = _make_param_dict(dhw_df)
-
-        # 9D) Vent building vs. zone
-        vent_bld_df  = vent_df[vent_df["zone_name"].isnull()] if not vent_df.empty else pd.DataFrame()
-        vent_zone_df = vent_df[vent_df["zone_name"].notnull()]if not vent_df.empty else pd.DataFrame()
-        vent_params  = _make_param_dict(vent_bld_df)
-
-        # 9E) Elec => building-level approach or object-level
-        elec_params = _make_param_dict(elec_df)
-
-        # 9F) Equipment
-        equip_params = _make_param_dict(equip_df)
-
-        # 9G) Load base IDF
-        idf = load_idf(base_idf_path, idd_path)
-
-        # 9H) Apply building-level + zone-level HVAC
-        apply_building_level_hvac(idf, hvac_params)
-        apply_zone_level_hvac(idf, hvac_zone_df)
-
-        # 9I) Apply DHW
-        apply_dhw_params_to_idf(idf, dhw_params, suffix=f"Scenario_{i}")
-
-        # 9J) Apply Vent
-        if not vent_bld_df.empty or not vent_zone_df.empty:
-            apply_building_level_vent(idf, vent_params)
-            apply_zone_level_vent(idf, vent_zone_df)
-
-        # 9K) Apply Elec => building-level approach
-        #    Or if you prefer object-level, do apply_object_level_elec(idf, elec_df)
-        if not elec_df.empty:
-            apply_building_level_elec(idf, elec_params, zonelist_name="ALL_ZONES")
-
-        # 9L) Apply Equipment
-        if not equip_df.empty:
-            apply_building_level_equipment(idf, equip_params, zonelist_name="ALL_ZONES")
-
-        # 9M) Apply Fenestration (object-level)
-        apply_object_level_fenez(idf, fenez_df)
-
-        # 9N) Save scenario IDF
-        scenario_idf_name = f"building_{building_id}_scenario_{i}.idf"
-        scenario_idf_path = os.path.join(output_idf_dir, scenario_idf_name)
-        save_idf(idf, scenario_idf_path)
-        print(f"[INFO] Saved scenario IDF: {scenario_idf_path}")
-
-    print("[INFO] All scenario IDFs generated successfully.")
-
-    # -----------------------------------------------------------------------
-    # 10) (Optional) Run Simulations
-    # -----------------------------------------------------------------------
-    if config.get("run_simulations", False):
-        print("\n[INFO] Running simulations for scenario IDFs...")
-        sim_cfg = config.get("simulation_config", {})
-        # your simulate_all(...) or E+ runner here
-        print("[INFO] Simulations complete (placeholder).")
-
-    # -----------------------------------------------------------------------
-    # 11) (Optional) Post-processing
-    # -----------------------------------------------------------------------
-    if config.get("perform_post_process", False):
-        print("[INFO] Performing post-processing merges (placeholder).")
-        ppcfg = config.get("post_process_config", {})
-        # merge_all_results(...)
-        print("[INFO] Post-processing step complete (placeholder).")
-
-    # -----------------------------------------------------------------------
-    # 12) (Optional) Validation
-    # -----------------------------------------------------------------------
-    if config.get("perform_validation", False):
-        print("[INFO] Performing validation on scenario results (placeholder).")
-        val_cfg = config["validation_config"]
-        # run_validation_process(val_cfg)
-        print("[INFO] Validation step complete (placeholder).")
-
-
-def _make_param_dict(df_scenario):
-    """
-    Builds a dict {param_name: value} from a subset DataFrame, handling both
-    'assigned_value' or 'param_value' columns in the scenario CSV.
-
-    We check which column is present. If neither is found, we raise an error.
-    """
-    if df_scenario.empty:
+    try:
+        return ast.literal_eval(str(value_str))
+    except (SyntaxError, ValueError):
         return {}
 
-    possible_cols = list(df_scenario.columns)
-    if "assigned_value" in possible_cols:
-        val_col = "assigned_value"
-    elif "param_value" in possible_cols:
-        val_col = "param_value"
-    else:
-        raise AttributeError(
-            "No 'assigned_value' or 'param_value' column found in scenario dataframe! "
-            f"Columns are: {possible_cols}"
-        )
+def flatten_ventilation_data(df_input, out_build_csv, out_zone_csv):
+    """
+    Takes a DataFrame with columns [ogc_fid, param_name, assigned_value].
+    Splits it into two DataFrames:
+      1) building-level (flattening 'building_params')
+      2) zone-level (flattening 'zones').
 
-    param_dict = {}
-    for row in df_scenario.itertuples():
-        p_name = row.param_name
-        val    = getattr(row, val_col)
-        # Attempt float
-        try:
-            param_dict[p_name] = float(val)
-        except (ValueError, TypeError):
-            param_dict[p_name] = val
-    return param_dict
+    Then writes them to CSV (out_build_csv, out_zone_csv).
+
+    :param df_input: pd.DataFrame
+        Must contain columns => "ogc_fid", "param_name", "assigned_value"
+        where assigned_value is already a dict (not a raw string).
+    :param out_build_csv: str
+        File path for building-level CSV output.
+    :param out_zone_csv: str
+        File path for zone-level CSV output.
+    """
+    building_rows = []
+    zone_rows = []
+
+    for idx, row in df_input.iterrows():
+        bldg_id = row.get("ogc_fid")
+        param_name = row.get("param_name")
+        assigned_val = row.get("assigned_value", {})
+
+        # param_name might be "building_params" or "zones" based on your code's structure
+        if param_name == "building_params":
+            # assigned_val is a dict => e.g. {"infiltration_base": 1.23, "fan_pressure": 30, ...}
+            for k, v in assigned_val.items():
+                building_rows.append({
+                    "ogc_fid": bldg_id,
+                    "param_name": k,
+                    "param_value": v
+                })
+
+        elif param_name == "zones":
+            # assigned_val is a dict: { "Zone1": {...}, "Zone2": {...}, ... }
+            for zone_name, zone_dict in assigned_val.items():
+                # zone_dict might be => {"vent_mech": True, "vent_flow_rate": 150.0, ...}
+                for zparam_name, zparam_val in zone_dict.items():
+                    zone_rows.append({
+                        "ogc_fid": bldg_id,
+                        "zone_name": zone_name,
+                        "param_name": zparam_name,
+                        "param_value": zparam_val
+                    })
+
+        else:
+            # If there's something else or unknown param_name, we ignore or handle differently
+            pass
+
+    # Convert to DataFrame
+    df_build = pd.DataFrame(building_rows)
+    df_zone = pd.DataFrame(zone_rows)
+
+    # If they're empty, columns might not exist => ensure minimal columns
+    if not df_build.empty:
+        df_build = df_build[["ogc_fid", "param_name", "param_value"]]
+    if not df_zone.empty:
+        df_zone = df_zone[["ogc_fid", "zone_name", "param_name", "param_value"]]
+
+    # Write them to CSV
+    os.makedirs(os.path.dirname(out_build_csv), exist_ok=True)
+    df_build.to_csv(out_build_csv, index=False)
+
+    os.makedirs(os.path.dirname(out_zone_csv), exist_ok=True)
+    df_zone.to_csv(out_zone_csv, index=False)
+
+    print(f"[INFO] Wrote building-level picks to {out_build_csv} ({len(df_build)} rows).")
+    print(f"[INFO] Wrote zone-level picks to {out_zone_csv} ({len(df_zone)} rows).")
+
+
+def main():
+    """
+    Example CLI entry point:
+      - Reads 'D:/Documents/E_Plus_2030_py/output/assigned/assigned_ventilation.csv'
+      - Parses 'assigned_value' into dict
+      - Writes building-level & zone-level CSVs
+    """
+    # 1) Path to your original CSV
+    csv_in = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_ventilation.csv"
+
+    # 2) Paths for output
+    csv_build_out = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_vent_building.csv"
+    csv_zone_out = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_vent_zones.csv"
+
+    # 3) Read the CSV
+    df_assigned = pd.read_csv(csv_in)
+
+    # 4) Convert 'assigned_value' from string to dict
+    df_assigned["assigned_value"] = df_assigned["assigned_value"].apply(parse_assigned_value)
+
+    # 5) Flatten
+    flatten_ventilation_data(
+        df_input=df_assigned,
+        out_build_csv=csv_build_out,
+        out_zone_csv=csv_zone_out
+    )
+
+
+if __name__ == "__main__":
+    main()
 
 ------------------------------------------------------------
 
-File: D:\Documents\E_Plus_2030_py\modification\vent_functions.py
+File: D:\Documents\E_Plus_2030_py\idf_objects\structuring\flatten_hvac.py
 ============================================================
 """
-vent_functions.py
+flatten_hvac.py
 
-Provides:
-  1) create_vent_scenarios(...) 
-     - Generates scenario-level data for both building-level and zone-level vent parameters,
-       possibly incorporating min/max ranges for infiltration_base, infiltration_flow_m3_s, etc.
-     - Writes or returns a single scenario DataFrame (or multiple, if you prefer them separate).
+Transforms the "assigned_hvac_params.csv" file (with columns [ogc_fid, param_name, assigned_value])
+into two structured CSVs:
+  1) assigned_hvac_building.csv
+  2) assigned_hvac_zones.csv
 
-  2) apply_building_level_vent(idf, vent_params)
-     - Applies building-level infiltration/vent parameters to the IDF.
+Usage (standalone):
+    python flatten_hvac.py
 
-  3) apply_zone_level_vent(idf, df_zone_scen)
-     - Applies zone-level infiltration/vent parameters to the IDF by creating or updating
-       ZoneInfiltration:DesignFlowRate and ZoneVentilation:DesignFlowRate objects.
+Or import and call 'main()' or the lower-level functions.
 """
 
-import os
-import random
 import pandas as pd
+import ast
+import os
 
-# For weather-dependent infiltration coefficients
-from idf_objects.ventilation.create_ventilation_systems import (
-    apply_weather_coefficients,
-)
-
-
-# ---------------------------------------------------------------------------
-# 1) CREATE VENTILATION SCENARIOS
-# ---------------------------------------------------------------------------
-def create_vent_scenarios(
-    df_building,
-    df_zones,
-    building_id,
-    num_scenarios=5,
-    picking_method="random_uniform",
-    random_seed=42,
-    scenario_csv_out=None
-):
+def parse_assigned_value(value_str):
     """
-    Generate a scenario-level DataFrame that combines building-level vent parameters
-    (from df_building) and zone-level vent parameters (from df_zones), including
-    param_min/param_max if present. Then optionally randomizes or adjusts them
-    for each scenario.
-
-    Args:
-      df_building (pd.DataFrame): building-level vent data, typically from
-        "assigned_vent_building.csv" with columns like:
-         - ogc_fid, param_name, param_value
-         - param_name might also have a "_range" companion row with min/max in parentheses
-      df_zones (pd.DataFrame): zone-level vent data from
-        "assigned_vent_zones.csv" with columns like:
-         - ogc_fid, zone_name, param_name, param_value
-      building_id: int or str, the building ID to filter on
-      num_scenarios: int, how many scenario sets to create
-      picking_method: str, e.g. "random_uniform", "fixed", etc.
-      random_seed: int, for reproducible random picks
-      scenario_csv_out: str or None, if not None we write final DataFrame to CSV
-
-    Returns:
-      df_scen (pd.DataFrame): A "long" DataFrame with columns like:
-        [scenario_index, ogc_fid, zone_name, param_name, param_value,
-         param_min, param_max, picking_method, ...]
-      - zone_name may be empty/None for building-level params
-      - param_min/param_max extracted from e.g. infiltration_base_range
-      - param_value potentially randomized if picking_method == "random_uniform"
+    Safely convert the string in 'assigned_value' into a Python dict.
+    Uses ast.literal_eval to parse e.g.:
+      "{'heating_day_setpoint': 20.28, 'cooling_day_setpoint': 24.55, ...}"
+    into a real Python dictionary.
     """
-    if random_seed is not None:
-        random.seed(random_seed)
+    try:
+        return ast.literal_eval(str(value_str))
+    except (SyntaxError, ValueError):
+        return {}
 
-    # 1) Filter for this building
-    df_bldg = df_building[df_building["ogc_fid"] == building_id].copy()
-    df_zone = df_zones[df_zones["ogc_fid"] == building_id].copy()
-
-    if df_bldg.empty and df_zone.empty:
-        print(f"[create_vent_scenarios] No ventilation data found for ogc_fid={building_id}.")
-        return pd.DataFrame()
-
-    # 2) Build building param list, with param_min/param_max if they appear in "xxx_range" rows
-    bldg_params = parse_building_vent_params(df_bldg)
-
-    # 3) Build zone param list
-    zone_params = parse_zone_vent_params(df_zone)
-
-    scenario_rows = []
-
-    # 4) For each scenario, we pick new param_value for each building-level param
-    for scenario_i in range(num_scenarios):
-        # A) Building-level
-        for p in bldg_params:
-            p_name = p["param_name"]
-            p_val  = p["param_value"]  # base
-            p_min  = p["param_min"]
-            p_max  = p["param_max"]
-
-            new_val = pick_value(p_val, p_min, p_max, picking_method)
-            scenario_rows.append({
-                "scenario_index": scenario_i,
-                "ogc_fid": building_id,
-                "zone_name": None,  # building-level param
-                "param_name": p_name,
-                "param_value": new_val,
-                "param_min": p_min,
-                "param_max": p_max,
-                "picking_method": picking_method
-            })
-
-        # B) Zone-level
-        for z in zone_params:
-            z_name  = z["zone_name"]
-            p_name  = z["param_name"]
-            p_val   = z["param_value"]
-            p_min   = z["param_min"]
-            p_max   = z["param_max"]
-
-            new_val = pick_value(p_val, p_min, p_max, picking_method)
-            scenario_rows.append({
-                "scenario_index": scenario_i,
-                "ogc_fid": building_id,
-                "zone_name": z_name,
-                "param_name": p_name,
-                "param_value": new_val,
-                "param_min": p_min,
-                "param_max": p_max,
-                "picking_method": picking_method
-            })
-
-    # 5) Convert to DataFrame
-    df_scen = pd.DataFrame(scenario_rows)
-
-    # 6) Optionally write to CSV
-    if scenario_csv_out:
-        os.makedirs(os.path.dirname(scenario_csv_out), exist_ok=True)
-        df_scen.to_csv(scenario_csv_out, index=False)
-        print(f"[create_vent_scenarios] Wrote scenario vent params => {scenario_csv_out}")
-
-    return df_scen
-
-
-def parse_building_vent_params(df_bldg):
+def flatten_hvac_data(df_input, out_build_csv, out_zone_csv):
     """
-    Helper to parse building-level vent parameters from
-    assigned_vent_building.csv into a list of dicts with
-      [param_name, param_value, param_min, param_max]
+    Takes a DataFrame with columns [ogc_fid, param_name, assigned_value].
+    Splits it into two DataFrames:
+      1) building-level (where param_name == "hvac_params")
+      2) zone-level (where param_name == "zones").
 
-    - If param_name == "infiltration_base_range" => store param_min/param_max from the tuple
-      matched with param_name="infiltration_base".
-    - Similarly for "year_factor_range", "fan_pressure_range", etc.
+    Then writes them to CSV (out_build_csv, out_zone_csv).
+
+    :param df_input: pd.DataFrame
+        Must contain columns => "ogc_fid", "param_name", "assigned_value"
+        where assigned_value is a dict (not raw text).
+    :param out_build_csv: str
+        File path for building-level CSV output.
+    :param out_zone_csv: str
+        File path for zone-level CSV output.
     """
-    # We read rows like:
-    #   infiltration_base, 100.3639
-    #   infiltration_base_range, (100.3, 100.4)
-    # We'll store them in a dictionary keyed by the "base param"
-    param_map = {}  # e.g. "infiltration_base" => {value:..., min:..., max:...}
 
-    for row in df_bldg.itertuples():
-        name = row.param_name
-        val  = row.param_value
+    building_rows = []
+    zone_rows = []
 
-        # e.g. name="infiltration_base_range"
-        if name.endswith("_range"):
-            base_name = name.replace("_range", "")
-            if base_name not in param_map:
-                param_map[base_name] = {"param_value": None, "param_min": None, "param_max": None}
+    for idx, row in df_input.iterrows():
+        bldg_id = row.get("ogc_fid")
+        param_name = row.get("param_name")
+        assigned_val = row.get("assigned_value", {})
 
-            # parse (min,max)
-            t = parse_tuple(val)
-            if t and len(t) == 2:
-                param_map[base_name]["param_min"] = t[0]
-                param_map[base_name]["param_max"] = t[1]
+        if param_name == "hvac_params":
+            # assigned_val is a dict, e.g.:
+            # {
+            #   "heating_day_setpoint": 20.28,
+            #   "cooling_day_setpoint": 24.55,
+            #   "schedule_details": {...},
+            #   ...
+            # }
+            for k, v in assigned_val.items():
+                building_rows.append({
+                    "ogc_fid": bldg_id,
+                    "param_name": k,
+                    "param_value": v
+                })
+
+        elif param_name == "zones":
+            # assigned_val is a dict => { zoneName: {...}, zoneName2: {...}, ... }
+            # e.g. { "Zone1": {"hvac_object_name": "Ideal1", "cooling_setpoint": 25}, ... }
+            for zone_name, zone_dict in assigned_val.items():
+                for zparam, zval in zone_dict.items():
+                    zone_rows.append({
+                        "ogc_fid": bldg_id,
+                        "zone_name": zone_name,
+                        "param_name": zparam,
+                        "param_value": zval
+                    })
+
         else:
-            # normal param
-            if name not in param_map:
-                param_map[name] = {"param_value": None, "param_min": None, "param_max": None}
-            param_map[name]["param_value"] = val
-
-    # Now produce a list of dict
-    result = []
-    for p_name, dct in param_map.items():
-        result.append({
-            "param_name":  p_name,
-            "param_value": dct["param_value"],
-            "param_min":   dct["param_min"],
-            "param_max":   dct["param_max"]
-        })
-    return result
-
-
-def parse_zone_vent_params(df_zone):
-    """
-    Helper to parse zone-level vent params from assigned_vent_zones.csv
-    into a list of dicts with zone_name, param_name, param_value, param_min, param_max.
-
-    Typically, assigned_vent_zones doesn't store param_min/param_max,
-    so we might keep them as None. But if your code logs them, parse them similarly.
-    """
-    results = []
-    # e.g. row: zone_name="Zone1_FrontPerimeter", param_name="infiltration_flow_m3_s", param_value=0.255
-    for row in df_zone.itertuples():
-        zname = row.zone_name
-        pname = row.param_name
-        val   = row.param_value
-
-        # If you store param ranges in zone CSV, parse them similarly to parse_tuple
-        # For now, we assume no range => None
-        results.append({
-            "zone_name": zname,
-            "param_name": pname,
-            "param_value": val,
-            "param_min": None,
-            "param_max": None
-        })
-    return results
-
-
-def parse_tuple(val):
-    """
-    If val is like "(100.3, 100.4)", parse to (100.3, 100.4). Otherwise None.
-    """
-    if not isinstance(val, str):
-        return None
-    val_str = val.strip()
-    if not (val_str.startswith("(") and val_str.endswith(")")):
-        return None
-    try:
-        # e.g. ast.literal_eval could do this too, but let's do a simple approach:
-        inner = val_str[1:-1]  # remove parens
-        parts = inner.split(",")
-        if len(parts) != 2:
-            return None
-        p1 = float(parts[0])
-        p2 = float(parts[1])
-        return (p1, p2)
-    except:
-        return None
-
-
-def pick_value(base_val, p_min, p_max, picking_method):
-    """
-    Given a base_val (float or str), optional p_min/p_max, and a method,
-    return a new value. Example:
-      - If picking_method == "random_uniform" and p_min/p_max are not None,
-        pick random in [p_min, p_max].
-      - Else keep base_val as is.
-
-    Adjust as needed for more complex logic (like scale factors).
-    """
-    # Attempt float conversion
-    try:
-        base_f = float(base_val)
-    except:
-        base_f = None
-
-    if picking_method == "random_uniform" and p_min is not None and p_max is not None:
-        try:
-            fmin = float(p_min)
-            fmax = float(p_max)
-            if fmax >= fmin:
-                return random.uniform(fmin, fmax)
-        except:
+            # If there's any other param_name, skip or handle differently
             pass
-        # fallback => base_val
-        return base_val
 
-    # if picking_method == "fixed", or no range, just return base_val
-    return base_val
+    # Convert to DataFrames
+    df_build = pd.DataFrame(building_rows)
+    df_zone = pd.DataFrame(zone_rows)
+
+    # Reorder columns or ensure they exist
+    if not df_build.empty:
+        df_build = df_build[["ogc_fid", "param_name", "param_value"]]
+    if not df_zone.empty:
+        df_zone = df_zone[["ogc_fid", "zone_name", "param_name", "param_value"]]
+
+    # Write to CSV
+    os.makedirs(os.path.dirname(out_build_csv), exist_ok=True)
+    df_build.to_csv(out_build_csv, index=False)
+
+    os.makedirs(os.path.dirname(out_zone_csv), exist_ok=True)
+    df_zone.to_csv(out_zone_csv, index=False)
+
+    print(f"[INFO] Wrote building-level picks to {out_build_csv} ({len(df_build)} rows).")
+    print(f"[INFO] Wrote zone-level picks to {out_zone_csv} ({len(df_zone)} rows).")
 
 
-# ---------------------------------------------------------------------------
-# 2) APPLY BUILDING-LEVEL VENT
-# ---------------------------------------------------------------------------
-def apply_building_level_vent(idf, vent_params):
+def main():
     """
-    Applies building-level infiltration/vent parameters (like
-    ``infiltration_base_L_s_m2_10Pa`` and ``year_factor`` together with
-    schedule names) to the IDF in a "coarse" manner.
-
-    Example usage:
-        vent_params = {
-            "infiltration_base_L_s_m2_10Pa": 0.5,
-            "year_factor": 1.0,
-            "infiltration_schedule_name": "AlwaysOnSched",
-            "ventilation_schedule_name": "VentSched",
-            ...
-        }
-        apply_building_level_vent(my_idf, vent_params)
+    Example CLI entry point:
+      - Reads 'D:/Documents/E_Plus_2030_py/output/assigned/assigned_hvac_params.csv'
+      - Parses 'assigned_value' into dict
+      - Writes building-level & zone-level CSVs
     """
-    # This is a placeholder approach, as building-level infiltration often
-    # needs to be distributed to zones. But let's assume you have a
-    # "global infiltration" or "HVAC system infiltration" object in IDF
-    # that you can set.
+    # 1) Path to your original HVAC CSV file
+    csv_in = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_hvac_params.csv"
 
-    infiltration_base = vent_params.get("infiltration_base_L_s_m2_10Pa")
-    year_factor = vent_params.get("year_factor")
-    infiltration_sched = vent_params.get("infiltration_schedule_name")
-    ventilation_sched = vent_params.get("ventilation_schedule_name")
-    # etc.
+    # 2) Paths for output CSVs
+    csv_build_out = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_hvac_building.csv"
+    csv_zone_out  = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_hvac_zones.csv"
 
-    print(
-        f"[VENT] Applying building-level infiltration_base_L_s_m2_10Pa={infiltration_base}, year_factor={year_factor},"
-        f" infiltration_sched={infiltration_sched}, ventilation_sched={ventilation_sched}"
+    # 3) Load the CSV
+    df_assigned = pd.read_csv(csv_in)
+
+    # 4) Convert assigned_value from string to dict
+    df_assigned["assigned_value"] = df_assigned["assigned_value"].apply(parse_assigned_value)
+
+    # 5) Flatten
+    flatten_hvac_data(
+        df_input=df_assigned,
+        out_build_csv=csv_build_out,
+        out_zone_csv=csv_zone_out
     )
 
-    # If you have a top-level infiltration object or design object, you can find it:
-    # e.g. "ZoneInfiltration:DesignFlowRate" object named "GlobalInfil" or similar
-    # This is just a pseudo-illustration:
-    # infiltration_obj = find_or_create_infiltration_object(idf, name="GlobalInfil")
-    # infiltration_obj.Design_Flow_Rate = infiltration_base
-    # infiltration_obj.Schedule_Name = infiltration_sched
 
-    # If you want to store infiltration_total_m3_s, etc. do similarly
-    # ...
-    pass
-
-
-# ---------------------------------------------------------------------------
-# 3) APPLY ZONE-LEVEL VENT
-# ---------------------------------------------------------------------------
-def apply_zone_level_vent(idf, df_zone_scen):
-    """
-    Applies zone-level infiltration/vent parameters to each zone. The DataFrame
-    is expected to have columns:
-       [zone_name, param_name, param_value, ...]
-    derived from scenario-based picks or from assigned_vent_zones.csv.
-
-    Each zone might have ``infiltration_object_name`` and associated values such
-    as ``infiltration_base_L_s_m2_10Pa`` or ``infiltration_flow_m3_s`` along with
-    ``year_factor``.  Schedule names (``infiltration_schedule_name`` and
-    ``ventilation_schedule_name``) can also be provided.
-
-    We'll group by zone_name, create or update the infiltration/vent objects
-    in IDF.
-    """
-    # group by zone_name
-    grouped = df_zone_scen.groupby("zone_name")
-
-    for z_name, z_df in grouped:
-        print(f"[VENT] => Zone={z_name}, {len(z_df)} param rows")
-
-        # We can parse infiltrationX / ventilationX from param_name => param_value
-        # A simple approach is to build a dict
-        z_params = {}
-        for row in z_df.itertuples():
-            pname = row.param_name
-            pval  = row.param_value
-            z_params[pname] = pval
-
-        # infiltration
-        infil_obj_name  = z_params.get("infiltration_object_name")
-        infil_obj_type  = z_params.get(
-            "infiltration_object_type", "ZONEINFILTRATION:DESIGNFLOWRATE"
-        )
-        infil_base      = z_params.get("infiltration_base_L_s_m2_10Pa")
-        year_factor     = z_params.get("year_factor")
-        infil_flow      = z_params.get("infiltration_flow_m3_s", 0.0)
-        infil_schedule  = z_params.get("infiltration_schedule_name", "AlwaysOnSched")
-        infil_model     = z_params.get("infiltration_model", "constant")
-        typical_delta_t = float(z_params.get("typical_delta_t", 10.0))
-        typical_wind    = float(z_params.get("typical_wind", 3.0))
-        zone_area       = z_params.get("zone_floor_area_m2_used_for_dist")
-        if zone_area is None:
-            zone_area = z_params.get("zone_floor_area_m2")
-
-        print(
-            f"    Infiltration params: base_L_s_m2_10Pa={infil_base}, year_factor={year_factor}, flow={infil_flow}, schedule={infil_schedule}"
-        )
-
-        # find or create infiltration object
-        if infil_obj_name:
-            infil_obj = find_or_create_object(idf, infil_obj_type, infil_obj_name)
-            # set infiltration fields (some fields vary by object type)
-            if hasattr(infil_obj, "Name"):
-                infil_obj.Name = infil_obj_name
-            if hasattr(infil_obj, "Zone_or_ZoneList_Name"):
-                infil_obj.Zone_or_ZoneList_Name = z_name
-            if hasattr(infil_obj, "Design_Flow_Rate_Calculation_Method"):
-                infil_obj.Design_Flow_Rate_Calculation_Method = "Flow/Area"
-
-            flow_per_area = 0.0
-            try:
-                flow_val = float(infil_flow)
-                if zone_area and float(zone_area) > 0:
-                    flow_per_area = flow_val / float(zone_area)
-            except Exception:
-                pass
-
-            if hasattr(infil_obj, "Schedule_Name"):
-                infil_obj.Schedule_Name = infil_schedule
-
-            if infil_model.lower() == "weather":
-                apply_weather_coefficients(
-                    infil_obj,
-                    max(0.0, flow_per_area),
-                    typical_delta_t=typical_delta_t,
-                    typical_wind=typical_wind,
-                )
-            else:
-                if hasattr(infil_obj, "Design_Flow_Rate"):
-                    infil_obj.Design_Flow_Rate = max(0.0, flow_per_area)
-                if hasattr(infil_obj, "Constant_Term_Coefficient"):
-                    infil_obj.Constant_Term_Coefficient = 1.0
-                if hasattr(infil_obj, "Temperature_Term_Coefficient"):
-                    infil_obj.Temperature_Term_Coefficient = 0.0
-                if hasattr(infil_obj, "Velocity_Term_Coefficient"):
-                    infil_obj.Velocity_Term_Coefficient = 0.0
-                if hasattr(infil_obj, "Velocity_Squared_Term_Coefficient"):
-                    infil_obj.Velocity_Squared_Term_Coefficient = 0.0
-
-        # ventilation
-        vent_obj_name   = z_params.get("ventilation_object_name")
-        vent_obj_type   = z_params.get(
-            "ventilation_object_type", "ZONEVENTILATION:DESIGNFLOWRATE"
-        )
-        vent_flow       = z_params.get("ventilation_flow_m3_s", 0.0)
-        vent_schedule   = z_params.get("ventilation_schedule_name", "AlwaysOnSched")
-
-        print(
-            f"    Ventilation params: flow={vent_flow}, schedule={vent_schedule}"
-        )
-
-        if vent_obj_name:
-            vent_obj = find_or_create_object(idf, vent_obj_type, vent_obj_name)
-            if hasattr(vent_obj, "Name"):
-                vent_obj.Name = vent_obj_name
-            if hasattr(vent_obj, "Zone_or_ZoneList_Name"):
-                vent_obj.Zone_or_ZoneList_Name = z_name
-            if hasattr(vent_obj, "Design_Flow_Rate_Calculation_Method"):
-                vent_obj.Design_Flow_Rate_Calculation_Method = "Flow/Area"
-
-            flow_per_area_v = 0.0
-            try:
-                vflow = float(vent_flow)
-                if zone_area and float(zone_area) > 0:
-                    flow_per_area_v = vflow / float(zone_area)
-            except Exception:
-                pass
-            if hasattr(vent_obj, "Design_Flow_Rate"):
-                vent_obj.Design_Flow_Rate = max(0.0, flow_per_area_v)
-            if hasattr(vent_obj, "Schedule_Name"):
-                vent_obj.Schedule_Name = vent_schedule
-
-
-def find_or_create_object(idf, obj_type_upper, obj_name):
-    """
-    Utility to find an existing object in IDF by type & name, or create a new one.
-    e.g. find_or_create_object(idf, "ZONEINFILTRATION:DESIGNFLOWRATE", "Infil_Zone1")
-    """
-    if not obj_type_upper:
-        return None
-    if obj_type_upper not in idf.idfobjects:
-        # If IDF doesn't have that object class, attempt creation
-        new_obj = idf.newidfobject(obj_type_upper)
-        return new_obj
-
-    # try to find by name
-    existing = [
-        o for o in idf.idfobjects[obj_type_upper]
-        if hasattr(o, "Name") and str(o.Name) == str(obj_name)
-    ]
-    if existing:
-        return existing[0]
-    else:
-        # create new
-        new_obj = idf.newidfobject(obj_type_upper)
-        return new_obj
+if __name__ == "__main__":
+    main()
 
 ------------------------------------------------------------
 

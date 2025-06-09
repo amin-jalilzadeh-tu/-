@@ -1,3 +1,6 @@
+###############################################################
+# File: idf_creation.py
+###############################################################
 """
 idf_creation.py
 
@@ -46,8 +49,6 @@ from epw.run_epw_sims import simulate_all
 # Configure logger for this module (or ensure it's configured at the application entry point)
 logger = logging.getLogger(__name__)
 if not logger.hasHandlers():
-    # BasicConfig should ideally be called only once at the application entry point.
-    # logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s - %(name)s - %(message)s')
     logger.addHandler(logging.NullHandler()) # Be a good library/module
 
 ###############################################################################
@@ -180,22 +181,18 @@ def create_idf_for_building(
     logger.debug(f"[{building_index}] Fenestration added.")
 
     # 6) Window shading (e.g., blinds)
-    # Note: user_config_shading passed here should be the specific dictionary of overrides
-    # for the 'shading_type_key_for_blinds' (e.g., "my_external_louvers").
-    # If user_config_shading is a list of rules from Excel, it needs to be processed
-    # before this call to extract the relevant overrides for the current building/shading_type_key.
     if apply_blind_shading or apply_geometric_shading:
         logger.info(f"[{building_index}] Applying window shading. Blinds: {apply_blind_shading}, Geometric: {apply_geometric_shading}")
         add_shading_objects(
             idf=idf,
             building_row=building_row,
-            shading_type_key=shading_type_key_for_blinds, # Explicitly pass the key
-            strategy=shading_strategy, # Use specific shading strategy
+            shading_type_key=shading_type_key_for_blinds,
+            strategy=shading_strategy,
             random_seed=random_seed,
-            user_config_shading=user_config_shading, # Assumed to be pre-filtered for the key
+            user_config_shading=user_config_shading,
             assigned_shading_log=assigned_shading_log,
-            create_blinds=apply_blind_shading, # Explicitly pass
-            create_geometry_shading=apply_geometric_shading # Explicitly pass
+            create_blinds=apply_blind_shading,
+            create_geometry_shading=apply_geometric_shading
         )
         logger.debug(f"[{building_index}] Window shading objects processed.")
     else:
@@ -236,7 +233,7 @@ def create_idf_for_building(
         name_suffix=f"MyDHW_{building_index}",
         user_config_dhw=user_config_dhw,
         assigned_dhw_log=assigned_dhw_log,
-        use_nta=True # Assuming NTA is desired
+        use_nta=True
     )
     logger.debug(f"[{building_index}] DHW system added.")
 
@@ -257,11 +254,11 @@ def create_idf_for_building(
         idf=idf,
         building_row=building_row,
         calibration_stage=calibration_stage,
-        strategy=strategy, # Global strategy
+        strategy=strategy,
         random_seed=random_seed,
         user_config_vent=user_config_vent,
         assigned_vent_log=assigned_vent_log,
-        infiltration_model="weather", # Example, make configurable if needed
+        infiltration_model="weather",
     )
     logger.debug(f"[{building_index}] Ventilation and infiltration added.")
 
@@ -270,7 +267,7 @@ def create_idf_for_building(
         idf=idf,
         building_row=building_row,
         calibration_stage=calibration_stage,
-        strategy=strategy, # Global strategy
+        strategy=strategy,
         random_seed=random_seed,
         assigned_setzone_log=assigned_setzone_log
     )
@@ -280,7 +277,7 @@ def create_idf_for_building(
     add_ground_temperatures(
         idf=idf,
         calibration_stage=calibration_stage,
-        strategy=strategy, # Global strategy
+        strategy=strategy,
         random_seed=random_seed,
         assigned_groundtemp_log=assigned_groundtemp_log
     )
@@ -309,7 +306,6 @@ def create_idf_for_building(
 
     # 15) Save final IDF
     os.makedirs(idf_config["output_dir"], exist_ok=True)
-    # Sanitize building_index or use ogc_fid for more stable filenames if possible
     idf_filename = f"building_{building_row.get('ogc_fid', building_index)}.idf"
     idf_filename = idf_filename.replace(" ", "_").replace(":", "_") # Basic sanitization
     out_path = os.path.join(idf_config["output_dir"], idf_filename)
@@ -319,7 +315,7 @@ def create_idf_for_building(
         logger.info(f"IDF for building_index {building_index} saved at: {out_path}")
     except Exception as e:
         logger.error(f"Failed to save IDF for building_index {building_index} at {out_path}: {e}", exc_info=True)
-        return None # Return None if save fails
+        return None
 
     return out_path
 
@@ -337,8 +333,7 @@ def create_idfs_for_all_buildings(
     user_config_dhw=None,
     res_data=None, # Fenestration base data
     nonres_data=None, # Fenestration base data
-    user_config_shading=None, # Can be a general config or list of rules
-    # Specific shading controls
+    user_config_shading=None,
     shading_type_key_for_blinds="my_external_louvers",
     apply_blind_shading=True,
     apply_geometric_shading=False,
@@ -357,68 +352,51 @@ def create_idfs_for_all_buildings(
     """
     Loops over df_buildings, calls create_idf_for_building for each.
     """
-    # Main logger for this function
     func_logger = logging.getLogger(f"{__name__}.create_idfs_for_all_buildings")
     func_logger.info(f"Starting to create IDFs for {len(df_buildings)} buildings.")
 
-    # Prepare dictionaries to store final picks for each module
-    # These are passed to create_idf_for_building and populated therein
     assigned_geom_log       = {}
     assigned_lighting_log   = {}
     assigned_equip_log      = {}
     assigned_dhw_log        = {}
     assigned_fenez_log      = {}
-    assigned_shading_log    = {} # This will be populated by pick_shading_params via add_shading_objects
+    assigned_shading_log    = {}
     assigned_hvac_log       = {}
     assigned_vent_log       = {}
-    assigned_epw_log        = {} # Populated by simulate_all if EPW selection logic is there
+    assigned_epw_log        = {}
     assigned_groundtemp_log = {}
     assigned_setzone_log    = {}
 
-
-    # B) Create an IDF for each building
     for idx, row in df_buildings.iterrows():
-        # Make a unique seed for each building if desired, or use the global one + index
         building_specific_seed = random_seed + idx 
 
-        # Here, you might process/filter user_config_shading if it's a list of rules
-        # to get specific_user_config_for_this_building.
-        # For now, assume user_config_shading is passed as is, and if it's a list of rules,
-        # the user would need to implement the filtering logic (e.g., using shading_overrides_from_excel.py)
-        # before this loop or inside create_idf_for_building if it were designed that way.
-        # Current design: create_idf_for_building expects user_config_shading to be the specific dict.
-        
-        # If user_config_shading is a list of rules (e.g. from Excel):
-        specific_shading_overrides = {} # Default to empty if no rules apply or not using Excel rules
-        if isinstance(user_config_shading, list): # Indicates it's a list of rules
+        # Possibly filter shading overrides from user_config_shading if it’s a list of rules:
+        specific_shading_overrides = {}
+        if isinstance(user_config_shading, list):
             try:
                 from idf_objects.wshading.shading_overrides_from_excel import pick_shading_params_from_rules
-                bldg_identifier = row.get("ogc_fid", idx) # Use a consistent building identifier
+                bldg_identifier = row.get("ogc_fid", idx)
                 specific_shading_overrides = pick_shading_params_from_rules(
                     building_id=bldg_identifier,
-                    shading_type_key=shading_type_key_for_blinds, # Assuming blinds use one key for now
+                    shading_type_key=shading_type_key_for_blinds,
                     all_rules=user_config_shading,
-                    fallback={} # Important to provide a dict fallback
+                    fallback={}
                 )
                 if specific_shading_overrides:
-                    func_logger.info(f"Found specific Excel shading overrides for building {bldg_identifier}, key {shading_type_key_for_blinds}: {specific_shading_overrides}")
-                else:
-                    func_logger.debug(f"No specific Excel shading overrides found for building {bldg_identifier}, key {shading_type_key_for_blinds}. Using defaults or general user_config if any.")
+                    func_logger.info(f"Found specific Excel shading overrides for building {bldg_identifier}: {specific_shading_overrides}")
             except ImportError:
-                func_logger.warning("shading_overrides_from_excel.py not found or pick_shading_params_from_rules failed. Cannot apply Excel-based shading overrides.")
+                func_logger.warning("shading_overrides_from_excel.py not found. Skipping Excel-based shading overrides.")
             except Exception as e_excel_override:
                 func_logger.error(f"Error applying Excel shading overrides for building {row.get('ogc_fid', idx)}: {e_excel_override}", exc_info=True)
-        elif isinstance(user_config_shading, dict): # Assumed to be already filtered or general overrides for the key
+        elif isinstance(user_config_shading, dict):
             specific_shading_overrides = user_config_shading
-            func_logger.debug(f"Using provided dict user_config_shading for building {row.get('ogc_fid', idx)}: {specific_shading_overrides}")
-
 
         idf_path = create_idf_for_building(
             building_row=row,
             building_index=idx,
             scenario=scenario,
             calibration_stage=calibration_stage,
-            strategy=strategy, # Global strategy for most modules
+            strategy=strategy,
             random_seed=building_specific_seed,
             # geometry
             user_config_geom=user_config_geom,
@@ -436,13 +414,13 @@ def create_idfs_for_all_buildings(
             res_data=res_data,
             nonres_data=nonres_data,
             assigned_fenez_log=assigned_fenez_log,
-            # Window shading - passing explicit controls and filtered config
+            # Window shading
             shading_type_key_for_blinds=shading_type_key_for_blinds,
-            user_config_shading=specific_shading_overrides, # Pass the (potentially filtered) specific overrides
+            user_config_shading=specific_shading_overrides,
             assigned_shading_log=assigned_shading_log,
             apply_blind_shading=apply_blind_shading,
             apply_geometric_shading=apply_geometric_shading,
-            shading_strategy=shading_strategy, # Specific strategy for shading
+            shading_strategy=shading_strategy,
             # HVAC
             user_config_hvac=user_config_hvac,
             assigned_hvac_log=assigned_hvac_log,
@@ -462,8 +440,6 @@ def create_idfs_for_all_buildings(
             df_buildings.loc[idx, "idf_name"] = "ERROR_CREATING_IDF"
             func_logger.error(f"IDF creation failed for building index {idx}. See previous errors.")
 
-
-    # C) If we’re told to run simulations
     if run_simulations:
         func_logger.info("Proceeding to run simulations for generated IDFs.")
         if simulate_config is None:
@@ -476,24 +452,22 @@ def create_idfs_for_all_buildings(
         iddfile       = idf_config["iddfile"]
 
         simulate_all(
-            df_buildings=df_buildings[df_buildings["idf_name"] != "ERROR_CREATING_IDF"], # Only simulate valid IDFs
+            df_buildings=df_buildings[df_buildings["idf_name"] != "ERROR_CREATING_IDF"],
             idf_directory=idf_directory,
             iddfile=iddfile,
             base_output_dir=sim_output_dir,
             user_config_epw=user_config_epw,
-            assigned_epw_log=assigned_epw_log, # For logging EPW choices
+            assigned_epw_log=assigned_epw_log,
             num_workers=simulate_config.get("num_workers", 4),
-            # ep_force_overwrite=simulate_config.get("ep_force_overwrite", False) # If you add this to simulate_all
         )
     else:
         func_logger.info("Skipping simulations as per configuration.")
 
-    # D) Post-processing
     if post_process:
         func_logger.info("Proceeding to post-process simulation results and write logs.")
 
         default_post_process_config = {
-            "base_output_dir": "output/Sim_Results", # Default, will be overridden if logs_base_dir
+            "base_output_dir": "output/Sim_Results",
             "outputs": [{
                 "convert_to_daily": False, "convert_to_monthly": False,
                 "aggregator": "none", "output_csv": "output/results/merged_as_is.csv"
@@ -507,7 +481,7 @@ def create_idfs_for_all_buildings(
 
         for proc_item in multiple_outputs:
             out_csv_path = proc_item.get("output_csv", "output/results/merged_default.csv")
-            if logs_base_dir and "output/" in out_csv_path: # Relocate if default path and logs_base_dir is set
+            if logs_base_dir and "output/" in out_csv_path:
                 rel_filename = out_csv_path.split("output/", 1)[-1] 
                 out_csv_path = os.path.join(logs_base_dir, rel_filename)
             
@@ -522,18 +496,20 @@ def create_idfs_for_all_buildings(
             )
             func_logger.info(f"Merged results saved to: {out_csv_path}")
 
-        # Write CSV logs for assigned parameters
         _write_geometry_csv(assigned_geom_log, logs_base_dir)
         _write_lighting_csv(assigned_lighting_log, logs_base_dir)
         _write_equipment_csv(assigned_equip_log, logs_base_dir)
         _write_fenestration_csv(assigned_fenez_log, logs_base_dir)
         _write_dhw_csv(assigned_dhw_log, logs_base_dir)
+        # <--- REPLACED: use new specialized _write_hvac_csv(...) --->
         _write_hvac_csv(assigned_hvac_log, logs_base_dir)
+        # <--- REPLACED: use new specialized _write_vent_csv(...) --->
         _write_vent_csv(assigned_vent_log, logs_base_dir)
-        _write_shading_csv(assigned_shading_log, logs_base_dir) # Updated to use new key
-        _write_groundtemp_csv(assigned_groundtemp_log, logs_base_dir) # Added example
-        _write_setzone_csv(assigned_setzone_log, logs_base_dir) # Added example
-        _write_epw_csv(assigned_epw_log, logs_base_dir) # Added example for EPW choices
+
+        _write_shading_csv(assigned_shading_log, logs_base_dir)
+        _write_groundtemp_csv(assigned_groundtemp_log, logs_base_dir)
+        _write_setzone_csv(assigned_setzone_log, logs_base_dir)
+        _write_epw_csv(assigned_epw_log, logs_base_dir)
 
         func_logger.info("Finished post-processing and writing all assigned parameter logs.")
     else:
@@ -546,15 +522,12 @@ def create_idfs_for_all_buildings(
 # Internal Helper Functions to Write Assigned Logs
 ###############################################################################
 def _make_assigned_path(filename, logs_base_dir):
-    """Helper to build the path for assigned_*.csv, given logs_base_dir."""
     assigned_dir = os.path.join(logs_base_dir, "assigned") if logs_base_dir else "output/assigned"
     os.makedirs(assigned_dir, exist_ok=True)
     return os.path.join(assigned_dir, filename)
 
-# --- CSV Writing Functions (condensed for brevity, ensure all fields are covered as needed) ---
 
 def _write_generic_log_csv(log_dict, filename_base, id_column_name, logs_base_dir):
-    """Generic function to write a log dictionary to CSV."""
     rows = []
     if not log_dict:
         logger.debug(f"Log dictionary for {filename_base} is empty. Skipping CSV write.")
@@ -563,21 +536,19 @@ def _write_generic_log_csv(log_dict, filename_base, id_column_name, logs_base_di
         if isinstance(params, dict):
             for param_name, param_val in params.items():
                 row_data = {id_column_name: item_id, "param_name": param_name}
-                if isinstance(param_val, dict): # Handle nested dicts like in lighting/equipment
+                if isinstance(param_val, dict):
                     row_data.update(param_val)
                 else:
                     row_data["assigned_value"] = param_val
                 rows.append(row_data)
-        else: # Fallback for simpler log structures
-             rows.append({id_column_name: item_id, "param_name": "unknown", "assigned_value": str(params)})
-
+        else:
+            rows.append({id_column_name: item_id, "param_name": "unknown", "assigned_value": str(params)})
 
     if not rows:
         logger.debug(f"No rows generated for {filename_base} CSV. Skipping write.")
         return
     
     df = pd.DataFrame(rows)
-    # Attempt to reorder columns for consistency if common ones exist
     common_cols = [id_column_name, "object_name", "param_name", "assigned_value", "min_val", "max_val", "shading_type_key_used", "strategy_used"]
     ordered_cols = [col for col in common_cols if col in df.columns]
     remaining_cols = [col for col in df.columns if col not in ordered_cols]
@@ -595,19 +566,19 @@ def _write_geometry_csv(assigned_geom_log, logs_base_dir):
     _write_generic_log_csv(assigned_geom_log, "geometry", "ogc_fid", logs_base_dir)
 
 def _write_lighting_csv(assigned_lighting_log, logs_base_dir):
-    # Lighting log has a specific nested structure: log[bldg_id][param_name_LPD_or_sched] = {assigned_value, min_val, max_val, object_name}
     rows = []
     for bldg_id, param_dict in assigned_lighting_log.items():
-        for param_key, details in param_dict.items(): # param_key is like 'LPD_Zone1' or 'Schedule_Zone1'
-             rows.append({
-                "ogc_fid": bldg_id,
-                "object_name": details.get("object_name", param_key), # Use param_key as fallback object_name
-                "param_name": param_key, # Or derive a more generic param_name if needed
-                "assigned_value": details.get("assigned_value"),
-                "min_val": details.get("min_val"),
-                "max_val": details.get("max_val")
+        for param_key, details in param_dict.items():
+            rows.append({
+               "ogc_fid": bldg_id,
+               "object_name": details.get("object_name", param_key),
+               "param_name": param_key,
+               "assigned_value": details.get("assigned_value"),
+               "min_val": details.get("min_val"),
+               "max_val": details.get("max_val")
             })
-    if not rows: return
+    if not rows:
+        return
     df = pd.DataFrame(rows)
     out_path = _make_assigned_path("assigned_lighting.csv", logs_base_dir)
     df.to_csv(out_path, index=False)
@@ -615,10 +586,9 @@ def _write_lighting_csv(assigned_lighting_log, logs_base_dir):
 
 
 def _write_equipment_csv(assigned_equip_log, logs_base_dir):
-    # Equipment log structure: log[bldg_id]["assigned"][param_name_EPD_or_sched] = {assigned_value, min_val, max_val, object_name}
     rows = []
     for bldg_id, outer_dict in assigned_equip_log.items():
-        param_dict = outer_dict.get("assigned", outer_dict) # Handle potential nesting
+        param_dict = outer_dict.get("assigned", outer_dict)
         for param_key, details in param_dict.items():
             rows.append({
                 "ogc_fid": bldg_id,
@@ -628,11 +598,13 @@ def _write_equipment_csv(assigned_equip_log, logs_base_dir):
                 "min_val": details.get("min_val"),
                 "max_val": details.get("max_val")
             })
-    if not rows: return
+    if not rows:
+        return
     df = pd.DataFrame(rows)
     out_path = _make_assigned_path("assigned_equipment.csv", logs_base_dir)
     df.to_csv(out_path, index=False)
     logger.info(f"Equipment log written to {out_path}")
+
 
 def _write_fenestration_csv(assigned_fenez_log, logs_base_dir):
     _write_generic_log_csv(assigned_fenez_log, "fenez_params", "ogc_fid", logs_base_dir)
@@ -640,17 +612,110 @@ def _write_fenestration_csv(assigned_fenez_log, logs_base_dir):
 def _write_dhw_csv(assigned_dhw_log, logs_base_dir):
     _write_generic_log_csv(assigned_dhw_log, "dhw_params", "ogc_fid", logs_base_dir)
 
-def _write_hvac_csv(assigned_hvac_log, logs_base_dir):
-    _write_generic_log_csv(assigned_hvac_log, "hvac_params", "ogc_fid", logs_base_dir)
 
+###############################################################################
+# UPDATED: Specialized code to ensure HVAC CSV has "assigned_value" column
+###############################################################################
+def _write_hvac_csv(assigned_hvac_log, logs_base_dir):
+    """
+    Specialized function to flatten building-level vs. zone-level HVAC data
+    into rows each containing an 'assigned_value'.
+    """
+    rows = []
+    if not assigned_hvac_log:
+        logger.debug("HVAC log is empty. Skipping CSV.")
+        return
+
+    for bldg_id, hvac_data in assigned_hvac_log.items():
+        # 1) building-level HVAC parameters
+        hvac_params = hvac_data.get("hvac_params", {})
+        for param_name, param_val in hvac_params.items():
+            rows.append({
+                "ogc_fid": bldg_id,
+                "zone_name": None,
+                "param_name": param_name,
+                "assigned_value": param_val
+            })
+
+        # 2) zone-level HVAC parameters
+        if "zones" in hvac_data:
+            for zone_name, zone_info in hvac_data["zones"].items():
+                for param_name, param_val in zone_info.items():
+                    rows.append({
+                        "ogc_fid": bldg_id,
+                        "zone_name": zone_name,
+                        "param_name": param_name,
+                        "assigned_value": param_val
+                    })
+
+    if not rows:
+        logger.debug("No rows generated for assigned_hvac_params.csv. Skipping write.")
+        return
+
+    df = pd.DataFrame(rows)
+    out_path = _make_assigned_path("assigned_hvac_params.csv", logs_base_dir)
+    df.to_csv(out_path, index=False)
+    logger.info(f"HVAC log written to {out_path}")
+
+
+###############################################################################
+# UPDATED: Specialized code to ensure Vent CSV has "assigned_value" column
+###############################################################################
 def _write_vent_csv(assigned_vent_log, logs_base_dir):
-    _write_generic_log_csv(assigned_vent_log, "ventilation", "ogc_fid", logs_base_dir)
+    """
+    Specialized function to flatten building-level vs. zone-level Vent data
+    into rows each containing an 'assigned_value'.
+    """
+    rows = []
+    if not assigned_vent_log:
+        logger.debug("Ventilation log is empty. Skipping CSV.")
+        return
+
+    for bldg_id, vent_data in assigned_vent_log.items():
+        # 1) building-level ventilation parameters
+        bld_params = vent_data.get("building_params", {})
+        for param_name, param_val in bld_params.items():
+            rows.append({
+                "ogc_fid": bldg_id,
+                "zone_name": None,
+                "param_name": param_name,
+                "assigned_value": param_val
+            })
+
+        # 2) schedule_details
+        sched_details = vent_data.get("schedule_details", {})
+        for param_name, param_val in sched_details.items():
+            rows.append({
+                "ogc_fid": bldg_id,
+                "zone_name": None,
+                "param_name": param_name,
+                "assigned_value": param_val
+            })
+
+        # 3) zone-level ventilation parameters
+        zones_dict = vent_data.get("zones", {})
+        for zone_name, zinfo in zones_dict.items():
+            for param_name, param_val in zinfo.items():
+                rows.append({
+                    "ogc_fid": bldg_id,
+                    "zone_name": zone_name,
+                    "param_name": param_name,
+                    "assigned_value": param_val
+                })
+
+    if not rows:
+        logger.debug("No rows generated for assigned_ventilation.csv. Skipping write.")
+        return
+
+    df = pd.DataFrame(rows)
+    out_path = _make_assigned_path("assigned_ventilation.csv", logs_base_dir)
+    df.to_csv(out_path, index=False)
+    logger.info(f"Ventilation log written to {out_path}")
+
 
 def _write_shading_csv(assigned_shading_log, logs_base_dir):
-    """Write ``assigned_shading_params.csv`` from ``assigned_shading_log``."""
     rows = []
     for window_id, data_for_window in assigned_shading_log.items():
-        # The actual parameters are now in "shading_params_picked"
         shading_params = data_for_window.get("shading_params_picked", {})
         status = data_for_window.get("shading_creation_status", "")
         type_key = data_for_window.get("shading_type_key_used", "")
@@ -658,10 +723,9 @@ def _write_shading_csv(assigned_shading_log, logs_base_dir):
         control_name = data_for_window.get("shading_control_name_assigned", "")
         blind_mat_name = data_for_window.get("blind_material_name_used", "")
 
-        if not shading_params and not status : # If completely empty for this window_id, skip
+        if not shading_params and not status:
             continue
 
-        # Base row info for this window
         base_row_info = {
             "window_id": window_id,
             "shading_type_key": type_key,
@@ -675,9 +739,9 @@ def _write_shading_csv(assigned_shading_log, logs_base_dir):
             for param_name, param_val in shading_params.items():
                 row = base_row_info.copy()
                 row["param_name"] = param_name
-                row["assigned_value"] = str(param_val) # Ensure complex objects are stringified
+                row["assigned_value"] = str(param_val)
                 rows.append(row)
-        else: # Still log status if params are missing
+        else:
             row = base_row_info.copy()
             row["param_name"] = "N/A"
             row["assigned_value"] = "N/A (No params picked or error)"
@@ -692,6 +756,7 @@ def _write_shading_csv(assigned_shading_log, logs_base_dir):
     df.to_csv(out_path, index=False)
     logger.info(f"Shading parameters log written to {out_path}")
 
+
 def _write_groundtemp_csv(assigned_groundtemp_log, logs_base_dir):
     _write_generic_log_csv(assigned_groundtemp_log, "ground_temperatures", "building_id_or_global", logs_base_dir)
 
@@ -700,4 +765,3 @@ def _write_setzone_csv(assigned_setzone_log, logs_base_dir):
 
 def _write_epw_csv(assigned_epw_log, logs_base_dir):
     _write_generic_log_csv(assigned_epw_log, "epw_assignments", "ogc_fid", logs_base_dir)
-
