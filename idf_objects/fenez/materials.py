@@ -174,7 +174,7 @@ def update_construction_materials(
 
         # Remove any existing object with this name first
         if mat_type in ["MATERIAL", "MATERIAL:NOMASS"]:
-            for obj in idf_obj.idfobjects[mat_type]:
+            for obj in list(idf_obj.idfobjects[mat_type]):
                 if obj.Name == mat_name:
                     try:
                         idf_obj.removeidfobject(obj)
@@ -218,7 +218,7 @@ def update_construction_materials(
 
         # Remove existing object with this name first
         if wtype in ["WINDOWMATERIAL:GLAZING", "WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM"]:
-            for obj in idf_obj.idfobjects[wtype]:
+            for obj in list(idf_obj.idfobjects[wtype]):
                 if obj.Name == mat_name:
                     try:
                         idf_obj.removeidfobject(obj)
