@@ -127,8 +127,6 @@
       "param_name": "has_core",
       "fixed_value": false
     }
-
-    
   ],
   "hvac": [
     {
@@ -191,8 +189,6 @@
         "pand_ids": ["XYZ123", "XYZ999"],
         "bbox_xy": [120000.0, 487000.0, 121000.0, 488000.0],
         "bbox_latlon": [51.873, 5.589, 51.878, 5.60]
-
-
     },
     "excel_overrides": {
       "override_fenez_excel": false,
