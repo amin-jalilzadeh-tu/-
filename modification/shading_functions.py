@@ -52,6 +52,17 @@ def create_shading_scenarios(df_shading_input, building_id, num_scenarios, picki
                 rows.append(new_row)
 
     df_out = pd.DataFrame(rows)
+
+    # Ensure these two columns exist and are written first so the output matches
+    # other scenario CSVs used in the modification workflow.
+    if 'scenario_index' not in df_out.columns:
+        df_out['scenario_index'] = pd.NA
+    if 'ogc_fid' not in df_out.columns:
+        df_out['ogc_fid'] = building_id
+    ordered_cols = ['scenario_index', 'ogc_fid'] + [c for c in df_out.columns
+                                                    if c not in ['scenario_index', 'ogc_fid']]
+    df_out = df_out[ordered_cols]
+
     df_out.to_csv(scenario_csv_out, index=False)
     print(f"[INFO] Wrote scenario shading params to {scenario_csv_out}")
     return df_out
