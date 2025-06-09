@@ -500,12 +500,22 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
                 hvac_zone = os.path.join(job_output_dir, hvac_zone)
             if os.path.isfile(hvac_in):
                 df_hvac = pd.read_csv(hvac_in)
-                df_hvac["assigned_value"] = df_hvac["assigned_value"].apply(parse_hvac)
-                flatten_hvac_data(
-                    df_input=df_hvac,
-                    out_build_csv=hvac_bld,
-                    out_zone_csv=hvac_zone,
-                )
+                if "assigned_value" in df_hvac.columns:
+                    df_hvac["assigned_value"] = df_hvac["assigned_value"].apply(parse_hvac)
+                    flatten_hvac_data(
+                        df_input=df_hvac,
+                        out_build_csv=hvac_bld,
+                        out_zone_csv=hvac_zone,
+                    )
+                else:
+                    # Already structured with param_value/zone_name columns
+                    df_build = df_hvac[df_hvac.get("zone_name").isna()] if "zone_name" in df_hvac.columns else df_hvac
+                    df_zone  = df_hvac[df_hvac.get("zone_name").notna()] if "zone_name" in df_hvac.columns else pd.DataFrame()
+                    os.makedirs(os.path.dirname(hvac_bld), exist_ok=True)
+                    df_build.to_csv(hvac_bld, index=False)
+                    os.makedirs(os.path.dirname(hvac_zone), exist_ok=True)
+                    df_zone.to_csv(hvac_zone, index=False)
+                    logger.info(f"[STRUCTURING] Using pre-structured HVAC CSV -> {hvac_in}")
             else:
                 logger.warning(f"[STRUCTURING] HVAC input CSV not found => {hvac_in}")
 
@@ -523,12 +533,21 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
                 vent_zone = os.path.join(job_output_dir, vent_zone)
             if os.path.isfile(vent_in):
                 df_vent = pd.read_csv(vent_in)
-                df_vent["assigned_value"] = df_vent["assigned_value"].apply(parse_vent)
-                flatten_ventilation_data(
-                    df_input=df_vent,
-                    out_build_csv=vent_bld,
-                    out_zone_csv=vent_zone,
-                )
+                if "assigned_value" in df_vent.columns:
+                    df_vent["assigned_value"] = df_vent["assigned_value"].apply(parse_vent)
+                    flatten_ventilation_data(
+                        df_input=df_vent,
+                        out_build_csv=vent_bld,
+                        out_zone_csv=vent_zone,
+                    )
+                else:
+                    df_build = df_vent[df_vent.get("zone_name").isna()] if "zone_name" in df_vent.columns else df_vent
+                    df_zone  = df_vent[df_vent.get("zone_name").notna()] if "zone_name" in df_vent.columns else pd.DataFrame()
+                    os.makedirs(os.path.dirname(vent_bld), exist_ok=True)
+                    df_build.to_csv(vent_bld, index=False)
+                    os.makedirs(os.path.dirname(vent_zone), exist_ok=True)
+                    df_zone.to_csv(vent_zone, index=False)
+                    logger.info(f"[STRUCTURING] Using pre-structured Vent CSV -> {vent_in}")
             else:
                 logger.warning(f"[STRUCTURING] Vent input CSV not found => {vent_in}")
     else:
