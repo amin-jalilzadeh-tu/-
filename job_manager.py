@@ -23,6 +23,7 @@ import queue
 import threading
 import time
 import enum
+import traceback
 from typing import Any, Dict, Optional, Union
 
 from orchestrator import WorkflowCanceled
@@ -231,6 +232,7 @@ def _job_thread_runner(job_id: str) -> None:
         job["status"] = JobStatus.ERROR
         err_msg = f"[Job {job_id}] crashed => {e}"
         job["logs"].put(err_msg)
+        job["logs"].put(traceback.format_exc())
     finally:
         _signal_end_of_logs(job_id)
         _try_start_next_queued_job()
