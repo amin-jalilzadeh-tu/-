@@ -26,12 +26,10 @@ def parse_assigned_value(value_str):
         return ast.literal_eval(str(value_str))
     except (SyntaxError, ValueError):
         return {}
-# File: D:\Documents\E_Plus_2030_py\idf_objects\structuring\flatten_hvac.py
+    
 
-import pandas as pd
-import os
-
-def flatten_hvac_data(df_input, out_build_csv, out_zone_csv):
+    
+def flatten_ventilation_data(df_input, out_build_csv, out_zone_csv):
     """
     UPDATED: Takes a pre-flattened DataFrame and splits it into two files.
     - Rows where 'zone_name' is NaN/None are considered building-level.
@@ -44,21 +42,20 @@ def flatten_hvac_data(df_input, out_build_csv, out_zone_csv):
     :param out_zone_csv: str
         File path for zone-level CSV output.
     """
-
     # Ensure the 'zone_name' column exists, even if all values are NaN
     if 'zone_name' not in df_input.columns:
         df_input['zone_name'] = pd.NA
 
     # 1. Building-level data is where zone_name is null/NaN
     df_build = df_input[df_input['zone_name'].isnull()].copy()
-    
+
     # 2. Zone-level data is where zone_name has a value
     df_zone = df_input[df_input['zone_name'].notnull()].copy()
-
+    
     # Rename 'assigned_value' to 'param_value' for consistency with downstream scripts
     if 'assigned_value' in df_build.columns:
         df_build.rename(columns={'assigned_value': 'param_value'}, inplace=True)
-    
+
     if 'assigned_value' in df_zone.columns:
         df_zone.rename(columns={'assigned_value': 'param_value'}, inplace=True)
 
@@ -69,37 +66,38 @@ def flatten_hvac_data(df_input, out_build_csv, out_zone_csv):
     df_build = df_build.reindex(columns=build_cols)
     df_zone = df_zone.reindex(columns=zone_cols)
 
-    # Write to CSV
+
+    # Write them to CSV
     os.makedirs(os.path.dirname(out_build_csv), exist_ok=True)
     df_build.to_csv(out_build_csv, index=False)
 
     os.makedirs(os.path.dirname(out_zone_csv), exist_ok=True)
     df_zone.to_csv(out_zone_csv, index=False)
 
-    print(f"[INFO] Wrote building-level HVAC picks to {out_build_csv} ({len(df_build)} rows).")
-    print(f"[INFO] Wrote zone-level HVAC picks to {out_zone_csv} ({len(df_zone)} rows).")
+    print(f"[INFO] Wrote building-level ventilation picks to {out_build_csv} ({len(df_build)} rows).")
+    print(f"[INFO] Wrote zone-level ventilation picks to {out_zone_csv} ({len(df_zone)} rows).")
 
 
 def main():
     """
     Example CLI entry point.
     """
-    csv_in = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_hvac_params.csv"
-    csv_build_out = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_hvac_building.csv"
-    csv_zone_out  = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_hvac_zones.csv"
+    csv_in = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_ventilation.csv"
+    csv_build_out = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_vent_building.csv"
+    csv_zone_out = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_vent_zones.csv"
 
-    # Check if the input file exists
     if not os.path.exists(csv_in):
         print(f"Error: Input file not found at {csv_in}")
         return
-
+        
     df_assigned = pd.read_csv(csv_in)
 
-    flatten_hvac_data(
+    flatten_ventilation_data(
         df_input=df_assigned,
         out_build_csv=csv_build_out,
         out_zone_csv=csv_zone_out
     )
+
 
 if __name__ == "__main__":
     main()
