@@ -151,7 +151,12 @@ def parse_building_hvac_params(df_bldg):
         # The CSV from the assignment step uses 'assigned_value'
         # rather than 'param_value'.  We read that column here so
         # the function works with the raw assigned CSV.
-        val  = row.assigned_value
+        # Support both raw assigned CSVs (assigned_value column)
+        # and structured CSVs (param_value column)
+        if hasattr(row, "assigned_value"):
+            val = row.assigned_value
+        else:
+            val = row.param_value
 
         if name.endswith("_range"):
             base_name = name.replace("_range", "")
@@ -195,7 +200,10 @@ def parse_zone_hvac_params(df_zone):
         # The assigned HVAC CSV stores the picked values under
         # the column 'assigned_value'.  Use that column here so we
         # don't raise an AttributeError when parsing the raw file.
-        val   = row.assigned_value
+        if hasattr(row, "assigned_value"):
+            val = row.assigned_value
+        else:
+            val = row.param_value
 
         results.append({
             "zone_name": zname,
