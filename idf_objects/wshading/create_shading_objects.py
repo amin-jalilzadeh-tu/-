@@ -89,6 +89,13 @@ def add_shading_objects(
     if random_seed is not None:
         random.seed(random_seed)
 
+    bldg_id = None
+    if building_row is not None:
+        try:
+            bldg_id = building_row.get("ogc_fid")
+        except AttributeError:
+            bldg_id = getattr(building_row, "ogc_fid", None)
+
     if not idf:
         logger.error("IDF object is None. Cannot add shading objects.")
         return
@@ -137,7 +144,9 @@ def add_shading_objects(
                     )
                     if assigned_shading_log is not None:
                         if window_id not in assigned_shading_log:
-                            assigned_shading_log[window_id] = {}
+                            assigned_shading_log[window_id] = {"ogc_fid": bldg_id}
+                        else:
+                            assigned_shading_log[window_id].setdefault("ogc_fid", bldg_id)
                         assigned_shading_log[window_id]["shading_creation_status"] = f"Failed: No params for key {shading_type_key}"
                     continue
 
@@ -230,7 +239,9 @@ def add_shading_objects(
                     )
                     if assigned_shading_log is not None:
                         if window_id not in assigned_shading_log:
-                            assigned_shading_log[window_id] = {}
+                            assigned_shading_log[window_id] = {"ogc_fid": bldg_id}
+                        else:
+                            assigned_shading_log[window_id].setdefault("ogc_fid", bldg_id)
                         assigned_shading_log[window_id][
                             "shading_creation_status"
                         ] = "Failed: Zone Name for ShadingControl could not be determined."
@@ -312,7 +323,9 @@ def add_shading_objects(
                 # Log final success for this fenestration
                 if assigned_shading_log is not None:
                     if window_id not in assigned_shading_log:
-                        assigned_shading_log[window_id] = {}
+                        assigned_shading_log[window_id] = {"ogc_fid": bldg_id}
+                    else:
+                        assigned_shading_log[window_id].setdefault("ogc_fid", bldg_id)
                     assigned_shading_log[window_id][
                         "shading_creation_status"
                     ] = f"Linked to {shading_ctrl_name}"
@@ -330,7 +343,9 @@ def add_shading_objects(
                 )
                 if assigned_shading_log is not None:
                     if window_id not in assigned_shading_log:
-                        assigned_shading_log[window_id] = {}
+                        assigned_shading_log[window_id] = {"ogc_fid": bldg_id}
+                    else:
+                        assigned_shading_log[window_id].setdefault("ogc_fid", bldg_id)
                     assigned_shading_log[window_id][
                         "shading_creation_status"
                     ] = f"Failed: Outer processing error - {str(e_fen_processing)}"
