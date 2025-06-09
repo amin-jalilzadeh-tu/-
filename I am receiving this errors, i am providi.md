@@ -1,8 +1,69 @@
+I am receiving this errors, i am providing part of my codes, and filess. first we are going to find issues, and then what to be fixed. later we will work on fix. now work on finding isues amd what to update. 
+
+
+
+[Job f7dc2068-4f51-4b29-9884-4774ccf50745] crashed => [ERROR] No scenario CSV with numeric data found in '/usr/src/app/output/f7dc2068-4f51-4b29-9884-4774ccf50745/scenarios'.
+
+ep_app  | [2025-06-09 14:27:20,590] INFO - orchestrator - [STEP] Finished IDF creation and simulations in 336.43 seconds.
+ep_app  | [2025-06-09 14:27:20,590] INFO - orchestrator - [STEP] Starting structuring ...                                                                                         
+ep_app  | [2025-06-09 14:27:20,590] INFO - orchestrator - [INFO] Performing structuring ...                                                                                       
+ep_app  | [2025-06-09 14:27:20,692] WARNING - orchestrator - [STRUCTURING] 'assigned_value' column missing in /usr/src/app/output/f7dc2068-4f51-4b29-9884-4774ccf50745/assigned/assigned_hvac_params.csv. Skipping HVAC flatten.
+ep_app  | [2025-06-09 14:27:20,702] WARNING - orchestrator - [STRUCTURING] 'assigned_value' column missing in /usr/src/app/output/f7dc2068-4f51-4b29-9884-4774ccf50745/assigned/assigned_ventilation.csv. Skipping ventilation flatten.
+
+
+
+how csv files looks like: 
+
+ogc_fid	param_name	infiltration_base_L_s_m2_10Pa	infiltration_base_L_s_m2_10Pa_range	year_factor	year_factor_range	fan_pressure	fan_pressure_range	fan_total_efficiency	fan_total_efficiency_range	f_ctrl	f_ctrl_range	hrv_eff	hrv_eff_range	hrv_lat_eff	hrv_lat_eff_range	infiltration_schedule_name	ventilation_schedule_name	system_type	flow_exponent	strategy_letter	infiltration_rate_at_1Pa_L_s_per_m2_EFFECTIVE	ventilation_total_required_m3_s_building	total_bldg_floor_area_m2_input_attr	sum_of_individual_zone_areas_derived	final_total_area_used_for_proportions	flow_distribution_method	system_d_infiltration_reduction_factor_applied	ventilation_chosen_weekday_pattern	ventilation_chosen_weekend_pattern	infiltration_chosen_weekday_pattern	infiltration_chosen_weekend_pattern	Zone1_FrontPerimeter	Zone1_RightPerimeter	Zone1_RearPerimeter	Zone1_LeftPerimeter	Zone1_Core	Zone2_FrontPerimeter	Zone2_RightPerimeter	Zone2_RearPerimeter	Zone2_LeftPerimeter	Zone2_Core	Zone1
+4136733	building_params	1.2278853596915769	(1.1, 1.3)	1.1050021510445334	(1.1, 1.3)	0.0	(0.0, 0.0)	0.5446421476297645	(0.5, 0.7)	1.0236471214164014	(0.95, 1.05)	0.7676699487422911	(0.7, 0.8)	0.0	(0.0, 0.0)	InfilSched_Twoandahalfstory_House	VentSched_Twoandahalfstory_House	D	0.67	B	0.29008210928119516	0.035	30.0	60.0	60.0	ProportionalToIndividualZoneArea																
+4136733	schedule_details															InfilSched_Twoandahalfstory_House	VentSched_Twoandahalfstory_House											[(0, 6, 0.31738776652588324), (6, 9, 0.8843843639370541), (9, 16, 0.40595944388761407), (16, 22, 0.9218637974803604), (22, 24, 0.40107105762067247)]	[(0, 8, 0.4053071939367727), (8, 23, 0.8798256476029973), (23, 24, 0.5299768875559047)]	[(0, 24, 0.9544941480603217)]	[(0, 24, 0.9220440622040696)]											
+4136733	zones																															{'infiltration_object_name': 'Infil_resi_D_Zone1_FrontPerimeter', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s_DESIGN_TOTAL_ZONE': 0.0024764919250233677, 'infiltration_flow_m3_s_m2_DESIGN_ZONE': 0.0002900821092811951, 'infiltration_schedule_name': 'InfilSched_Twoandahalfstory_House', 'ventilation_object_name': 'Zone1_FrontPerimeter_Ideal_Loads', 'ventilation_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'ventilation_flow_m3_s_DESIGN_TOTAL_ZONE': 0.004980039248806627, 'ventilation_flow_m3_s_m2_DESIGN_ZONE': 0.0005833333333333334, 'ventilation_schedule_name': 'VentSched_Twoandahalfstory_House', 'zone_floor_area_m2_used_for_dist': 8.537210140811359, 'is_core_zone': False}	{'infiltration_object_name': 'Infil_resi_D_Zone1_RightPerimeter', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s_DESIGN_TOTAL_ZONE': 0.0018035845692471852, 'infiltration_flow_m3_s_m2_DESIGN_ZONE': 0.00029008210928119514, 'infiltration_schedule_name': 'InfilSched_Twoandahalfstory_House', 'ventilation_object_name': 'Zone1_RightPerimeter_Ideal_Loads', 'ventilation_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'ventilation_flow_m3_s_DESIGN_TOTAL_ZONE': 0.00362687309925641, 'ventilation_flow_m3_s_m2_DESIGN_ZONE': 0.0005833333333333334, 'ventilation_schedule_name': 'VentSched_Twoandahalfstory_House', 'zone_floor_area_m2_used_for_dist': 6.2174967415824165, 'is_core_zone': False}	{'infiltration_object_name': 'Infil_resi_D_Zone1_RearPerimeter', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s_DESIGN_TOTAL_ZONE': 0.0024764919250233677, 'infiltration_flow_m3_s_m2_DESIGN_ZONE': 0.0002900821092811951, 'infiltration_schedule_name': 'InfilSched_Twoandahalfstory_House', 'ventilation_object_name': 'Zone1_RearPerimeter_Ideal_Loads', 'ventilation_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'ventilation_flow_m3_s_DESIGN_TOTAL_ZONE': 0.004980039248806627, 'ventilation_flow_m3_s_m2_DESIGN_ZONE': 0.0005833333333333334, 'ventilation_schedule_name': 'VentSched_Twoandahalfstory_House', 'zone_floor_area_m2_used_for_dist': 8.537210140811359, 'is_core_zone': False}	{'infiltration_object_name': 'Infil_resi_D_Zone1_LeftPerimeter', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s_DESIGN_TOTAL_ZONE': 0.0018035845692471856, 'infiltration_flow_m3_s_m2_DESIGN_ZONE': 0.00029008210928119514, 'infiltration_schedule_name': 'InfilSched_Twoandahalfstory_House', 'ventilation_object_name': 'Zone1_LeftPerimeter_Ideal_Loads', 'ventilation_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'ventilation_flow_m3_s_DESIGN_TOTAL_ZONE': 0.0036268730992564105, 'ventilation_flow_m3_s_m2_DESIGN_ZONE': 0.0005833333333333334, 'ventilation_schedule_name': 'VentSched_Twoandahalfstory_House', 'zone_floor_area_m2_used_for_dist': 6.217496741582417, 'is_core_zone': False}	{'infiltration_object_name': 'Infil_resi_D_Zone1_Core', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s_DESIGN_TOTAL_ZONE': 0.0, 'infiltration_flow_m3_s_m2_DESIGN_ZONE': 0.0, 'infiltration_schedule_name': 'InfilSched_Twoandahalfstory_House', 'ventilation_object_name': 'Zone1_Core_Ideal_Loads', 'ventilation_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'ventilation_flow_m3_s_DESIGN_TOTAL_ZONE': 0.00028617530387392814, 'ventilation_flow_m3_s_m2_DESIGN_ZONE': 0.0005833333333333335, 'ventilation_schedule_name': 'VentSched_Twoandahalfstory_House', 'zone_floor_area_m2_used_for_dist': 0.49058623521244815, 'is_core_zone': True}	{'infiltration_object_name': 'Infil_resi_D_Zone2_FrontPerimeter', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s_DESIGN_TOTAL_ZONE': 0.0024764919250233677, 'infiltration_flow_m3_s_m2_DESIGN_ZONE': 0.0002900821092811951, 'infiltration_schedule_name': 'InfilSched_Twoandahalfstory_House', 'ventilation_object_name': 'Zone2_FrontPerimeter_Ideal_Loads', 'ventilation_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'ventilation_flow_m3_s_DESIGN_TOTAL_ZONE': 0.004980039248806627, 'ventilation_flow_m3_s_m2_DESIGN_ZONE': 0.0005833333333333334, 'ventilation_schedule_name': 'VentSched_Twoandahalfstory_House', 'zone_floor_area_m2_used_for_dist': 8.537210140811359, 'is_core_zone': False}	{'infiltration_object_name': 'Infil_resi_D_Zone2_RightPerimeter', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s_DESIGN_TOTAL_ZONE': 0.0018035845692471852, 'infiltration_flow_m3_s_m2_DESIGN_ZONE': 0.00029008210928119514, 'infiltration_schedule_name': 'InfilSched_Twoandahalfstory_House', 'ventilation_object_name': 'Zone2_RightPerimeter_Ideal_Loads', 'ventilation_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'ventilation_flow_m3_s_DESIGN_TOTAL_ZONE': 0.00362687309925641, 'ventilation_flow_m3_s_m2_DESIGN_ZONE': 0.0005833333333333334, 'ventilation_schedule_name': 'VentSched_Twoandahalfstory_House', 'zone_floor_area_m2_used_for_dist': 6.2174967415824165, 'is_core_zone': False}	{'infiltration_object_name': 'Infil_resi_D_Zone2_RearPerimeter', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s_DESIGN_TOTAL_ZONE': 0.0024764919250233677, 'infiltration_flow_m3_s_m2_DESIGN_ZONE': 0.0002900821092811951, 'infiltration_schedule_name': 'InfilSched_Twoandahalfstory_House', 'ventilation_object_name': 'Zone2_RearPerimeter_Ideal_Loads', 'ventilation_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'ventilation_flow_m3_s_DESIGN_TOTAL_ZONE': 0.004980039248806627, 'ventilation_flow_m3_s_m2_DESIGN_ZONE': 0.0005833333333333334, 'ventilation_schedule_name': 'VentSched_Twoandahalfstory_House', 'zone_floor_area_m2_used_for_dist': 8.537210140811359, 'is_core_zone': False}	{'infiltration_object_name': 'Infil_resi_D_Zone2_LeftPerimeter', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s_DESIGN_TOTAL_ZONE': 0.0018035845692471856, 'infiltration_flow_m3_s_m2_DESIGN_ZONE': 0.00029008210928119514, 'infiltration_schedule_name': 'InfilSched_Twoandahalfstory_House', 'ventilation_object_name': 'Zone2_LeftPerimeter_Ideal_Loads', 'ventilation_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'ventilation_flow_m3_s_DESIGN_TOTAL_ZONE': 0.0036268730992564105, 'ventilation_flow_m3_s_m2_DESIGN_ZONE': 0.0005833333333333334, 'ventilation_schedule_name': 'VentSched_Twoandahalfstory_House', 'zone_floor_area_m2_used_for_dist': 6.217496741582417, 'is_core_zone': False}	{'infiltration_object_name': 'Infil_resi_D_Zone2_Core', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s_DESIGN_TOTAL_ZONE': 0.0, 'infiltration_flow_m3_s_m2_DESIGN_ZONE': 0.0, 'infiltration_schedule_name': 'InfilSched_Twoandahalfstory_House', 'ventilation_object_name': 'Zone2_Core_Ideal_Loads', 'ventilation_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'ventilation_flow_m3_s_DESIGN_TOTAL_ZONE': 0.00028617530387392814, 'ventilation_flow_m3_s_m2_DESIGN_ZONE': 0.0005833333333333335, 'ventilation_schedule_name': 'VentSched_Twoandahalfstory_House', 'zone_floor_area_m2_used_for_dist': 0.49058623521244815, 'is_core_zone': True}	
+4136737	building_params	0.507710367867476	(0.5, 0.7)	0.8392448645274105	(0.7, 0.9)	0.0	(0.0, 0.0)	0.5925064509658174	(0.5, 0.7)	0.9671646764117767	(0.9, 1.0)	0.0	(0.0, 0.0)	0.0	(0.0, 0.0)	InfilSched_Meeting_Function	VentSched_Meeting_Function	A	0.67	B	0.09109713623986024	0.1160597611694132	120.0	119.99999999999997	119.99999999999997	ProportionalToIndividualZoneArea																
+4136737	schedule_details															InfilSched_Meeting_Function	VentSched_Meeting_Function											[(0, 7, 0.07929512716552944), (7, 18, 0.9453189228466212), (18, 24, 0.04982722297980512)]	[(0, 24, 0.000957855401217389)]	[(0, 7, 0.8864777677902881), (7, 18, 0.37447493616418526), (18, 24, 0.9704577266381706)]	[(0, 24, 0.9546983904291005)]											
+4136737	zones																															{'infiltration_object_name': 'Infil_non__A_Zone1_FrontPerimeter', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s_DESIGN_TOTAL_ZONE': 0.0009338428021140677, 'infiltration_flow_m3_s_m2_DESIGN_ZONE': 9.109713623986024e-05, 'infiltration_schedule_name': 'InfilSched_Meeting_Function', 'ventilation_object_name': 'Vent_non__A_Zone1_FrontPerimeter', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s_DESIGN_TOTAL_ZONE': 0.009914469420290362, 'ventilation_flow_m3_s_m2_DESIGN_ZONE': 0.0009671646764117769, 'ventilation_schedule_name': 'VentSched_Meeting_Function', 'zone_floor_area_m2_used_for_dist': 10.251066506143996, 'is_core_zone': False}	{'infiltration_object_name': 'Infil_non__A_Zone1_RightPerimeter', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s_DESIGN_TOTAL_ZONE': 0.000942443629241367, 'infiltration_flow_m3_s_m2_DESIGN_ZONE': 9.109713623986025e-05, 'infiltration_schedule_name': 'InfilSched_Meeting_Function', 'ventilation_object_name': 'Vent_non__A_Zone1_RightPerimeter', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s_DESIGN_TOTAL_ZONE': 0.010005783116074887, 'ventilation_flow_m3_s_m2_DESIGN_ZONE': 0.0009671646764117769, 'ventilation_schedule_name': 'VentSched_Meeting_Function', 'zone_floor_area_m2_used_for_dist': 10.345480309720138, 'is_core_zone': False}	{'infiltration_object_name': 'Infil_non__A_Zone1_RearPerimeter', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s_DESIGN_TOTAL_ZONE': 0.0009338428021140687, 'infiltration_flow_m3_s_m2_DESIGN_ZONE': 9.109713623986024e-05, 'infiltration_schedule_name': 'InfilSched_Meeting_Function', 'ventilation_object_name': 'Vent_non__A_Zone1_RearPerimeter', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s_DESIGN_TOTAL_ZONE': 0.009914469420290372, 'ventilation_flow_m3_s_m2_DESIGN_ZONE': 0.0009671646764117769, 'ventilation_schedule_name': 'VentSched_Meeting_Function', 'zone_floor_area_m2_used_for_dist': 10.251066506144006, 'is_core_zone': False}	{'infiltration_object_name': 'Infil_non__A_Zone1_LeftPerimeter', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s_DESIGN_TOTAL_ZONE': 0.0009424436292413653, 'infiltration_flow_m3_s_m2_DESIGN_ZONE': 9.109713623986023e-05, 'infiltration_schedule_name': 'InfilSched_Meeting_Function', 'ventilation_object_name': 'Vent_non__A_Zone1_LeftPerimeter', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s_DESIGN_TOTAL_ZONE': 0.010005783116074871, 'ventilation_flow_m3_s_m2_DESIGN_ZONE': 0.0009671646764117769, 'ventilation_schedule_name': 'VentSched_Meeting_Function', 'zone_floor_area_m2_used_for_dist': 10.345480309720122, 'is_core_zone': False}	{'infiltration_object_name': 'Infil_non__A_Zone1_Core', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s_DESIGN_TOTAL_ZONE': 0.0, 'infiltration_flow_m3_s_m2_DESIGN_ZONE': 0.0, 'infiltration_schedule_name': 'InfilSched_Meeting_Function', 'ventilation_object_name': 'Vent_non__A_Zone1_Core', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s_DESIGN_TOTAL_ZONE': 0.07621925609668272, 'ventilation_flow_m3_s_m2_DESIGN_ZONE': 0.000967164676411777, 'ventilation_schedule_name': 'VentSched_Meeting_Function', 'zone_floor_area_m2_used_for_dist': 78.80690636827171, 'is_core_zone': True}						
+4136738	building_params	0.5817071758508987	(0.5, 0.7)	0.8083944018209193	(0.7, 0.9)	0.0	(0.0, 0.0)	0.5353331288390888	(0.5, 0.7)	0.9225159520578147	(0.9, 1.0)	0.0	(0.0, 0.0)	0.0	(0.0, 0.0)	InfilSched_Meeting_Function	VentSched_Meeting_Function	A	0.67	B	0.10053741593218926	0.11070191424693776	120.0	119.99999999999997	119.99999999999997	ProportionalToIndividualZoneArea																
+4136738	schedule_details															InfilSched_Meeting_Function	VentSched_Meeting_Function											[(0, 7, 0.002909725326811108), (7, 18, 0.9116650533442864), (18, 24, 0.0008805625887066904)]	[(0, 24, 0.007834516754168191)]	[(0, 7, 0.9027426417005352), (7, 18, 0.4978985820755102), (18, 24, 0.9387020522862877)]	[(0, 24, 0.9378426571123281)]											
+4136738	zones																																									{'infiltration_object_name': 'Infil_non__A_Zone1', 'infiltration_object_type': 'ZONEINFILTRATION:DESIGNFLOWRATE', 'infiltration_flow_m3_s_DESIGN_TOTAL_ZONE': 0.012064489911862708, 'infiltration_flow_m3_s_m2_DESIGN_ZONE': 0.00010053741593218926, 'infiltration_schedule_name': 'InfilSched_Meeting_Function', 'ventilation_object_name': 'Vent_non__A_Zone1', 'ventilation_object_type': 'ZONEVENTILATION:DESIGNFLOWRATE', 'ventilation_flow_m3_s_DESIGN_TOTAL_ZONE': 0.11070191424693776, 'ventilation_flow_m3_s_m2_DESIGN_ZONE': 0.0009225159520578149, 'ventilation_schedule_name': 'VentSched_Meeting_Function', 'zone_floor_area_m2_used_for_dist': 119.99999999999997, 'is_core_zone': False}
+
+
+
+ogc_fid	param_name	heating_day_setpoint	heating_day_setpoint_range	heating_night_setpoint	heating_night_setpoint_range	cooling_day_setpoint	cooling_day_setpoint_range	cooling_night_setpoint	cooling_night_setpoint_range	max_heating_supply_air_temp	max_heating_supply_air_temp_range	min_cooling_supply_air_temp	min_cooling_supply_air_temp_range	schedule_details	HVAC_Avail_Sched	ZONE_HEATING_SETPOINTS	ZONE_COOLING_SETPOINTS	Zone1_FrontPerimeter	Zone1_RightPerimeter	Zone1_RearPerimeter	Zone1_LeftPerimeter	Zone1_Core	Zone2_FrontPerimeter	Zone2_RightPerimeter	Zone2_RearPerimeter	Zone2_LeftPerimeter	Zone2_Core	Zone1
+4136733	hvac_params	19.639426798457883	(19.0, 20.0)	15.025010755222667	(15.0, 16.0)	32.550058636738235	(32.0, 34.0)	32.446421476297644	(32.0, 34.0)	53.68235607082006	(50.0, 55.0)	13.353398974845822	(12.0, 14.0)	{'hvac_availability': {'weekday': [('07:00', 0.0), ('09:00', 1.0), ('17:00', 0.6), ('23:00', 1.0), ('24:00', 0.0)], 'saturday': [('09:00', 0.0), ('18:00', 0.5), ('24:00', 0.0)], 'sunday': [('09:00', 0.0), ('19:00', 0.5), ('24:00', 0.0)]}, 'setpoints': {'day_start': '07:00', 'day_end': '23:00'}, 'occupancy_schedule': {'weekday': 'FullOccupancy', 'weekend': 'PartialOccupancy'}}														
+4136733	schedules														{'category': 'HVAC Availability', 'schedule_type_limits': 'Fraction', 'idf_fields_generated': 19, 'active_day_types': ['For: WeekDays', 'For: Saturday', 'For: Sunday', 'For: SummerDesignDay', 'For: WinterDesignDay'], 'Weekday_blocks_input': [('07:00', 0.0), ('09:00', 1.0), ('17:00', 0.6), ('23:00', 1.0), ('24:00', 0.0)], 'Saturday_blocks_input': [('09:00', 0.0), ('18:00', 0.5), ('24:00', 0.0)], 'Sunday_blocks_input': [('09:00', 0.0), ('19:00', 0.5), ('24:00', 0.0)], 'SummerDesignDay_blocks_input': [('24:00', 1.0)], 'WinterDesignDay_blocks_input': [('24:00', 1.0)]}	{'category': 'Heating Setpoints', 'schedule_type_limits': 'Temperature', 'idf_fields_generated': 21, 'active_day_types': ['For: WeekDays', 'For: Saturday', 'For: Sunday', 'For: Holiday', 'For: SummerDesignDay', 'For: WinterDesignDay'], 'Weekday_blocks_input': [('07:00', 15.025010755222667), ('23:00', 19.639426798457883), ('24:00', 15.025010755222667)], 'Saturday_blocks_input': [('07:00', 15.025010755222667), ('23:00', 19.639426798457883), ('24:00', 15.025010755222667)], 'Sunday_blocks_input': [('07:00', 15.025010755222667), ('23:00', 19.639426798457883), ('24:00', 15.025010755222667)], 'Holiday_blocks_input': [('07:00', 15.025010755222667), ('23:00', 19.639426798457883), ('24:00', 15.025010755222667)], 'SummerDesignDay_blocks_input': [('24:00', 19.639426798457883)], 'WinterDesignDay_blocks_input': [('24:00', 19.639426798457883)]}	{'category': 'Cooling Setpoints', 'schedule_type_limits': 'Temperature', 'idf_fields_generated': 21, 'active_day_types': ['For: WeekDays', 'For: Saturday', 'For: Sunday', 'For: Holiday', 'For: SummerDesignDay', 'For: WinterDesignDay'], 'Weekday_blocks_input': [('07:00', 32.446421476297644), ('23:00', 32.550058636738235), ('24:00', 32.446421476297644)], 'Saturday_blocks_input': [('07:00', 32.446421476297644), ('23:00', 32.550058636738235), ('24:00', 32.446421476297644)], 'Sunday_blocks_input': [('07:00', 32.446421476297644), ('23:00', 32.550058636738235), ('24:00', 32.446421476297644)], 'Holiday_blocks_input': [('07:00', 32.446421476297644), ('23:00', 32.550058636738235), ('24:00', 32.446421476297644)], 'SummerDesignDay_blocks_input': [('24:00', 32.550058636738235)], 'WinterDesignDay_blocks_input': [('24:00', 32.550058636738235)]}											
+4136733	zones																	{'hvac_object_name': 'Zone1_FrontPerimeter_Ideal_Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'availability_schedule': 'HVAC_Avail_Sched', 'thermostat_name': 'Zone1_FrontPerimeter_CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1_FrontPerimeter_SETPOINTS', 'heating_setpoint_schedule': 'ZONE_HEATING_SETPOINTS', 'cooling_setpoint_schedule': 'ZONE_COOLING_SETPOINTS'}	{'hvac_object_name': 'Zone1_RightPerimeter_Ideal_Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'availability_schedule': 'HVAC_Avail_Sched', 'thermostat_name': 'Zone1_RightPerimeter_CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1_RightPerimeter_SETPOINTS', 'heating_setpoint_schedule': 'ZONE_HEATING_SETPOINTS', 'cooling_setpoint_schedule': 'ZONE_COOLING_SETPOINTS'}	{'hvac_object_name': 'Zone1_RearPerimeter_Ideal_Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'availability_schedule': 'HVAC_Avail_Sched', 'thermostat_name': 'Zone1_RearPerimeter_CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1_RearPerimeter_SETPOINTS', 'heating_setpoint_schedule': 'ZONE_HEATING_SETPOINTS', 'cooling_setpoint_schedule': 'ZONE_COOLING_SETPOINTS'}	{'hvac_object_name': 'Zone1_LeftPerimeter_Ideal_Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'availability_schedule': 'HVAC_Avail_Sched', 'thermostat_name': 'Zone1_LeftPerimeter_CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1_LeftPerimeter_SETPOINTS', 'heating_setpoint_schedule': 'ZONE_HEATING_SETPOINTS', 'cooling_setpoint_schedule': 'ZONE_COOLING_SETPOINTS'}	{'hvac_object_name': 'Zone1_Core_Ideal_Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'availability_schedule': 'HVAC_Avail_Sched', 'thermostat_name': 'Zone1_Core_CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1_Core_SETPOINTS', 'heating_setpoint_schedule': 'ZONE_HEATING_SETPOINTS', 'cooling_setpoint_schedule': 'ZONE_COOLING_SETPOINTS'}	{'hvac_object_name': 'Zone2_FrontPerimeter_Ideal_Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'availability_schedule': 'HVAC_Avail_Sched', 'thermostat_name': 'Zone2_FrontPerimeter_CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2_FrontPerimeter_SETPOINTS', 'heating_setpoint_schedule': 'ZONE_HEATING_SETPOINTS', 'cooling_setpoint_schedule': 'ZONE_COOLING_SETPOINTS'}	{'hvac_object_name': 'Zone2_RightPerimeter_Ideal_Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'availability_schedule': 'HVAC_Avail_Sched', 'thermostat_name': 'Zone2_RightPerimeter_CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2_RightPerimeter_SETPOINTS', 'heating_setpoint_schedule': 'ZONE_HEATING_SETPOINTS', 'cooling_setpoint_schedule': 'ZONE_COOLING_SETPOINTS'}	{'hvac_object_name': 'Zone2_RearPerimeter_Ideal_Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'availability_schedule': 'HVAC_Avail_Sched', 'thermostat_name': 'Zone2_RearPerimeter_CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2_RearPerimeter_SETPOINTS', 'heating_setpoint_schedule': 'ZONE_HEATING_SETPOINTS', 'cooling_setpoint_schedule': 'ZONE_COOLING_SETPOINTS'}	{'hvac_object_name': 'Zone2_LeftPerimeter_Ideal_Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'availability_schedule': 'HVAC_Avail_Sched', 'thermostat_name': 'Zone2_LeftPerimeter_CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2_LeftPerimeter_SETPOINTS', 'heating_setpoint_schedule': 'ZONE_HEATING_SETPOINTS', 'cooling_setpoint_schedule': 'ZONE_COOLING_SETPOINTS'}	{'hvac_object_name': 'Zone2_Core_Ideal_Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'availability_schedule': 'HVAC_Avail_Sched', 'thermostat_name': 'Zone2_Core_CONTROLS', 'thermostat_dualsetpoint_name': 'Zone2_Core_SETPOINTS', 'heating_setpoint_schedule': 'ZONE_HEATING_SETPOINTS', 'cooling_setpoint_schedule': 'ZONE_COOLING_SETPOINTS'}	
+4136737	hvac_params	20.0	(20.0, 20.0)	16.0	(16.0, 16.0)	24.0	(24.0, 24.0)	26.0	(26.0, 26.0)	66.71646764117767	(60.0, 70.0)	13.585902543310588	(12.0, 14.0)	{'hvac_availability': {'weekday': [('08:00', 0.0), ('12:00', 1.0), ('13:00', 0.8), ('18:00', 1.0), ('24:00', 0.0)], 'saturday': [('09:00', 0.0), ('14:00', 0.5), ('24:00', 0.0)], 'sunday': [('24:00', 0.0)]}, 'setpoints': {'day_start': '08:00', 'day_end': '18:00'}, 'occupancy_schedule': {'weekday': 'MeetingFunction_Weekday', 'weekend': 'MeetingFunction_Weekend'}}														
+4136737	schedules														{'category': 'HVAC Availability', 'schedule_type_limits': 'Fraction', 'idf_fields_generated': 17, 'active_day_types': ['For: WeekDays', 'For: Saturday', 'For: Sunday', 'For: SummerDesignDay', 'For: WinterDesignDay'], 'Weekday_blocks_input': [('08:00', 0.0), ('12:00', 1.0), ('13:00', 0.8), ('18:00', 1.0), ('24:00', 0.0)], 'Saturday_blocks_input': [('09:00', 0.0), ('14:00', 0.5), ('24:00', 0.0)], 'Sunday_blocks_input': [('24:00', 0.0)], 'SummerDesignDay_blocks_input': [('24:00', 1.0)], 'WinterDesignDay_blocks_input': [('24:00', 1.0)]}	{'category': 'Heating Setpoints', 'schedule_type_limits': 'Temperature', 'idf_fields_generated': 21, 'active_day_types': ['For: WeekDays', 'For: Saturday', 'For: Sunday', 'For: Holiday', 'For: SummerDesignDay', 'For: WinterDesignDay'], 'Weekday_blocks_input': [('08:00', 16.0), ('18:00', 20.0), ('24:00', 16.0)], 'Saturday_blocks_input': [('08:00', 16.0), ('18:00', 20.0), ('24:00', 16.0)], 'Sunday_blocks_input': [('08:00', 16.0), ('18:00', 20.0), ('24:00', 16.0)], 'Holiday_blocks_input': [('08:00', 16.0), ('18:00', 20.0), ('24:00', 16.0)], 'SummerDesignDay_blocks_input': [('24:00', 20.0)], 'WinterDesignDay_blocks_input': [('24:00', 20.0)]}	{'category': 'Cooling Setpoints', 'schedule_type_limits': 'Temperature', 'idf_fields_generated': 21, 'active_day_types': ['For: WeekDays', 'For: Saturday', 'For: Sunday', 'For: Holiday', 'For: SummerDesignDay', 'For: WinterDesignDay'], 'Weekday_blocks_input': [('08:00', 26.0), ('18:00', 24.0), ('24:00', 26.0)], 'Saturday_blocks_input': [('08:00', 26.0), ('18:00', 24.0), ('24:00', 26.0)], 'Sunday_blocks_input': [('08:00', 26.0), ('18:00', 24.0), ('24:00', 26.0)], 'Holiday_blocks_input': [('08:00', 26.0), ('18:00', 24.0), ('24:00', 26.0)], 'SummerDesignDay_blocks_input': [('24:00', 24.0)], 'WinterDesignDay_blocks_input': [('24:00', 24.0)]}											
+4136737	zones																	{'hvac_object_name': 'Zone1_FrontPerimeter_Ideal_Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'availability_schedule': 'HVAC_Avail_Sched', 'thermostat_name': 'Zone1_FrontPerimeter_CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1_FrontPerimeter_SETPOINTS', 'heating_setpoint_schedule': 'ZONE_HEATING_SETPOINTS', 'cooling_setpoint_schedule': 'ZONE_COOLING_SETPOINTS'}	{'hvac_object_name': 'Zone1_RightPerimeter_Ideal_Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'availability_schedule': 'HVAC_Avail_Sched', 'thermostat_name': 'Zone1_RightPerimeter_CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1_RightPerimeter_SETPOINTS', 'heating_setpoint_schedule': 'ZONE_HEATING_SETPOINTS', 'cooling_setpoint_schedule': 'ZONE_COOLING_SETPOINTS'}	{'hvac_object_name': 'Zone1_RearPerimeter_Ideal_Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'availability_schedule': 'HVAC_Avail_Sched', 'thermostat_name': 'Zone1_RearPerimeter_CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1_RearPerimeter_SETPOINTS', 'heating_setpoint_schedule': 'ZONE_HEATING_SETPOINTS', 'cooling_setpoint_schedule': 'ZONE_COOLING_SETPOINTS'}	{'hvac_object_name': 'Zone1_LeftPerimeter_Ideal_Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'availability_schedule': 'HVAC_Avail_Sched', 'thermostat_name': 'Zone1_LeftPerimeter_CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1_LeftPerimeter_SETPOINTS', 'heating_setpoint_schedule': 'ZONE_HEATING_SETPOINTS', 'cooling_setpoint_schedule': 'ZONE_COOLING_SETPOINTS'}	{'hvac_object_name': 'Zone1_Core_Ideal_Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'availability_schedule': 'HVAC_Avail_Sched', 'thermostat_name': 'Zone1_Core_CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1_Core_SETPOINTS', 'heating_setpoint_schedule': 'ZONE_HEATING_SETPOINTS', 'cooling_setpoint_schedule': 'ZONE_COOLING_SETPOINTS'}						
+4136738	hvac_params	20.0	(20.0, 20.0)	16.0	(16.0, 16.0)	24.0	(24.0, 24.0)	26.0	(26.0, 26.0)	62.25159520578147	(60.0, 70.0)	12.058194506536221	(12.0, 14.0)	{'hvac_availability': {'weekday': [('08:00', 0.0), ('12:00', 1.0), ('13:00', 0.8), ('18:00', 1.0), ('24:00', 0.0)], 'saturday': [('09:00', 0.0), ('14:00', 0.5), ('24:00', 0.0)], 'sunday': [('24:00', 0.0)]}, 'setpoints': {'day_start': '08:00', 'day_end': '18:00'}, 'occupancy_schedule': {'weekday': 'MeetingFunction_Weekday', 'weekend': 'MeetingFunction_Weekend'}}														
+4136738	schedules														{'category': 'HVAC Availability', 'schedule_type_limits': 'Fraction', 'idf_fields_generated': 17, 'active_day_types': ['For: WeekDays', 'For: Saturday', 'For: Sunday', 'For: SummerDesignDay', 'For: WinterDesignDay'], 'Weekday_blocks_input': [('08:00', 0.0), ('12:00', 1.0), ('13:00', 0.8), ('18:00', 1.0), ('24:00', 0.0)], 'Saturday_blocks_input': [('09:00', 0.0), ('14:00', 0.5), ('24:00', 0.0)], 'Sunday_blocks_input': [('24:00', 0.0)], 'SummerDesignDay_blocks_input': [('24:00', 1.0)], 'WinterDesignDay_blocks_input': [('24:00', 1.0)]}	{'category': 'Heating Setpoints', 'schedule_type_limits': 'Temperature', 'idf_fields_generated': 21, 'active_day_types': ['For: WeekDays', 'For: Saturday', 'For: Sunday', 'For: Holiday', 'For: SummerDesignDay', 'For: WinterDesignDay'], 'Weekday_blocks_input': [('08:00', 16.0), ('18:00', 20.0), ('24:00', 16.0)], 'Saturday_blocks_input': [('08:00', 16.0), ('18:00', 20.0), ('24:00', 16.0)], 'Sunday_blocks_input': [('08:00', 16.0), ('18:00', 20.0), ('24:00', 16.0)], 'Holiday_blocks_input': [('08:00', 16.0), ('18:00', 20.0), ('24:00', 16.0)], 'SummerDesignDay_blocks_input': [('24:00', 20.0)], 'WinterDesignDay_blocks_input': [('24:00', 20.0)]}	{'category': 'Cooling Setpoints', 'schedule_type_limits': 'Temperature', 'idf_fields_generated': 21, 'active_day_types': ['For: WeekDays', 'For: Saturday', 'For: Sunday', 'For: Holiday', 'For: SummerDesignDay', 'For: WinterDesignDay'], 'Weekday_blocks_input': [('08:00', 26.0), ('18:00', 24.0), ('24:00', 26.0)], 'Saturday_blocks_input': [('08:00', 26.0), ('18:00', 24.0), ('24:00', 26.0)], 'Sunday_blocks_input': [('08:00', 26.0), ('18:00', 24.0), ('24:00', 26.0)], 'Holiday_blocks_input': [('08:00', 26.0), ('18:00', 24.0), ('24:00', 26.0)], 'SummerDesignDay_blocks_input': [('24:00', 24.0)], 'WinterDesignDay_blocks_input': [('24:00', 24.0)]}											
+4136738	zones																											{'hvac_object_name': 'Zone1_Ideal_Loads', 'hvac_object_type': 'ZONEHVAC:IDEALLOADSAIRSYSTEM', 'availability_schedule': 'HVAC_Avail_Sched', 'thermostat_name': 'Zone1_CONTROLS', 'thermostat_dualsetpoint_name': 'Zone1_SETPOINTS', 'heating_setpoint_schedule': 'ZONE_HEATING_SETPOINTS', 'cooling_setpoint_schedule': 'ZONE_COOLING_SETPOINTS'}
+
+
+
+D:\Documents\E_Plus_2030_py\idf_creation.py
+
+D:\Documents\E_Plus_2030_py\idf_objects\HVAC\assign_hvac_values.py
+D:\Documents\E_Plus_2030_py\idf_objects\HVAC\custom_hvac.py
+
+D:\Documents\E_Plus_2030_py\idf_objects\ventilation\add_ventilation.py
+D:\Documents\E_Plus_2030_py\idf_objects\ventilation\assign_ventilation_values.py
+
+
+
+D:\Documents\E_Plus_2030_py\modification\main_modifi.py
+
+D:\Documents\E_Plus_2030_py\modification\hvac_functions.py
+D:\Documents\E_Plus_2030_py\modification\vent_functions.py
+D:\Documents\E_Plus_2030_py\modification\common_utils.py
+
+
+D:\Documents\E_Plus_2030_py\orchestrator.py
+
+
+
+
 File: D:\Documents\E_Plus_2030_py\idf_creation.py
 ============================================================
-###############################################################
-# File: idf_creation.py
-###############################################################
 """
 idf_creation.py
 
@@ -51,6 +112,8 @@ from epw.run_epw_sims import simulate_all
 # Configure logger for this module (or ensure it's configured at the application entry point)
 logger = logging.getLogger(__name__)
 if not logger.hasHandlers():
+    # BasicConfig should ideally be called only once at the application entry point.
+    # logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s - %(name)s - %(message)s')
     logger.addHandler(logging.NullHandler()) # Be a good library/module
 
 ###############################################################################
@@ -183,18 +246,22 @@ def create_idf_for_building(
     logger.debug(f"[{building_index}] Fenestration added.")
 
     # 6) Window shading (e.g., blinds)
+    # Note: user_config_shading passed here should be the specific dictionary of overrides
+    # for the 'shading_type_key_for_blinds' (e.g., "my_external_louvers").
+    # If user_config_shading is a list of rules from Excel, it needs to be processed
+    # before this call to extract the relevant overrides for the current building/shading_type_key.
     if apply_blind_shading or apply_geometric_shading:
         logger.info(f"[{building_index}] Applying window shading. Blinds: {apply_blind_shading}, Geometric: {apply_geometric_shading}")
         add_shading_objects(
             idf=idf,
             building_row=building_row,
-            shading_type_key=shading_type_key_for_blinds,
-            strategy=shading_strategy,
+            shading_type_key=shading_type_key_for_blinds, # Explicitly pass the key
+            strategy=shading_strategy, # Use specific shading strategy
             random_seed=random_seed,
-            user_config_shading=user_config_shading,
+            user_config_shading=user_config_shading, # Assumed to be pre-filtered for the key
             assigned_shading_log=assigned_shading_log,
-            create_blinds=apply_blind_shading,
-            create_geometry_shading=apply_geometric_shading
+            create_blinds=apply_blind_shading, # Explicitly pass
+            create_geometry_shading=apply_geometric_shading # Explicitly pass
         )
         logger.debug(f"[{building_index}] Window shading objects processed.")
     else:
@@ -235,7 +302,7 @@ def create_idf_for_building(
         name_suffix=f"MyDHW_{building_index}",
         user_config_dhw=user_config_dhw,
         assigned_dhw_log=assigned_dhw_log,
-        use_nta=True
+        use_nta=True # Assuming NTA is desired
     )
     logger.debug(f"[{building_index}] DHW system added.")
 
@@ -256,11 +323,11 @@ def create_idf_for_building(
         idf=idf,
         building_row=building_row,
         calibration_stage=calibration_stage,
-        strategy=strategy,
+        strategy=strategy, # Global strategy
         random_seed=random_seed,
         user_config_vent=user_config_vent,
         assigned_vent_log=assigned_vent_log,
-        infiltration_model="weather",
+        infiltration_model="weather", # Example, make configurable if needed
     )
     logger.debug(f"[{building_index}] Ventilation and infiltration added.")
 
@@ -269,7 +336,7 @@ def create_idf_for_building(
         idf=idf,
         building_row=building_row,
         calibration_stage=calibration_stage,
-        strategy=strategy,
+        strategy=strategy, # Global strategy
         random_seed=random_seed,
         assigned_setzone_log=assigned_setzone_log
     )
@@ -279,7 +346,7 @@ def create_idf_for_building(
     add_ground_temperatures(
         idf=idf,
         calibration_stage=calibration_stage,
-        strategy=strategy,
+        strategy=strategy, # Global strategy
         random_seed=random_seed,
         assigned_groundtemp_log=assigned_groundtemp_log
     )
@@ -308,6 +375,7 @@ def create_idf_for_building(
 
     # 15) Save final IDF
     os.makedirs(idf_config["output_dir"], exist_ok=True)
+    # Sanitize building_index or use ogc_fid for more stable filenames if possible
     idf_filename = f"building_{building_row.get('ogc_fid', building_index)}.idf"
     idf_filename = idf_filename.replace(" ", "_").replace(":", "_") # Basic sanitization
     out_path = os.path.join(idf_config["output_dir"], idf_filename)
@@ -317,7 +385,7 @@ def create_idf_for_building(
         logger.info(f"IDF for building_index {building_index} saved at: {out_path}")
     except Exception as e:
         logger.error(f"Failed to save IDF for building_index {building_index} at {out_path}: {e}", exc_info=True)
-        return None
+        return None # Return None if save fails
 
     return out_path
 
@@ -335,7 +403,8 @@ def create_idfs_for_all_buildings(
     user_config_dhw=None,
     res_data=None, # Fenestration base data
     nonres_data=None, # Fenestration base data
-    user_config_shading=None,
+    user_config_shading=None, # Can be a general config or list of rules
+    # Specific shading controls
     shading_type_key_for_blinds="my_external_louvers",
     apply_blind_shading=True,
     apply_geometric_shading=False,
@@ -354,51 +423,68 @@ def create_idfs_for_all_buildings(
     """
     Loops over df_buildings, calls create_idf_for_building for each.
     """
+    # Main logger for this function
     func_logger = logging.getLogger(f"{__name__}.create_idfs_for_all_buildings")
     func_logger.info(f"Starting to create IDFs for {len(df_buildings)} buildings.")
 
+    # Prepare dictionaries to store final picks for each module
+    # These are passed to create_idf_for_building and populated therein
     assigned_geom_log       = {}
     assigned_lighting_log   = {}
     assigned_equip_log      = {}
     assigned_dhw_log        = {}
     assigned_fenez_log      = {}
-    assigned_shading_log    = {}
+    assigned_shading_log    = {} # This will be populated by pick_shading_params via add_shading_objects
     assigned_hvac_log       = {}
     assigned_vent_log       = {}
-    assigned_epw_log        = {}
+    assigned_epw_log        = {} # Populated by simulate_all if EPW selection logic is there
     assigned_groundtemp_log = {}
     assigned_setzone_log    = {}
 
+
+    # B) Create an IDF for each building
     for idx, row in df_buildings.iterrows():
+        # Make a unique seed for each building if desired, or use the global one + index
         building_specific_seed = random_seed + idx 
 
-        # Possibly filter shading overrides from user_config_shading if it’s a list of rules:
-        specific_shading_overrides = {}
-        if isinstance(user_config_shading, list):
+        # Here, you might process/filter user_config_shading if it's a list of rules
+        # to get specific_user_config_for_this_building.
+        # For now, assume user_config_shading is passed as is, and if it's a list of rules,
+        # the user would need to implement the filtering logic (e.g., using shading_overrides_from_excel.py)
+        # before this loop or inside create_idf_for_building if it were designed that way.
+        # Current design: create_idf_for_building expects user_config_shading to be the specific dict.
+        
+        # If user_config_shading is a list of rules (e.g. from Excel):
+        specific_shading_overrides = {} # Default to empty if no rules apply or not using Excel rules
+        if isinstance(user_config_shading, list): # Indicates it's a list of rules
             try:
                 from idf_objects.wshading.shading_overrides_from_excel import pick_shading_params_from_rules
-                bldg_identifier = row.get("ogc_fid", idx)
+                bldg_identifier = row.get("ogc_fid", idx) # Use a consistent building identifier
                 specific_shading_overrides = pick_shading_params_from_rules(
                     building_id=bldg_identifier,
-                    shading_type_key=shading_type_key_for_blinds,
+                    shading_type_key=shading_type_key_for_blinds, # Assuming blinds use one key for now
                     all_rules=user_config_shading,
-                    fallback={}
+                    fallback={} # Important to provide a dict fallback
                 )
                 if specific_shading_overrides:
-                    func_logger.info(f"Found specific Excel shading overrides for building {bldg_identifier}: {specific_shading_overrides}")
+                    func_logger.info(f"Found specific Excel shading overrides for building {bldg_identifier}, key {shading_type_key_for_blinds}: {specific_shading_overrides}")
+                else:
+                    func_logger.debug(f"No specific Excel shading overrides found for building {bldg_identifier}, key {shading_type_key_for_blinds}. Using defaults or general user_config if any.")
             except ImportError:
-                func_logger.warning("shading_overrides_from_excel.py not found. Skipping Excel-based shading overrides.")
+                func_logger.warning("shading_overrides_from_excel.py not found or pick_shading_params_from_rules failed. Cannot apply Excel-based shading overrides.")
             except Exception as e_excel_override:
                 func_logger.error(f"Error applying Excel shading overrides for building {row.get('ogc_fid', idx)}: {e_excel_override}", exc_info=True)
-        elif isinstance(user_config_shading, dict):
+        elif isinstance(user_config_shading, dict): # Assumed to be already filtered or general overrides for the key
             specific_shading_overrides = user_config_shading
+            func_logger.debug(f"Using provided dict user_config_shading for building {row.get('ogc_fid', idx)}: {specific_shading_overrides}")
+
 
         idf_path = create_idf_for_building(
             building_row=row,
             building_index=idx,
             scenario=scenario,
             calibration_stage=calibration_stage,
-            strategy=strategy,
+            strategy=strategy, # Global strategy for most modules
             random_seed=building_specific_seed,
             # geometry
             user_config_geom=user_config_geom,
@@ -416,13 +502,13 @@ def create_idfs_for_all_buildings(
             res_data=res_data,
             nonres_data=nonres_data,
             assigned_fenez_log=assigned_fenez_log,
-            # Window shading
+            # Window shading - passing explicit controls and filtered config
             shading_type_key_for_blinds=shading_type_key_for_blinds,
-            user_config_shading=specific_shading_overrides,
+            user_config_shading=specific_shading_overrides, # Pass the (potentially filtered) specific overrides
             assigned_shading_log=assigned_shading_log,
             apply_blind_shading=apply_blind_shading,
             apply_geometric_shading=apply_geometric_shading,
-            shading_strategy=shading_strategy,
+            shading_strategy=shading_strategy, # Specific strategy for shading
             # HVAC
             user_config_hvac=user_config_hvac,
             assigned_hvac_log=assigned_hvac_log,
@@ -442,6 +528,8 @@ def create_idfs_for_all_buildings(
             df_buildings.loc[idx, "idf_name"] = "ERROR_CREATING_IDF"
             func_logger.error(f"IDF creation failed for building index {idx}. See previous errors.")
 
+
+    # C) If we’re told to run simulations
     if run_simulations:
         func_logger.info("Proceeding to run simulations for generated IDFs.")
         if simulate_config is None:
@@ -454,22 +542,24 @@ def create_idfs_for_all_buildings(
         iddfile       = idf_config["iddfile"]
 
         simulate_all(
-            df_buildings=df_buildings[df_buildings["idf_name"] != "ERROR_CREATING_IDF"],
+            df_buildings=df_buildings[df_buildings["idf_name"] != "ERROR_CREATING_IDF"], # Only simulate valid IDFs
             idf_directory=idf_directory,
             iddfile=iddfile,
             base_output_dir=sim_output_dir,
             user_config_epw=user_config_epw,
-            assigned_epw_log=assigned_epw_log,
+            assigned_epw_log=assigned_epw_log, # For logging EPW choices
             num_workers=simulate_config.get("num_workers", 4),
+            # ep_force_overwrite=simulate_config.get("ep_force_overwrite", False) # If you add this to simulate_all
         )
     else:
         func_logger.info("Skipping simulations as per configuration.")
 
+    # D) Post-processing
     if post_process:
         func_logger.info("Proceeding to post-process simulation results and write logs.")
 
         default_post_process_config = {
-            "base_output_dir": "output/Sim_Results",
+            "base_output_dir": "output/Sim_Results", # Default, will be overridden if logs_base_dir
             "outputs": [{
                 "convert_to_daily": False, "convert_to_monthly": False,
                 "aggregator": "none", "output_csv": "output/results/merged_as_is.csv"
@@ -483,7 +573,7 @@ def create_idfs_for_all_buildings(
 
         for proc_item in multiple_outputs:
             out_csv_path = proc_item.get("output_csv", "output/results/merged_default.csv")
-            if logs_base_dir and "output/" in out_csv_path:
+            if logs_base_dir and "output/" in out_csv_path: # Relocate if default path and logs_base_dir is set
                 rel_filename = out_csv_path.split("output/", 1)[-1] 
                 out_csv_path = os.path.join(logs_base_dir, rel_filename)
             
@@ -498,20 +588,18 @@ def create_idfs_for_all_buildings(
             )
             func_logger.info(f"Merged results saved to: {out_csv_path}")
 
+        # Write CSV logs for assigned parameters
         _write_geometry_csv(assigned_geom_log, logs_base_dir)
         _write_lighting_csv(assigned_lighting_log, logs_base_dir)
         _write_equipment_csv(assigned_equip_log, logs_base_dir)
         _write_fenestration_csv(assigned_fenez_log, logs_base_dir)
         _write_dhw_csv(assigned_dhw_log, logs_base_dir)
-        # <--- REPLACED: use new specialized _write_hvac_csv(...) --->
         _write_hvac_csv(assigned_hvac_log, logs_base_dir)
-        # <--- REPLACED: use new specialized _write_vent_csv(...) --->
         _write_vent_csv(assigned_vent_log, logs_base_dir)
-
-        _write_shading_csv(assigned_shading_log, logs_base_dir)
-        _write_groundtemp_csv(assigned_groundtemp_log, logs_base_dir)
-        _write_setzone_csv(assigned_setzone_log, logs_base_dir)
-        _write_epw_csv(assigned_epw_log, logs_base_dir)
+        _write_shading_csv(assigned_shading_log, logs_base_dir) # Updated to use new key
+        _write_groundtemp_csv(assigned_groundtemp_log, logs_base_dir) # Added example
+        _write_setzone_csv(assigned_setzone_log, logs_base_dir) # Added example
+        _write_epw_csv(assigned_epw_log, logs_base_dir) # Added example for EPW choices
 
         func_logger.info("Finished post-processing and writing all assigned parameter logs.")
     else:
@@ -524,12 +612,15 @@ def create_idfs_for_all_buildings(
 # Internal Helper Functions to Write Assigned Logs
 ###############################################################################
 def _make_assigned_path(filename, logs_base_dir):
+    """Helper to build the path for assigned_*.csv, given logs_base_dir."""
     assigned_dir = os.path.join(logs_base_dir, "assigned") if logs_base_dir else "output/assigned"
     os.makedirs(assigned_dir, exist_ok=True)
     return os.path.join(assigned_dir, filename)
 
+# --- CSV Writing Functions (condensed for brevity, ensure all fields are covered as needed) ---
 
 def _write_generic_log_csv(log_dict, filename_base, id_column_name, logs_base_dir):
+    """Generic function to write a log dictionary to CSV."""
     rows = []
     if not log_dict:
         logger.debug(f"Log dictionary for {filename_base} is empty. Skipping CSV write.")
@@ -538,19 +629,21 @@ def _write_generic_log_csv(log_dict, filename_base, id_column_name, logs_base_di
         if isinstance(params, dict):
             for param_name, param_val in params.items():
                 row_data = {id_column_name: item_id, "param_name": param_name}
-                if isinstance(param_val, dict):
+                if isinstance(param_val, dict): # Handle nested dicts like in lighting/equipment
                     row_data.update(param_val)
                 else:
                     row_data["assigned_value"] = param_val
                 rows.append(row_data)
-        else:
-            rows.append({id_column_name: item_id, "param_name": "unknown", "assigned_value": str(params)})
+        else: # Fallback for simpler log structures
+             rows.append({id_column_name: item_id, "param_name": "unknown", "assigned_value": str(params)})
+
 
     if not rows:
         logger.debug(f"No rows generated for {filename_base} CSV. Skipping write.")
         return
     
     df = pd.DataFrame(rows)
+    # Attempt to reorder columns for consistency if common ones exist
     common_cols = [id_column_name, "object_name", "param_name", "assigned_value", "min_val", "max_val", "shading_type_key_used", "strategy_used"]
     ordered_cols = [col for col in common_cols if col in df.columns]
     remaining_cols = [col for col in df.columns if col not in ordered_cols]
@@ -568,19 +661,19 @@ def _write_geometry_csv(assigned_geom_log, logs_base_dir):
     _write_generic_log_csv(assigned_geom_log, "geometry", "ogc_fid", logs_base_dir)
 
 def _write_lighting_csv(assigned_lighting_log, logs_base_dir):
+    # Lighting log has a specific nested structure: log[bldg_id][param_name_LPD_or_sched] = {assigned_value, min_val, max_val, object_name}
     rows = []
     for bldg_id, param_dict in assigned_lighting_log.items():
-        for param_key, details in param_dict.items():
-            rows.append({
-               "ogc_fid": bldg_id,
-               "object_name": details.get("object_name", param_key),
-               "param_name": param_key,
-               "assigned_value": details.get("assigned_value"),
-               "min_val": details.get("min_val"),
-               "max_val": details.get("max_val")
+        for param_key, details in param_dict.items(): # param_key is like 'LPD_Zone1' or 'Schedule_Zone1'
+             rows.append({
+                "ogc_fid": bldg_id,
+                "object_name": details.get("object_name", param_key), # Use param_key as fallback object_name
+                "param_name": param_key, # Or derive a more generic param_name if needed
+                "assigned_value": details.get("assigned_value"),
+                "min_val": details.get("min_val"),
+                "max_val": details.get("max_val")
             })
-    if not rows:
-        return
+    if not rows: return
     df = pd.DataFrame(rows)
     out_path = _make_assigned_path("assigned_lighting.csv", logs_base_dir)
     df.to_csv(out_path, index=False)
@@ -588,9 +681,10 @@ def _write_lighting_csv(assigned_lighting_log, logs_base_dir):
 
 
 def _write_equipment_csv(assigned_equip_log, logs_base_dir):
+    # Equipment log structure: log[bldg_id]["assigned"][param_name_EPD_or_sched] = {assigned_value, min_val, max_val, object_name}
     rows = []
     for bldg_id, outer_dict in assigned_equip_log.items():
-        param_dict = outer_dict.get("assigned", outer_dict)
+        param_dict = outer_dict.get("assigned", outer_dict) # Handle potential nesting
         for param_key, details in param_dict.items():
             rows.append({
                 "ogc_fid": bldg_id,
@@ -600,13 +694,11 @@ def _write_equipment_csv(assigned_equip_log, logs_base_dir):
                 "min_val": details.get("min_val"),
                 "max_val": details.get("max_val")
             })
-    if not rows:
-        return
+    if not rows: return
     df = pd.DataFrame(rows)
     out_path = _make_assigned_path("assigned_equipment.csv", logs_base_dir)
     df.to_csv(out_path, index=False)
     logger.info(f"Equipment log written to {out_path}")
-
 
 def _write_fenestration_csv(assigned_fenez_log, logs_base_dir):
     _write_generic_log_csv(assigned_fenez_log, "fenez_params", "ogc_fid", logs_base_dir)
@@ -614,110 +706,17 @@ def _write_fenestration_csv(assigned_fenez_log, logs_base_dir):
 def _write_dhw_csv(assigned_dhw_log, logs_base_dir):
     _write_generic_log_csv(assigned_dhw_log, "dhw_params", "ogc_fid", logs_base_dir)
 
-
-###############################################################################
-# UPDATED: Specialized code to ensure HVAC CSV has "assigned_value" column
-###############################################################################
 def _write_hvac_csv(assigned_hvac_log, logs_base_dir):
-    """
-    Specialized function to flatten building-level vs. zone-level HVAC data
-    into rows each containing an 'assigned_value'.
-    """
-    rows = []
-    if not assigned_hvac_log:
-        logger.debug("HVAC log is empty. Skipping CSV.")
-        return
+    _write_generic_log_csv(assigned_hvac_log, "hvac_params", "ogc_fid", logs_base_dir)
 
-    for bldg_id, hvac_data in assigned_hvac_log.items():
-        # 1) building-level HVAC parameters
-        hvac_params = hvac_data.get("hvac_params", {})
-        for param_name, param_val in hvac_params.items():
-            rows.append({
-                "ogc_fid": bldg_id,
-                "zone_name": None,
-                "param_name": param_name,
-                "assigned_value": param_val
-            })
-
-        # 2) zone-level HVAC parameters
-        if "zones" in hvac_data:
-            for zone_name, zone_info in hvac_data["zones"].items():
-                for param_name, param_val in zone_info.items():
-                    rows.append({
-                        "ogc_fid": bldg_id,
-                        "zone_name": zone_name,
-                        "param_name": param_name,
-                        "assigned_value": param_val
-                    })
-
-    if not rows:
-        logger.debug("No rows generated for assigned_hvac_params.csv. Skipping write.")
-        return
-
-    df = pd.DataFrame(rows)
-    out_path = _make_assigned_path("assigned_hvac_params.csv", logs_base_dir)
-    df.to_csv(out_path, index=False)
-    logger.info(f"HVAC log written to {out_path}")
-
-
-###############################################################################
-# UPDATED: Specialized code to ensure Vent CSV has "assigned_value" column
-###############################################################################
 def _write_vent_csv(assigned_vent_log, logs_base_dir):
-    """
-    Specialized function to flatten building-level vs. zone-level Vent data
-    into rows each containing an 'assigned_value'.
-    """
-    rows = []
-    if not assigned_vent_log:
-        logger.debug("Ventilation log is empty. Skipping CSV.")
-        return
-
-    for bldg_id, vent_data in assigned_vent_log.items():
-        # 1) building-level ventilation parameters
-        bld_params = vent_data.get("building_params", {})
-        for param_name, param_val in bld_params.items():
-            rows.append({
-                "ogc_fid": bldg_id,
-                "zone_name": None,
-                "param_name": param_name,
-                "assigned_value": param_val
-            })
-
-        # 2) schedule_details
-        sched_details = vent_data.get("schedule_details", {})
-        for param_name, param_val in sched_details.items():
-            rows.append({
-                "ogc_fid": bldg_id,
-                "zone_name": None,
-                "param_name": param_name,
-                "assigned_value": param_val
-            })
-
-        # 3) zone-level ventilation parameters
-        zones_dict = vent_data.get("zones", {})
-        for zone_name, zinfo in zones_dict.items():
-            for param_name, param_val in zinfo.items():
-                rows.append({
-                    "ogc_fid": bldg_id,
-                    "zone_name": zone_name,
-                    "param_name": param_name,
-                    "assigned_value": param_val
-                })
-
-    if not rows:
-        logger.debug("No rows generated for assigned_ventilation.csv. Skipping write.")
-        return
-
-    df = pd.DataFrame(rows)
-    out_path = _make_assigned_path("assigned_ventilation.csv", logs_base_dir)
-    df.to_csv(out_path, index=False)
-    logger.info(f"Ventilation log written to {out_path}")
-
+    _write_generic_log_csv(assigned_vent_log, "ventilation", "ogc_fid", logs_base_dir)
 
 def _write_shading_csv(assigned_shading_log, logs_base_dir):
+    """Write ``assigned_shading_params.csv`` from ``assigned_shading_log``."""
     rows = []
     for window_id, data_for_window in assigned_shading_log.items():
+        # The actual parameters are now in "shading_params_picked"
         shading_params = data_for_window.get("shading_params_picked", {})
         status = data_for_window.get("shading_creation_status", "")
         type_key = data_for_window.get("shading_type_key_used", "")
@@ -725,9 +724,10 @@ def _write_shading_csv(assigned_shading_log, logs_base_dir):
         control_name = data_for_window.get("shading_control_name_assigned", "")
         blind_mat_name = data_for_window.get("blind_material_name_used", "")
 
-        if not shading_params and not status:
+        if not shading_params and not status : # If completely empty for this window_id, skip
             continue
 
+        # Base row info for this window
         base_row_info = {
             "window_id": window_id,
             "shading_type_key": type_key,
@@ -741,9 +741,9 @@ def _write_shading_csv(assigned_shading_log, logs_base_dir):
             for param_name, param_val in shading_params.items():
                 row = base_row_info.copy()
                 row["param_name"] = param_name
-                row["assigned_value"] = str(param_val)
+                row["assigned_value"] = str(param_val) # Ensure complex objects are stringified
                 rows.append(row)
-        else:
+        else: # Still log status if params are missing
             row = base_row_info.copy()
             row["param_name"] = "N/A"
             row["assigned_value"] = "N/A (No params picked or error)"
@@ -758,7 +758,6 @@ def _write_shading_csv(assigned_shading_log, logs_base_dir):
     df.to_csv(out_path, index=False)
     logger.info(f"Shading parameters log written to {out_path}")
 
-
 def _write_groundtemp_csv(assigned_groundtemp_log, logs_base_dir):
     _write_generic_log_csv(assigned_groundtemp_log, "ground_temperatures", "building_id_or_global", logs_base_dir)
 
@@ -768,6 +767,1425 @@ def _write_setzone_csv(assigned_setzone_log, logs_base_dir):
 def _write_epw_csv(assigned_epw_log, logs_base_dir):
     _write_generic_log_csv(assigned_epw_log, "epw_assignments", "ogc_fid", logs_base_dir)
 
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_objects\HVAC\assign_hvac_values.py
+============================================================
+# File: HVAC/assign_hvac_values.py
+
+import random
+from .hvac_lookup import hvac_lookup
+
+def find_hvac_overrides(
+    building_id,
+    building_function,
+    residential_type,
+    non_residential_type,
+    age_range,
+    scenario,
+    calibration_stage,
+    user_config
+):
+    """
+    Returns a list of user_config rows that match the specified building criteria.
+    Each row might contain override data for setpoints or even schedule definitions.
+    For example, a row might say:
+      {
+        "building_id": 123,
+        "param_name": "heating_day_setpoint",
+        "fixed_value": 20.5
+      }
+    or:
+      {
+        "building_id": 123,
+        "param_name": "hvac_availability_weekday",
+        "override_blocks": [
+          ("06:00",1.0),
+          ("22:00",0.3),
+          ("24:00",0.0)
+        ]
+      }
+    """
+    matches = []
+    for row in user_config or []:
+        if "building_id" in row and row["building_id"] != building_id:
+            continue
+        if "building_function" in row and row["building_function"] != building_function:
+            continue
+
+        if "residential_type" in row and row["residential_type"] != residential_type:
+            continue
+        if "non_residential_type" in row and row["non_residential_type"] != non_residential_type:
+            continue
+
+        if "age_range" in row and row["age_range"] != age_range:
+            continue
+        if "scenario" in row and row["scenario"] != scenario:
+            continue
+        if "calibration_stage" in row and row["calibration_stage"] != calibration_stage:
+            continue
+
+        matches.append(row)
+    return matches
+
+
+def pick_val_with_range(rng_tuple, strategy="A", log_dict=None, param_name=None):
+    """
+    rng_tuple = (min_val, max_val).
+    strategy  = "A" => midpoint, 
+                "B" => random uniform in [min,max],
+                else => pick min_val.
+
+    If log_dict and param_name are given, store both the chosen value and the
+    (min_val, max_val) range in log_dict for reference.
+    """
+    min_v, max_v = rng_tuple
+
+    if strategy == "A":  # midpoint
+        chosen = (min_v + max_v) / 2.0
+    elif strategy == "B":
+        chosen = random.uniform(min_v, max_v)
+    else:
+        chosen = min_v  # default => pick min
+
+    if log_dict is not None and param_name is not None:
+        log_dict[f"{param_name}_range"] = (min_v, max_v)
+        log_dict[param_name] = chosen
+
+    return chosen
+
+
+def override_numeric_range(current_range, row):
+    """
+    If row has a 'fixed_value' => returns (v, v).
+    If row has 'min_val' and 'max_val' => returns (min_val, max_val).
+    Otherwise returns current_range unchanged.
+    """
+    if "fixed_value" in row and row["fixed_value"] is not None:
+        v = row["fixed_value"]
+        return (v, v)
+    if "min_val" in row and "max_val" in row and row["min_val"] is not None and row["max_val"] is not None:
+        return (row["min_val"], row["max_val"])
+    return current_range
+
+
+def override_schedule_details(schedule_details, row):
+    """
+    If row has param_name like "hvac_availability_weekday" or "occupancy_weekend", etc.,
+    and 'override_blocks' = a list of (time, value),
+    we replace the default schedule details with user-provided blocks.
+
+    For example:
+      row = {
+        "param_name": "hvac_availability_weekday",
+        "override_blocks": [
+           ("06:00",1.0), ("22:00",0.2), ("24:00",0.0)
+        ]
+      }
+    We'll do:
+      schedule_details["hvac_availability"]["weekday"] = that new list
+    """
+
+    pname = row.get("param_name", "").lower()
+    override_blocks = row.get("override_blocks")
+    if not override_blocks:
+        return  # nothing to do
+
+    # Example approach:
+    if pname == "hvac_availability_weekday" and "hvac_availability" in schedule_details:
+        schedule_details["hvac_availability"]["weekday"] = override_blocks
+    elif pname == "hvac_availability_weekend" and "hvac_availability" in schedule_details:
+        schedule_details["hvac_availability"]["weekend"] = override_blocks
+
+    elif pname == "occupancy_weekday" and "occupancy" in schedule_details:
+        schedule_details["occupancy"]["weekday"] = override_blocks
+    elif pname == "occupancy_weekend" and "occupancy" in schedule_details:
+        schedule_details["occupancy"]["weekend"] = override_blocks
+
+    elif pname == "setpoints_weekday" and "setpoints" in schedule_details:
+        schedule_details["setpoints"]["weekday"] = override_blocks
+    elif pname == "setpoints_weekend" and "setpoints" in schedule_details:
+        schedule_details["setpoints"]["weekend"] = override_blocks
+
+    # etc. Expand for infiltration, ventilation, or other schedule types
+    # if row["param_name"] = "infiltration_weekday" => ...
+    return
+
+
+def assign_hvac_ideal_parameters(
+    building_id=None,
+    building_function=None,
+    residential_type=None,
+    non_residential_type=None,
+    age_range=None,
+    scenario=None,
+    calibration_stage="pre_calibration",
+    strategy="A",
+    random_seed=None,
+    user_config_hvac=None,
+    assigned_hvac_log=None
+):
+    """
+    1) Look up default parameter ranges + schedule_details from hvac_lookup
+       using (calibration_stage, scenario, building_function, subtype, age_range).
+    2) Find user_config rows that override numeric setpoints or schedule blocks.
+    3) Apply those overrides.
+    4) Pick final numeric setpoints with pick_val_with_range(...).
+    5) Build a dictionary "final_hvac_params" including:
+       - heating_day_setpoint, cooling_day_setpoint, etc.
+       - schedule_details (with possibly overridden time blocks).
+    6) Optionally store it in assigned_hvac_log[bldg_id]["hvac_params"].
+    7) Return final_hvac_params.
+    """
+
+    # For reproducibility if desired
+    if random_seed is not None:
+        random.seed(random_seed)
+
+    # 1) Lookup the base data in hvac_lookup
+    if calibration_stage not in hvac_lookup:
+        calibration_stage = "pre_calibration"
+    stage_block = hvac_lookup[calibration_stage]
+
+    if scenario not in stage_block:
+        scenario = next(iter(stage_block.keys()))
+    scenario_block = stage_block[scenario]
+
+    if building_function not in scenario_block:
+        building_function = next(iter(scenario_block.keys()))
+    bf_block = scenario_block[building_function]
+
+    # Decide subtype based on function
+    if building_function.lower() == "residential":
+        subtype = residential_type or next(iter(bf_block.keys()))
+    else:
+        subtype = non_residential_type or next(iter(bf_block.keys()))
+
+    if subtype not in bf_block:
+        subtype = next(iter(bf_block.keys()))
+    sub_block = bf_block[subtype]
+
+    if age_range not in sub_block:
+        age_range = next(iter(sub_block.keys()))
+    final_block = sub_block[age_range]
+
+    # Extract base setpoint ranges
+    heat_day_rng     = final_block.get("heating_day_setpoint_range", (20.0, 20.0))
+    heat_night_rng   = final_block.get("heating_night_setpoint_range", (16.0, 16.0))
+    cool_day_rng     = final_block.get("cooling_day_setpoint_range", (25.0, 25.0))
+    cool_night_rng   = final_block.get("cooling_night_setpoint_range", (27.0, 27.0))
+    max_heat_air_rng = final_block.get("max_heating_supply_air_temp_range", (50.0, 50.0))
+    min_cool_air_rng = final_block.get("min_cooling_supply_air_temp_range", (13.0, 13.0))
+
+    # Extract default schedule_details (which might contain multi-block definitions)
+    schedule_details = final_block.get("schedule_details", {})
+
+    # 2) Gather user_config overrides
+    matches = find_hvac_overrides(
+        building_id or 0,
+        building_function or "",
+        residential_type or "",
+        non_residential_type or "",
+        age_range or "",
+        scenario or "",
+        calibration_stage,
+        user_config_hvac
+    )
+
+    # We'll store intermediate picks in local_log
+    local_log = {}
+
+    # 3) Apply overrides
+    for row in matches:
+        pname = row.get("param_name", "")
+
+        # (A) Numeric setpoint overrides
+        if pname == "heating_day_setpoint":
+            heat_day_rng = override_numeric_range(heat_day_rng, row)
+        elif pname == "heating_night_setpoint":
+            heat_night_rng = override_numeric_range(heat_night_rng, row)
+        elif pname == "cooling_day_setpoint":
+            cool_day_rng = override_numeric_range(cool_day_rng, row)
+        elif pname == "cooling_night_setpoint":
+            cool_night_rng = override_numeric_range(cool_night_rng, row)
+        elif pname == "max_heating_supply_air_temp":
+            max_heat_air_rng = override_numeric_range(max_heat_air_rng, row)
+        elif pname == "min_cooling_supply_air_temp":
+            min_cool_air_rng = override_numeric_range(min_cool_air_rng, row)
+
+        # (B) Schedule block overrides
+        elif "override_blocks" in row:
+            # This means we might override hvac_availability "weekday" or "weekend" blocks, etc.
+            override_schedule_details(schedule_details, row)
+
+        # else: skip if we don't recognize param_name
+
+    # 4) Pick final numeric setpoints
+    heating_day_setpoint = pick_val_with_range(
+        heat_day_rng, strategy, local_log, param_name="heating_day_setpoint"
+    )
+    heating_night_setpoint = pick_val_with_range(
+        heat_night_rng, strategy, local_log, param_name="heating_night_setpoint"
+    )
+    cooling_day_setpoint = pick_val_with_range(
+        cool_day_rng, strategy, local_log, param_name="cooling_day_setpoint"
+    )
+    cooling_night_setpoint = pick_val_with_range(
+        cool_night_rng, strategy, local_log, param_name="cooling_night_setpoint"
+    )
+    max_heating_supply_air_temp = pick_val_with_range(
+        max_heat_air_rng, strategy, local_log, param_name="max_heating_supply_air_temp"
+    )
+    min_cooling_supply_air_temp = pick_val_with_range(
+        min_cool_air_rng, strategy, local_log, param_name="min_cooling_supply_air_temp"
+    )
+
+    # 5) Build final dictionary
+    final_hvac_params = {
+        "heating_day_setpoint": heating_day_setpoint,
+        "heating_day_setpoint_range": local_log["heating_day_setpoint_range"],
+
+        "heating_night_setpoint": heating_night_setpoint,
+        "heating_night_setpoint_range": local_log["heating_night_setpoint_range"],
+
+        "cooling_day_setpoint": cooling_day_setpoint,
+        "cooling_day_setpoint_range": local_log["cooling_day_setpoint_range"],
+
+        "cooling_night_setpoint": cooling_night_setpoint,
+        "cooling_night_setpoint_range": local_log["cooling_night_setpoint_range"],
+
+        "max_heating_supply_air_temp": max_heating_supply_air_temp,
+        "max_heating_supply_air_temp_range": local_log["max_heating_supply_air_temp_range"],
+
+        "min_cooling_supply_air_temp": min_cooling_supply_air_temp,
+        "min_cooling_supply_air_temp_range": local_log["min_cooling_supply_air_temp_range"],
+
+        "schedule_details": schedule_details
+    }
+
+    # 6) Optionally store in assigned_hvac_log
+    if assigned_hvac_log is not None and building_id is not None:
+        if building_id not in assigned_hvac_log:
+            assigned_hvac_log[building_id] = {}
+        assigned_hvac_log[building_id]["hvac_params"] = final_hvac_params
+
+    # 7) Return
+    return final_hvac_params
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_objects\HVAC\custom_hvac.py
+============================================================
+# File: idf_objects/HVAC/custom_hvac.py
+
+from typing import Dict, Optional, Any, List
+
+# Assuming these modules are in the same directory or accessible via path
+from .assign_hvac_values import assign_hvac_ideal_parameters
+from .schedule_creation import create_schedules_for_building
+
+def add_HVAC_Ideal_to_all_zones(
+    idf, # The IDF model object (e.g., from eppy)
+    building_row: Optional[Dict[str, Any]] = None,
+    calibration_stage: str = "pre_calibration",
+    strategy: str = "A",
+    random_seed: Optional[int] = None,
+    user_config_hvac: Optional[List[Dict[str, Any]]] = None,
+    assigned_hvac_log: Optional[Dict] = None
+):
+    """
+    Adds an Ideal Loads Air System to every Zone in the IDF model, along with
+    necessary schedules & setpoints derived from hvac_lookup data and user overrides.
+
+    Args:
+        idf: The IDF model object.
+        building_row: A dictionary containing metadata about the building
+                      (e.g., ogc_fid, building_function, age_range).
+        calibration_stage: Stage identifier (e.g., "pre_calibration", "calibrated").
+        strategy: Strategy for picking values from ranges ('A'=midpoint, 'B'=random).
+        random_seed: Optional seed for reproducibility if strategy 'B' is used.
+        user_config_hvac: Optional list of override dictionaries for HVAC parameters.
+        assigned_hvac_log: Optional dictionary to store assigned parameters and logs.
+
+    Modifies the `idf` object in place and optionally updates `assigned_hvac_log`.
+    """
+
+    # --- Basic Setup & Input Handling ---
+    if building_row is None:
+        building_row = {} # Use empty dict to avoid errors on .get()
+        print("[Custom HVAC Warning] add_HVAC_Ideal_to_all_zones called without building_row metadata.")
+
+    bldg_id = building_row.get("ogc_fid", 0) # Default to 0 if no ID provided
+    bldg_func = building_row.get("building_function", "residential") # Default func
+    res_type = building_row.get("residential_type") # Can be None if not residential
+    nonres_type = building_row.get("non_residential_type") # Can be None if residential
+    age_range = building_row.get("age_range", "unknown") # Default age
+    scenario = building_row.get("scenario", "default_scenario") # Default scenario
+
+    print(f"[Custom HVAC Info] Setting up Ideal Loads for Building ID: {bldg_id}, Function: {bldg_func}, Age: {age_range}")
+
+    # --- 1) Get HVAC Parameters & Schedule Definitions ---
+    try:
+        hvac_params = assign_hvac_ideal_parameters(
+            building_id=bldg_id,
+            building_function=bldg_func,
+            residential_type=res_type,
+            non_residential_type=nonres_type,
+            age_range=age_range,
+            scenario=scenario,
+            calibration_stage=calibration_stage,
+            strategy=strategy,
+            random_seed=random_seed,
+            user_config_hvac=user_config_hvac,
+            assigned_hvac_log=assigned_hvac_log # Pass log dict through
+        )
+    except Exception as e:
+        print(f"[Custom HVAC Error] Failed to assign HVAC parameters for building {bldg_id}: {e}")
+        return # Cannot proceed without parameters
+
+    if not hvac_params or not isinstance(hvac_params, dict):
+         print(f"[Custom HVAC Error] assign_hvac_ideal_parameters returned invalid data for building {bldg_id}. Aborting HVAC setup.")
+         return
+
+    # --- 2) Create Schedules in IDF ---
+    schedule_details = hvac_params.get("schedule_details")
+    if schedule_details and isinstance(schedule_details, dict):
+        try:
+            create_schedules_for_building(
+                idf,
+                schedule_details=schedule_details,
+                building_id=bldg_id,
+                assigned_hvac_log=assigned_hvac_log # Pass log dict through
+            )
+        except Exception as e:
+            print(f"[Custom HVAC Error] Failed during schedule creation for building {bldg_id}: {e}")
+            # Decide whether to proceed without custom schedules or abort
+            # return
+    else:
+        print(f"[Custom HVAC Warning] No schedule_details found in hvac_params for building {bldg_id}. Schedules may not be created correctly.")
+
+
+    # --- 3) Ensure Core IDF Objects Exist (Schedule Limits) ---
+    # Check/create SCHEDULETYPELIMITS for Temperature
+    if not idf.getobject("SCHEDULETYPELIMITS", "Temperature"):
+        print("[Custom HVAC Info] Creating SCHEDULETYPELIMITS: Temperature")
+        stl_temp = idf.newidfobject("SCHEDULETYPELIMITS")
+        stl_temp.Name = "Temperature"
+        stl_temp.Lower_Limit_Value = -100
+        stl_temp.Upper_Limit_Value = 200
+        stl_temp.Numeric_Type = "CONTINUOUS"
+        # stl_temp.Unit_Type = "Temperature" # Optional depending on E+ version
+
+    # Check/create SCHEDULETYPELIMITS for ControlType
+    if not idf.getobject("SCHEDULETYPELIMITS", "ControlType"):
+        print("[Custom HVAC Info] Creating SCHEDULETYPELIMITS: ControlType")
+        stl_ctrl = idf.newidfobject("SCHEDULETYPELIMITS")
+        stl_ctrl.Name = "ControlType"
+        stl_ctrl.Lower_Limit_Value = 0
+        stl_ctrl.Upper_Limit_Value = 4 # 0=Uncontrolled, 1=Thermo, 2=Humid, 3=Staged, 4=DualSetpt
+        stl_ctrl.Numeric_Type = "DISCRETE"
+
+    # Check/create SCHEDULETYPELIMITS for Fraction (FIX from previous analysis)
+    if not idf.getobject("SCHEDULETYPELIMITS", "Fraction"):
+        print("[Custom HVAC Info] Creating SCHEDULETYPELIMITS: Fraction")
+        stl_frac = idf.newidfobject("SCHEDULETYPELIMITS")
+        stl_frac.Name = "Fraction"
+        stl_frac.Lower_Limit_Value = 0.0
+        stl_frac.Upper_Limit_Value = 1.0
+        stl_frac.Numeric_Type = "CONTINUOUS"
+        # stl_frac.Unit_Type = "Dimensionless" # Optional
+
+    # --- 4) Create Default Control Type Schedule (if needed) ---
+    # This schedule tells the thermostat to use Dual Setpoints (Control Type 1)
+    control_type_sched_name = "ZONE_CONTROL_TYPE_SCHEDULE" # Use underscore for safety
+    ctrl_sched = idf.getobject("SCHEDULE:COMPACT", control_type_sched_name.upper())
+    if not ctrl_sched:
+        print(f"[Custom HVAC Info] Creating SCHEDULE:COMPACT: {control_type_sched_name}")
+        ctrl_sched = idf.newidfobject("SCHEDULE:COMPACT")
+        ctrl_sched.Name = control_type_sched_name
+        ctrl_sched.Schedule_Type_Limits_Name = "ControlType"
+        # --- FIX from previous analysis: Correct field format ---
+        ctrl_sched.Field_1 = "Through: 12/31"  # No comma
+        ctrl_sched.Field_2 = "For: AllDays"     # No comma
+        # Control Type 4 corresponds to ThermostatSetpoint:DualSetpoint
+        # which matches the thermostat object defined below.
+        ctrl_sched.Field_3 = "Until: 24:00,4;"
+    else:
+        print(f"[Custom HVAC Info] Found existing schedule: {control_type_sched_name}")
+        # Optionally verify/update its fields here if needed
+
+    # --- 5) Retrieve Key Parameters for Ideal Loads ---
+    try:
+        max_heat_temp = hvac_params["max_heating_supply_air_temp"]
+        min_cool_temp = hvac_params["min_cooling_supply_air_temp"]
+    except KeyError as e:
+         print(f"[Custom HVAC Error] Missing required temperature limit '{e}' in hvac_params for building {bldg_id}. Aborting.")
+         return
+
+    # Get the name of the HVAC availability schedule created earlier
+    # Default to 'AlwaysOn' if not found, but log a warning
+    hvac_avail_sched_name = "AlwaysOn" # Fallback default
+    if schedule_details:
+         hvac_avail_info = schedule_details.get("hvac_availability", {})
+         hvac_avail_sched_name = hvac_avail_info.get("schedule_name", "HVAC_Avail_Sched") # Get name from lookup/override
+         # Check if the schedule actually exists in the IDF after creation attempt
+         if not idf.getobject("SCHEDULE:COMPACT", hvac_avail_sched_name.upper()):
+             print(f"[Custom HVAC Warning] HVAC Availability schedule '{hvac_avail_sched_name}' not found in IDF. Defaulting IdealLoads Availability to 'AlwaysOn'.")
+             hvac_avail_sched_name = "AlwaysOn" # Revert to default if creation failed/missing
+
+    # Get the names for setpoint schedules (ensure consistency with schedule_creation.py)
+    setpoint_sched_heat_name = "ZONE_HEATING_SETPOINTS" # Default name used in schedule_creation
+    setpoint_sched_cool_name = "ZONE_COOLING_SETPOINTS" # Default name used in schedule_creation
+    if schedule_details:
+        setpoints_info = schedule_details.get("setpoints", {})
+        setpoint_sched_heat_name = setpoints_info.get("schedule_name_heat", setpoint_sched_heat_name)
+        setpoint_sched_cool_name = setpoints_info.get("schedule_name_cool", setpoint_sched_cool_name)
+        # Check if these schedules exist
+        if not idf.getobject("SCHEDULE:COMPACT", setpoint_sched_heat_name.upper()):
+             print(f"[Custom HVAC Warning] Heating setpoint schedule '{setpoint_sched_heat_name}' not found in IDF.")
+             # Thermostat object might fail later if schedule is missing
+        if not idf.getobject("SCHEDULE:COMPACT", setpoint_sched_cool_name.upper()):
+             print(f"[Custom HVAC Warning] Cooling setpoint schedule '{setpoint_sched_cool_name}' not found in IDF.")
+
+    # --- 6) Process Each Zone ---
+    zones = idf.idfobjects.get("ZONE", []) # Use .get for safety
+    if not zones:
+        print(f"[Custom HVAC Error] No ZONE objects found in the IDF model for building {bldg_id}. Cannot add HVAC systems.")
+        return
+
+    # Ensure the assigned_hvac_log structure is ready for zone data
+    if assigned_hvac_log is not None:
+        if bldg_id not in assigned_hvac_log:
+            assigned_hvac_log[bldg_id] = {}
+        if "zones" not in assigned_hvac_log[bldg_id]:
+            assigned_hvac_log[bldg_id]["zones"] = {}
+
+    print(f"[Custom HVAC Info] Processing {len(zones)} zones for Ideal Loads setup...")
+    for zone_obj in zones:
+        zone_name = zone_obj.Name
+        print(f"  - Processing Zone: {zone_name}")
+
+        # Define object names based on zone name
+        thermostat_name = f"{zone_name}_CONTROLS"
+        dual_setpoint_name = f"{zone_name}_SETPOINTS"
+        equip_conn_name = zone_name # Convention often uses zone name
+        equip_list_name = f"{zone_name}_EQUIPMENT"
+        ideal_loads_name = f"{zone_name}_Ideal_Loads"
+        inlet_nodelist_name = f"{zone_name}_INLETS"
+        inlet_node_name = f"{zone_name}_INLET" # Single node for the list
+        zone_node_name = f"{zone_name}_NODE"
+        return_node_name = f"{zone_name}_OUTLET"
+
+
+        # 6a) Create/Update Thermostat (ZONECONTROL:THERMOSTAT)
+        # Use getobject for case-insensitive check if needed
+        thermo = idf.getobject("ZONECONTROL:THERMOSTAT", thermostat_name.upper())
+        if not thermo:
+            thermo = idf.newidfobject("ZONECONTROL:THERMOSTAT")
+            thermo.Name = thermostat_name
+        # Assign zone name - check attribute based on potential E+ versions
+        if hasattr(thermo, "Zone_or_ZoneList_or_Space_or_SpaceList_Name"):
+            thermo.Zone_or_ZoneList_or_Space_or_SpaceList_Name = zone_name
+        else:
+            thermo.Zone_or_ZoneList_Name = zone_name # Older versions
+        thermo.Control_Type_Schedule_Name = control_type_sched_name
+        thermo.Control_1_Object_Type = "ThermostatSetpoint:DualSetpoint"
+        thermo.Control_1_Name = dual_setpoint_name
+
+        # 6b) Create/Update THERMOSTATSETPOINT:DUALSETPOINT
+        dualset = idf.getobject("THERMOSTATSETPOINT:DUALSETPOINT", dual_setpoint_name.upper())
+        if not dualset:
+            dualset = idf.newidfobject("THERMOSTATSETPOINT:DUALSETPOINT")
+            dualset.Name = dual_setpoint_name
+        # --- Use the consistent schedule names identified earlier ---
+        dualset.Heating_Setpoint_Temperature_Schedule_Name = setpoint_sched_heat_name
+        dualset.Cooling_Setpoint_Temperature_Schedule_Name = setpoint_sched_cool_name
+
+
+        # 6c) Create/Update ZONEHVAC:EQUIPMENTCONNECTIONS
+        # Note: Name convention might vary; here using Zone Name directly
+        eq_conn = idf.getobject("ZONEHVAC:EQUIPMENTCONNECTIONS", zone_name.upper())
+        if not eq_conn:
+            eq_conn = idf.newidfobject("ZONEHVAC:EQUIPMENTCONNECTIONS")
+            eq_conn.Zone_Name = zone_name
+        # Update fields
+        eq_conn.Zone_Conditioning_Equipment_List_Name = equip_list_name
+        eq_conn.Zone_Air_Inlet_Node_or_NodeList_Name = inlet_nodelist_name
+        eq_conn.Zone_Air_Exhaust_Node_or_NodeList_Name = "" # Assuming no exhaust for ideal loads
+        eq_conn.Zone_Air_Node_Name = zone_node_name
+        eq_conn.Zone_Return_Air_Node_or_NodeList_Name = return_node_name
+
+
+        # 6d) Create/Update ZONEHVAC:EQUIPMENTLIST
+        eq_list = idf.getobject("ZONEHVAC:EQUIPMENTLIST", equip_list_name.upper())
+        if not eq_list:
+            eq_list = idf.newidfobject("ZONEHVAC:EQUIPMENTLIST")
+            eq_list.Name = equip_list_name
+        # Update fields - add Ideal Loads system
+        eq_list.Load_Distribution_Scheme = "SequentialLoad" # Or UniformLoad, etc.
+        eq_list.Zone_Equipment_1_Object_Type = "ZoneHVAC:IdealLoadsAirSystem"
+        eq_list.Zone_Equipment_1_Name = ideal_loads_name
+        eq_list.Zone_Equipment_1_Cooling_Sequence = 1
+        eq_list.Zone_Equipment_1_Heating_or_NoLoad_Sequence = 1
+        # Clear out other equipment slots if necessary
+        # for i in range(2, 5): # Example: Clear eqpt 2, 3, 4
+        #    setattr(eq_list, f"Zone_Equipment_{i}_Object_Type", "")
+        #    setattr(eq_list, f"Zone_Equipment_{i}_Name", "")
+
+
+        # 6e) Create/Update ZONEHVAC:IDEALLOADSAIRSYSTEM
+        ideal = idf.getobject("ZONEHVAC:IDEALLOADSAIRSYSTEM", ideal_loads_name.upper())
+        if not ideal:
+            ideal = idf.newidfobject("ZONEHVAC:IDEALLOADSAIRSYSTEM")
+            ideal.Name = ideal_loads_name
+        # Update fields
+        ideal.Availability_Schedule_Name = hvac_avail_sched_name # Use retrieved name
+        ideal.Zone_Supply_Air_Node_Name = inlet_nodelist_name # Connects to inlet list
+        ideal.Zone_Exhaust_Air_Node_Name = "" # Match connections object
+        ideal.System_Inlet_Air_Node_Name = "" # Not connecting to outdoor air here
+
+        # Supply air temperature limits
+        ideal.Maximum_Heating_Supply_Air_Temperature = max_heat_temp
+        ideal.Minimum_Cooling_Supply_Air_Temperature = min_cool_temp
+
+        # Supply air humidity limits (optional, can be autosized or fixed)
+        # ideal.Maximum_Heating_Supply_Air_Humidity_Ratio = 0.0156 # Example
+        # ideal.Minimum_Cooling_Supply_Air_Humidity_Ratio = 0.0077 # Example
+
+        # Heating/Cooling capacity limits
+        ideal.Heating_Limit = "LimitFlowRateAndCapacity" # Or NoLimit, LimitCapacity, LimitFlowRate
+        ideal.Maximum_Heating_Air_Flow_Rate = "Autosize"
+        ideal.Maximum_Sensible_Heating_Capacity = "Autosize"
+
+        ideal.Cooling_Limit = "LimitFlowRateAndCapacity"
+        ideal.Maximum_Cooling_Air_Flow_Rate = "Autosize"
+        ideal.Maximum_Total_Cooling_Capacity = "Autosize"
+
+        # Optional: Dehumidification/Humidification Control
+        ideal.Dehumidification_Control_Type = "None" # Or None, Humidistat, etc.
+        # ideal.Cooling_Sensible_Heat_Ratio = 0.7 # Example if needed
+        ideal.Humidification_Control_Type = "None" # Or None, Humidistat
+        # ideal.Design_Specification_Outdoor_Air_Object_Name = "" # Can link DSOA if needed
+
+        # Optional: Economizer / Heat Recovery
+        # EnergyPlus 22.x does not accept "FixedDryBulb" for this field
+        # (valid options are NoEconomizer, DifferentialDryBulb,
+        #  DifferentialEnthalpy). Use NoEconomizer for compatibility.
+        ideal.Outdoor_Air_Economizer_Type = "NoEconomizer"
+        if hasattr(ideal, "Economizer_Maximum_Limit_Dry_Bulb_Temperature"):
+            ideal.Economizer_Maximum_Limit_Dry_Bulb_Temperature = 18  # DegC
+        else:
+            print(
+                f"[Custom HVAC Warning] IdealLoads object '{ideal.Name}' does not "
+                "support 'Economizer_Maximum_Limit_Dry_Bulb_Temperature'."
+            )
+        ideal.Heat_Recovery_Type = "None"
+
+
+        # 6f) Ensure NODELIST for supply inlets exists
+        inlet_nl = idf.getobject("NODELIST", inlet_nodelist_name.upper())
+        if not inlet_nl:
+            inlet_nl = idf.newidfobject("NODELIST")
+            inlet_nl.Name = inlet_nodelist_name
+        # Ensure it points to the correct node(s)
+        inlet_nl.Node_1_Name = inlet_node_name
+        # Clear other nodes if necessary
+        # inlet_nl.Node_2_Name = ""
+
+
+        # 6g) Log zone-level info if requested
+        if assigned_hvac_log is not None:
+            # Ensure zone entry exists
+            if zone_name not in assigned_hvac_log[bldg_id]["zones"]:
+                assigned_hvac_log[bldg_id]["zones"][zone_name] = {}
+            # Update with HVAC details for this zone
+            assigned_hvac_log[bldg_id]["zones"][zone_name].update({
+                "hvac_object_name": ideal_loads_name,
+                "hvac_object_type": "ZONEHVAC:IDEALLOADSAIRSYSTEM",
+                "availability_schedule": hvac_avail_sched_name,
+                "thermostat_name": thermostat_name,
+                "thermostat_dualsetpoint_name": dual_setpoint_name,
+                "heating_setpoint_schedule": setpoint_sched_heat_name,
+                "cooling_setpoint_schedule": setpoint_sched_cool_name,
+            })
+
+    # --- Final Logging ---
+    print(f"[Custom HVAC Info] Completed Ideal Loads HVAC setup for all zones in building {bldg_id}.")
+
+# Example usage (if run standalone for testing):
+# if __name__ == '__main__':
+#     from eppy.modeleditor import IDF
+#     # Load a base IDF file
+#     try:
+#         idf = IDF("path/to/your/base_model.idf")
+#     except FileNotFoundError:
+#         print("Error: Base IDF file not found for testing.")
+#         exit()
+#
+#     # Example building metadata
+#     test_building_row = {
+#         "ogc_fid": 999,
+#         "building_function": "residential",
+#         "residential_type": "Corner House", # Match a key in hvac_lookup
+#         "age_range": "2015 and later",      # Match a key in hvac_lookup
+#         "scenario": "scenario1"
+#     }
+#
+#     # Example empty log dict
+#     test_log = {}
+#
+#     # Call the function
+#     add_HVAC_Ideal_to_all_zones(
+#         idf,
+#         building_row=test_building_row,
+#         assigned_hvac_log=test_log
+#         # Add other parameters as needed for test
+#     )
+#
+#     # Save the modified IDF
+#     idf.saveas("path/to/your/output_model_with_hvac.idf")
+#     print("Saved modified IDF with Ideal Loads.")
+#     # print("Log:", test_log) # Inspect the log if desired
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_objects\ventilation\add_ventilation.py
+============================================================
+# ventilation/add_ventilation.py
+
+import math
+from typing import Optional, Dict, Any
+
+# Import specific objects/functions - ensure correct imports
+try:
+    from geomeppy import IDF
+except ImportError:
+    IDF = Any
+
+# Import local modules
+from idf_objects.ventilation.assign_ventilation_values import (
+    assign_ventilation_params_with_overrides
+)
+from idf_objects.ventilation import schedules # Updated import to get the module
+from idf_objects.ventilation.create_ventilation_systems import create_ventilation_system
+from idf_objects.ventilation.calc_functions import (
+    calc_infiltration_rate_at_1Pa_per_m2,
+    calc_required_ventilation_flow
+)
+from idf_objects.ventilation.mappings import (
+    safe_lower,
+    map_age_range_to_year_key,
+    map_infiltration_key, # This provides the archetype_key
+    map_usage_key
+)
+
+# Define type alias for clarity
+BuildingRow = Dict[str, Any]
+ZoneInfoMap = Dict[str, Dict[str, Any]] # e.g., {zone_name: {'area': float, 'is_core': bool}}
+AssignedVentLog = Dict[Any, Dict[str, Any]]
+
+
+def get_zone_floor_area_from_surfaces(idf: IDF, zone_name: str) -> float:
+    """
+    Calculates the zone's floor area by summing the areas of its 'floor' surfaces.
+    This is a fallback if the ZONE object's Floor_Area is 'autocalculate' or not resolved.
+    """
+    total_floor_surface_area = 0.0
+    surfaces = idf.idfobjects.get("BUILDINGSURFACE:DETAILED", [])
+    if not surfaces:
+        surfaces = idf.idfobjects.get("BuildingSurface:Detailed", [])
+
+    for surface in surfaces:
+        try:
+            surface_zone_name = getattr(surface, 'Zone_Name', None)
+            if surface_zone_name is None:
+                continue
+
+            surface_type_attr = getattr(surface, 'Surface_Type', '').lower()
+
+            if surface_zone_name.upper() == zone_name.upper() and surface_type_attr == 'floor':
+                surface_area = getattr(surface, 'area', 0.0)
+                if surface_area <= 1e-6 and hasattr(surface, 'Gross_Area'):
+                    try:
+                        surface_area = float(surface.Gross_Area)
+                    except (ValueError, TypeError):
+                        surface_area = 0.0
+                if isinstance(surface_area, (float, int)) and surface_area > 0:
+                    total_floor_surface_area += surface_area
+        except Exception as e:
+            surface_id = getattr(surface, 'Name', 'UnknownSurface')
+            print(f"[WARNING] add_ventilation.py: Error accessing properties for surface '{surface_id}' in zone '{zone_name}': {e}")
+            continue
+
+    if total_floor_surface_area > 1e-6:
+        print(f"[VENT INFO] add_ventilation.py: Calculated floor area for zone '{zone_name}' by summing floor surfaces: {total_floor_surface_area:.2f} m2.")
+    return total_floor_surface_area
+
+
+def add_ventilation_to_idf(
+    idf: IDF,
+    building_row: BuildingRow,
+    calibration_stage: str = "pre_calibration",
+    strategy: str = "A", # This is the parameter picking strategy (A, B, C)
+    random_seed: Optional[int] = None,
+    user_config_vent: Optional[list] = None,
+    assigned_vent_log: Optional[AssignedVentLog] = None,
+    zone_details: Optional[ZoneInfoMap] = None,
+    system_d_infiltration_reduction_factor: float = 1.0,
+    infiltration_model: str = "constant",
+    typical_delta_t: float = 10.0,
+    typical_wind: float = 3.0
+):
+    """
+    Adds infiltration + ventilation to the IDF based on building_row data,
+    using archetype-specific schedules.
+    """
+
+    # --- 1) Ensure Fallback Schedules Exist ---
+    # Only 'AlwaysOnSched' is strictly needed as a global fallback.
+    # Archetype-specific schedules will be created dynamically.
+    schedules.create_always_on_schedule(idf, "AlwaysOnSched")
+    # The generic day/night and workhours schedules are no longer created by default here.
+    # They can be created by schedules.get_or_create_archetype_schedule if its lookup points to their patterns.
+
+    # --- 2) Extract building info ---
+    bldg_id = building_row.get("ogc_fid", "UnknownBuildingID")
+    bldg_func = safe_lower(building_row.get("building_function", "residential"))
+    if bldg_func not in ("residential", "non_residential"):
+        bldg_func = "residential"
+
+    age_range_str = building_row.get("age_range", "2015 and later")
+    scenario = building_row.get("scenario", "scenario1")
+    total_bldg_floor_area_m2_input = building_row.get("area", 100.0)
+
+    if not isinstance(total_bldg_floor_area_m2_input, (int, float)) or total_bldg_floor_area_m2_input <= 0:
+        print(f"[VENT WARNING] add_ventilation.py: Building {bldg_id}: Invalid total building floor area attribute ('area': {total_bldg_floor_area_m2_input}). Defaulting to 100.0 m2.")
+        total_bldg_floor_area_m2_input = 100.0
+
+    # --- 3) Decide lookup keys ---
+    # 'infiltration_key' serves as the primary archetype key for schedules as well
+    archetype_key = map_infiltration_key(building_row)
+    usage_key = map_usage_key(building_row)
+    year_key = map_age_range_to_year_key(age_range_str)
+    is_res = (bldg_func == "residential")
+
+    # --- 4) Assign building-level ventilation parameters ---
+    # This now also determines the *names* for archetype-specific schedules
+    assigned_vent = assign_ventilation_params_with_overrides(
+        building_id=bldg_id, building_function=bldg_func, age_range=age_range_str,
+        scenario=scenario, calibration_stage=calibration_stage, strategy=strategy,
+        random_seed=random_seed, user_config_vent=user_config_vent,
+        infiltration_key=archetype_key, year_key=year_key, is_residential=is_res,
+        default_flow_exponent=0.67
+    )
+
+    # --- 5) Unpack chosen building-level parameters ---
+    infiltration_base_L_s_m2_10Pa = assigned_vent["infiltration_base_L_s_m2_10Pa"]
+    year_factor = assigned_vent["year_factor"]
+    fan_pressure_Pa = assigned_vent.get("fan_pressure")
+    fan_total_efficiency = assigned_vent.get("fan_total_efficiency")
+    f_ctrl = assigned_vent["f_ctrl"]
+    hrv_sens_eff = assigned_vent["hrv_eff"]
+    hrv_lat_eff = assigned_vent.get("hrv_lat_eff", 0.0)
+    # These are now archetype-specific names (or overridden by user_config_vent)
+    final_infiltration_sched_name = assigned_vent["infiltration_schedule_name"]
+    final_ventilation_sched_name = assigned_vent["ventilation_schedule_name"]
+    system_type = assigned_vent["system_type"]
+    flow_exponent = assigned_vent["flow_exponent"]
+    # The 'strategy' (A, B, C) used for picking parameters will also be used for picking schedule values
+    parameter_pick_strategy = strategy # Keep the original strategy name for clarity if needed
+
+    # --- 6) Ensure Archetype-Specific Schedules are Created and Get Chosen Patterns ---
+    vent_sched_obj, chosen_vent_wd_pattern, chosen_vent_we_pattern = schedules.get_or_create_archetype_schedule(
+        idf=idf,
+        target_schedule_name=final_ventilation_sched_name,
+        building_function=bldg_func,
+        archetype_key=archetype_key,
+        purpose="ventilation",
+        strategy=parameter_pick_strategy # Use the same strategy for schedule value picking
+    )
+
+    infil_sched_obj, chosen_infil_wd_pattern, chosen_infil_we_pattern = schedules.get_or_create_archetype_schedule(
+        idf=idf,
+        target_schedule_name=final_infiltration_sched_name,
+        building_function=bldg_func,
+        archetype_key=archetype_key,
+        purpose="infiltration",
+        strategy=parameter_pick_strategy
+    )
+
+    if not vent_sched_obj:
+        print(f"[VENT CRITICAL] add_ventilation.py: Failed to create ventilation schedule '{final_ventilation_sched_name}' for Bldg {bldg_id}. Aborting ventilation setup.")
+        return
+    if not infil_sched_obj:
+        print(f"[VENT CRITICAL] add_ventilation.py: Failed to create infiltration schedule '{final_infiltration_sched_name}' for Bldg {bldg_id}. Aborting ventilation setup.")
+        return
+        
+    # Update names in case a fallback name was used by get_or_create_archetype_schedule
+    final_ventilation_sched_name = vent_sched_obj.Name
+    final_infiltration_sched_name = infil_sched_obj.Name
+    
+    # --- 7) Debug Print (now includes final schedule names) ---
+    print(
+        f"[VENT PARAMS] Bldg={bldg_id}, Func={bldg_func}, AgeKey='{year_key}', Sys={system_type}\n"
+        f"  LookupKeys: Archetype='{archetype_key}', Usage='{usage_key if usage_key else 'N/A'}'\n"
+        f"  InfilParams: Base(L/s/m2@10Pa)={infiltration_base_L_s_m2_10Pa:.4f}, YearFactor={year_factor:.3f}, Exp={flow_exponent}\n"
+        f"  VentParams: f_ctrl={f_ctrl:.3f}, HRV_SensEff={hrv_sens_eff:.3f}, HRV_LatEff={hrv_lat_eff:.3f}\n"
+        f"  FanParams: Pressure={fan_pressure_Pa if fan_pressure_Pa is not None else 'N/A'} Pa, Efficiency={fan_total_efficiency if fan_total_efficiency is not None else 'N/A'}\n"
+        f"  Schedules: Infil='{final_infiltration_sched_name}', Vent='{final_ventilation_sched_name}' (Strategy: {parameter_pick_strategy})"
+    )
+
+    # --- 8) Calculate Base Infiltration Rate (@1Pa) per m2 floor area ---
+    infiltration_rate_at_1Pa_L_s_per_m2_floor_area = calc_infiltration_rate_at_1Pa_per_m2(
+        infiltration_base_at_10Pa_per_m2=infiltration_base_L_s_m2_10Pa,
+        year_factor=year_factor,
+        flow_exponent=flow_exponent
+    )
+    if system_type == "D" and system_d_infiltration_reduction_factor != 1.0:
+        # ... (infiltration reduction logic remains the same) ...
+        effective_rate_before_reduction = infiltration_rate_at_1Pa_L_s_per_m2_floor_area
+        infiltration_rate_at_1Pa_L_s_per_m2_floor_area *= system_d_infiltration_reduction_factor
+        print(f"  System D: Infiltration rate reduced by factor {system_d_infiltration_reduction_factor:.2f} from {effective_rate_before_reduction:.4f} to {infiltration_rate_at_1Pa_L_s_per_m2_floor_area:.4f} L/s/m2 @ 1Pa")
+
+
+    # --- 9) Calculate Total Required Mechanical Ventilation Flow for the building ---
+    vent_flow_m3_s_total_building = calc_required_ventilation_flow(
+        building_function=bldg_func,
+        f_ctrl_val=f_ctrl,
+        floor_area_m2=total_bldg_floor_area_m2_input,
+        usage_key=usage_key
+    )
+
+    # --- 10) Determine DSOA object name and ensure it exists for System D ---
+    # ... (DSOA logic remains the same) ...
+    dsoa_object_name_global = "DSOA_Global" 
+    if system_type == "D":
+        dsoa_obj = idf.getobject("DESIGNSPECIFICATION:OUTDOORAIR", dsoa_object_name_global.upper())
+        if not dsoa_obj:
+            print(f"[VENT INFO] add_ventilation.py: Building {bldg_id}: Creating default DesignSpecification:OutdoorAir: {dsoa_object_name_global}")
+            try:
+                dsoa_obj = idf.newidfobject("DESIGNSPECIFICATION:OUTDOORAIR", Name=dsoa_object_name_global)
+                dsoa_obj.Outdoor_Air_Method = "Flow/Area" 
+            except Exception as e:
+                print(f"[ERROR] add_ventilation.py: Building {bldg_id}: Failed to create {dsoa_object_name_global}: {e}")
+                dsoa_obj = None
+
+        if dsoa_obj: 
+            base_design_rate_L_s_m2 = 0.0
+            if bldg_func == "residential":
+                base_design_rate_L_s_m2 = 0.9
+            else: 
+                usage_flow_map_L_s_m2 = { 
+                    "office_area_based": 1.0, "childcare": 4.8, "retail": 0.6,
+                    "meeting_function": 1.0, "healthcare_function": 1.2, "sport_function": 1.5,
+                    "cell_function": 0.8, "industrial_function": 0.5, "accommodation_function": 0.9,
+                    "education_function": 1.1, "other_use_function": 0.6
+                }
+                base_design_rate_L_s_m2 = usage_flow_map_L_s_m2.get(usage_key, 1.0)
+            
+            dsoa_flow_per_area_m3_s_m2 = (base_design_rate_L_s_m2 * f_ctrl) / 1000.0
+            dsoa_obj.Outdoor_Air_Flow_per_Zone_Floor_Area = dsoa_flow_per_area_m3_s_m2
+            dsoa_obj.Outdoor_Air_Flow_per_Person = 0.0 
+            dsoa_obj.Outdoor_Air_Flow_per_Zone = 0.0
+            dsoa_obj.Outdoor_Air_Flow_Air_Changes_per_Hour = 0.0
+            print(f"  System D: Set DSOA '{dsoa_obj.Name}' Outdoor_Air_Flow_per_Zone_Floor_Area to {dsoa_flow_per_area_m3_s_m2:.6f} m3/s-m2 (base {base_design_rate_L_s_m2:.2f} L/s/m2, f_ctrl {f_ctrl:.3f})")
+
+
+    # --- 11) Get Zones and Prepare Zone Information Map ---
+    # ... (Zone area calculation logic remains the same) ...
+    zones_in_idf = idf.idfobjects.get("ZONE", [])
+    if not zones_in_idf: zones_in_idf = idf.idfobjects.get("Zone", [])
+    if not zones_in_idf:
+        print(f"[VENT ERROR] add_ventilation.py: Building {bldg_id}: No ZONE objects found. Cannot proceed."); return
+
+    num_zones = len(zones_in_idf)
+    effective_zone_info_map: ZoneInfoMap = {}
+    sum_of_individual_zone_areas = 0.0
+
+    if zone_details: 
+        valid_zone_details = True; temp_total_area = 0.0
+        for zd_name, zd_props in zone_details.items():
+            if not (isinstance(zd_props, dict) and 'area' in zd_props and 
+                    isinstance(zd_props['area'], (float, int)) and zd_props['area'] >= 0 and 
+                    'is_core' in zd_props and isinstance(zd_props['is_core'], bool)):
+                valid_zone_details = False; break
+            temp_total_area += zd_props['area']
+        if valid_zone_details and temp_total_area > 1e-6:
+            effective_zone_info_map = zone_details
+            sum_of_individual_zone_areas = temp_total_area
+        else: effective_zone_info_map = {}; sum_of_individual_zone_areas = 0.0 
+    
+    if not effective_zone_info_map or sum_of_individual_zone_areas <= 1e-6: 
+        print(f"[VENT INFO] add_ventilation.py: Bldg {bldg_id}: Calculating zone areas/core status from IDF.")
+        sum_of_individual_zone_areas = 0.0; effective_zone_info_map = {} 
+        for zone_obj in zones_in_idf:
+            # ... (detailed area calculation logic as before) ...
+            zone_name_key = zone_obj.Name; area_val = 0.0; raw_field_value_str = ""
+            try: area_val = getattr(zone_obj, 'floor_area', 0.0) 
+            except Exception: area_val = 0.0
+            if not isinstance(area_val, (float, int)) or area_val < 0: area_val = 0.0
+            
+            if area_val < 1e-6: 
+                area_val = 0.0 
+                try: 
+                    raw_field_value_str = str(getattr(zone_obj, 'Floor_Area', "")).strip().lower()
+                    if raw_field_value_str == "autocalculate":
+                        area_val = get_zone_floor_area_from_surfaces(idf, zone_name_key)
+                        if area_val < 1e-6: area_val = 0.0
+                    elif raw_field_value_str: area_val = float(raw_field_value_str)
+                    if area_val < 0: area_val = 0.0 
+                except Exception: area_val = 0.0
+            effective_zone_info_map[zone_name_key] = {'area': area_val, 'is_core': "_core" in safe_lower(zone_name_key)}
+            sum_of_individual_zone_areas += area_val
+
+    use_equal_split_fallback = False
+    final_total_area_for_proportions = sum_of_individual_zone_areas
+
+    if sum_of_individual_zone_areas <= 1e-6:
+        print(f"[VENT ERROR] add_ventilation.py: Bldg {bldg_id}: Sum of individual zone areas is {sum_of_individual_zone_areas}. Fallback active.")
+        if total_bldg_floor_area_m2_input > 0 and num_zones > 0:
+            use_equal_split_fallback = True
+            average_zone_area_for_fallback = total_bldg_floor_area_m2_input / num_zones
+            # ... (fallback logic as before) ...
+            temp_map_for_fallback = {}
+            for zone_obj_fb in zones_in_idf:
+                temp_map_for_fallback[zone_obj_fb.Name] = {'area': average_zone_area_for_fallback, 'is_core': "_core" in safe_lower(zone_obj_fb.Name)}
+            effective_zone_info_map = temp_map_for_fallback
+            final_total_area_for_proportions = total_bldg_floor_area_m2_input 
+        else:
+            print(f"[VENT CRITICAL] add_ventilation.py: Bldg {bldg_id}: Cannot distribute flows. Sum of zone areas is zero and input building area is zero or no zones. Aborting."); return
+
+
+    # --- 12) Log Building-Level Parameters & Chosen Schedule Patterns ---
+    if assigned_vent_log is not None:
+        if bldg_id not in assigned_vent_log: assigned_vent_log[bldg_id] = {}
+        log_building_params = assigned_vent.copy()
+        # ... (existing log_building_params assignments) ...
+        log_building_params["infiltration_rate_at_1Pa_L_s_per_m2_EFFECTIVE"] = infiltration_rate_at_1Pa_L_s_per_m2_floor_area
+        log_building_params["ventilation_total_required_m3_s_building"] = vent_flow_m3_s_total_building
+        log_building_params["total_bldg_floor_area_m2_input_attr"] = total_bldg_floor_area_m2_input
+        log_building_params["sum_of_individual_zone_areas_derived"] = sum_of_individual_zone_areas 
+        log_building_params["final_total_area_used_for_proportions"] = final_total_area_for_proportions
+        log_building_params["flow_distribution_method"] = "EqualSplitFallbackLogicActive" if use_equal_split_fallback else "ProportionalToIndividualZoneArea"
+        log_building_params["system_d_infiltration_reduction_factor_applied"] = system_d_infiltration_reduction_factor if system_type == "D" and system_d_infiltration_reduction_factor != 1.0 else None
+
+        assigned_vent_log[bldg_id]["building_params"] = log_building_params
+
+        # ---- NEW LOGGING SECTION for SCHEDULES ----
+        schedule_log_details = {}
+        if vent_sched_obj:
+            schedule_log_details["ventilation_schedule_name"] = vent_sched_obj.Name
+            if chosen_vent_wd_pattern: # Log chosen patterns only if newly created or returned by creator
+                schedule_log_details["ventilation_chosen_weekday_pattern"] = chosen_vent_wd_pattern
+            if chosen_vent_we_pattern:
+                schedule_log_details["ventilation_chosen_weekend_pattern"] = chosen_vent_we_pattern
+        if infil_sched_obj:
+            schedule_log_details["infiltration_schedule_name"] = infil_sched_obj.Name
+            if chosen_infil_wd_pattern:
+                schedule_log_details["infiltration_chosen_weekday_pattern"] = chosen_infil_wd_pattern
+            if chosen_infil_we_pattern:
+                schedule_log_details["infiltration_chosen_weekend_pattern"] = chosen_infil_we_pattern
+        assigned_vent_log[bldg_id]["schedule_details"] = schedule_log_details
+        # --- END NEW LOGGING SECTION ---
+
+        assigned_vent_log[bldg_id]["zones"] = {}
+
+    print(
+        f"[VENT FLOWS] add_ventilation.py: Bldg={bldg_id}: BaseInfilRate(@1Pa,Eff)={infiltration_rate_at_1Pa_L_s_per_m2_floor_area:.4f} L/s/m2, "
+        f"TotalMechVentReq={vent_flow_m3_s_total_building:.4f} m3/s, "
+        f"DistMethod={'EqualSplitFallbackLogicActive' if use_equal_split_fallback else 'ProportionalToIndividualZoneArea'}"
+    )
+
+    # --- 13) Loop Through Zones: Calculate Zone Flows & Create IDF Objects ---
+    for zone_obj_loopvar in zones_in_idf:
+        # ... (zone loop logic remains the same, using final_infiltration_sched_name and final_ventilation_sched_name) ...
+        zone_name_curr = zone_obj_loopvar.Name
+        zone_info_curr = effective_zone_info_map.get(zone_name_curr)
+        if not zone_info_curr: 
+            print(f"[VENT CRITICAL ERROR] add_ventilation.py: Zone '{zone_name_curr}' not found in effective map. Skipping."); continue 
+            
+        zone_floor_area_curr_m2 = zone_info_curr.get('area', 0.0) 
+        is_core_zone_curr = zone_info_curr.get('is_core', False)
+
+        infiltration_for_this_zone_m3_s = 0.0
+        ventilation_for_this_zone_m3_s = 0.0
+
+        if is_core_zone_curr:
+            infiltration_for_this_zone_m3_s = 0.0
+        else: 
+            if zone_floor_area_curr_m2 > 1e-6:
+                infiltration_L_s = infiltration_rate_at_1Pa_L_s_per_m2_floor_area * zone_floor_area_curr_m2
+                infiltration_for_this_zone_m3_s = infiltration_L_s / 1000.0
+        
+        if final_total_area_for_proportions > 1e-6 and zone_floor_area_curr_m2 >= 0:
+            proportion = zone_floor_area_curr_m2 / final_total_area_for_proportions if final_total_area_for_proportions > 0 else 0
+            ventilation_for_this_zone_m3_s = vent_flow_m3_s_total_building * proportion
+        elif num_zones > 0 :
+             ventilation_for_this_zone_m3_s = vent_flow_m3_s_total_building / num_zones
+        
+        fan_param_overrides = {}
+        if fan_pressure_Pa is not None: fan_param_overrides["fan_pressure_override_Pa"] = fan_pressure_Pa
+        if fan_total_efficiency is not None: fan_param_overrides["fan_efficiency_override"] = fan_total_efficiency
+            
+        iobj, vobj = create_ventilation_system(
+            idf=idf,
+            building_function=bldg_func,
+            system_type=system_type,
+            zone_name=zone_name_curr,
+            infiltration_m3_s=infiltration_for_this_zone_m3_s,
+            vent_flow_m3_s=ventilation_for_this_zone_m3_s,
+            zone_floor_area_m2=zone_floor_area_curr_m2,
+            infiltration_sched_name=final_infiltration_sched_name, # Use the dynamically determined name
+            ventilation_sched_name=final_ventilation_sched_name,   # Use the dynamically determined name
+            infiltration_model=infiltration_model,
+            typical_delta_t=typical_delta_t,
+            typical_wind=typical_wind,
+            pick_strategy=parameter_pick_strategy, # Use consistent strategy
+            dsoa_object_name=dsoa_object_name_global if system_type == "D" else None,
+            hrv_sensible_effectiveness=hrv_sens_eff if system_type == "D" else 0.0,
+            hrv_latent_effectiveness=hrv_lat_eff if system_type == "D" else 0.0,
+            **fan_param_overrides,
+        )
+
+        if assigned_vent_log is not None and bldg_id in assigned_vent_log: 
+            if "zones" not in assigned_vent_log[bldg_id]:
+                assigned_vent_log[bldg_id]["zones"] = {}
+            assigned_vent_log[bldg_id]["zones"][zone_name_curr] = {
+                "infiltration_object_name": iobj.Name if iobj else "N/A", 
+                "infiltration_object_type": iobj.key if iobj else "N/A",
+                "infiltration_flow_m3_s_DESIGN_TOTAL_ZONE": infiltration_for_this_zone_m3_s,
+                "infiltration_flow_m3_s_m2_DESIGN_ZONE": (infiltration_for_this_zone_m3_s / zone_floor_area_curr_m2) if zone_floor_area_curr_m2 > 1e-6 else 0.0,
+                "infiltration_schedule_name": final_infiltration_sched_name,
+                "ventilation_object_name": vobj.Name if vobj else "N/A",
+                "ventilation_object_type": vobj.key if vobj else "N/A",
+                "ventilation_flow_m3_s_DESIGN_TOTAL_ZONE": ventilation_for_this_zone_m3_s if vobj else 0.0,
+                "ventilation_flow_m3_s_m2_DESIGN_ZONE": (ventilation_for_this_zone_m3_s / zone_floor_area_curr_m2) if vobj and zone_floor_area_curr_m2 > 1e-6 else 0.0,
+                "ventilation_schedule_name": final_ventilation_sched_name,
+                "zone_floor_area_m2_used_for_dist": zone_floor_area_curr_m2, 
+                "is_core_zone": is_core_zone_curr
+            }
+        elif assigned_vent_log is not None: 
+            print(f"[VENT WARNING] add_ventilation.py: Building ID {bldg_id} not in log for zone {zone_name_curr}")
+
+    print(f"[VENTILATION] add_ventilation.py: Completed ventilation setup for Building {bldg_id}.")
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\idf_objects\ventilation\assign_ventilation_values.py
+============================================================
+# ventilation/assign_ventilation_values.py
+
+import random
+import math # Import math for isnan check
+from .ventilation_lookup import ventilation_lookup # Assuming ventilation_lookup is in the same directory
+
+def find_vent_overrides(
+    building_id,
+    building_function,
+    age_range,
+    scenario,
+    calibration_stage,
+    user_config
+):
+    """
+    Searches a user_config list/dict for any override entries matching the
+    building_id, building_function, age_range, scenario, and calibration_stage.
+    Returns a list of matching dict rows.
+    """
+    matches = []
+    if not user_config: # Handle empty or None user_config
+        return matches
+
+    for row in user_config:
+        if not isinstance(row, dict):
+            continue
+
+        if "building_id" in row and row["building_id"] != building_id:
+            continue
+        if "building_function" in row and row["building_function"] != building_function:
+            continue
+        if "age_range" in row and row["age_range"] != age_range:
+            continue
+        if "scenario" in row and row["scenario"] != scenario:
+            continue
+        if "calibration_stage" in row and row["calibration_stage"] != calibration_stage:
+            continue
+        matches.append(row)
+    return matches
+
+
+def pick_val_with_range(
+    rng_tuple,
+    strategy="A",
+    log_dict=None,
+    param_name=None
+):
+    """
+    Selects a value from a (min_val, max_val) range based on the strategy.
+    """
+    chosen = 0.0
+    min_v, max_v = 0.0, 0.0
+
+    if rng_tuple is not None and len(rng_tuple) == 2:
+        try:
+            min_v_in, max_v_in = rng_tuple
+            min_v = float(min_v_in)
+            max_v = float(max_v_in)
+            if math.isnan(min_v) or math.isnan(max_v):
+                raise ValueError("NaN in range tuple")
+        except (ValueError, TypeError, IndexError):
+            print(f"[WARNING] assign_ventilation_values.py: Invalid range values in tuple {rng_tuple} for {param_name}. Defaulting to (0.0, 0.0).")
+            min_v, max_v = 0.0, 0.0
+    elif rng_tuple is not None:
+        print(f"[WARNING] assign_ventilation_values.py: Invalid range tuple format: {rng_tuple} for {param_name}. Defaulting to (0.0, 0.0).")
+
+    if min_v > max_v:
+        print(f"[WARNING] assign_ventilation_values.py: Min value > Max value in range ({min_v}, {max_v}) for {param_name}. Using min value for both.")
+        max_v = min_v
+
+    if strategy == "A":
+        chosen = (min_v + max_v) / 2.0
+    elif strategy == "B":
+        chosen = random.uniform(min_v, max_v)
+    elif strategy == "C":
+        chosen = min_v
+    else:
+        print(f"[WARNING] assign_ventilation_values.py: Unknown pick strategy '{strategy}' for {param_name}. Defaulting to Minimum.")
+        chosen = min_v
+
+    if log_dict is not None and param_name:
+        log_dict[f"{param_name}_range"] = (min_v, max_v)
+        log_dict[param_name] = chosen
+    return chosen
+
+
+def override_range(current_range, row_override_spec, param_name_for_warning="parameter"):
+    """
+    Applies overrides from a user config row to a parameter's (min, max) range.
+    """
+    if "fixed_value" in row_override_spec:
+        val = row_override_spec["fixed_value"]
+        try:
+            f_val = float(val)
+            if math.isnan(f_val):
+                print(f"[WARNING] assign_ventilation_values.py: Override 'fixed_value' {val} is NaN for {param_name_for_warning}. Using current range {current_range}.")
+                return current_range
+            return (f_val, f_val)
+        except (ValueError, TypeError): # If it's not a number, it's likely a string (e.g. schedule name)
+            # For non-numeric fixed_value (like schedule names), this function isn't the right place.
+            # That override is handled directly in the main assign_ventilation_params_with_overrides.
+            # This function is for numeric ranges. So, if fixed_value is non-numeric, we don't change the range here.
+            # Let the main logic handle string fixed_values.
+            if not isinstance(val, (int,float)): # if it's truly a string override for a range param, that's an error
+                 print(f"[ERROR] assign_ventilation_values.py: 'fixed_value' {val} for numeric range parameter {param_name_for_warning} is not a number. Using current range {current_range}.")
+            return current_range
+
+    elif "min_val" in row_override_spec and "max_val" in row_override_spec:
+        try:
+            min_ovr = float(row_override_spec["min_val"])
+            max_ovr = float(row_override_spec["max_val"])
+            if math.isnan(min_ovr) or math.isnan(max_ovr):
+                raise ValueError("Override range contains NaN")
+            if min_ovr > max_ovr:
+                print(f"[WARNING] assign_ventilation_values.py: Override min_val > max_val for {param_name_for_warning}. Using min_val for both.")
+                return (min_ovr, min_ovr)
+            return (min_ovr, max_ovr)
+        except (ValueError, TypeError):
+            print(f"[WARNING] assign_ventilation_values.py: Could not convert override range ({row_override_spec.get('min_val')}, {row_override_spec.get('max_val')}) to floats for {param_name_for_warning}. Using current range {current_range}.")
+            return current_range
+    return current_range
+
+
+def assign_ventilation_params_with_overrides(
+    building_id=None,
+    building_function="residential",
+    age_range="2015 and later",
+    scenario="scenario1",
+    calibration_stage="pre_calibration",
+    strategy="A",
+    random_seed=None,
+    user_config_vent=None,
+    assigned_vent_log=None, # This argument is passed but not used within this function for logging. Logging happens in add_ventilation.py
+    infiltration_key=None,  # This is the archetype_key
+    year_key=None,
+    is_residential=True,
+    default_flow_exponent=0.67
+):
+    """
+    Determines ventilation parameters, including archetype-specific schedule names,
+    based on lookups and user overrides.
+    """
+    if random_seed is not None:
+        random.seed(random_seed)
+
+    # --- 1) Get Base Parameter Ranges from ventilation_lookup ---
+    try:
+        scenario_data = ventilation_lookup.get(scenario)
+        if not scenario_data:
+            print(f"[WARNING] assign_ventilation_values.py: Scenario '{scenario}' not found in ventilation_lookup. Defaulting to first available or 'scenario1'.")
+            scenario = next(iter(ventilation_lookup)) if ventilation_lookup else "scenario1"
+            scenario_data = ventilation_lookup.get(scenario, {})
+        
+        stage_dict = scenario_data.get(calibration_stage)
+        if not stage_dict:
+            print(f"[WARNING] assign_ventilation_values.py: Calibration stage '{calibration_stage}' not found for scenario '{scenario}'. Defaulting to first available or 'pre_calibration'.")
+            calibration_stage = next(iter(scenario_data)) if scenario_data else "pre_calibration"
+            stage_dict = scenario_data.get(calibration_stage, {})
+    except Exception as e:
+         raise ValueError(f"Error accessing ventilation_lookup for scenario='{scenario}', stage='{calibration_stage}'. Problem: {e}. Ensure lookup structure is correct.")
+
+    # Initialize parameter ranges
+    infiltration_base_rng = (0.0, 0.0)
+    year_factor_rng = (1.0, 1.0)
+    fan_pressure_rng = (0.0, 0.0)
+    fan_total_efficiency_rng = (0.5, 0.7)
+    f_ctrl_rng = (1.0, 1.0)
+    hrv_sens_eff_rng = (0.0, 0.0)
+    hrv_latent_eff_rng = (0.0, 0.0)
+
+    # Determine system type (A/B/C/D) from ventilation_lookup
+    system_type_final = "A" if is_residential else "D" # Default
+    try:
+        system_type_map_lookup = stage_dict.get("system_type_map", {})
+        func_key_for_map = "residential" if is_residential else "non_residential"
+        year_map = system_type_map_lookup.get(func_key_for_map, {}).get(year_key, {})
+        system_type_final = year_map.get(infiltration_key, system_type_final) # infiltration_key is archetype
+    except Exception as e:
+         print(f"[WARNING] assign_ventilation_values.py: Error looking up system_type from map: {e}. Using default '{system_type_final}'.")
+
+    # ---- NEW: Define Archetype-Specific Schedule Names ----
+    # infiltration_key serves as the archetype identifier.
+    # Clean the key for use in a schedule name.
+    clean_archetype_key = infiltration_key.replace(" ", "_").replace("-", "") if infiltration_key else "default"
+    
+    # Default names, these will be used by add_ventilation.py to call schedule creation
+    ventilation_sched_name = f"VentSched_{clean_archetype_key}"
+    infiltration_sched_name = f"InfilSched_{clean_archetype_key}"
+    # Fallback for infiltration often is AlwaysOn, but we make it archetype-specific by default.
+    # User can override to "AlwaysOnSched" via user_config_vent if needed.
+    # ---- END NEW Schedule Name Definition ----
+
+    # Lookup other parameter ranges
+    try:
+        if is_residential:
+            res_infil_lookup = stage_dict.get("residential_infiltration_range", {})
+            infiltration_base_rng = res_infil_lookup.get(infiltration_key, (0.8, 1.2))
+            sys_ctrl_ranges_lookup = stage_dict.get("system_control_range_res", {})
+        else:
+            nonres_infil_lookup = stage_dict.get("non_res_infiltration_range", {})
+            infiltration_base_rng = nonres_infil_lookup.get(infiltration_key, (0.4, 0.6))
+            sys_ctrl_ranges_lookup = stage_dict.get("system_control_range_nonres", {})
+    except Exception as e:
+         print(f"[WARNING] assign_ventilation_values.py: Error getting infiltration/control ranges from lookup: {e}. Using defaults.")
+         sys_ctrl_ranges_lookup = {}
+
+    year_factor_lookup = stage_dict.get("year_factor_range", {})
+    year_factor_rng = year_factor_lookup.get(year_key, (1.0, 1.0))
+
+    hrv_sens_eff_rng = stage_dict.get("hrv_sensible_eff_range", hrv_sens_eff_rng)
+    hrv_latent_eff_rng = stage_dict.get("hrv_latent_eff_range", hrv_latent_eff_rng)
+    fan_total_efficiency_rng = stage_dict.get("fan_total_efficiency_range", fan_total_efficiency_rng)
+    # Example for fan_pressure_range if it were structured like others:
+    # fan_pressure_data = stage_dict.get("fan_pressure_range", {})
+    # fan_pressure_rng = fan_pressure_data.get("res_mech" if is_residential else "nonres_intake", fan_pressure_rng)
+
+
+    if isinstance(sys_ctrl_ranges_lookup, dict):
+        system_specific_ctrl_entry = sys_ctrl_ranges_lookup.get(system_type_final, {})
+        if isinstance(system_specific_ctrl_entry, dict):
+            f_ctrl_rng = system_specific_ctrl_entry.get("f_ctrl_range", f_ctrl_rng)
+        else:
+            print(f"[WARNING] assign_ventilation_values.py: Expected dict for sys_ctrl_ranges['{system_type_final}'], got {type(system_specific_ctrl_entry)}. Using default f_ctrl_range {f_ctrl_rng}.")
+    else:
+        print(f"[WARNING] assign_ventilation_values.py: System control ranges not found or invalid. Using default f_ctrl_range {f_ctrl_rng}.")
+
+    # --- 2) Apply User Overrides from user_config_vent ---
+    matches = find_vent_overrides(
+        building_id or 0, building_function, age_range,
+        scenario, calibration_stage, user_config_vent
+    )
+
+    for row in matches:
+        pname = row.get("param_name", "")
+        if pname == "infiltration_base":
+            infiltration_base_rng = override_range(infiltration_base_rng, row, "infiltration_base")
+        elif pname == "year_factor":
+            year_factor_rng = override_range(year_factor_rng, row, "year_factor")
+        elif pname == "system_type": # Overriding system_type
+            if "fixed_value" in row:
+                system_type_final = str(row["fixed_value"])
+                # Re-lookup f_ctrl range based on potentially overridden system_type
+                if isinstance(sys_ctrl_ranges_lookup, dict):
+                    system_entry = sys_ctrl_ranges_lookup.get(system_type_final, {})
+                    if isinstance(system_entry, dict):
+                        f_ctrl_rng = system_entry.get("f_ctrl_range", (1.0, 1.0))
+                    else: f_ctrl_rng = (1.0, 1.0)
+                else: f_ctrl_rng = (1.0, 1.0)
+        elif pname == "fan_pressure":
+            fan_pressure_rng = override_range(fan_pressure_rng, row, "fan_pressure")
+        elif pname == "fan_total_efficiency":
+            fan_total_efficiency_rng = override_range(fan_total_efficiency_rng, row, "fan_total_efficiency")
+        elif pname == "f_ctrl":
+            f_ctrl_rng = override_range(f_ctrl_rng, row, "f_ctrl")
+        elif pname == "hrv_eff":
+            hrv_sens_eff_rng = override_range(hrv_sens_eff_rng, row, "hrv_eff")
+        elif pname == "hrv_latent_eff":
+            hrv_latent_eff_rng = override_range(hrv_latent_eff_rng, row, "hrv_latent_eff")
+        # ---- Schedule Name Overrides ----
+        elif pname == "infiltration_schedule_name":
+            if "fixed_value" in row:
+                infiltration_sched_name = str(row["fixed_value"]) # Direct string override
+        elif pname == "ventilation_schedule_name":
+            if "fixed_value" in row:
+                ventilation_sched_name = str(row["fixed_value"]) # Direct string override
+
+    # --- 3) Pick Final Values from Ranges ---
+    local_log_for_params = {} # For storing picked values and their source ranges for parameters
+
+    infiltration_base_val = pick_val_with_range(infiltration_base_rng, strategy, local_log_for_params, "infiltration_base_L_s_m2_10Pa")
+    year_factor_val       = pick_val_with_range(year_factor_rng, strategy, local_log_for_params, "year_factor")
+    fan_pressure_val      = pick_val_with_range(fan_pressure_rng, strategy, local_log_for_params, "fan_pressure")
+    fan_total_efficiency_val = pick_val_with_range(fan_total_efficiency_rng, strategy, local_log_for_params, "fan_total_efficiency")
+    f_ctrl_val            = pick_val_with_range(f_ctrl_rng, strategy, local_log_for_params, "f_ctrl")
+
+    if system_type_final == "D":
+        hrv_sens_eff_val = pick_val_with_range(hrv_sens_eff_rng, strategy, local_log_for_params, "hrv_eff")
+        hrv_latent_eff_val = pick_val_with_range(hrv_latent_eff_rng, strategy, local_log_for_params, "hrv_lat_eff")
+    else:
+        hrv_sens_eff_val = 0.0
+        hrv_latent_eff_val = 0.0
+        local_log_for_params["hrv_eff_range"] = (0.0, 0.0)
+        local_log_for_params["hrv_eff"] = 0.0
+        local_log_for_params["hrv_lat_eff_range"] = (0.0, 0.0)
+        local_log_for_params["hrv_lat_eff"] = 0.0
+
+    # --- 4) Assemble Final Dictionary to be Returned ---
+    # This dictionary includes the picked parameters and the determined schedule names.
+    # The actual schedule objects are created later in add_ventilation.py.
+    assigned_params = {
+        "infiltration_base_L_s_m2_10Pa": local_log_for_params["infiltration_base_L_s_m2_10Pa"],
+        "infiltration_base_L_s_m2_10Pa_range": local_log_for_params["infiltration_base_L_s_m2_10Pa_range"],
+        "year_factor": local_log_for_params["year_factor"],
+        "year_factor_range": local_log_for_params["year_factor_range"],
+        "fan_pressure": local_log_for_params["fan_pressure"],
+        "fan_pressure_range": local_log_for_params["fan_pressure_range"],
+        "fan_total_efficiency": local_log_for_params["fan_total_efficiency"],
+        "fan_total_efficiency_range": local_log_for_params["fan_total_efficiency_range"],
+        "f_ctrl": local_log_for_params["f_ctrl"],
+        "f_ctrl_range": local_log_for_params["f_ctrl_range"],
+        "hrv_eff": local_log_for_params["hrv_eff"],
+        "hrv_eff_range": local_log_for_params["hrv_eff_range"],
+        "hrv_lat_eff": local_log_for_params["hrv_lat_eff"],
+        "hrv_lat_eff_range": local_log_for_params["hrv_lat_eff_range"],
+        "infiltration_schedule_name": infiltration_sched_name, # Final determined name
+        "ventilation_schedule_name": ventilation_sched_name,   # Final determined name
+        "system_type": system_type_final,
+        "flow_exponent": default_flow_exponent,
+        "strategy_letter": strategy # Pass the strategy letter for consistency if needed by other functions
+    }
+    
+    # Logging of these 'assigned_params' happens in add_ventilation.py's 'assigned_vent_log'
+
+    return assigned_params
 ------------------------------------------------------------
 
 File: D:\Documents\E_Plus_2030_py\modification\main_modifi.py
@@ -2406,264 +3824,6 @@ def load_scenario_csv(scenario_csv):
         raise FileNotFoundError(f"Cannot find scenario CSV at: {scenario_csv}")
     df = pd.read_csv(scenario_csv)
     return df
-
-------------------------------------------------------------
-
-File: D:\Documents\E_Plus_2030_py\idf_objects\structuring\flatten_assigned_vent.py
-============================================================
-"""
-flatten_assigned_vent.py
-
-Transforms the "assigned_ventilation.csv" file (with columns
-[ogc_fid, zone_name, param_name, assigned_value]) into two structured CSVs:
-  1) assigned_vent_building.csv (building-level, no zone_name)
-  2) assigned_vent_zones.csv    (zone-level, with zone_name)
-
-Usage (standalone):
-    python flatten_assigned_vent.py
-or
-    from idf_objects.structuring.flatten_assigned_vent import main
-    main()
-"""
-
-import os
-import ast
-import pandas as pd
-
-
-def parse_assigned_value(value_str):
-    """
-    Safely convert the string in 'assigned_value' into a Python dict/list only
-    if it starts with '{' or '['. Otherwise, keep it as a plain string.
-
-    This ensures that schedule names or other non-dict strings (like "AlwaysOnSched")
-    remain intact.
-    """
-    if not isinstance(value_str, str):
-        # If it's already numeric or None, just return as-is
-        return value_str
-
-    trimmed = value_str.strip()
-    # If it looks like a dict or list, try literal_eval
-    if trimmed.startswith("{") or trimmed.startswith("["):
-        try:
-            return ast.literal_eval(trimmed)
-        except (SyntaxError, ValueError, TypeError):
-            # If parsing fails, fall back to returning the raw string
-            return trimmed
-    else:
-        # It's a normal string like "AlwaysOnSched"—return as-is
-        return trimmed
-
-
-def flatten_ventilation_data(df_input, out_build_csv, out_zone_csv):
-    """
-    Splits the input DataFrame into two files:
-      - Building-level rows (where 'zone_name' is NaN/None)
-      - Zone-level rows (where 'zone_name' is not null)
-
-    Also renames 'assigned_value' -> 'param_value' for downstream scripts.
-
-    :param df_input: pd.DataFrame
-        Must contain columns => "ogc_fid", "zone_name", "param_name", "assigned_value"
-    :param out_build_csv: str
-        File path for building-level CSV output.
-    :param out_zone_csv: str
-        File path for zone-level CSV output.
-    """
-
-    # 1. Parse 'assigned_value' so that dictionaries or lists remain structured,
-    #    while strings like "AlwaysOnSched" remain unmodified
-    if "assigned_value" in df_input.columns:
-        df_input["assigned_value"] = df_input["assigned_value"].apply(parse_assigned_value)
-    else:
-        pass  # Possibly it already has 'param_value' instead
-
-    # 2. Ensure 'zone_name' exists (some files might be purely building-level)
-    if "zone_name" not in df_input.columns:
-        df_input["zone_name"] = pd.NA
-
-    # 3. Split out building-level vs zone-level
-    df_build = df_input[df_input["zone_name"].isnull()].copy()
-    df_zone  = df_input[df_input["zone_name"].notnull()].copy()
-
-    # 4. Rename 'assigned_value' -> 'param_value'
-    if "assigned_value" in df_build.columns:
-        df_build.rename(columns={"assigned_value": "param_value"}, inplace=True)
-    if "assigned_value" in df_zone.columns:
-        df_zone.rename(columns={"assigned_value": "param_value"}, inplace=True)
-
-    # 5. Re-index columns so they're in the expected order
-    build_cols = ["ogc_fid", "param_name", "param_value"]
-    zone_cols  = ["ogc_fid", "zone_name", "param_name", "param_value"]
-    df_build = df_build.reindex(columns=build_cols)
-    df_zone  = df_zone.reindex(columns=zone_cols)
-
-    # 6. Write them
-    os.makedirs(os.path.dirname(out_build_csv), exist_ok=True)
-    df_build.to_csv(out_build_csv, index=False)
-    os.makedirs(os.path.dirname(out_zone_csv), exist_ok=True)
-    df_zone.to_csv(out_zone_csv, index=False)
-
-    print(f"[INFO] Wrote building-level ventilation picks to {out_build_csv} ({len(df_build)} rows).")
-    print(f"[INFO] Wrote zone-level ventilation picks to {out_zone_csv} ({len(df_zone)} rows).")
-
-
-def main():
-    """
-    Example CLI entry point:
-        python flatten_assigned_vent.py
-    """
-    csv_in       = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_ventilation.csv"
-    csv_build_out= r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_vent_building.csv"
-    csv_zone_out = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_vent_zones.csv"
-
-    if not os.path.exists(csv_in):
-        print(f"Error: Input file not found at {csv_in}")
-        return
-
-    df_assigned = pd.read_csv(csv_in)
-
-    flatten_ventilation_data(
-        df_input=df_assigned,
-        out_build_csv=csv_build_out,
-        out_zone_csv=csv_zone_out
-    )
-
-
-if __name__ == "__main__":
-    main()
-
-------------------------------------------------------------
-
-File: D:\Documents\E_Plus_2030_py\idf_objects\structuring\flatten_hvac.py
-============================================================
-"""
-flatten_hvac.py
-
-Transforms the "assigned_hvac_params.csv" file (with columns [ogc_fid, zone_name, param_name, assigned_value])
-into two structured CSVs:
-  1) assigned_hvac_building.csv  (building-level, no zone_name)
-  2) assigned_hvac_zones.csv     (zone-level, with zone_name)
-
-Usage (standalone):
-    python flatten_hvac.py
-
-Or import and call 'main()' or the lower-level functions.
-"""
-
-import os
-import ast
-import pandas as pd
-
-
-def parse_assigned_value(value_str):
-    """
-    Safely convert a string from 'assigned_value' into either:
-      - A real Python dict or list (if the string starts with '{' or '[')
-      - A numeric (if it can parse easily, but we rely on literal_eval)
-      - A plain string (if it's just "AlwaysOnSched", "N/A", etc.)
-
-    This prevents losing plain strings like "AlwaysOnSched" or "DAY_SCHEDULE".
-    """
-    if not isinstance(value_str, str):
-        # e.g. it's already numeric or None
-        return value_str
-
-    trimmed = value_str.strip()
-    # If it looks like a Python dict or list, try literal_eval
-    if trimmed.startswith("{") or trimmed.startswith("["):
-        try:
-            return ast.literal_eval(trimmed)
-        except (SyntaxError, ValueError, TypeError):
-            # Fallback to returning the raw string if parsing fails
-            return trimmed
-    else:
-        # It's presumably just a normal string (or numeric in string form).
-        # If you want to parse numeric strings here, you could attempt float(trimmed).
-        # But commonly we just keep it as-is unless you're sure it's numeric.
-        return trimmed
-
-
-def flatten_hvac_data(df_input, out_build_csv, out_zone_csv):
-    """
-    Splits the DataFrame into two separate CSVs:
-      - building-level (where zone_name is NaN/None)
-      - zone-level (where zone_name is not null)
-
-    Also renames 'assigned_value' -> 'param_value' for downstream scripts.
-
-    :param df_input: pd.DataFrame
-         Must contain columns => "ogc_fid", "zone_name", "param_name", "assigned_value"
-    :param out_build_csv: str
-         File path for building-level CSV output.
-    :param out_zone_csv: str
-         File path for zone-level CSV output.
-    """
-
-    # 1) Parse the assigned_value to keep or convert it properly
-    if "assigned_value" in df_input.columns:
-        df_input["assigned_value"] = df_input["assigned_value"].apply(parse_assigned_value)
-    else:
-        # If there's no assigned_value column, you can't parse. Possibly param_value is already there.
-        pass
-
-    # 2) Ensure a 'zone_name' column exists (some files might be purely building-level)
-    if "zone_name" not in df_input.columns:
-        df_input["zone_name"] = pd.NA
-
-    # 3) Split into building-level vs. zone-level
-    df_build = df_input[df_input["zone_name"].isnull()].copy()
-    df_zone  = df_input[df_input["zone_name"].notnull()].copy()
-
-    # 4) Rename 'assigned_value' -> 'param_value' for uniform usage
-    if "assigned_value" in df_build.columns:
-        df_build.rename(columns={"assigned_value": "param_value"}, inplace=True)
-    if "assigned_value" in df_zone.columns:
-        df_zone.rename(columns={"assigned_value": "param_value"}, inplace=True)
-
-    # 5) Re-index columns so they appear in the desired order
-    build_cols = ["ogc_fid", "param_name", "param_value"]
-    zone_cols  = ["ogc_fid", "zone_name", "param_name", "param_value"]
-    df_build = df_build.reindex(columns=build_cols)
-    df_zone  = df_zone.reindex(columns=zone_cols)
-
-    # 6) Save them
-    os.makedirs(os.path.dirname(out_build_csv), exist_ok=True)
-    df_build.to_csv(out_build_csv, index=False)
-    os.makedirs(os.path.dirname(out_zone_csv), exist_ok=True)
-    df_zone.to_csv(out_zone_csv, index=False)
-
-    print(f"[INFO] Wrote building-level HVAC picks to {out_build_csv} ({len(df_build)} rows).")
-    print(f"[INFO] Wrote zone-level HVAC picks to {out_zone_csv} ({len(df_zone)} rows).")
-
-
-def main():
-    """
-    Example CLI entry point, if you run this file standalone:
-        python flatten_hvac.py
-    """
-    # You can customize these defaults:
-    csv_in        = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_hvac_params.csv"
-    csv_build_out = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_hvac_building.csv"
-    csv_zone_out  = r"D:\Documents\E_Plus_2030_py\output\assigned\assigned_hvac_zones.csv"
-
-    # Check if the input file exists:
-    if not os.path.exists(csv_in):
-        print(f"Error: Input file not found at {csv_in}")
-        return
-
-    df_assigned = pd.read_csv(csv_in)
-
-    flatten_hvac_data(
-        df_input=df_assigned,
-        out_build_csv=csv_build_out,
-        out_zone_csv=csv_zone_out
-    )
-
-
-if __name__ == "__main__":
-    main()
 
 ------------------------------------------------------------
 

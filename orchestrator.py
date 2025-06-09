@@ -45,6 +45,7 @@ from excel_overrides import (
 # Fenestration config
 from idf_objects.fenez.fenez_config_manager import build_fenez_config
 
+
 # IDF creation
 import idf_creation
 from idf_creation import create_idfs_for_all_buildings
@@ -126,6 +127,28 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
         if cancel_event and cancel_event.is_set():
             logger.warning("=== CANCEL event detected. Stopping workflow. ===")
             raise WorkflowCanceled("Workflow was canceled by user request.")
+
+
+    # -------------------------------------------------------------------------
+    # 12) Helper to handle patching CSVs that are "relative" but not "data/".
+    # -------------------------------------------------------------------------
+    def patch_if_relative(csv_path: str):
+        """
+        1) If absolute, return as-is.
+        2) If starts with 'data/', interpret as /usr/src/app/data/... (no job folder).
+        3) Else, join with job_output_dir.
+        """
+        if not csv_path:
+            return csv_path
+        if os.path.isabs(csv_path):
+            return csv_path
+        if csv_path.startswith("data/"):
+            return os.path.join("/usr/src/app", csv_path)
+        return os.path.join(job_output_dir, csv_path)
+
+
+
+
 
     # -------------------------------------------------------------------------
     # 1) Identify the user_configs folder (where main_config.json resides)
@@ -485,6 +508,32 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
                 transform_dhw_log_to_structured(dhw_in, dhw_out)
             else:
                 logger.warning(f"[STRUCTURING] DHW input CSV not found => {dhw_in}")
+
+
+            # --- Shading ----------------------------------------------------
+            from idf_objects.structuring.shading_structuring import transform_shading_log_to_structured
+            shading_conf = structuring_cfg.get("shading", {})
+            user_shading_rules = safe_load_subjson("shading.json", "shading") or []
+            
+            if shading_conf:
+                shading_in = patch_if_relative(shading_conf.get("csv_in"))
+                shading_out = patch_if_relative(shading_conf.get("csv_out"))
+
+                transform_shading_log_to_structured(
+                    csv_input=shading_in,
+                    csv_output=shading_out,
+                    user_shading_rules=user_shading_rules
+                )
+            else:
+                logger.warning("[STRUCTURING] 'shading' configuration not found in structuring settings.")
+
+
+
+
+
+
+
+
 
             # --- HVAC flatten -----------------------------------------------
             from idf_objects.structuring.flatten_hvac import flatten_hvac_data, parse_assigned_value as parse_hvac

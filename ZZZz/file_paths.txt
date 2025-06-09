@@ -1,11 +1,5 @@
 D:\Documents\E_Plus_2030_py\idf_creation.py
 
-D:\Documents\E_Plus_2030_py\idf_objects\HVAC\assign_hvac_values.py
-D:\Documents\E_Plus_2030_py\idf_objects\HVAC\custom_hvac.py
-
-D:\Documents\E_Plus_2030_py\idf_objects\ventilation\add_ventilation.py
-D:\Documents\E_Plus_2030_py\idf_objects\ventilation\assign_ventilation_values.py
-
 
 
 D:\Documents\E_Plus_2030_py\modification\main_modifi.py

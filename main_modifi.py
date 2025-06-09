@@ -100,6 +100,12 @@ from modification.fenez_functions2 import (
     apply_object_level_fenez
 )
 
+
+# NEW: Import the shading functions
+from modification.shading_functions import create_shading_scenarios, apply_shading_params_to_idf
+
+
+
 # ---------------------------------------------------------------------------
 # C) Simulation + Post-processing + Validation
 # ---------------------------------------------------------------------------
@@ -238,6 +244,9 @@ def run_modification_workflow(config):
     # Fenestration
     df_fenez = load_assigned_csv(assigned_csvs["fenez"]) if "fenez" in assigned_csvs else None
 
+    # NEW: Load assigned shading data
+    df_shading = load_assigned_csv(assigned_csvs["shading"]) if "shading" in assigned_csvs else None
+
     # -----------------------------------------------------------------------
     # 3) Filter data for this building
     # -----------------------------------------------------------------------
@@ -253,6 +262,11 @@ def run_modification_workflow(config):
     df_vent_zn_sub  = filter_for_building(df_vent_zn)
     df_elec_sub     = filter_for_building(df_elec)
     df_fenez_sub    = filter_for_building(df_fenez)
+
+    # NEW: Filter shading data. It uses 'window_id', not 'ogc_fid'.
+    # We assume for now that all windows in the base IDF belong to the target building.
+    df_shading_sub = df_shading.copy() if df_shading is not None else pd.DataFrame()
+
 
     # -----------------------------------------------------------------------
     # 4) Generate scenario picks (random or otherwise)
@@ -324,6 +338,20 @@ def run_modification_workflow(config):
             scenario_csv_out=scenario_csvs["fenez"]
         )
 
+    # NEW: Generate shading scenarios
+    if not df_shading_sub.empty:
+        create_shading_scenarios(
+            df_shading_input=df_shading_sub,
+            building_id=building_id,
+            num_scenarios=num_scenarios,
+            picking_method=picking_method,
+            random_seed=42,
+            scenario_csv_out=scenario_csvs["shading"]
+        )
+
+
+
+
     # -----------------------------------------------------------------------
     # 5) Load scenario CSV => group by scenario_index
     # -----------------------------------------------------------------------
@@ -337,12 +365,19 @@ def run_modification_workflow(config):
     df_vent_scen  = safe_load_scenario(scenario_csvs["vent"])
     df_elec_scen  = safe_load_scenario(scenario_csvs["elec"])
     df_fenez_scen = safe_load_scenario(scenario_csvs["fenez"])
+    # NEW: Load shading scenarios
+    df_shading_scen = safe_load_scenario(scenario_csvs["shading"])
+
 
     hvac_groups  = df_hvac_scen.groupby("scenario_index")  if not df_hvac_scen.empty  else None
     dhw_groups   = df_dhw_scen.groupby("scenario_index")   if not df_dhw_scen.empty   else None
     vent_groups  = df_vent_scen.groupby("scenario_index")  if not df_vent_scen.empty  else None
     elec_groups  = df_elec_scen.groupby("scenario_index")  if not df_elec_scen.empty  else None
     fenez_groups = df_fenez_scen.groupby("scenario_index") if not df_fenez_scen.empty else None
+
+    # NEW: Group shading scenarios
+    shading_groups = df_shading_scen.groupby("scenario_index") if not df_shading_scen.empty else None
+
 
     # -----------------------------------------------------------------------
     # 6) For each scenario, load base IDF, apply parameters, save new IDF
@@ -355,6 +390,8 @@ def run_modification_workflow(config):
         vent_df   = vent_groups.get_group(i) if vent_groups and i in vent_groups.groups else pd.DataFrame()
         elec_df   = elec_groups.get_group(i) if elec_groups and i in elec_groups.groups else pd.DataFrame()
         fenez_df  = fenez_groups.get_group(i)if fenez_groups and i in fenez_groups.groups else pd.DataFrame()
+        # NEW: Get the shading data for this specific scenario
+        shading_df = shading_groups.get_group(i) if shading_groups and i in shading_groups.groups else pd.DataFrame()
 
         hvac_bld_df   = hvac_df[hvac_df["zone_name"].isna()]
         hvac_zone_df  = hvac_df[hvac_df["zone_name"].notna()]
@@ -391,6 +428,9 @@ def run_modification_workflow(config):
         # Apply Fenestration => object-level
         apply_object_level_fenez(idf, fenez_df)
 
+        # NEW: Apply shading parameters
+        apply_shading_params_to_idf(idf, shading_df)
+        
         # Save scenario IDF
         scenario_idf_name = f"building_{building_id}_scenario_{i}.idf"
         scenario_idf_path = os.path.join(scenario_idf_dir, scenario_idf_name)

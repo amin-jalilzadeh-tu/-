@@ -5,7 +5,7 @@ services:
     build: .
     container_name: ep_app
     # Add the command to start Gunicorn with a longer timeout
-    command: gunicorn -b 0.0.0.0:8000 --workers=1 --timeout=120 app:app
+    command: gunicorn -b 0.0.0.0:8000 --workers=1 --timeout=1200 app:app
     env_file:
       - .env
     environment:
