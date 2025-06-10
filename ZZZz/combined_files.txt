@@ -1,3 +1,532 @@
+File: D:\Documents\E_Plus_2030_py\validation\compare_sims_with_measured.py
+============================================================
+# validation/compare_sims_with_measured.py
+import pandas as pd
+
+def load_csv_as_df(real_data_path, sim_data_path):
+    """
+    Loads real and simulated data from CSV into DataFrames.
+    Just a simple utility function, used if needed.
+    """
+    print(f"[DEBUG] Loading real data from: {real_data_path}")
+    print(f"[DEBUG] Loading sim data  from: {sim_data_path}")
+
+    df_real = pd.read_csv(real_data_path)
+    df_sim  = pd.read_csv(sim_data_path)
+
+    print("[DEBUG] df_real shape:", df_real.shape)
+    print("[DEBUG] df_sim  shape:", df_sim.shape)
+    print("[DEBUG] df_real columns:", df_real.columns.to_list())
+    print("[DEBUG] df_sim columns: ", df_sim.columns.to_list())
+    return df_real, df_sim
+
+
+def align_data_for_variable(df_real, df_sim, real_building_id, sim_building_id, variable_name):
+    """
+    Returns aligned arrays of sim vs. obs for a given (real_building_id, sim_building_id, variable).
+    - df_real and df_sim should be *already filtered* to the appropriate building + var
+      (i.e., df_real_sub, df_sim_sub).
+    - This function melts them from wide to long format and merges on 'Date'.
+
+    Returns: (sim_values_array, obs_values_array, merged_dataframe)
+    """
+
+    # 1) Filter again for safety, though presumably df_real and df_sim are already subset
+    real_sel = df_real[
+        (df_real['BuildingID'] == real_building_id) &
+        (df_real['VariableName'] == variable_name)
+    ]
+    sim_sel  = df_sim[
+        (df_sim['BuildingID'] == sim_building_id) &
+        (df_sim['VariableName'] == variable_name)
+    ]
+
+    # Debug prints
+    print(f"   > Aligning real Bldg={real_building_id} vs sim Bldg={sim_building_id}, Var={variable_name}")
+    print(f"   > real_sel shape={real_sel.shape}, sim_sel shape={sim_sel.shape}")
+
+    # If empty, return empty arrays
+    if real_sel.empty or sim_sel.empty:
+        return [], [], pd.DataFrame()
+
+    # 2) Melt from wide to long
+    real_long = real_sel.melt(
+        id_vars=['BuildingID','VariableName'],
+        var_name='Date',
+        value_name='Value'
+    ).dropna(subset=['Value'])
+
+    sim_long = sim_sel.melt(
+        id_vars=['BuildingID','VariableName'],
+        var_name='Date',
+        value_name='Value'
+    ).dropna(subset=['Value'])
+
+    # 3) Merge on 'Date'
+    merged = pd.merge(
+        real_long[['Date','Value']],
+        sim_long[['Date','Value']],
+        on='Date', how='inner', suffixes=('_obs','_sim')
+    )
+
+    # 4) Return arrays plus the merged DataFrame
+    return merged['Value_sim'].values, merged['Value_obs'].values, merged
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\validation\main_validation.py
+============================================================
+# main_validation.py
+"""
+validation/main_validation.py
+
+This module provides a reusable function `run_validation_process` that:
+- Reads user config for validation
+- Calls validate_with_ranges(...) from validate_results_custom.py
+- Prints and saves a CSV of metrics
+- Optionally generates a bar chart (or time-series/scatter) if skip_plots is False
+
+Added Feature:
+- Uses config["variables_to_compare"] to restrict which VariableNames to validate.
+
+Dependencies (unchanged):
+- validation.compare_sims_with_measured
+- validation.metrics
+- validation.validate_results_custom (must be updated to accept `variables_to_compare`)
+- validation.visualize
+"""
+
+import csv
+import matplotlib.pyplot as plt
+
+from validation.validate_results_custom import validate_with_ranges
+
+def run_validation_process(config):
+    """
+    Runs a validation process based on a user config dict.
+
+    Example config structure:
+    {
+        "real_data_csv": "path/to/real_data.csv",
+        "sim_data_csv":  "path/to/sim_data.csv",
+        "bldg_ranges":   { "0": [0, 1, 2], "1": [1] },
+        "variables_to_compare": [
+            "Electricity:Facility [J](Hourly)",
+            "Heating:EnergyTransfer [J](Hourly)"
+        ],
+        "threshold_cv_rmse": 30.0,
+        "skip_plots": false,
+        "output_csv": "validation_report.csv"
+    }
+    """
+
+    # 1) Extract config values
+    real_data_csv     = config.get("real_data_csv", "")
+    sim_data_csv      = config.get("sim_data_csv", "")
+    bldg_ranges       = config.get("bldg_ranges", {})
+    threshold_cv_rmse = config.get("threshold_cv_rmse", 30.0)
+    skip_plots        = config.get("skip_plots", False)
+    output_csv        = config.get("output_csv", "validation_report.csv")
+
+    # NEW: A list of variable names to compare
+    variables_to_compare = config.get("variables_to_compare", [])
+
+    print(f"[INFO] Starting validation with:")
+    print(f"   Real data CSV = {real_data_csv}")
+    print(f"   Sim  data CSV = {sim_data_csv}")
+    print(f"   Building Ranges = {bldg_ranges}")
+    print(f"   Variables to Compare = {variables_to_compare}")
+    print(f"   Threshold CV(RMSE) = {threshold_cv_rmse}")
+    print(f"   skip_plots = {skip_plots}")
+    print(f"   output_csv = {output_csv}")
+
+    # 2) Call validate_with_ranges
+    metric_results = validate_with_ranges(
+        real_data_path=real_data_csv,
+        sim_data_path=sim_data_csv,
+        bldg_ranges=bldg_ranges,
+        variables_to_compare=variables_to_compare,   # pass in the new argument
+        threshold_cv_rmse=threshold_cv_rmse,
+        skip_plots=skip_plots
+    )
+
+    # 3) Print summary to console
+    print("\n=== Validation Summary ===")
+    for (real_bldg, sim_bldg, var_name), mvals in metric_results.items():
+        print(
+            f"Real={real_bldg}, Sim={sim_bldg}, Var={var_name} => "
+            f"MBE={mvals['MBE']:.2f}, "
+            f"CV(RMSE)={mvals['CVRMSE']:.2f}, "
+            f"NMBE={mvals['NMBE']:.2f}, "
+            f"Pass={mvals['Pass']}"
+        )
+
+    # 4) Save metrics to CSV
+    print(f"\n[INFO] Saving metrics to {output_csv}")
+    with open(output_csv, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(["RealBldg", "SimBldg", "VariableName", "MBE", "CVRMSE", "NMBE", "Pass"])
+        for (real_bldg, sim_bldg, var_name), mvals in metric_results.items():
+            writer.writerow([
+                real_bldg,
+                sim_bldg,
+                var_name,
+                f"{mvals['MBE']:.2f}",
+                f"{mvals['CVRMSE']:.2f}",
+                f"{mvals['NMBE']:.2f}",
+                mvals['Pass']
+            ])
+
+    # 5) Check for calibration triggers if CV(RMSE) fails
+    print("\n=== Checking for Calibration Needs ===")
+    for (real_bldg, sim_bldg, var_name), mvals in metric_results.items():
+        if not mvals['Pass']:
+            print(
+                f"[CALIBRATION] RealBldg={real_bldg}, SimBldg={sim_bldg}, Var={var_name}: "
+                f"CV(RMSE)={mvals['CVRMSE']:.2f}% > threshold => Trigger calibration steps..."
+            )
+
+    # 6) Optional bar chart: CV(RMSE) for each (RealBldg, SimBldg, Var)
+    #    We'll define an inline function here or import from visualize.
+    bar_chart_metrics_for_triple(metric_results, title="CV(RMSE) Validation (Per Real vs. Sim)")
+
+def bar_chart_metrics_for_triple(metric_dict, title="Validation Metrics"):
+    """
+    Create a bar chart of CV(RMSE) for each (RealBldg, SimBldg, Var).
+    Bars are green if pass, red if fail.
+    """
+    if not metric_dict:
+        print("[DEBUG] No metrics to plot - metric_dict is empty.")
+        return
+
+    labels = []
+    cvrmse_values = []
+    pass_status = []
+
+    for (real_bldg, sim_bldg, var_name), mvals in metric_dict.items():
+        label = f"R{real_bldg}-S{sim_bldg}-{var_name}"
+        labels.append(label)
+        cvrmse_values.append(mvals['CVRMSE'])
+        pass_status.append(mvals['Pass'])
+
+    x = range(len(labels))
+
+    plt.figure(figsize=(12, 6))
+    bars = plt.bar(x, cvrmse_values, alpha=0.7)
+
+    for i, bar in enumerate(bars):
+        bar.set_color('green' if pass_status[i] else 'red')
+
+    plt.xticks(list(x), labels, rotation=45, ha='right')
+    plt.ylabel("CV(RMSE) (%)")
+    plt.title(title)
+    if cvrmse_values:
+        plt.ylim(0, max(cvrmse_values)*1.1)
+    plt.tight_layout()
+    plt.show()
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\validation\metrics.py
+============================================================
+# validation/metrics.py
+import numpy as np
+
+def mean_bias_error(sim_values, obs_values):
+    """
+    MBE = ( sum(obs_i - sim_i) / sum(obs_i) ) * 100
+    """
+    sim = np.array(sim_values, dtype=float)
+    obs = np.array(obs_values, dtype=float)
+    denominator = np.sum(obs)
+    if denominator == 0:
+        return float('nan')
+    mbe = (np.sum(obs - sim) / denominator) * 100.0
+    return mbe
+
+def cv_rmse(sim_values, obs_values):
+    """
+    CV(RMSE) = ( RMSE / mean(obs) ) * 100
+    """
+    sim = np.array(sim_values, dtype=float)
+    obs = np.array(obs_values, dtype=float)
+    obs_mean = np.mean(obs)
+    if obs_mean == 0:
+        return float('nan')
+    mse = np.mean((obs - sim)**2)
+    rmse = np.sqrt(mse)
+    return (rmse / obs_mean) * 100.0
+
+def nmbe(sim_values, obs_values):
+    """
+    NMBE = 100 * ( sum(obs_i - sim_i) / (n * mean(obs)) )
+    """
+    sim = np.array(sim_values, dtype=float)
+    obs = np.array(obs_values, dtype=float)
+    n = len(sim)
+    obs_mean = np.mean(obs)
+    if obs_mean == 0:
+        return float('nan')
+    nmbe_val = 100.0 * (np.sum(obs - sim) / (n * obs_mean))
+    return nmbe_val
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\validation\validate_results_custom.py
+============================================================
+# validation/validate_results_custom.py
+
+import pandas as pd
+
+from validation.compare_sims_with_measured import align_data_for_variable
+from validation.metrics import mean_bias_error, cv_rmse, nmbe
+from validation.visualize import (
+    plot_time_series_comparison,
+    scatter_plot_comparison,
+)
+
+def validate_with_ranges(
+    real_data_path,
+    sim_data_path,
+    bldg_ranges,
+    variables_to_compare=None,
+    threshold_cv_rmse=30.0,
+    skip_plots=False
+):
+    """
+    Compare real vs sim data for specified building mappings and variable names.
+
+    :param real_data_path: Path to the CSV file with real data
+    :param sim_data_path: Path to the CSV file with sim data
+    :param bldg_ranges: dict mapping real_bldg (string) -> list of sim_bldgs. 
+                       e.g. {"0": [0, 1, 2]}, or {"4136730": ["4136730"]}
+    :param variables_to_compare: list of variable names (strings) to be validated.
+    :param threshold_cv_rmse: pass/fail threshold for CV(RMSE) in percent
+    :param skip_plots: if True, disable time-series and scatter plots
+    :return: a dict of metrics keyed by (real_bldg, sim_bldg, variable_name)
+    """
+
+    if variables_to_compare is None:
+        # If none provided, default to empty => no variables will be compared
+        variables_to_compare = []
+
+    # 1) Load the CSVs
+    df_real = pd.read_csv(real_data_path)
+    df_sim  = pd.read_csv(sim_data_path)
+
+    # 2) Clean up any trailing whitespace in VariableName
+    df_real["VariableName"] = df_real["VariableName"].astype(str).str.strip()
+    df_sim["VariableName"]  = df_sim["VariableName"].astype(str).str.strip()
+
+    # 3) Initialize a results dictionary
+    results = {}
+
+    # 4) Keep track of missing variables for debug
+    missing_in_real = []
+    missing_in_sim  = []
+
+    # 5) Iterate over building mappings
+    for real_bldg_str, sim_bldg_list in bldg_ranges.items():
+        # Convert the real building ID from string to int
+        # (If your CSV has building IDs as int64, this ensures a match)
+        try:
+            real_bldg = int(real_bldg_str)
+        except ValueError:
+            print(f"[WARN] Could not convert real building '{real_bldg_str}' to int; skipping.")
+            continue
+
+        # Subset real data for this real_bldg
+        df_real_sub = df_real[df_real["BuildingID"] == real_bldg]
+        if df_real_sub.empty:
+            print(f"[WARN] No real data for building {real_bldg}")
+            continue
+
+        for sb in sim_bldg_list:
+            # If the sim building is a string, also convert it to int
+            try:
+                sim_bldg = int(sb)
+            except ValueError:
+                print(f"[WARN] Could not convert sim building '{sb}' to int; skipping.")
+                continue
+
+            # Subset sim data for this sim_bldg
+            df_sim_sub = df_sim[df_sim["BuildingID"] == sim_bldg]
+            if df_sim_sub.empty:
+                print(f"[WARN] No sim data for building {sim_bldg}")
+                continue
+
+            # 6) Loop over user-specified variables
+            for var_name in variables_to_compare:
+                # Check presence in real data
+                if var_name not in df_real_sub["VariableName"].unique():
+                    missing_in_real.append((real_bldg, var_name))
+                    continue
+
+                # Check presence in sim data
+                if var_name not in df_sim_sub["VariableName"].unique():
+                    missing_in_sim.append((sim_bldg, var_name))
+                    continue
+
+                # 7) Align data
+                sim_vals, obs_vals, merged_df = align_data_for_variable(
+                    df_real_sub,
+                    df_sim_sub,
+                    real_bldg,
+                    sim_bldg,
+                    var_name
+                )
+
+                # If no overlap or empty arrays, skip
+                if len(sim_vals) == 0 or len(obs_vals) == 0:
+                    print(f"[WARN] No overlap in dates for RealBldg={real_bldg}, SimBldg={sim_bldg}, Var={var_name}")
+                    continue
+
+                # 8) Compute metrics
+                this_mbe   = mean_bias_error(sim_vals, obs_vals)
+                this_cvrmse = cv_rmse(sim_vals, obs_vals)
+                this_nmbe  = nmbe(sim_vals, obs_vals)
+
+                pass_fail = False
+                if this_cvrmse is not None and not (this_cvrmse is float('nan')):
+                    pass_fail = (this_cvrmse < threshold_cv_rmse)
+
+                # 9) Store results
+                results[(real_bldg, sim_bldg, var_name)] = {
+                    "MBE":    this_mbe,
+                    "CVRMSE": this_cvrmse,
+                    "NMBE":   this_nmbe,
+                    "Pass":   pass_fail
+                }
+
+                # 10) Optionally plot
+                if not skip_plots:
+                    label_for_plot = f"{real_bldg}_VS_{sim_bldg}"
+                    plot_time_series_comparison(merged_df, label_for_plot, var_name)
+                    scatter_plot_comparison(merged_df, label_for_plot, var_name)
+
+    # 11) Print missing variable info
+    if missing_in_real:
+        print("\n[INFO] Variables missing in REAL data for these (Building, Var):")
+        unique_missing_real = set(missing_in_real)
+        for (bldg, var) in unique_missing_real:
+            print(f"   - RealBldg={bldg}, Var={var}")
+
+    if missing_in_sim:
+        print("\n[INFO] Variables missing in SIM data for these (Building, Var):")
+        unique_missing_sim = set(missing_in_sim)
+        for (bldg, var) in unique_missing_sim:
+            print(f"   - SimBldg={bldg}, Var={var}")
+
+    # Return the final dictionary of metrics
+    return results
+
+------------------------------------------------------------
+
+File: D:\Documents\E_Plus_2030_py\validation\visualize.py
+============================================================
+# validation/visualize.py
+import matplotlib.pyplot as plt
+
+def plot_time_series_comparison(merged_df, building_id, variable_name):
+    """
+    Creates a simple line plot comparing sim vs. obs over time 
+    (e.g., 01-Jan, 02-Jan, etc.).
+    merged_df has columns: Date, Value_obs, Value_sim
+    """
+    if merged_df.empty:
+        print(f"[DEBUG] No data to plot for Bldg={building_id}, Var={variable_name}")
+        return
+
+    x_vals = merged_df['Date']  # might be strings like '01-Jan'
+    obs_vals = merged_df['Value_obs']
+    sim_vals = merged_df['Value_sim']
+
+    plt.figure(figsize=(10,6))
+    plt.plot(x_vals, obs_vals, 'o-', label='Observed')
+    plt.plot(x_vals, sim_vals, 's-', label='Simulated')
+
+    plt.title(f"Building {building_id} - {variable_name}")
+    plt.xlabel("Date")
+    plt.ylabel("Value")
+    plt.legend()
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+def scatter_plot_comparison(merged_df, building_id, variable_name):
+    """
+    Creates a scatter plot of Observed vs. Simulated for a quick correlation check.
+    """
+    if merged_df.empty:
+        print(f"[DEBUG] No data to plot scatter for Bldg={building_id}, Var={variable_name}")
+        return
+
+    obs_vals = merged_df['Value_obs']
+    sim_vals = merged_df['Value_sim']
+
+    plt.figure(figsize=(6,6))
+    plt.scatter(obs_vals, sim_vals, alpha=0.7)
+    # 1:1 line
+    mn, mx = min(obs_vals.min(), sim_vals.min()), max(obs_vals.max(), sim_vals.max())
+    plt.plot([mn, mx], [mn, mx], color='red', linestyle='--', label='1:1 line')
+
+    plt.title(f"Scatter Comparison: Bldg={building_id}, Var={variable_name}")
+    plt.xlabel("Observed")
+    plt.ylabel("Simulated")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+def bar_chart_metrics(metric_dict, title="Validation Metrics"):
+    """
+    Suppose metric_dict is e.g.:
+      {
+        (0, 'Cooling'): {'MBE': 2.3, 'CVRMSE': 18.5, 'NMBE': -0.4, 'Pass': True},
+        (0, 'Heating'): { ... },
+        (1, 'Cooling'): { ... },
+        ...
+      }
+    We'll create a bar chart of CV(RMSE) across all keys.
+    """
+    import numpy as np
+
+    if not metric_dict:
+        print("[DEBUG] No metrics to plot - metric_dict is empty.")
+        return
+
+    labels = []
+    cvrmse_values = []
+    pass_status = []
+
+    for (b_id, var), mvals in metric_dict.items():
+        label = f"B{b_id}-{var}"
+        labels.append(label)
+        cvrmse_values.append(mvals['CVRMSE'])
+        pass_status.append(mvals['Pass'])
+
+    x = range(len(labels))
+
+    plt.figure(figsize=(10,5))
+    bars = plt.bar(x, cvrmse_values, color='blue', alpha=0.6)
+
+    # Color code pass/fail if you want:
+    for i, bar in enumerate(bars):
+        if pass_status[i]:
+            bar.set_color('green')
+        else:
+            bar.set_color('red')
+
+    plt.xticks(list(x), labels, rotation=45, ha='right')
+    plt.ylabel("CV(RMSE) (%)")
+    plt.title(title)
+
+    if cvrmse_values:
+        plt.ylim(0, max(cvrmse_values)*1.1)
+    plt.tight_layout()
+    plt.show()
+
+------------------------------------------------------------
+
 File: D:\Documents\E_Plus_2030_py\orchestrator.py
 ============================================================
 """
@@ -926,614 +1455,6 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
 
 ------------------------------------------------------------
 
-File: D:\Documents\E_Plus_2030_py\main_modifi.py
-============================================================
-"""
-main_modifi.py
-
-Handles the generation of scenario-based IDFs for sensitivity, surrogate,
-calibration, or any parametric runs, then optionally runs E+ simulation,
-post-processing, and validation in a job-specific folder if provided.
-
-Usage:
-  - Typically invoked from your orchestrator (or command line) with a config dict:
-    {
-      "base_idf_path": "output_IDFs/building_0.idf",
-      "idd_path": "EnergyPlus/Energy+.idd",
-      "assigned_csv": {
-        "hvac_building": "output/assigned/assigned_hvac_building.csv",
-        "hvac_zones": "output/assigned/assigned_hvac_zones.csv",
-        "dhw": "output/assigned/assigned_dhw_params.csv",
-        "vent_build": "output/assigned/assigned_vent_building.csv",
-        "vent_zones": "output/assigned/assigned_vent_zones.csv",
-        "elec": "output/assigned/assigned_lighting.csv",
-        "fenez": "output/assigned/structured_fenez_params.csv"
-      },
-      "scenario_csv": {
-        "hvac": "output/scenarios/scenario_params_hvac.csv",
-        "dhw": "output/scenarios/scenario_params_dhw.csv",
-        "vent": "output/scenarios/scenario_params_vent.csv",
-        "elec": "output/scenarios/scenario_params_elec.csv",
-        "fenez": "output/scenarios/scenario_params_fenez.csv"
-      },
-      "output_idf_dir": "output/scenario_idfs",
-      "building_id": 4136730,
-      "num_scenarios": 5,
-      "picking_method": "random_uniform",
-      "picking_scale_factor": 0.5,
-
-      "run_simulations": true,
-      "simulation_config": {
-        "num_workers": 4,
-        "output_dir": "output/Sim_Results/Scenarios"
-      },
-      "perform_post_process": true,
-      "post_process_config": {
-        "output_csv_as_is": "output/results_scenarioes/merged_as_is_scenarios.csv",
-        "output_csv_daily_mean": "output/results_scenarioes/merged_daily_mean_scenarios.csv"
-      },
-      "perform_validation": true,
-      "validation_config": {
-        "real_data_csv": "data/mock_merged_daily_mean.csv",
-        "sim_data_csv": "output/results_scenarioes/merged_daily_mean_scenarios.csv",
-        "bldg_ranges": { "0": [0,1,2] },
-        "variables_to_compare": [...],
-        "threshold_cv_rmse": 30.0,
-        "skip_plots": true,
-        "output_csv": "scenario_validation_report.csv"
-      },
-
-      "job_output_dir": "/usr/src/app/output/xxxx-uuid"   # (Optional)
-    }
-"""
-
-import os
-import logging
-import pandas as pd
-
-# ---------------------------------------------------------------------------
-# A) Common Utilities
-# ---------------------------------------------------------------------------
-from modification.common_utils import (
-    load_assigned_csv,
-    load_scenario_csv,
-    load_idf,
-    save_idf,
-    generate_multiple_param_sets,
-    save_param_scenarios_to_csv
-)
-
-# ---------------------------------------------------------------------------
-# B) Modules for scenario creation & application
-# ---------------------------------------------------------------------------
-from modification.hvac_functions import (
-    create_hvac_scenarios,
-    apply_building_level_hvac,
-    apply_zone_level_hvac
-)
-from modification.dhw_functions import (
-    create_dhw_scenarios,
-    apply_dhw_params_to_idf
-)
-from modification.vent_functions import (
-    create_vent_scenarios,
-    apply_building_level_vent,
-    apply_zone_level_vent
-)
-from modification.elec_functions import (
-    create_elec_scenarios,
-    apply_building_level_elec,
-    apply_object_level_elec
-)
-from modification.fenez_functions2 import (
-    create_fenez_scenarios,
-    apply_object_level_fenez
-)
-
-
-# NEW: Import the shading functions
-from modification.shading_functions import create_shading_scenarios, apply_shading_params_to_idf
-
-from modification.equipment_functions import create_equipment_scenarios, apply_equipment_params_to_idf
-
-from modification.zone_sizing_functions import create_zone_sizing_scenarios, apply_zone_sizing_params_to_idf
-
-
-
-
-# ---------------------------------------------------------------------------
-# C) Simulation + Post-processing + Validation
-# ---------------------------------------------------------------------------
-from epw.run_epw_sims import simulate_all
-from postproc.merge_results import merge_all_results
-from validation.main_validation import run_validation_process
-
-
-def run_all_idfs_in_folder(
-    folder_path: str,
-    iddfile: str,
-    base_output_dir: str,
-    default_lat: float = 52.15,
-    default_lon: float = 4.40,
-    default_year: int = 2020,
-    num_workers: int = 4
-):
-    """
-    Utility function to find .idf files in folder_path and run them with simulate_all(...).
-    Adjust lat/lon/year or load them from a side CSV if needed.
-    """
-    logger = logging.getLogger(__name__)
-    logger.info(f"[run_all_idfs_in_folder] Searching .idf files in {folder_path}")
-
-    if not os.path.isdir(folder_path):
-        logger.warning(f"[run_all_idfs_in_folder] Folder not found => {folder_path}")
-        return
-
-    idf_files = [f for f in os.listdir(folder_path) if f.lower().endswith(".idf")]
-    if not idf_files:
-        logger.warning(f"[run_all_idfs_in_folder] No .idf files in {folder_path} to run.")
-        return
-
-    data_rows = []
-    for idx, idf_name in enumerate(idf_files):
-        data_rows.append({
-            "idf_name": idf_name,
-            "lat": default_lat,
-            "lon": default_lon,
-            "desired_climate_year": default_year,
-            "ogc_fid": idx  # or parse from filename
-        })
-
-    df_scenarios = pd.DataFrame(data_rows)
-    logger.info(f"[run_all_idfs_in_folder] Running {len(df_scenarios)} scenario IDFs with simulate_all...")
-
-    simulate_all(
-        df_buildings=df_scenarios,
-        idf_directory=folder_path,
-        iddfile=iddfile,
-        base_output_dir=base_output_dir,
-        user_config_epw=None,
-        assigned_epw_log=None,
-        num_workers=num_workers
-    )
-    logger.info("[run_all_idfs_in_folder] Simulations triggered.")
-
-
-def run_modification_workflow(config):
-    """
-    Main function for scenario-based IDF creation + optional E+ simulation,
-    post-processing, and validation.
-
-    Steps:
-      1) Resolve folder paths (scenario IDFs, results) based on config + optional job_output_dir.
-      2) Load assigned CSV data (HVAC, DHW, Vent, Elec, Fenez).
-      3) Filter for the chosen building.
-      4) Generate scenario param picks (random or otherwise).
-      5) For each scenario, load a fresh base IDF, apply picks, save scenario IDF.
-      6) (Optional) run E+ sims for these scenario IDFs, then post-process, then validate.
-
-    :param config: dict
-    :return: None
-    """
-    logger = logging.getLogger(__name__)
-    logger.info("[MODIFICATION] Starting scenario-based workflow...")
-
-    # -----------------------------------------------------------------------
-    # 1) Extract config parts & resolve paths
-    # -----------------------------------------------------------------------
-    base_idf_path   = config["base_idf_path"]
-    idd_path        = config["idd_path"]
-    assigned_csvs   = config["assigned_csv"]
-    scenario_csvs   = config["scenario_csv"]
-    building_id     = config["building_id"]
-    num_scenarios   = config["num_scenarios"]
-    picking_method  = config["picking_method"]
-    scale_factor    = config.get("picking_scale_factor", 1.0)
-
-    # The user might specify something like "output/scenario_idfs" or just "scenario_idfs".
-    scenario_idf_dir = config.get("output_idf_dir", "output/scenario_idfs")
-
-    # Also we have simulation, post-processing, and validation flags:
-    run_sims        = config.get("run_simulations", False)
-    sim_cfg         = config.get("simulation_config", {})
-    do_postproc     = config.get("perform_post_process", False)
-    postproc_cfg    = config.get("post_process_config", {})
-    do_validation   = config.get("perform_validation", False)
-    validation_cfg  = config.get("validation_config", {})
-
-    # If "job_output_dir" is provided, make scenario_idf_dir relative to it (if it's not absolute).
-    job_output_dir = config.get("job_output_dir")  # optional
-    if job_output_dir and not os.path.isabs(scenario_idf_dir):
-        scenario_idf_dir = os.path.join(job_output_dir, scenario_idf_dir)
-    os.makedirs(scenario_idf_dir, exist_ok=True)
-
-    logger.info(f"[MODIFICATION] Scenario IDFs will be placed in: {scenario_idf_dir}")
-
-    # -----------------------------------------------------------------------
-    # 2) Load assigned CSV data
-    # -----------------------------------------------------------------------
-    # HVAC
-    df_hvac_bld = None
-    df_hvac_zn  = None
-    if "hvac_building" in assigned_csvs and "hvac_zones" in assigned_csvs:
-        df_hvac_bld = load_assigned_csv(assigned_csvs["hvac_building"])
-        df_hvac_zn  = load_assigned_csv(assigned_csvs["hvac_zones"])
-    elif "hvac" in assigned_csvs:
-        df_hvac_bld = load_assigned_csv(assigned_csvs["hvac"])
-
-    # DHW
-    df_dhw = load_assigned_csv(assigned_csvs["dhw"]) if "dhw" in assigned_csvs else None
-
-    # Vent
-    df_vent_bld = None
-    df_vent_zn  = None
-    if "vent_build" in assigned_csvs and "vent_zones" in assigned_csvs:
-        df_vent_bld = load_assigned_csv(assigned_csvs["vent_build"])
-        df_vent_zn  = load_assigned_csv(assigned_csvs["vent_zones"])
-    elif "vent" in assigned_csvs:
-        df_vent_bld = load_assigned_csv(assigned_csvs["vent"])
-
-    # Elec
-    df_elec  = load_assigned_csv(assigned_csvs["elec"])  if "elec"  in assigned_csvs else None
-
-    # Fenestration
-    df_fenez = load_assigned_csv(assigned_csvs["fenez"]) if "fenez" in assigned_csvs else None
-
-    # NEW: Load assigned shading data
-    df_shading = load_assigned_csv(assigned_csvs["shading"]) if "shading" in assigned_csvs else None
-
-    #  Load assigned CSV data
-    df_equip = load_assigned_csv(assigned_csvs["equip"]) if "equip" in assigned_csvs else None
-    # Zone sizing
-    df_zone_sizing = load_assigned_csv(assigned_csvs["zone_sizing"]) if "zone_sizing" in assigned_csvs else None
-    
-
-
-
-    # -----------------------------------------------------------------------
-    # 3) Filter data for this building
-    # -----------------------------------------------------------------------
-    def filter_for_building(df):
-        if df is not None and not df.empty:
-            return df[df["ogc_fid"] == building_id].copy()
-        return pd.DataFrame()
-
-    df_hvac_bld_sub = filter_for_building(df_hvac_bld)
-    df_hvac_zn_sub  = filter_for_building(df_hvac_zn)
-    df_dhw_sub      = filter_for_building(df_dhw)
-    df_vent_bld_sub = filter_for_building(df_vent_bld)
-    df_vent_zn_sub  = filter_for_building(df_vent_zn)
-    df_elec_sub     = filter_for_building(df_elec)
-    df_fenez_sub    = filter_for_building(df_fenez)
-
-
-
-    # NEW: Filter shading data. It uses 'window_id', not 'ogc_fid'.
-    # We assume for now that all windows in the base IDF belong to the target building.
-    df_shading_sub = df_shading.copy() if df_shading is not None else pd.DataFrame()
-
-    df_equip_sub = filter_for_building(df_equip)
-    df_zone_sizing_sub = filter_for_building(df_zone_sizing)
-
-
-
-    # -----------------------------------------------------------------------
-    # 4) Generate scenario picks (random or otherwise)
-    # -----------------------------------------------------------------------
-    # HVAC
-    if not df_hvac_bld_sub.empty:
-        if not df_hvac_zn_sub.empty:
-            # multi-step scenario creation for building & zone
-            create_hvac_scenarios(
-                df_building=df_hvac_bld_sub,
-                df_zones=df_hvac_zn_sub,
-                building_id=building_id,
-                num_scenarios=num_scenarios,
-                picking_method=picking_method,
-                random_seed=42,
-                scenario_csv_out=scenario_csvs["hvac"]
-            )
-        else:
-            hvac_scen = generate_multiple_param_sets(
-                df_main_sub=df_hvac_bld_sub,
-                num_sets=num_scenarios,
-                picking_method=picking_method,
-                scale_factor=scale_factor
-            )
-            save_param_scenarios_to_csv(hvac_scen, building_id, scenario_csvs["hvac"])
-
-    # DHW
-    if not df_dhw_sub.empty:
-        create_dhw_scenarios(
-            df_dhw_input=df_dhw_sub,
-            building_id=building_id,
-            num_scenarios=num_scenarios,
-            picking_method=picking_method,
-            random_seed=42,
-            scenario_csv_out=scenario_csvs["dhw"]
-        )
-
-    # Vent
-    if not df_vent_bld_sub.empty or not df_vent_zn_sub.empty:
-        create_vent_scenarios(
-            df_building=df_vent_bld_sub,
-            df_zones=df_vent_zn_sub,
-            building_id=building_id,
-            num_scenarios=num_scenarios,
-            picking_method=picking_method,
-            random_seed=42,
-            scenario_csv_out=scenario_csvs["vent"]
-        )
-
-    # Elec
-    if not df_elec_sub.empty:
-        create_elec_scenarios(
-            df_lighting=df_elec_sub,
-            building_id=building_id,
-            num_scenarios=num_scenarios,
-            picking_method=picking_method,
-            random_seed=42,
-            scenario_csv_out=scenario_csvs["elec"]
-        )
-
-    # Fenestration
-    if not df_fenez_sub.empty:
-        create_fenez_scenarios(
-            df_struct_fenez=df_fenez_sub,
-            building_id=building_id,
-            num_scenarios=num_scenarios,
-            picking_method=picking_method,
-            random_seed=42,
-            scenario_csv_out=scenario_csvs["fenez"]
-        )
-
-    # NEW: Generate shading scenarios
-    if not df_shading_sub.empty:
-        create_shading_scenarios(
-            df_shading_input=df_shading_sub,
-            building_id=building_id,
-            num_scenarios=num_scenarios,
-            picking_method=picking_method,
-            random_seed=42,
-            scenario_csv_out=scenario_csvs["shading"]
-        )
-
-
-    # eequip
-    if not df_equip_sub.empty:
-        create_equipment_scenarios(
-            df_equipment_input=df_equip_sub,
-            building_id=building_id,
-            num_scenarios=num_scenarios,
-            picking_method=picking_method,
-            random_seed=42,
-            scenario_csv_out=scenario_csvs["equip"]
-        )
-
-    # Sizingg
-    if not df_zone_sizing_sub.empty:
-        create_zone_sizing_scenarios(
-            df_sizing_input=df_zone_sizing_sub,
-            building_id=building_id,
-            num_scenarios=num_scenarios,
-            picking_method='random_uniform', # This function handles its own logic
-            random_seed=42,
-            scenario_csv_out=scenario_csvs["zone_sizing"]
-        )
-
-
-
-
-    # -----------------------------------------------------------------------
-    # 5) Load scenario CSV => group by scenario_index
-    # -----------------------------------------------------------------------
-    def safe_load_scenario(csv_path):
-        if os.path.isfile(csv_path):
-            return load_scenario_csv(csv_path)
-        return pd.DataFrame()
-
-    df_hvac_scen  = safe_load_scenario(scenario_csvs["hvac"])
-    df_dhw_scen   = safe_load_scenario(scenario_csvs["dhw"])
-    df_vent_scen  = safe_load_scenario(scenario_csvs["vent"])
-    df_elec_scen  = safe_load_scenario(scenario_csvs["elec"])
-    df_fenez_scen = safe_load_scenario(scenario_csvs["fenez"])
-    # NEW: Load shading scenarios
-    df_shading_scen = safe_load_scenario(scenario_csvs["shading"])
-    df_equip_scen = safe_load_scenario(scenario_csvs["equip"])
-    df_sizing_scen = safe_load_scenario(scenario_csvs["zone_sizing"])
-
-
-    hvac_groups  = df_hvac_scen.groupby("scenario_index")  if not df_hvac_scen.empty  else None
-    dhw_groups   = df_dhw_scen.groupby("scenario_index")   if not df_dhw_scen.empty   else None
-    vent_groups  = df_vent_scen.groupby("scenario_index")  if not df_vent_scen.empty  else None
-    elec_groups  = df_elec_scen.groupby("scenario_index")  if not df_elec_scen.empty  else None
-    fenez_groups = df_fenez_scen.groupby("scenario_index") if not df_fenez_scen.empty else None
-
-    # NEW: Group shading scenarios
-    shading_groups = df_shading_scen.groupby("scenario_index") if not df_shading_scen.empty else None
-    equip_groups = df_equip_scen.groupby("scenario_index") if not df_equip_scen.empty else None
-    sizing_groups = df_sizing_scen.groupby("scenario_index") if not df_sizing_scen.empty else None
-
-
-    # -----------------------------------------------------------------------
-    # 6) For each scenario, load base IDF, apply parameters, save new IDF
-    # -----------------------------------------------------------------------
-    for i in range(num_scenarios):
-        logger.info(f"[MODIFICATION] => Creating scenario #{i} for building {building_id}")
-
-        hvac_df   = hvac_groups.get_group(i) if hvac_groups and i in hvac_groups.groups else pd.DataFrame()
-        dhw_df    = dhw_groups.get_group(i)  if dhw_groups  and i in dhw_groups.groups  else pd.DataFrame()
-        vent_df   = vent_groups.get_group(i) if vent_groups and i in vent_groups.groups else pd.DataFrame()
-        elec_df   = elec_groups.get_group(i) if elec_groups and i in elec_groups.groups else pd.DataFrame()
-        fenez_df  = fenez_groups.get_group(i)if fenez_groups and i in fenez_groups.groups else pd.DataFrame()
-        # NEW: Get the shading data for this specific scenario
-        shading_df = shading_groups.get_group(i) if shading_groups and i in shading_groups.groups else pd.DataFrame()
-        equip_df = equip_groups.get_group(i) if equip_groups and i in equip_groups.groups else pd.DataFrame()
-        sizing_df = sizing_groups.get_group(i) if sizing_groups and i in sizing_groups.groups else pd.DataFrame()
-
-
-        hvac_bld_df   = hvac_df[hvac_df["zone_name"].isna()]
-        hvac_zone_df  = hvac_df[hvac_df["zone_name"].notna()]
-        hvac_params   = _make_param_dict(hvac_bld_df)
-
-        dhw_params    = _make_param_dict(dhw_df)
-
-        vent_bld_df   = vent_df[vent_df["zone_name"].isnull()]
-        vent_zone_df  = vent_df[vent_df["zone_name"].notnull()]
-        vent_params   = _make_param_dict(vent_bld_df)
-
-        elec_params   = _make_param_dict(elec_df)
-
-        # Load base IDF
-        idf = load_idf(base_idf_path, idd_path)
-
-        # Apply HVAC
-        apply_building_level_hvac(idf, hvac_params)
-        apply_zone_level_hvac(idf, hvac_zone_df)
-
-        # Apply DHW
-        apply_dhw_params_to_idf(idf, dhw_params, suffix=f"Scenario_{i}")
-
-        # Apply Vent
-        if not vent_bld_df.empty or not vent_zone_df.empty:
-            apply_building_level_vent(idf, vent_params)
-            apply_zone_level_vent(idf, vent_zone_df)
-
-        # Apply Elec => building-level or object-level
-        if not elec_df.empty:
-            apply_building_level_elec(idf, elec_params, zonelist_name="ALL_ZONES")
-            # or use apply_object_level_elec(idf, elec_df) if you prefer
-
-        # Apply Fenestration => object-level
-        apply_object_level_fenez(idf, fenez_df)
-
-        # NEW: Apply shading parameters
-        apply_shading_params_to_idf(idf, shading_df)
-        apply_equipment_params_to_idf(idf, equip_df)
-        apply_zone_sizing_params_to_idf(idf, sizing_df)
-
-        # Save scenario IDF
-        scenario_idf_name = f"building_{building_id}_scenario_{i}.idf"
-        scenario_idf_path = os.path.join(scenario_idf_dir, scenario_idf_name)
-        save_idf(idf, scenario_idf_path)
-        logger.info(f"[MODIFICATION] Saved scenario IDF => {scenario_idf_path}")
-
-    logger.info("[MODIFICATION] All scenario IDFs generated successfully.")
-
-    # -----------------------------------------------------------------------
-    # 7) (Optional) Simulations
-    # -----------------------------------------------------------------------
-    if run_sims:
-        logger.info("[MODIFICATION] Running E+ simulations for all scenario IDFs.")
-        base_sim_dir = sim_cfg.get("output_dir", "output/Sim_Results/Scenarios")
-
-        # if job_output_dir is given, we can make the sim results go inside it, too:
-        if job_output_dir and not os.path.isabs(base_sim_dir):
-            base_sim_dir = os.path.join(job_output_dir, base_sim_dir)
-        os.makedirs(base_sim_dir, exist_ok=True)
-
-        num_workers  = sim_cfg.get("num_workers", 4)
-
-        run_all_idfs_in_folder(
-            folder_path=scenario_idf_dir,
-            iddfile=idd_path,
-            base_output_dir=base_sim_dir,
-            default_lat=52.15,
-            default_lon=4.40,
-            default_year=2020,
-            num_workers=num_workers
-        )
-
-    # -----------------------------------------------------------------------
-    # 8) (Optional) Post-processing
-    # -----------------------------------------------------------------------
-    if do_postproc:
-        logger.info("[MODIFICATION] Performing post-processing merges.")
-
-        base_sim_dir = sim_cfg.get("output_dir", "output/Sim_Results/Scenarios")
-        if job_output_dir and not os.path.isabs(base_sim_dir):
-            base_sim_dir = os.path.join(job_output_dir, base_sim_dir)
-
-        output_csv_as_is = postproc_cfg.get("output_csv_as_is", "")
-        output_csv_daily_mean = postproc_cfg.get("output_csv_daily_mean", "")
-
-        # Build full paths inside job_output_dir if they are relative
-        if output_csv_as_is:
-            if job_output_dir and not os.path.isabs(output_csv_as_is):
-                output_csv_as_is = os.path.join(job_output_dir, output_csv_as_is)
-            os.makedirs(os.path.dirname(output_csv_as_is), exist_ok=True)
-
-            merge_all_results(
-                base_output_dir=base_sim_dir,
-                output_csv=output_csv_as_is,
-                convert_to_daily=False,
-                convert_to_monthly=False
-            )
-
-        if output_csv_daily_mean:
-            if job_output_dir and not os.path.isabs(output_csv_daily_mean):
-                output_csv_daily_mean = os.path.join(job_output_dir, output_csv_daily_mean)
-            os.makedirs(os.path.dirname(output_csv_daily_mean), exist_ok=True)
-
-            merge_all_results(
-                base_output_dir=base_sim_dir,
-                output_csv=output_csv_daily_mean,
-                convert_to_daily=True,
-                daily_aggregator="mean",
-                convert_to_monthly=False
-            )
-
-        logger.info("[MODIFICATION] Post-processing step complete.")
-
-    # -----------------------------------------------------------------------
-    # 9) (Optional) Validation
-    # -----------------------------------------------------------------------
-    if do_validation:
-        logger.info("[MODIFICATION] Performing scenario validation with config => %s", validation_cfg)
-
-        # If the validation config references CSV paths that might be relative,
-        # you could also adjust them to be inside job_output_dir here if desired.
-        # e.g.:
-        # real_csv = validation_cfg.get("real_data_csv", "")
-        # if job_output_dir and not os.path.isabs(real_csv):
-        #     real_csv = os.path.join(job_output_dir, real_csv)
-        # validation_cfg["real_data_csv"] = real_csv
-
-        run_validation_process(validation_cfg)
-        logger.info("[MODIFICATION] Validation step complete.")
-
-
-def _make_param_dict(df_scenario):
-    """
-    Builds a dict {param_name: value} from the scenario DataFrame columns,
-    checking 'assigned_value' or 'param_value'.
-    """
-    if df_scenario.empty:
-        return {}
-
-    cols = df_scenario.columns.tolist()
-    if "assigned_value" in cols:
-        val_col = "assigned_value"
-    elif "param_value" in cols:
-        val_col = "param_value"
-    else:
-        raise AttributeError(
-            "No 'assigned_value' or 'param_value' column found in scenario dataframe! "
-            f"Columns are: {cols}"
-        )
-
-    result = {}
-    for row in df_scenario.itertuples():
-        p_name = row.param_name
-        raw_val = getattr(row, val_col)
-        try:
-            result[p_name] = float(raw_val)
-        except (ValueError, TypeError):
-            result[p_name] = raw_val
-    return result
-
-------------------------------------------------------------
-
 File: D:\Documents\E_Plus_2030_py\combined.json
 ============================================================
 {
@@ -1596,7 +1517,11 @@ File: D:\Documents\E_Plus_2030_py\combined.json
     },
     {
       "param_name": "cooling_design_air_flow_method",
-      "choices": ["Flow/Zone", "DesignDay", "DesignDayWithLimit"]
+      "choices": [
+        "Flow/Zone",
+        "DesignDay",
+        "DesignDayWithLimit"
+      ]
     }
   ],
   "equipment": [
@@ -1691,8 +1616,6 @@ File: D:\Documents\E_Plus_2030_py\combined.json
       "param_name": "has_core",
       "fixed_value": false
     }
-
-    
   ],
   "hvac": [
     {
@@ -1745,18 +1668,33 @@ File: D:\Documents\E_Plus_2030_py\combined.json
       "hvac_excel": "excel_data/hvac_overrides.xlsx",
       "vent_excel": "excel_data/vent_overrides.xlsx"
     },
-
-
     "use_database": false,
-      "filter_by": "meestvoorkomendepostcode", 
-      "db_filter": {
-        "meestvoorkomendepostcode": ["3066HG"], 
-        "pand_id": ["0383100000001369", "0383100000001370", "5473VX"],
-        "pand_ids": ["XYZ123", "XYZ999"],
-        "bbox_xy": [120000.0, 487000.0, 121000.0, 488000.0],
-        "bbox_latlon": [51.873, 5.589, 51.878, 5.60]
-
-
+    "filter_by": "meestvoorkomendepostcode",
+    "db_filter": {
+      "meestvoorkomendepostcode": [
+        "3066HG"
+      ],
+      "pand_id": [
+        "0383100000001369",
+        "0383100000001370",
+        "5473VX"
+      ],
+      "pand_ids": [
+        "XYZ123",
+        "XYZ999"
+      ],
+      "bbox_xy": [
+        120000.0,
+        487000.0,
+        121000.0,
+        488000.0
+      ],
+      "bbox_latlon": [
+        51.873,
+        5.589,
+        51.878,
+        5.6
+      ]
     },
     "excel_overrides": {
       "override_fenez_excel": false,
@@ -1831,7 +1769,6 @@ File: D:\Documents\E_Plus_2030_py\combined.json
         "include_tables": true,
         "include_summary": true
       }
-
     },
     "structuring": {
       "perform_structuring": true,
@@ -1855,21 +1792,20 @@ File: D:\Documents\E_Plus_2030_py\combined.json
       },
       "shading": {
         "csv_in": "assigned/assigned_shading_params.csv",
-        "csv_out": "assigned/structured_shading_params.csv"        
+        "csv_out": "assigned/structured_shading_params.csv"
       },
       "equipment": {
         "csv_in": "assigned/assigned_equipment.csv",
         "csv_out": "assigned/structured_equipment.csv"
-    },
+      },
       "zone_sizing": {
         "csv_in": "assigned/assigned_zone_sizing_outdoor_air.csv",
         "csv_out": "assigned/structured_zone_sizing.csv"
+      }
     },
     "modification": {
       "perform_modification": true,
       "modify_config": {
-
-
         "idd_path": "EnergyPlus/Energy+.idd",
         "assigned_csv": {
           "hvac_building": "assigned/assigned_hvac_building.csv",
@@ -1882,7 +1818,6 @@ File: D:\Documents\E_Plus_2030_py\combined.json
           "shading": "assigned/structured_shading_params.csv",
           "equip": "assigned/structured_equipment.csv",
           "zone_sizing": "assigned/structured_zone_sizing.csv"
-
         },
         "scenario_csv": {
           "hvac": "scenarios/scenario_params_hvac.csv",
@@ -1893,7 +1828,6 @@ File: D:\Documents\E_Plus_2030_py\combined.json
           "shading": "scenarios/scenario_params_shading.csv",
           "equip": "scenarios/scenario_params_equipment.csv",
           "zone_sizing": "scenarios/scenario_params_zone_sizing.csv"
-
         },
         "output_idf_dir": "scenario_idfs",
         "building_id": 4136733,
@@ -1913,9 +1847,13 @@ File: D:\Documents\E_Plus_2030_py\combined.json
         "perform_validation": false,
         "validation_config": {
           "real_data_csv": "data/mock_merged_daily_mean.csv",
-          "sim_data_csv":  "results/merged_daily_mean.csv",
+          "sim_data_csv": "results/merged_daily_mean.csv",
           "bldg_ranges": {
-            "0": [0, 1, 2]
+            "0": [
+              0,
+              1,
+              2
+            ]
           },
           "variables_to_compare": [
             "Electricity:Facility [J](Hourly)",
@@ -1928,55 +1866,51 @@ File: D:\Documents\E_Plus_2030_py\combined.json
         }
       }
     },
-
-    
-
-
-  "validation_base": {
-    "perform_validation": false,
-    "config": {
-      "real_data_csv": "data/mock_merged_daily_mean.csv",
-      "sim_data_csv":  "results/merged_daily_mean.csv",
-      "bldg_ranges": {
-        "0": [0,1,2,3]
-      },
-      "variables_to_compare": [
-        "Electricity:Facility [J](Hourly)",
-        "Heating:EnergyTransfer [J](Hourly)",
-        "Cooling:EnergyTransfer [J](Hourly)"
-      ],
-      "threshold_cv_rmse": 30.0,
-      "skip_plots": true,
-      "output_csv": "validation_report_base.csv"
-    }
-  },
-
-  "validation_scenarios": {
-    "perform_validation": false,
-    "config": {
-      "real_data_csv": "data/mock_merged_daily_mean.csv",
-      "sim_data_csv":  "results_scenarioes/merged_daily_mean_scenarios.csv",
-      "bldg_ranges": {
-        "0": [0,1,2]
-      },
-      "variables_to_compare": [
-        "Electricity:Facility [J](Hourly)",
-        "Heating:EnergyTransfer [J](Hourly)",
-        "Cooling:EnergyTransfer [J](Hourly)"
-      ],
-      "threshold_cv_rmse": 30.0,
-      "skip_plots": true,
-      "output_csv": "validation_report_scenarios.csv"
-    }
-  },
-
-
-
-
-
-
-
-
+    "validation_base": {
+      "perform_validation": false,
+      "config": {
+        "real_data_csv": "data/mock_merged_daily_mean.csv",
+        "sim_data_csv": "results/merged_daily_mean.csv",
+        "bldg_ranges": {
+          "0": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        "variables_to_compare": [
+          "Electricity:Facility [J](Hourly)",
+          "Heating:EnergyTransfer [J](Hourly)",
+          "Cooling:EnergyTransfer [J](Hourly)"
+        ],
+        "threshold_cv_rmse": 30.0,
+        "skip_plots": true,
+        "output_csv": "validation_report_base.csv"
+      }
+    },
+    "validation_scenarios": {
+      "perform_validation": false,
+      "config": {
+        "real_data_csv": "data/mock_merged_daily_mean.csv",
+        "sim_data_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+        "bldg_ranges": {
+          "0": [
+            0,
+            1,
+            2
+          ]
+        },
+        "variables_to_compare": [
+          "Electricity:Facility [J](Hourly)",
+          "Heating:EnergyTransfer [J](Hourly)",
+          "Cooling:EnergyTransfer [J](Hourly)"
+        ],
+        "threshold_cv_rmse": 30.0,
+        "skip_plots": true,
+        "output_csv": "validation_report_scenarios.csv"
+      }
+    },
     "sensitivity": {
       "perform_sensitivity": true,
       "scenario_folder": "scenarios",
@@ -2025,7 +1959,6 @@ File: D:\Documents\E_Plus_2030_py\combined.json
       "best_params_folder": "calibrated",
       "history_folder": "calibrated"
     }
-  }
   },
   "shading_tree": [
     {
@@ -2071,6 +2004,5 @@ File: D:\Documents\E_Plus_2030_py\combined.json
     }
   ]
 }
-
 ------------------------------------------------------------
 

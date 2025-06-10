@@ -63,12 +63,21 @@ def apply_zone_sizing_params_to_idf(idf, df_sizing_scen):
 
     # Apply the same parameters to ALL Sizing:Zone objects
     for sz_obj in sizing_zone_objects:
-        print(f"  - Modifying SIZING:ZONE for '{sz_obj.Zone_or_ZoneList_Name}'")
-        for param_name, param_value in params.items():
-            if param_name in PARAM_TO_EP_FIELD_MAP:
-                ep_field = PARAM_TO_EP_FIELD_MAP[param_name]
-                try:
+        try:
+            # --- FIX 1: Explicitly set the input methods before assigning values ---
+            if "cooling_supply_air_temp" in params or "cooling_supply_air_hr" in params:
+                sz_obj.Cooling_Design_Supply_Air_Temperature_Input_Method = 'SupplyAirTemperature'
+            
+            if "heating_supply_air_temp" in params or "heating_supply_air_hr" in params:
+                sz_obj.Heating_Design_Supply_Air_Temperature_Input_Method = 'SupplyAirTemperature'
+
+            # --- Now apply the parameters ---
+            for param_name, param_value in params.items():
+                if param_name in PARAM_TO_EP_FIELD_MAP:
+                    ep_field = PARAM_TO_EP_FIELD_MAP[param_name]
                     setattr(sz_obj, ep_field, param_value)
-                    # print(f"    - Set {ep_field} = {param_value}") # Uncomment for verbose logging
-                except Exception as e:
-                    print(f"[ERROR] Could not set {ep_field} on {sz_obj.Name}: {e}")
+        
+        except Exception as e:
+            # --- FIX 2: Use the correct field 'Zone_or_ZoneList_Name' for the error message ---
+            zone_name_for_error = getattr(sz_obj, 'Zone_or_ZoneList_Name', 'Unknown')
+            print(f"[ERROR] Could not set parameters on Sizing:Zone for '{zone_name_for_error}': {e}")

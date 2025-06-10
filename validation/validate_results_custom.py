@@ -1,13 +1,35 @@
 # validation/validate_results_custom.py
 
 import pandas as pd
+import numpy as np
+import logging
 
 from validation.compare_sims_with_measured import align_data_for_variable
-from validation.metrics import mean_bias_error, cv_rmse, nmbe
+from validation.metrics import mean_bias_error, cv_rmse, nmbe, analyze_peaks, analyze_ramp_rates
 from validation.visualize import (
     plot_time_series_comparison,
     scatter_plot_comparison,
+    plot_diurnal_profile,
+    plot_ramp_rate_distribution,
 )
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
+
+def get_season(dt):
+    """
+    Determines the meteorological season for a given datetime object.
+    Assumes Northern Hemisphere seasons.
+    """
+    month = dt.month
+    if month in [12, 1, 2]:
+        return "Winter"
+    elif month in [3, 4, 5]:
+        return "Spring"
+    elif month in [6, 7, 8]:
+        return "Summer"
+    else: # 9, 10, 11
+        return "Autumn"
 
 def validate_with_ranges(
     real_data_path,
@@ -15,131 +37,189 @@ def validate_with_ranges(
     bldg_ranges,
     variables_to_compare=None,
     threshold_cv_rmse=30.0,
-    skip_plots=False
+    skip_plots=False,
+    analysis_options=None
 ):
     """
-    Compare real vs sim data for specified building mappings and variable names.
+    Compare real vs sim data with advanced, configurable time-based analysis.
 
-    :param real_data_path: Path to the CSV file with real data
-    :param sim_data_path: Path to the CSV file with sim data
-    :param bldg_ranges: dict mapping real_bldg (string) -> list of sim_bldgs. 
-                       e.g. {"0": [0, 1, 2]}, or {"4136730": ["4136730"]}
-    :param variables_to_compare: list of variable names (strings) to be validated.
-    :param threshold_cv_rmse: pass/fail threshold for CV(RMSE) in percent
-    :param skip_plots: if True, disable time-series and scatter plots
-    :return: a dict of metrics keyed by (real_bldg, sim_bldg, variable_name)
+    :param real_data_path: Path to the CSV file with real data.
+    :param sim_data_path: Path to the CSV file with sim data.
+    :param bldg_ranges: Dict mapping real_bldg (string) to list of sim_bldgs.
+    :param variables_to_compare: List of variable names (strings) to validate.
+    :param threshold_cv_rmse: Pass/fail threshold for CV(RMSE) in percent.
+    :param skip_plots: If True, disable all plotting.
+    :param analysis_options: Dict with advanced analysis settings. Example:
+        {
+            "date_format": "%m/%d/%Y %H:%M:%S", # Example format
+            "granularity": ["annual", "monthly", "seasonal"],
+            "weekday_weekend": true,
+            "diurnal_profiles": true,
+            "peak_analysis": {"perform": true, "n_peaks": 5},
+            "ramp_rate_analysis": true,
+            "extreme_day_analysis": {
+                "perform": true,
+                "n_days": 5,
+                "weather_variable": "Environment:Site Outdoor Air Drybulb Temperature [C](Daily)"
+            }
+        }
+    :return: A dict of metrics keyed by (real_bldg, sim_bldg, variable_name, analysis_slice).
     """
-
     if variables_to_compare is None:
-        # If none provided, default to empty => no variables will be compared
         variables_to_compare = []
+    if analysis_options is None:
+        analysis_options = {}
 
-    # 1) Load the CSVs
-    df_real = pd.read_csv(real_data_path)
-    df_sim  = pd.read_csv(sim_data_path)
+    # 1) Load the main CSVs
+    try:
+        df_real = pd.read_csv(real_data_path)
+        df_sim = pd.read_csv(sim_data_path)
+    except FileNotFoundError as e:
+        logging.error(f"Could not load data files: {e}")
+        return {}
 
-    # 2) Clean up any trailing whitespace in VariableName
+    # 2) Clean up column names
     df_real["VariableName"] = df_real["VariableName"].astype(str).str.strip()
-    df_sim["VariableName"]  = df_sim["VariableName"].astype(str).str.strip()
+    df_sim["VariableName"] = df_sim["VariableName"].astype(str).str.strip()
 
-    # 3) Initialize a results dictionary
     results = {}
+    missing_in_real, missing_in_sim = [], []
 
-    # 4) Keep track of missing variables for debug
-    missing_in_real = []
-    missing_in_sim  = []
-
-    # 5) Iterate over building mappings
+    # 3) Iterate over building mappings and variables
     for real_bldg_str, sim_bldg_list in bldg_ranges.items():
-        # Convert the real building ID from string to int
-        # (If your CSV has building IDs as int64, this ensures a match)
         try:
             real_bldg = int(real_bldg_str)
         except ValueError:
-            print(f"[WARN] Could not convert real building '{real_bldg_str}' to int; skipping.")
+            logging.warning(f"Could not convert real building '{real_bldg_str}' to int; skipping.")
             continue
 
-        # Subset real data for this real_bldg
-        df_real_sub = df_real[df_real["BuildingID"] == real_bldg]
-        if df_real_sub.empty:
-            print(f"[WARN] No real data for building {real_bldg}")
+        df_real_bldg = df_real[df_real["BuildingID"] == real_bldg]
+        if df_real_bldg.empty:
+            logging.warning(f"No real data for building {real_bldg}")
             continue
 
         for sb in sim_bldg_list:
-            # If the sim building is a string, also convert it to int
             try:
                 sim_bldg = int(sb)
             except ValueError:
-                print(f"[WARN] Could not convert sim building '{sb}' to int; skipping.")
+                logging.warning(f"Could not convert sim building '{sb}' to int; skipping.")
                 continue
 
-            # Subset sim data for this sim_bldg
-            df_sim_sub = df_sim[df_sim["BuildingID"] == sim_bldg]
-            if df_sim_sub.empty:
-                print(f"[WARN] No sim data for building {sim_bldg}")
+            df_sim_bldg = df_sim[df_sim["BuildingID"] == sim_bldg]
+            if df_sim_bldg.empty:
+                logging.warning(f"No sim data for building {sim_bldg}")
                 continue
 
-            # 6) Loop over user-specified variables
             for var_name in variables_to_compare:
-                # Check presence in real data
-                if var_name not in df_real_sub["VariableName"].unique():
-                    missing_in_real.append((real_bldg, var_name))
-                    continue
-
-                # Check presence in sim data
-                if var_name not in df_sim_sub["VariableName"].unique():
-                    missing_in_sim.append((sim_bldg, var_name))
-                    continue
-
-                # 7) Align data
+                # 4) Align the primary variable data
                 sim_vals, obs_vals, merged_df = align_data_for_variable(
-                    df_real_sub,
-                    df_sim_sub,
-                    real_bldg,
-                    sim_bldg,
-                    var_name
+                    df_real_bldg, df_sim_bldg, real_bldg, sim_bldg, var_name
                 )
-
-                # If no overlap or empty arrays, skip
-                if len(sim_vals) == 0 or len(obs_vals) == 0:
-                    print(f"[WARN] No overlap in dates for RealBldg={real_bldg}, SimBldg={sim_bldg}, Var={var_name}")
+                if merged_df.empty:
+                    logging.warning(f"No overlapping dates for RealBldg={real_bldg}, SimBldg={sim_bldg}, Var={var_name}")
                     continue
 
-                # 8) Compute metrics
-                this_mbe   = mean_bias_error(sim_vals, obs_vals)
-                this_cvrmse = cv_rmse(sim_vals, obs_vals)
-                this_nmbe  = nmbe(sim_vals, obs_vals)
+                # 5) CRITICAL: Convert 'Date' column to datetime objects
+                try:
+                    date_format = analysis_options.get("date_format")
+                    merged_df['Timestamp'] = pd.to_datetime(merged_df['Date'], format=date_format)
+                except Exception as e:
+                    logging.warning(f"Could not parse dates for {var_name}. Skipping time-based analysis. Error: {e}")
+                    continue
 
-                pass_fail = False
-                if this_cvrmse is not None and not (this_cvrmse is float('nan')):
-                    pass_fail = (this_cvrmse < threshold_cv_rmse)
+                # --- 6) Time-based Analysis Starts Here ---
+                data_slices = {"annual": merged_df}
 
-                # 9) Store results
-                results[(real_bldg, sim_bldg, var_name)] = {
-                    "MBE":    this_mbe,
-                    "CVRMSE": this_cvrmse,
-                    "NMBE":   this_nmbe,
-                    "Pass":   pass_fail
-                }
+                # 6a) Granularity Analysis (Monthly/Seasonal)
+                if "monthly" in analysis_options.get("granularity", []):
+                    for month_name, group in merged_df.groupby(merged_df['Timestamp'].dt.strftime('%B')):
+                        data_slices[month_name] = group
+                if "seasonal" in analysis_options.get("granularity", []):
+                    merged_df['Season'] = merged_df['Timestamp'].apply(get_season)
+                    for season_name, group in merged_df.groupby('Season'):
+                        data_slices[season_name] = group
 
-                # 10) Optionally plot
+                # 6b) Weekday/Weekend Analysis
+                if analysis_options.get("weekday_weekend"):
+                    merged_df['DayType'] = np.where(merged_df['Timestamp'].dt.dayofweek < 5, 'Weekday', 'Weekend')
+                    for day_type, group in merged_df.groupby('DayType'):
+                        data_slices[day_type] = group
+                
+                # 6c) Extreme Day Analysis
+                extreme_day_opts = analysis_options.get("extreme_day_analysis", {})
+                if extreme_day_opts.get("perform"):
+                    weather_var = extreme_day_opts.get("weather_variable")
+                    n_days = extreme_day_opts.get("n_days", 5)
+                    # Align weather data (from the real dataset)
+                    _, weather_vals, weather_df = align_data_for_variable(df_real_bldg, df_real_bldg, real_bldg, real_bldg, weather_var)
+                    if not weather_df.empty:
+                        weather_df['Timestamp'] = pd.to_datetime(weather_df['Date'], format=date_format)
+                        daily_weather = weather_df.set_index('Timestamp').resample('D')['Value_obs'].mean()
+                        
+                        hottest_days = daily_weather.nlargest(n_days).index
+                        coldest_days = daily_weather.nsmallest(n_days).index
+                        
+                        data_slices['Hottest_Days'] = merged_df[merged_df['Timestamp'].dt.date.isin(hottest_days.date)]
+                        data_slices['Coldest_Days'] = merged_df[merged_df['Timestamp'].dt.date.isin(coldest_days.date)]
+
+                # --- 7) Calculate Standard Metrics for Each Slice ---
+                for slice_name, df_slice in data_slices.items():
+                    if df_slice.empty or len(df_slice) < 2: continue
+                    
+                    sim_slice = df_slice['Value_sim'].values
+                    obs_slice = df_slice['Value_obs'].values
+
+                    # Store standard metrics
+                    key = (real_bldg, sim_bldg, var_name, slice_name)
+                    results[key] = {
+                        "MBE": mean_bias_error(sim_slice, obs_slice),
+                        "CVRMSE": cv_rmse(sim_slice, obs_slice),
+                        "NMBE": nmbe(sim_slice, obs_slice),
+                        "Pass": (cv_rmse(sim_slice, obs_slice) or 1e6) < threshold_cv_rmse
+                    }
+
+                # --- 8) Perform Specialized Analyses on the Annual Data ---
+                annual_key = (real_bldg, sim_bldg, var_name, 'annual')
+
+                # 8a) Peak Analysis
+                peak_opts = analysis_options.get("peak_analysis", {})
+                if peak_opts.get("perform"):
+                    results[annual_key]['peak_metrics'] = analyze_peaks(
+                        merged_df['Value_obs'].values,
+                        merged_df['Value_sim'].values,
+                        n_peaks=peak_opts.get("n_peaks", 5)
+                    )
+
+                # 8b) Ramp Rate Analysis
+                if analysis_options.get("ramp_rate_analysis"):
+                    obs_ramps = np.diff(merged_df['Value_obs'].values)
+                    sim_ramps = np.diff(merged_df['Value_sim'].values)
+                    results[annual_key]['ramp_rate_metrics'] = analyze_ramp_rates(
+                        merged_df['Value_obs'].values, merged_df['Value_sim'].values
+                    )
+                    if not skip_plots:
+                        plot_ramp_rate_distribution(obs_ramps, sim_ramps, f"{real_bldg}_VS_{sim_bldg}", var_name)
+
+                # --- 9) Plotting ---
                 if not skip_plots:
-                    label_for_plot = f"{real_bldg}_VS_{sim_bldg}"
-                    plot_time_series_comparison(merged_df, label_for_plot, var_name)
-                    scatter_plot_comparison(merged_df, label_for_plot, var_name)
+                    label = f"{real_bldg}_VS_{sim_bldg}"
+                    plot_time_series_comparison(merged_df, label, var_name)
+                    scatter_plot_comparison(merged_df, label, var_name)
 
-    # 11) Print missing variable info
+                    # 9a) Diurnal Profile Plot
+                    if analysis_options.get("diurnal_profiles"):
+                        diurnal_df = merged_df.groupby(merged_df['Timestamp'].dt.hour)[['Value_obs', 'Value_sim']].mean()
+                        if not diurnal_df.empty:
+                            plot_diurnal_profile(diurnal_df.reset_index(), label, var_name)
+
+    # --- 10) Final Informational Logging ---
     if missing_in_real:
-        print("\n[INFO] Variables missing in REAL data for these (Building, Var):")
-        unique_missing_real = set(missing_in_real)
-        for (bldg, var) in unique_missing_real:
-            print(f"   - RealBldg={bldg}, Var={var}")
-
+        logging.info("\nVariables missing in REAL data for these (Building, Var):")
+        for bldg, var in set(missing_in_real):
+            logging.info(f"  - RealBldg={bldg}, Var={var}")
     if missing_in_sim:
-        print("\n[INFO] Variables missing in SIM data for these (Building, Var):")
-        unique_missing_sim = set(missing_in_sim)
-        for (bldg, var) in unique_missing_sim:
-            print(f"   - SimBldg={bldg}, Var={var}")
+        logging.info("\nVariables missing in SIM data for these (Building, Var):")
+        for bldg, var in set(missing_in_sim):
+            logging.info(f"  - SimBldg={bldg}, Var={var}")
 
-    # Return the final dictionary of metrics
     return results
