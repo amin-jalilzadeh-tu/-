@@ -510,7 +510,7 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
                 logger.warning(f"[STRUCTURING] DHW input CSV not found => {dhw_in}")
 
 
-            # --- Shading ----------------------------------------------------
+            # NEW:--- Shading ----------------------------------------------------
             from idf_objects.structuring.shading_structuring import transform_shading_log_to_structured
             shading_conf = structuring_cfg.get("shading", {})
             user_shading_rules = safe_load_subjson("shading.json", "shading") or []
@@ -547,6 +547,22 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
 
 
 
+            # --- Zone Sizing ------------------------------------------------
+            from idf_objects.structuring.zone_sizing_structuring import transform_zone_sizing_log_to_structured
+            sizing_conf = structuring_cfg.get("zone_sizing", {})
+            user_sizing_rules = safe_load_subjson("zone_sizing.json", "zone_sizing") or []
+            
+            if sizing_conf:
+                sizing_in = patch_if_relative(sizing_conf.get("csv_in"))
+                sizing_out = patch_if_relative(sizing_conf.get("csv_out"))
+
+                transform_zone_sizing_log_to_structured(
+                    csv_input=sizing_in,
+                    csv_output=sizing_out,
+                    user_sizing_rules=user_sizing_rules
+                )
+            else:
+                logger.warning("[STRUCTURING] 'zone_sizing' configuration not found.")
 
 
 

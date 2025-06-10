@@ -106,6 +106,10 @@ from modification.shading_functions import create_shading_scenarios, apply_shadi
 
 from modification.equipment_functions import create_equipment_scenarios, apply_equipment_params_to_idf
 
+from modification.zone_sizing_functions import create_zone_sizing_scenarios, apply_zone_sizing_params_to_idf
+
+
+
 
 # ---------------------------------------------------------------------------
 # C) Simulation + Post-processing + Validation
@@ -250,6 +254,8 @@ def run_modification_workflow(config):
 
     #  Load assigned CSV data
     df_equip = load_assigned_csv(assigned_csvs["equip"]) if "equip" in assigned_csvs else None
+    # Zone sizing
+    df_zone_sizing = load_assigned_csv(assigned_csvs["zone_sizing"]) if "zone_sizing" in assigned_csvs else None
     
 
 
@@ -277,6 +283,7 @@ def run_modification_workflow(config):
     df_shading_sub = df_shading.copy() if df_shading is not None else pd.DataFrame()
 
     df_equip_sub = filter_for_building(df_equip)
+    df_zone_sizing_sub = filter_for_building(df_zone_sizing)
 
 
 
@@ -373,6 +380,20 @@ def run_modification_workflow(config):
             scenario_csv_out=scenario_csvs["equip"]
         )
 
+    # Sizingg
+    if not df_zone_sizing_sub.empty:
+        create_zone_sizing_scenarios(
+            df_sizing_input=df_zone_sizing_sub,
+            building_id=building_id,
+            num_scenarios=num_scenarios,
+            picking_method='random_uniform', # This function handles its own logic
+            random_seed=42,
+            scenario_csv_out=scenario_csvs["zone_sizing"]
+        )
+
+
+
+
     # -----------------------------------------------------------------------
     # 5) Load scenario CSV => group by scenario_index
     # -----------------------------------------------------------------------
@@ -389,6 +410,7 @@ def run_modification_workflow(config):
     # NEW: Load shading scenarios
     df_shading_scen = safe_load_scenario(scenario_csvs["shading"])
     df_equip_scen = safe_load_scenario(scenario_csvs["equip"])
+    df_sizing_scen = safe_load_scenario(scenario_csvs["zone_sizing"])
 
 
     hvac_groups  = df_hvac_scen.groupby("scenario_index")  if not df_hvac_scen.empty  else None
@@ -400,6 +422,7 @@ def run_modification_workflow(config):
     # NEW: Group shading scenarios
     shading_groups = df_shading_scen.groupby("scenario_index") if not df_shading_scen.empty else None
     equip_groups = df_equip_scen.groupby("scenario_index") if not df_equip_scen.empty else None
+    sizing_groups = df_sizing_scen.groupby("scenario_index") if not df_sizing_scen.empty else None
 
 
     # -----------------------------------------------------------------------
@@ -416,6 +439,7 @@ def run_modification_workflow(config):
         # NEW: Get the shading data for this specific scenario
         shading_df = shading_groups.get_group(i) if shading_groups and i in shading_groups.groups else pd.DataFrame()
         equip_df = equip_groups.get_group(i) if equip_groups and i in equip_groups.groups else pd.DataFrame()
+        sizing_df = sizing_groups.get_group(i) if sizing_groups and i in sizing_groups.groups else pd.DataFrame()
 
 
         hvac_bld_df   = hvac_df[hvac_df["zone_name"].isna()]
@@ -456,6 +480,7 @@ def run_modification_workflow(config):
         # NEW: Apply shading parameters
         apply_shading_params_to_idf(idf, shading_df)
         apply_equipment_params_to_idf(idf, equip_df)
+        apply_zone_sizing_params_to_idf(idf, sizing_df)
 
         # Save scenario IDF
         scenario_idf_name = f"building_{building_id}_scenario_{i}.idf"
