@@ -14,12 +14,13 @@ import csv
 import matplotlib.pyplot as plt
 import logging
 from collections import defaultdict
+import time  # Added for time tracking
 
 # Local imports
 from validation.validate_results_custom import validate_with_ranges
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
+logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 def run_validation_process(config):
     """
@@ -29,6 +30,11 @@ def run_validation_process(config):
     different time granularities (monthly, seasonal) and specialized analyses
     (peaks, ramp rates).
     """
+    start_time = time.time()
+    logging.info("=====================================================")
+    logging.info("========== Starting Validation Process ==========")
+    logging.info("=====================================================")
+
     # 1) Extract config values
     real_data_csv = config.get("real_data_csv", "")
     sim_data_csv = config.get("sim_data_csv", "")
@@ -40,15 +46,16 @@ def run_validation_process(config):
     # NEW: Extract the advanced analysis options
     analysis_options = config.get("analysis_options", {})
 
-    logging.info("Starting validation with:")
-    logging.info(f"  Real data CSV = {real_data_csv}")
-    logging.info(f"  Sim data CSV  = {sim_data_csv}")
-    logging.info(f"  Building Ranges = {bldg_ranges}")
+    logging.info("Configuration loaded:")
+    logging.info(f"  Real data CSV      = {real_data_csv}")
+    logging.info(f"  Sim data CSV       = {sim_data_csv}")
+    logging.info(f"  Building Ranges    = {bldg_ranges}")
     logging.info(f"  Variables to Compare = {config.get('variables_to_compare')}")
-    logging.info(f"  Threshold CV(RMSE) = {threshold_cv_rmse}")
-    logging.info(f"  Analysis Options = {analysis_options}")
+    logging.info(f"  Threshold CV(RMSE) = {threshold_cv_rmse}%")
+    logging.info(f"  Analysis Options   = {analysis_options}")
 
     # 2) Call the core validation function
+    logging.info("Starting core validation logic...")
     metric_results = validate_with_ranges(
         real_data_path=real_data_csv,
         sim_data_path=sim_data_csv,
@@ -58,6 +65,7 @@ def run_validation_process(config):
         skip_plots=skip_plots,
         analysis_options=analysis_options  # Pass in the new argument
     )
+    logging.info("Core validation logic finished.")
 
     if not metric_results:
         logging.warning("Validation process returned no results. Ending.")
@@ -80,33 +88,48 @@ def run_validation_process(config):
         )
 
     # 4) Save all metrics to a single, comprehensive CSV
+    logging.info("Saving detailed metrics report...")
     save_detailed_metrics_to_csv(metric_results, output_csv)
+    logging.info(f"Metrics report saved to '{output_csv}'")
 
     # 5) Check for calibration triggers based on ANNUAL results
     print("\n\n=== Checking for Calibration Needs (based on Annual metrics) ===")
+    calibration_needed = False
     for (real_bldg, sim_bldg, var_name, slice_name), mvals in metric_results.items():
         if slice_name == 'annual' and not mvals.get('Pass', True):
+            calibration_needed = True
             cvrmse = mvals.get('CVRMSE')
             cvrmse_str = f"{cvrmse:.2f}%" if cvrmse is not None else "N/A"
             logging.warning(
-                f"[CALIBRATION] R{real_bldg}-S{sim_bldg}, Var={var_name}: "
-                f"Annual CV(RMSE)={cvrmse_str} > threshold => Trigger calibration steps..."
+                f"[CALIBRATION] R{real_bldg}-S{sim_bldg}, Var='{var_name}': "
+                f"Annual CV(RMSE)={cvrmse_str} > threshold ({threshold_cv_rmse}%) => Trigger calibration steps."
             )
+    if not calibration_needed:
+        logging.info("No calibration triggers found based on annual CV(RMSE) metrics.")
 
     # 6) Generate a summary bar chart for ANNUAL CV(RMSE) results
     if not skip_plots:
+        logging.info("Generating summary bar chart for annual metrics...")
         annual_metrics = {k: v for k, v in metric_results.items() if k[3] == 'annual'}
         bar_chart_metrics_for_triple(
             annual_metrics,
             title="CV(RMSE) Validation Summary (Annual Metrics)",
             threshold=threshold_cv_rmse
         )
+        logging.info("Bar chart generated.")
+
+    end_time = time.time()
+    duration = end_time - start_time
+    logging.info("===================================================")
+    logging.info(f"========== Validation Process Finished ==========")
+    logging.info(f"Total Execution Time: {duration:.2f} seconds")
+    logging.info("===================================================")
+
 
 def save_detailed_metrics_to_csv(metric_results, output_csv):
     """Saves the hierarchical metric results to a flattened CSV file."""
-    logging.info(f"\nSaving detailed metrics to {output_csv}")
+    # This function remains the same but will be called with more logging context.
     
-    # Define all possible headers
     base_headers = ["RealBldg", "SimBldg", "VariableName", "AnalysisSlice"]
     stat_headers = ["MBE", "CVRMSE", "NMBE", "Pass"]
     peak_headers = ["peak_avg_obs_val", "peak_avg_sim_val", "peak_avg_magnitude_diff_pct"]
@@ -140,6 +163,7 @@ def save_detailed_metrics_to_csv(metric_results, output_csv):
 
             # Write the ordered row
             writer.writerow([f"{row.get(h, ''):.4f}" if isinstance(row.get(h), (int, float)) else row.get(h, '') for h in full_header])
+
 
 def bar_chart_metrics_for_triple(metric_dict, title="Validation Metrics", threshold=30.0):
     """

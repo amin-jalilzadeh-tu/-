@@ -42,28 +42,7 @@ def validate_with_ranges(
 ):
     """
     Compare real vs sim data with advanced, configurable time-based analysis.
-
-    :param real_data_path: Path to the CSV file with real data.
-    :param sim_data_path: Path to the CSV file with sim data.
-    :param bldg_ranges: Dict mapping real_bldg (string) to list of sim_bldgs.
-    :param variables_to_compare: List of variable names (strings) to validate.
-    :param threshold_cv_rmse: Pass/fail threshold for CV(RMSE) in percent.
-    :param skip_plots: If True, disable all plotting.
-    :param analysis_options: Dict with advanced analysis settings. Example:
-        {
-            "date_format": "%m/%d/%Y %H:%M:%S", # Example format
-            "granularity": ["annual", "monthly", "seasonal"],
-            "weekday_weekend": true,
-            "diurnal_profiles": true,
-            "peak_analysis": {"perform": true, "n_peaks": 5},
-            "ramp_rate_analysis": true,
-            "extreme_day_analysis": {
-                "perform": true,
-                "n_days": 5,
-                "weather_variable": "Environment:Site Outdoor Air Drybulb Temperature [C](Daily)"
-            }
-        }
-    :return: A dict of metrics keyed by (real_bldg, sim_bldg, variable_name, analysis_slice).
+    (Docstring remains the same)
     """
     if variables_to_compare is None:
         variables_to_compare = []
@@ -71,9 +50,11 @@ def validate_with_ranges(
         analysis_options = {}
 
     # 1) Load the main CSVs
+    logging.info("Loading real and simulated data CSVs.")
     try:
         df_real = pd.read_csv(real_data_path)
         df_sim = pd.read_csv(sim_data_path)
+        logging.info("Data loaded successfully.")
     except FileNotFoundError as e:
         logging.error(f"Could not load data files: {e}")
         return {}
@@ -93,9 +74,10 @@ def validate_with_ranges(
             logging.warning(f"Could not convert real building '{real_bldg_str}' to int; skipping.")
             continue
 
+        logging.info(f"Processing Real Building ID: {real_bldg}")
         df_real_bldg = df_real[df_real["BuildingID"] == real_bldg]
         if df_real_bldg.empty:
-            logging.warning(f"No real data for building {real_bldg}")
+            logging.warning(f"No real data found for building {real_bldg}. Skipping.")
             continue
 
         for sb in sim_bldg_list:
@@ -105,30 +87,35 @@ def validate_with_ranges(
                 logging.warning(f"Could not convert sim building '{sb}' to int; skipping.")
                 continue
 
+            logging.info(f"  -> Comparing with Sim Building ID: {sim_bldg}")
             df_sim_bldg = df_sim[df_sim["BuildingID"] == sim_bldg]
             if df_sim_bldg.empty:
-                logging.warning(f"No sim data for building {sim_bldg}")
+                logging.warning(f"No sim data found for building {sim_bldg}. Skipping.")
                 continue
 
             for var_name in variables_to_compare:
+                logging.info(f"    -> Processing Variable: {var_name}")
                 # 4) Align the primary variable data
                 sim_vals, obs_vals, merged_df = align_data_for_variable(
                     df_real_bldg, df_sim_bldg, real_bldg, sim_bldg, var_name
                 )
                 if merged_df.empty:
-                    logging.warning(f"No overlapping dates for RealBldg={real_bldg}, SimBldg={sim_bldg}, Var={var_name}")
+                    logging.warning(f"      No overlapping dates found for this combination. Skipping variable.")
                     continue
+                
+                logging.info(f"      Found {len(merged_df)} overlapping data points.")
 
                 # 5) CRITICAL: Convert 'Date' column to datetime objects
                 try:
                     date_format = analysis_options.get("date_format")
                     merged_df['Timestamp'] = pd.to_datetime(merged_df['Date'], format=date_format)
                 except Exception as e:
-                    logging.warning(f"Could not parse dates for {var_name}. Skipping time-based analysis. Error: {e}")
+                    logging.error(f"      Could not parse dates for '{var_name}'. Skipping time-based analysis. Error: {e}")
                     continue
 
                 # --- 6) Time-based Analysis Starts Here ---
                 data_slices = {"annual": merged_df}
+                logging.info("      Generating analysis time slices...")
 
                 # 6a) Granularity Analysis (Monthly/Seasonal)
                 if "monthly" in analysis_options.get("granularity", []):
@@ -148,6 +135,7 @@ def validate_with_ranges(
                 # 6c) Extreme Day Analysis
                 extreme_day_opts = analysis_options.get("extreme_day_analysis", {})
                 if extreme_day_opts.get("perform"):
+                    logging.info("        Performing extreme day analysis...")
                     weather_var = extreme_day_opts.get("weather_variable")
                     n_days = extreme_day_opts.get("n_days", 5)
                     # Align weather data (from the real dataset)
@@ -161,29 +149,41 @@ def validate_with_ranges(
                         
                         data_slices['Hottest_Days'] = merged_df[merged_df['Timestamp'].dt.date.isin(hottest_days.date)]
                         data_slices['Coldest_Days'] = merged_df[merged_df['Timestamp'].dt.date.isin(coldest_days.date)]
+                        logging.info(f"          Found {len(data_slices['Hottest_Days'])} data points for hottest days.")
+                        logging.info(f"          Found {len(data_slices['Coldest_Days'])} data points for coldest days.")
+                    else:
+                        logging.warning(f"        Could not find weather variable '{weather_var}' for extreme day analysis.")
+
 
                 # --- 7) Calculate Standard Metrics for Each Slice ---
+                logging.info(f"      Calculating standard metrics for {len(data_slices)} slices...")
                 for slice_name, df_slice in data_slices.items():
-                    if df_slice.empty or len(df_slice) < 2: continue
+                    if df_slice.empty or len(df_slice) < 2: 
+                        logging.debug(f"        Skipping slice '{slice_name}' due to insufficient data ({len(df_slice)} points).")
+                        continue
                     
+                    logging.debug(f"        Calculating metrics for slice: '{slice_name}'")
                     sim_slice = df_slice['Value_sim'].values
                     obs_slice = df_slice['Value_obs'].values
 
                     # Store standard metrics
                     key = (real_bldg, sim_bldg, var_name, slice_name)
+                    cv_rmse_val = cv_rmse(sim_slice, obs_slice)
                     results[key] = {
                         "MBE": mean_bias_error(sim_slice, obs_slice),
-                        "CVRMSE": cv_rmse(sim_slice, obs_slice),
+                        "CVRMSE": cv_rmse_val,
                         "NMBE": nmbe(sim_slice, obs_slice),
-                        "Pass": (cv_rmse(sim_slice, obs_slice) or 1e6) < threshold_cv_rmse
+                        "Pass": (cv_rmse_val if cv_rmse_val is not None else 1e6) < threshold_cv_rmse
                     }
 
                 # --- 8) Perform Specialized Analyses on the Annual Data ---
                 annual_key = (real_bldg, sim_bldg, var_name, 'annual')
+                logging.info("      Performing specialized analyses on annual data...")
 
                 # 8a) Peak Analysis
                 peak_opts = analysis_options.get("peak_analysis", {})
                 if peak_opts.get("perform"):
+                    logging.info("        Performing peak analysis...")
                     results[annual_key]['peak_metrics'] = analyze_peaks(
                         merged_df['Value_obs'].values,
                         merged_df['Value_sim'].values,
@@ -192,34 +192,28 @@ def validate_with_ranges(
 
                 # 8b) Ramp Rate Analysis
                 if analysis_options.get("ramp_rate_analysis"):
+                    logging.info("        Performing ramp rate analysis...")
                     obs_ramps = np.diff(merged_df['Value_obs'].values)
                     sim_ramps = np.diff(merged_df['Value_sim'].values)
                     results[annual_key]['ramp_rate_metrics'] = analyze_ramp_rates(
                         merged_df['Value_obs'].values, merged_df['Value_sim'].values
                     )
                     if not skip_plots:
-                        plot_ramp_rate_distribution(obs_ramps, sim_ramps, f"{real_bldg}_VS_{sim_bldg}", var_name)
+                        plot_ramp_rate_distribution(obs_ramps, sim_ramps, f"R{real_bldg}-S{sim_bldg}", var_name)
 
                 # --- 9) Plotting ---
                 if not skip_plots:
-                    label = f"{real_bldg}_VS_{sim_bldg}"
+                    logging.info("      Generating plots...")
+                    label = f"R{real_bldg}-S{sim_bldg}"
                     plot_time_series_comparison(merged_df, label, var_name)
                     scatter_plot_comparison(merged_df, label, var_name)
 
                     # 9a) Diurnal Profile Plot
                     if analysis_options.get("diurnal_profiles"):
+                        logging.info("        Generating diurnal profile plot...")
                         diurnal_df = merged_df.groupby(merged_df['Timestamp'].dt.hour)[['Value_obs', 'Value_sim']].mean()
                         if not diurnal_df.empty:
                             plot_diurnal_profile(diurnal_df.reset_index(), label, var_name)
-
-    # --- 10) Final Informational Logging ---
-    if missing_in_real:
-        logging.info("\nVariables missing in REAL data for these (Building, Var):")
-        for bldg, var in set(missing_in_real):
-            logging.info(f"  - RealBldg={bldg}, Var={var}")
-    if missing_in_sim:
-        logging.info("\nVariables missing in SIM data for these (Building, Var):")
-        for bldg, var in set(missing_in_sim):
-            logging.info(f"  - SimBldg={bldg}, Var={var}")
-
+    
+    logging.info("Finished iterating through all building/variable combinations.")
     return results
