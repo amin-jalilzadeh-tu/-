@@ -1,0 +1,174 @@
+{
+  "main_config": {
+    "sensitivity": {
+      "perform_sensitivity": true,
+      "scenario_folder": "scenarios",
+      "method": "correlation",
+      "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+      "target_variable": [
+        "Heating:EnergyTransfer [J](Hourly)",
+        "Cooling:EnergyTransfer [J](Hourly)"
+      ],
+      "output_csv": "sensitivity_analysis.csv",
+      
+      "// Example 1: Basic time slice - peak cooling months": "",
+      "time_slice_config": {
+        "method": "predefined",
+        "predefined_slice": "peak_cooling_months"
+      },
+      
+      "// Example 2: Custom time slice - weekday afternoons in summer": "",
+      "time_slice_config_custom": {
+        "method": "custom",
+        "custom_config": {
+          "months": [6, 7, 8],
+          "hours": [14, 15, 16, 17],
+          "weekdays_only": true
+        }
+      },
+      
+      "// Example 3: Parameter filtering - only HVAC and DHW parameters": "",
+      "file_patterns": ["*hvac*.csv", "*dhw*.csv"],
+      "param_filters": {
+        "include_params": [
+          "heating_day_setpoint",
+          "cooling_day_setpoint",
+          "heating_night_setpoint",
+          "cooling_night_setpoint",
+          "setpoint_c",
+          "liters_per_person_per_day"
+        ]
+      },
+      
+      "// Example 4: Multiple analysis configurations": "",
+      "analysis_configs": [
+        {
+          "name": "Peak Cooling Analysis",
+          "method": "correlation",
+          "target_variable": "Cooling:EnergyTransfer [J](Hourly)",
+          "output_csv": "sensitivity_peak_cooling.csv",
+          "time_slice_config": {
+            "method": "custom",
+            "custom_config": {
+              "months": [7, 8],
+              "hours": [14, 15, 16, 17, 18]
+            }
+          },
+          "file_patterns": ["*hvac*.csv", "*vent*.csv"],
+          "param_filters": {
+            "param_name_contains": ["cooling", "temperature", "air"]
+          }
+        },
+        {
+          "name": "Winter Morning Heating",
+          "method": "correlation", 
+          "target_variable": "Heating:EnergyTransfer [J](Hourly)",
+          "output_csv": "sensitivity_winter_morning.csv",
+          "time_slice_config": {
+            "method": "predefined",
+            "predefined_slice": "winter_mornings"
+          },
+          "file_patterns": ["*hvac*.csv", "*dhw*.csv", "*fenez*.csv"],
+          "param_filters": {
+            "exclude_params": ["roughness"],
+            "param_name_contains": ["heating", "insulation", "R_value"]
+          }
+        },
+        {
+          "name": "Weekend Base Load",
+          "method": "correlation",
+          "target_variable": "Electricity:Facility [J](Hourly)",
+          "output_csv": "sensitivity_weekend_base.csv",
+          "time_slice_config": {
+            "method": "predefined",
+            "predefined_slice": "weekend_base"
+          },
+          "file_patterns": ["*elec*.csv", "*equipment*.csv"],
+          "param_filters": {
+            "param_name_contains": ["lights", "equipment", "parasitic"]
+          }
+        },
+        {
+          "name": "Annual Full Analysis",
+          "method": "morris",
+          "output_csv": "sensitivity_annual_morris.csv",
+          "n_morris_trajectories": 20,
+          "num_levels": 6,
+          "file_patterns": null,
+          "param_filters": {
+            "source_files": [
+              "scenario_params_hvac.csv",
+              "scenario_params_dhw.csv",
+              "scenario_params_vent.csv"
+            ]
+          }
+        }
+      ]
+    },
+    
+    "// Alternative configuration for specific analyses": "",
+    "sensitivity_examples": {
+      "example_1_simple_time_slice": {
+        "perform_sensitivity": true,
+        "scenario_folder": "scenarios",
+        "method": "correlation",
+        "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+        "target_variable": "Cooling:EnergyTransfer [J](Hourly)",
+        "output_csv": "cooling_afternoon_sensitivity.csv",
+        "time_slice_config": {
+          "method": "predefined",
+          "predefined_slice": "afternoon_peak"
+        }
+      },
+      
+      "example_2_specific_days": {
+        "perform_sensitivity": true,
+        "scenario_folder": "scenarios", 
+        "method": "correlation",
+        "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+        "target_variable": ["Heating:EnergyTransfer [J](Hourly)", "Electricity:Facility [J](Hourly)"],
+        "output_csv": "extreme_days_sensitivity.csv",
+        "time_slice_config": {
+          "method": "custom",
+          "custom_config": {
+            "specific_days": [[1, 15], [7, 21], [12, 21]],
+            "hours": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+          }
+        }
+      },
+      
+      "example_3_selective_parameters": {
+        "perform_sensitivity": true,
+        "scenario_folder": "scenarios",
+        "method": "sobol",
+        "output_csv": "sobol_hvac_only.csv",
+        "n_sobol_samples": 512,
+        "file_patterns": ["scenario_params_hvac.csv"],
+        "param_filters": {
+          "include_params": [
+            "heating_day_setpoint",
+            "cooling_day_setpoint",
+            "max_heating_supply_air_temp",
+            "min_cooling_supply_air_temp"
+          ]
+        }
+      },
+      
+      "example_4_exclude_patterns": {
+        "perform_sensitivity": true,
+        "scenario_folder": "scenarios",
+        "method": "morris",
+        "output_csv": "morris_no_shading.csv",
+        "file_patterns": ["scenario_params_*.csv"],
+        "param_filters": {
+          "exclude_params": [
+            "slat_angle_deg",
+            "slat_beam_solar_reflectance",
+            "blind_to_glass_distance"
+          ],
+          "param_name_contains": ["setpoint", "temperature", "flow"]
+        }
+      }
+    }
+  }
+}

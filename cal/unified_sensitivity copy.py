@@ -1,11 +1,14 @@
 """
-unified_sensitivity.py - UPDATED VERSION
+unified_sensitivity.py
 
-Enhanced to handle:
-- Time slice filtering for sensitivity analysis
-- Dynamic scenario file selection
-- Parameter filtering and selection
-- Multiple analysis configurations
+Updated to handle multiple target variables for correlation-based sensitivity.
+You can specify in your config:
+    "target_variable": [
+      "Heating:EnergyTransfer [J](Hourly)",
+      "Cooling:EnergyTransfer [J](Hourly)",
+      ...
+    ]
+or a single string (like "Heating:EnergyTransfer [J](Hourly)").
 
 Author: Your Team
 """
@@ -14,14 +17,6 @@ import os
 import numpy as np
 import pandas as pd
 from typing import Dict, Any, Optional, Union, List
-import glob
-
-# Import time slice utilities
-from cal.time_slice_utils import (
-    filter_results_by_time_slice,
-    apply_predefined_slice,
-    get_peak_hours
-)
 
 # Attempt SALib imports
 try:
@@ -129,129 +124,61 @@ def build_unified_param_name(row: pd.Series) -> str:
 
 
 ###############################################################################
-# 2) ENHANCED LOADING WITH FILE SELECTION
+# 2) LOADING SCENARIO PARAMS
 ###############################################################################
 
-def get_scenario_files(scenario_folder: str, file_patterns: Optional[List[str]] = None) -> List[str]:
+def load_scenario_params(scenario_folder: str) -> pd.DataFrame:
     """
-    Get scenario parameter files based on patterns.
-    
-    Args:
-        scenario_folder: Path to scenario folder
-        file_patterns: List of file patterns to include (e.g., ["*dhw*.csv", "*hvac*.csv"])
-                      If None, includes all scenario_params_*.csv files
-    
-    Returns:
-        List of file paths
-    """
-    if file_patterns is None:
-        # Default pattern - all scenario_params files
-        file_patterns = ["scenario_params_*.csv"]
-    
-    all_files = []
-    for pattern in file_patterns:
-        pattern_path = os.path.join(scenario_folder, pattern)
-        matching_files = glob.glob(pattern_path)
-        all_files.extend(matching_files)
-    
-    # Remove duplicates while preserving order
-    seen = set()
-    unique_files = []
-    for f in all_files:
-        if f not in seen:
-            seen.add(f)
-            unique_files.append(f)
-    
-    return unique_files
+    Reads scenario_params_*.csv from scenario_folder, merges them into
+    a single DataFrame with columns:
+      ["scenario_index", "param_name", "assigned_value", "param_min", "param_max", "ogc_fid", "source_file"]
+    and attempts to convert assigned_value to float or a known label-encoded numeric.
 
+    If it cannot be encoded => we skip that row.
+    """
+    scenario_files = [
+        "scenario_params_dhw.csv",
+        "scenario_params_elec.csv",
+        "scenario_params_equipment.csv",
+        "scenario_params_fenez.csv",
+        "scenario_params_hvac.csv",
+        "scenario_params_vent.csv"
+    ]
 
-def load_scenario_params(
-    scenario_folder: str, 
-    file_patterns: Optional[List[str]] = None,
-    param_filters: Optional[Dict[str, Any]] = None
-) -> pd.DataFrame:
-    """
-    Enhanced loading with file selection and parameter filtering.
-    
-    Args:
-        scenario_folder: Path to scenario folder
-        file_patterns: List of file patterns to include
-        param_filters: Dict with filtering options:
-            {
-                "include_params": ["heating_day_setpoint", "cooling_day_setpoint"],
-                "exclude_params": ["roughness"],
-                "param_name_contains": ["setpoint", "temperature"],
-                "source_files": ["scenario_params_hvac.csv"]
-            }
-    """
-    scenario_files = get_scenario_files(scenario_folder, file_patterns)
-    
-    print(f"[INFO] Found {len(scenario_files)} scenario files to process")
-    
     all_rows = []
-    
-    for fpath in scenario_files:
-        fname = os.path.basename(fpath)
-        
-        # Check source file filter
-        if param_filters and "source_files" in param_filters:
-            if fname not in param_filters["source_files"]:
-                continue
-        
+
+    for fname in scenario_files:
+        fpath = os.path.join(scenario_folder, fname)
         if not os.path.isfile(fpath):
             continue
-        
+
         df_raw = pd.read_csv(fpath)
         if df_raw.empty:
             continue
-        
+
         for _, row in df_raw.iterrows():
             scenario_index = row.get("scenario_index", None)
             unified_name = build_unified_param_name(row)
-            
-            # Apply parameter filters
-            if param_filters:
-                # Include filter
-                if "include_params" in param_filters:
-                    base_param = row.get("param_name", "")
-                    if base_param not in param_filters["include_params"]:
-                        continue
-                
-                # Exclude filter
-                if "exclude_params" in param_filters:
-                    base_param = row.get("param_name", "")
-                    if base_param in param_filters["exclude_params"]:
-                        continue
-                
-                # Contains filter
-                if "param_name_contains" in param_filters:
-                    contains_match = False
-                    for substr in param_filters["param_name_contains"]:
-                        if substr.lower() in unified_name.lower():
-                            contains_match = True
-                            break
-                    if not contains_match:
-                        continue
-            
+
             # assigned_value might be 'assigned_value' or 'param_value'
             val = row.get("assigned_value", None)
             if val is None or pd.isna(val):
                 val = row.get("param_value", None)
-            
+
             # Attempt to convert/encode
             numeric_val = encode_categorical_if_known(unified_name, val)
             if numeric_val is None:
                 print(f"[WARNING] Skipping param '{unified_name}' => "
                       f"no numeric encoding for value: {val}")
                 continue
-            
+
             # param_min / param_max
             pmin = row.get("param_min", np.nan)
             pmax = row.get("param_max", np.nan)
-            
+
             # ogc_fid
             ogc_fid = row.get("ogc_fid", None)
-            
+
             all_rows.append({
                 "scenario_index": scenario_index,
                 "param_name": unified_name,
@@ -261,68 +188,17 @@ def load_scenario_params(
                 "ogc_fid": ogc_fid,
                 "source_file": fname
             })
-    
+
     if not all_rows:
-        print(f"[WARNING] No valid numeric parameters found after filtering")
+        print(f"[WARNING] No valid numeric parameters found in '{scenario_folder}' (all skipped?)")
         return pd.DataFrame()
-    
-    print(f"[INFO] Loaded {len(all_rows)} parameters after filtering")
+
     return pd.DataFrame(all_rows)
 
 
 ###############################################################################
-# 3) ENHANCED CORRELATION-BASED SENSITIVITY WITH TIME SLICING
+# 3) CORRELATION-BASED SENSITIVITY (SINGLE or MULTIPLE Variables)
 ###############################################################################
-
-def correlation_sensitivity_with_time_slice(
-    df_scenarios: pd.DataFrame,
-    df_results: pd.DataFrame,
-    target_variables: Union[str, List[str]],
-    time_slice_config: Optional[Dict[str, Any]] = None,
-    scenario_index_col: str = "scenario_index",
-    assigned_val_col: str = "assigned_value"
-) -> pd.DataFrame:
-    """
-    Enhanced correlation-based sensitivity with time slice filtering.
-    
-    Args:
-        df_scenarios: Scenario parameters DataFrame
-        df_results: Simulation results DataFrame
-        target_variables: Variable(s) to analyze
-        time_slice_config: Time filtering configuration:
-            {
-                "method": "custom" | "predefined",
-                "predefined_slice": "peak_cooling_months",  # if method="predefined"
-                "custom_config": {  # if method="custom"
-                    "months": [7, 8],
-                    "hours": [14, 15, 16],
-                    "weekdays_only": True
-                }
-            }
-    """
-    # Apply time slicing if configured
-    if time_slice_config:
-        print(f"[INFO] Applying time slice filtering...")
-        
-        if time_slice_config.get("method") == "predefined":
-            slice_name = time_slice_config.get("predefined_slice", "peak_cooling_months")
-            df_results = apply_predefined_slice(df_results, slice_name)
-            print(f"[INFO] Applied predefined slice: {slice_name}")
-            
-        elif time_slice_config.get("method") == "custom":
-            custom_config = time_slice_config.get("custom_config", {})
-            df_results = filter_results_by_time_slice(df_results, custom_config)
-            print(f"[INFO] Applied custom time slice with config: {custom_config}")
-    
-    # Continue with regular correlation analysis
-    return correlation_sensitivity(
-        df_scenarios=df_scenarios,
-        df_results=df_results,
-        target_variables=target_variables,
-        scenario_index_col=scenario_index_col,
-        assigned_val_col=assigned_val_col
-    )
-
 
 def correlation_sensitivity(
     df_scenarios: pd.DataFrame,
@@ -332,7 +208,27 @@ def correlation_sensitivity(
     assigned_val_col: str = "assigned_value"
 ) -> pd.DataFrame:
     """
-    Original correlation sensitivity function (unchanged).
+    Performs correlation-based sensitivity between each parameter and
+    one or more target variables from the results.
+
+    If target_variables is a single string, we produce a DF with:
+       [Parameter, Correlation, AbsCorrelation]
+
+    If target_variables is a list of strings, we produce one row per param,
+    with correlation columns for each variable, e.g.:
+       [Parameter,
+        Corr_<var1>, AbsCorr_<var1>,
+        Corr_<var2>, AbsCorr_<var2>, ...
+       ]
+
+    Steps:
+      1) Pivot df_scenarios => wide (index=scenario_index, columns=param_name)
+      2) Melt df_results => sum across days => pivot wide so each variable has
+         its own column.
+      3) Merge scenario pivot with results pivot
+      4) Correlate each param col with each variable col
+
+    Returns a DataFrame of correlation results.
     """
     # Normalize target_variables to a list
     if isinstance(target_variables, str):
@@ -363,15 +259,20 @@ def correlation_sensitivity(
     daily_sum.rename(columns={"Value": "SumValue"}, inplace=True)
 
     # 3) Pivot variables => each var a column
+    #    If multiple target variables, we want them all to appear as columns
+    #    in the pivot. If you have more variables than in target_vars_list,
+    #    that's OK; we can keep them, or filter them.
     pivot_results = daily_sum.pivot(
         index=scenario_index_col,
         columns="VariableName",
         values="SumValue"
     ).reset_index()
 
-    # Filter to keep only target variables
+    # If you want to filter pivot_results to only keep the target vars:
     all_cols = list(pivot_results.columns)
+    # the first is scenario_index_col, so skip it
     keep_cols = [scenario_index_col]
+    # keep only columns in target_vars_list if they exist
     for varname in target_vars_list:
         if varname in all_cols:
             keep_cols.append(varname)
@@ -385,11 +286,13 @@ def correlation_sensitivity(
         how="inner"
     )
 
-    # Calculate correlations
+    # Now columns = [scenario_index, paramA, paramB, ..., var1, var2, ...]
+    # We do correlation paramX vs. varY for each pair
+    # param_cols are the scenario param columns, var_cols are the target variable columns
     var_cols = [c for c in pivot_results.columns if c != scenario_index_col]
     param_cols = [c for c in pivot_df.columns if c != scenario_index_col]
 
-    # If there's only 1 target var, produce the old layout
+    # If there's only 1 target var, produce the old layout.
     if len(var_cols) == 1:
         var_col = var_cols[0]
         corr_list = []
@@ -404,15 +307,18 @@ def correlation_sensitivity(
         corr_df.sort_values("AbsCorrelation", ascending=False, inplace=True)
         return corr_df
 
-    # Multiple variables => one row per param with correlation columns for each var
+    # Else multiple variables => produce one row per param, with correlation columns for each var
+    # e.g. param, Corr_var1, AbsCorr_var1, Corr_var2, AbsCorr_var2, ...
     corr_rows = []
     for col in param_cols:
         row_dict = {"Parameter": col}
         if not pd.api.types.is_numeric_dtype(merged[col]):
+            # skip or store NaNs
             for v in var_cols:
                 row_dict[f"Corr_{v}"] = np.nan
                 row_dict[f"AbsCorr_{v}"] = np.nan
         else:
+            # param is numeric
             for v in var_cols:
                 if not pd.api.types.is_numeric_dtype(merged[v]):
                     row_dict[f"Corr_{v}"] = np.nan
@@ -424,12 +330,15 @@ def correlation_sensitivity(
         corr_rows.append(row_dict)
 
     corr_df = pd.DataFrame(corr_rows)
+    # Optionally you can sort by one variable's AbsCorr_ if you want:
+    # e.g. if the first var is var_cols[0], sort by that
+    # but let's just leave it unsorted or sort by "Parameter"
     corr_df.sort_values("Parameter", inplace=True)
     return corr_df
 
 
 ###############################################################################
-# 4) SALib UTILS (unchanged)
+# 4) SALib UTILS: EXTRACT RANGES, BUILD PROBLEM
 ###############################################################################
 
 def extract_parameter_ranges(
@@ -496,7 +405,7 @@ def build_salib_problem(params_df: pd.DataFrame) -> Dict[str, Any]:
 
 
 ###############################################################################
-# 5) SALib: MORRIS & SOBOL (unchanged)
+# 5) SALib: MORRIS & SOBOL
 ###############################################################################
 
 def default_simulation_function(param_dict: Dict[str, float]) -> float:
@@ -548,9 +457,8 @@ def run_sobol_method(params_meta: pd.DataFrame, simulate_func, n_samples=256):
 
 
 ###############################################################################
-# 6) MAIN ORCHESTRATION - ENHANCED
+# 6) MAIN ORCHESTRATION
 ###############################################################################
-
 def run_sensitivity_analysis(
     scenario_folder: str,
     method: str = "morris",
@@ -559,89 +467,55 @@ def run_sensitivity_analysis(
     output_csv: str = "sensitivity_output.csv",
     n_morris_trajectories: int = 10,
     num_levels: int = 4,
-    n_sobol_samples: int = 256,
-    # New parameters for enhanced functionality
-    file_patterns: Optional[List[str]] = None,
-    param_filters: Optional[Dict[str, Any]] = None,
-    time_slice_config: Optional[Dict[str, Any]] = None,
-    analysis_configs: Optional[List[Dict[str, Any]]] = None
+    n_sobol_samples: int = 256
 ):
     """
-    Enhanced sensitivity analysis with file selection, parameter filtering, and time slicing.
-    
-    New parameters:
-        file_patterns: List of file patterns to include (e.g., ["*dhw*.csv", "*hvac*.csv"])
-        param_filters: Parameter filtering options
-        time_slice_config: Time slice configuration for correlation analysis
-        analysis_configs: List of analysis configurations to run multiple analyses
+    Called from main.py to do correlation, Morris, or Sobol sensitivity.
+    Now supports multiple target variables in correlation-based approach.
+
+    :param scenario_folder: path to folder with scenario_params_*.csv
+    :param method: "correlation", "morris", or "sobol"
+    :param results_csv: path to results CSV (for correlation)
+    :param target_variable: string or list of strings (for correlation).
+    :param output_csv: results file
+    :param n_morris_trajectories: int
+    :param num_levels: Morris design
+    :param n_sobol_samples: int
     """
     print(f"[INFO] run_sensitivity_analysis => method={method}, folder='{scenario_folder}'")
-    
-    # Handle multiple analysis configurations
-    if analysis_configs:
-        print(f"[INFO] Running {len(analysis_configs)} analysis configurations...")
-        
-        for i, config in enumerate(analysis_configs):
-            print(f"\n[INFO] === Analysis Configuration {i+1}/{len(analysis_configs)} ===")
-            
-            # Merge base parameters with config
-            merged_params = {
-                "scenario_folder": scenario_folder,
-                "method": config.get("method", method),
-                "results_csv": config.get("results_csv", results_csv),
-                "target_variable": config.get("target_variable", target_variable),
-                "output_csv": config.get("output_csv", f"sensitivity_output_{i+1}.csv"),
-                "n_morris_trajectories": config.get("n_morris_trajectories", n_morris_trajectories),
-                "num_levels": config.get("num_levels", num_levels),
-                "n_sobol_samples": config.get("n_sobol_samples", n_sobol_samples),
-                "file_patterns": config.get("file_patterns", file_patterns),
-                "param_filters": config.get("param_filters", param_filters),
-                "time_slice_config": config.get("time_slice_config", time_slice_config)
-            }
-            
-            # Run single analysis
-            run_sensitivity_analysis(**merged_params)
-        
-        print(f"\n[INFO] Completed all {len(analysis_configs)} analyses")
-        return
-    
-    # Single analysis run
-    # 1) Load scenario parameters with filtering
-    df_params = load_scenario_params(scenario_folder, file_patterns, param_filters)
+
+    # 1) Load scenario parameters
+    df_params = load_scenario_params(scenario_folder)
     if df_params.empty:
         print("[WARNING] No numeric scenario parameters => no analysis.")
         return
-    
+
     # 2) If correlation-based
     if method.lower() == "correlation":
         if not results_csv or not os.path.isfile(results_csv):
             raise ValueError("For correlation-based, must provide a valid results_csv.")
         if not target_variable:
             raise ValueError("For correlation-based, must provide target_variable (string or list).")
-        
+
         df_res = pd.read_csv(results_csv)
-        
-        # Use enhanced correlation function with time slicing
-        corr_df = correlation_sensitivity_with_time_slice(
+        corr_df = correlation_sensitivity(
             df_scenarios=df_params,
             df_results=df_res,
-            target_variables=target_variable,
-            time_slice_config=time_slice_config
+            target_variables=target_variable
         )
-        
         corr_df.to_csv(output_csv, index=False)
         print(f"[INFO] Correlation-based results => {output_csv}")
         return
-    
+
     # 3) SALib-based => extract ranges
     params_meta = extract_parameter_ranges(df_params)
     if params_meta.empty:
         print("[WARNING] All parameters were invalid or had no numeric data => no SALib analysis.")
         return
-    
+
     # Replace with real E+ or surrogate
     simulate_func = default_simulation_function
-    
+
     if method.lower() == "morris":
         # Morris
         res, X, Y = run_morris_method(
@@ -658,7 +532,7 @@ def run_sensitivity_analysis(
         })
         df_out.to_csv(output_csv, index=False)
         print(f"[INFO] Morris sensitivity results => {output_csv}")
-    
+
     elif method.lower() == "sobol":
         # Sobol
         sres, X, Y = run_sobol_method(
@@ -675,6 +549,6 @@ def run_sensitivity_analysis(
         })
         df_out.to_csv(output_csv, index=False)
         print(f"[INFO] Sobol sensitivity results => {output_csv}")
-    
+
     else:
         raise ValueError(f"Unknown method='{method}'. Must be 'correlation','morris','sobol'.")

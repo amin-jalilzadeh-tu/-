@@ -13,9 +13,6 @@ from validation.visualize import (
     plot_ramp_rate_distribution,
 )
 
-
-
-
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 
@@ -45,7 +42,9 @@ def validate_with_ranges(
 ):
     """
     Compare real vs sim data with advanced, configurable time-based analysis.
-    (Docstring remains the same)
+    
+    The `analysis_options` dictionary can now include `date_formats` (a list of strings)
+    to attempt parsing dates with multiple possible formats.
     """
     if variables_to_compare is None:
         variables_to_compare = []
@@ -109,13 +108,33 @@ def validate_with_ranges(
                 logging.info(f"      Found {len(merged_df)} overlapping data points.")
 
                 # 5) CRITICAL: Convert 'Date' column to datetime objects
-                try:
-                    date_format = analysis_options.get("date_format")
-                    merged_df['Timestamp'] = pd.to_datetime(merged_df['Date'], format=date_format)
-                except Exception as e:
-                    logging.error(f"      Could not parse dates for '{var_name}'. Skipping time-based analysis. Error: {e}")
-                    continue
+                date_formats = analysis_options.get("date_formats", [])
+                if "date_format" in analysis_options:
+                    # For backward compatibility, add the singular format to the list
+                    if isinstance(analysis_options['date_format'], str):
+                        date_formats.insert(0, analysis_options['date_format'])
+                
+                parsed_successfully = False
+                # Try parsing with specified formats
+                for fmt in date_formats:
+                    try:
+                        merged_df['Timestamp'] = pd.to_datetime(merged_df['Date'], format=fmt)
+                        parsed_successfully = True
+                        logging.info(f"      Successfully parsed dates using format: {fmt}")
+                        break 
+                    except (ValueError, TypeError):
+                        continue # This format didn't work, try next
 
+                # If no specified format worked, try pandas' automatic inference
+                if not parsed_successfully:
+                    try:
+                        merged_df['Timestamp'] = pd.to_datetime(merged_df['Date'])
+                        parsed_successfully = True
+                        logging.info("      Successfully parsed dates using pandas' automatic date inference.")
+                    except Exception as e:
+                        logging.error(f"      Could not parse dates for '{var_name}' with any provided format or with automatic inference. Skipping time-based analysis. Error: {e}")
+                        continue
+                
                 # --- 6) Time-based Analysis Starts Here ---
                 data_slices = {"annual": merged_df}
                 logging.info("      Generating analysis time slices...")
@@ -144,16 +163,34 @@ def validate_with_ranges(
                     # Align weather data (from the real dataset)
                     _, weather_vals, weather_df = align_data_for_variable(df_real_bldg, df_real_bldg, real_bldg, real_bldg, weather_var)
                     if not weather_df.empty:
-                        weather_df['Timestamp'] = pd.to_datetime(weather_df['Date'], format=date_format)
-                        daily_weather = weather_df.set_index('Timestamp').resample('D')['Value_obs'].mean()
+                        weather_parsed_successfully = False
+                        for fmt in date_formats:
+                            try:
+                                weather_df['Timestamp'] = pd.to_datetime(weather_df['Date'], format=fmt)
+                                weather_parsed_successfully = True
+                                break
+                            except (ValueError, TypeError):
+                                continue
                         
-                        hottest_days = daily_weather.nlargest(n_days).index
-                        coldest_days = daily_weather.nsmallest(n_days).index
-                        
-                        data_slices['Hottest_Days'] = merged_df[merged_df['Timestamp'].dt.date.isin(hottest_days.date)]
-                        data_slices['Coldest_Days'] = merged_df[merged_df['Timestamp'].dt.date.isin(coldest_days.date)]
-                        logging.info(f"          Found {len(data_slices['Hottest_Days'])} data points for hottest days.")
-                        logging.info(f"          Found {len(data_slices['Coldest_Days'])} data points for coldest days.")
+                        if not weather_parsed_successfully:
+                           try:
+                               weather_df['Timestamp'] = pd.to_datetime(weather_df['Date'])
+                               weather_parsed_successfully = True
+                           except (ValueError, TypeError):
+                               pass
+
+                        if weather_parsed_successfully:
+                            daily_weather = weather_df.set_index('Timestamp').resample('D')['Value_obs'].mean()
+                            
+                            hottest_days = daily_weather.nlargest(n_days).index
+                            coldest_days = daily_weather.nsmallest(n_days).index
+                            
+                            data_slices['Hottest_Days'] = merged_df[merged_df['Timestamp'].dt.date.isin(hottest_days.date)]
+                            data_slices['Coldest_Days'] = merged_df[merged_df['Timestamp'].dt.date.isin(coldest_days.date)]
+                            logging.info(f"          Found {len(data_slices['Hottest_Days'])} data points for hottest days.")
+                            logging.info(f"          Found {len(data_slices['Coldest_Days'])} data points for coldest days.")
+                        else:
+                            logging.warning(f"        Could not parse weather data dates. Skipping extreme day analysis.")
                     else:
                         logging.warning(f"        Could not find weather variable '{weather_var}' for extreme day analysis.")
 

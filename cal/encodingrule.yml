@@ -1,0 +1,26 @@
+# config/encoding_rules.yaml
+fuel_type:
+  Electricity: 0
+  Gas:         1
+roughness:
+  Smooth:          0
+  MediumSmooth:    1
+  MediumRough:     2
+  Rough:           3
+yes_no:
+  Yes: 1
+  No:  0
+
+
+# config/encoding_rules.yaml
+fuel_type:
+  Electricity: 0
+  Gas:         1
+roughness:
+  Smooth:          0
+  MediumSmooth:    1
+  MediumRough:     2
+  Rough:           3
+yes_no:
+  Yes: 1
+  No:  0

@@ -1,53 +1,128 @@
 """
-main cal.py
+main cal.py - UPDATED
 
-Example script that demonstrates how to call functions
-from unified_sensitivity.py for different sensitivity methods.
+Example script that demonstrates how to call enhanced sensitivity analysis
+functions with time slicing and parameter filtering.
 """
 
 from cal.unified_sensitivity import run_sensitivity_analysis
 
+
 def main():
     scenario_folder = r"D:\Documents\E_Plus_2030_py\output\scenarios"
-
-    # Example 1: Correlation-based analysis
-    # Uncomment and adjust paths/variable to use correlation analysis:
-    """
+    
+    # Example 1: Basic correlation analysis (unchanged)
+    print("\n=== Example 1: Basic Correlation Analysis ===")
     run_sensitivity_analysis(
         scenario_folder=scenario_folder,
         method="correlation",
         results_csv=r"D:\Documents\E_Plus_2030_py\output\results\merged_daily_mean_mocked.csv",
         target_variable="Heating:EnergyTransfer [J](Hourly)",
-        output_csv="correlation_sensitivity.csv"
+        output_csv="correlation_sensitivity_basic.csv"
     )
-    """
-
-    # Example 2: Morris analysis
+    
+    # Example 2: Correlation with time slice - Peak cooling months
+    print("\n=== Example 2: Peak Cooling Months Analysis ===")
+    run_sensitivity_analysis(
+        scenario_folder=scenario_folder,
+        method="correlation",
+        results_csv=r"D:\Documents\E_Plus_2030_py\output\results\merged_daily_mean_mocked.csv",
+        target_variable="Cooling:EnergyTransfer [J](Hourly)",
+        output_csv="correlation_peak_cooling.csv",
+        time_slice_config={
+            "method": "predefined",
+            "predefined_slice": "peak_cooling_months"
+        }
+    )
+    
+    # Example 3: Custom time slice - Weekday afternoons
+    print("\n=== Example 3: Weekday Afternoon Analysis ===")
+    run_sensitivity_analysis(
+        scenario_folder=scenario_folder,
+        method="correlation",
+        results_csv=r"D:\Documents\E_Plus_2030_py\output\results\merged_daily_mean_mocked.csv",
+        target_variable=["Cooling:EnergyTransfer [J](Hourly)", "Electricity:Facility [J](Hourly)"],
+        output_csv="correlation_weekday_afternoons.csv",
+        time_slice_config={
+            "method": "custom",
+            "custom_config": {
+                "hours": [14, 15, 16, 17],
+                "weekdays_only": True
+            }
+        }
+    )
+    
+    # Example 4: Parameter filtering - Only HVAC parameters
+    print("\n=== Example 4: HVAC Parameters Only ===")
     run_sensitivity_analysis(
         scenario_folder=scenario_folder,
         method="morris",
-        param_min_col="param_min",
-        param_max_col="param_max",
-        output_csv="morris_sensitivity.csv",
-        n_morris_trajectories=10,
-        num_levels=4
+        output_csv="morris_hvac_only.csv",
+        n_morris_trajectories=15,
+        num_levels=4,
+        file_patterns=["*hvac*.csv"],
+        param_filters={
+            "param_name_contains": ["setpoint", "temperature"]
+        }
     )
-
-    # Example 3: Sobol analysis
-    """
+    
+    # Example 5: Multiple analysis configurations
+    print("\n=== Example 5: Multiple Analysis Configurations ===")
+    analysis_configs = [
+        {
+            "name": "Summer Peak Cooling",
+            "method": "correlation",
+            "results_csv": r"D:\Documents\E_Plus_2030_py\output\results\merged_daily_mean_mocked.csv",
+            "target_variable": "Cooling:EnergyTransfer [J](Hourly)",
+            "output_csv": "sensitivity_summer_peak.csv",
+            "time_slice_config": {
+                "method": "custom",
+                "custom_config": {
+                    "months": [7, 8],
+                    "hours": [14, 15, 16, 17, 18]
+                }
+            },
+            "file_patterns": ["*hvac*.csv", "*vent*.csv"]
+        },
+        {
+            "name": "Winter Morning Heating",
+            "method": "correlation",
+            "results_csv": r"D:\Documents\E_Plus_2030_py\output\results\merged_daily_mean_mocked.csv",
+            "target_variable": "Heating:EnergyTransfer [J](Hourly)",
+            "output_csv": "sensitivity_winter_morning.csv",
+            "time_slice_config": {
+                "method": "predefined",
+                "predefined_slice": "winter_mornings"
+            },
+            "param_filters": {
+                "param_name_contains": ["heating", "insulation"]
+            }
+        }
+    ]
+    
+    run_sensitivity_analysis(
+        scenario_folder=scenario_folder,
+        analysis_configs=analysis_configs
+    )
+    
+    # Example 6: Exclude certain parameters
+    print("\n=== Example 6: Exclude Roughness Parameters ===")
     run_sensitivity_analysis(
         scenario_folder=scenario_folder,
         method="sobol",
-        param_min_col="param_min",
-        param_max_col="param_max",
-        output_csv="sobol_sensitivity.csv",
-        n_sobol_samples=128
+        output_csv="sobol_no_roughness.csv",
+        n_sobol_samples=256,
+        param_filters={
+            "exclude_params": ["roughness"],
+            "source_files": ["scenario_params_hvac.csv", "scenario_params_dhw.csv", "scenario_params_vent.csv"]
+        }
     )
-    """
+    
+    print("\n=== All analyses complete! ===")
+
 
 if __name__ == "__main__":
     main()
-
 
 
 
