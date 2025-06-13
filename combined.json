@@ -253,7 +253,7 @@
       "override_hvac_json": true,
       "override_vent_json": true,
       "override_geometry_json": true,
-      "override_shading_json": false
+      "override_shading_json": true
     },
     "idf_creation": {
       "perform_idf_creation": true,
@@ -372,7 +372,7 @@
         },
         "output_idf_dir": "scenario_idfs",
         "building_id": 4136733,
-        "num_scenarios": 5,
+        "num_scenarios": 7,
         "picking_method": "random_uniform",
         "picking_scale_factor": 0.5,
         "run_simulations": true,
@@ -412,20 +412,33 @@
       "config": {
         "real_data_csv": "data/mock_merged_daily_mean.csv",
         "sim_data_csv": "results/merged_daily_mean.csv",
-        "bldg_ranges": {"0": [0, 1, 2, 3]       },
+        "bldg_ranges": {
+          "0": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
         "variables_to_compare": [
-          "Electricity:Facility [J](Hourly)", "Heating:EnergyTransfer [J](Hourly)", "Cooling:EnergyTransfer [J](Hourly)"],
+          "Electricity:Facility [J](Hourly)",
+          "Heating:EnergyTransfer [J](Hourly)",
+          "Cooling:EnergyTransfer [J](Hourly)"
+        ],
         "threshold_cv_rmse": 30.0,
         "skip_plots": true,
         "output_csv": "validation_report_base.csv",
-
         "analysis_options": {
-          "date_format":  [
+          "date_format": [
             "%d/%m/%Y %H:%M",
             "%d/%m/%y",
             "%Y-%m-%d %H:%M:%S"
-          ],  
-          "granularity": ["annual", "monthly", "seasonal"],
+          ],
+          "granularity": [
+            "annual",
+            "monthly",
+            "seasonal"
+          ],
           "weekday_weekend": true,
           "diurnal_profiles": true,
           "peak_analysis": {
@@ -437,7 +450,9 @@
             "perform": true,
             "n_days": 5,
             "weather_variable": "Environment:Site Outdoor Air Drybulb Temperature [C](Daily)"
-      }}}
+          }
+        }
+      }
     },
     "validation_scenarios": {
       "perform_validation": false,
@@ -461,53 +476,134 @@
         "output_csv": "validation_report_scenarios.csv"
       }
     },
+    "// ENHANCED SENSITIVITY V1": "Uses time slicing and parameter filtering",
     "sensitivity": {
       "perform_sensitivity": true,
       "scenario_folder": "scenarios",
-      "method": "morris",
+      "method": "correlation",
       "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
       "target_variable": [
         "Heating:EnergyTransfer [J](Hourly)",
         "Cooling:EnergyTransfer [J](Hourly)",
         "Electricity:Facility [J](Hourly)"
       ],
-      "output_csv": "multi_corr_sensitivity.csv",
-      "n_morris_trajectories": 10,
-      "num_levels": 4
+      "output_csv": "enhanced_sensitivity.csv",
+      
+      "// Time slice configuration - focus on peak hours": "",
+      "time_slice_config": {
+        "method": "custom",
+        "custom_config": {
+          "hours": [7, 8, 9, 14, 15, 16, 17, 18, 19],
+          "weekdays_only": true
+        }
+      },
+      
+      "// Parameter filtering": "",
+      "file_patterns": ["*hvac*.csv", "*dhw*.csv", "*equipment*.csv"],
+      "param_filters": {
+        "param_name_contains": ["setpoint", "temperature", "wm2", "flow"],
+        "exclude_params": ["roughness"]
+      }
     },
+    
+    "// ENHANCED SURROGATE V1": "Uses automated ML and feature selection",
     "surrogate": {
       "perform_surrogate": true,
       "scenario_folder": "scenarios",
       "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
-      "target_variable": "Heating:EnergyTransfer [J](Hourly)",
-      "model_out": "heating_surrogate_model.joblib",
-      "cols_out": "heating_surrogate_columns.joblib",
-      "test_size": 0.3
+      "target_variable": [
+        "Heating:EnergyTransfer [J](Hourly)",
+        "Cooling:EnergyTransfer [J](Hourly)",
+        "Electricity:Facility [J](Hourly)"
+      ],
+      "model_out": "enhanced_multi_output_surrogate.joblib",
+      "cols_out": "enhanced_multi_output_columns.joblib",
+      "test_size": 0.2,
+      
+      "// Automated ML configuration": "",
+      "automated_ml": true,
+      "model_types": ["random_forest", "xgboost", "gradient_boosting"],
+      "scale_features": true,
+      "cv_strategy": "kfold",
+      
+      "// Feature selection from sensitivity": "",
+      "sensitivity_results_path": "enhanced_sensitivity.csv",
+      "feature_selection": {
+        "method": "correlation",
+        "top_n": 20
+      },
+      
+      "// Time aggregation": "",
+      "time_aggregation": "sum",
+      "save_metadata": true
     },
+    
+    "// ENHANCED CALIBRATION V1": "Uses PSO and multi-objective optimization",
     "calibration": {
       "perform_calibration": true,
       "scenario_folder": "scenarios",
-      "scenario_files": [
-        "scenario_params_dhw.csv",
-        "scenario_params_elec.csv"
-      ],
-      "subset_sensitivity_csv": "multi_corr_sensitivity.csv",
-      "top_n_params": 10,
-      "method": "ga",
+      "method": "pso",
       "use_surrogate": true,
       "real_data_csv": "data/mock_merged_daily_mean.csv",
-      "surrogate_model_path": "heating_surrogate_model.joblib",
-      "surrogate_columns_path": "heating_surrogate_columns.joblib",
+      "surrogate_model_path": "enhanced_multi_output_surrogate.joblib",
+      "surrogate_columns_path": "enhanced_multi_output_columns.joblib",
+      
+      "// Multi-variable calibration": "",
+      "target_variables": [
+        "Heating:EnergyTransfer [J](Hourly)",
+        "Cooling:EnergyTransfer [J](Hourly)",
+        "Electricity:Facility [J](Hourly)"
+      ],
+      
+      "// PSO configuration": "",
+      "algorithm_config": {
+        "pso": {
+          "n_particles": 50,
+          "max_iter": 100,
+          "inertia": 0.9,
+          "inertia_decay": 0.99,
+          "cognitive": 2.0,
+          "social": 2.0
+        }
+      },
+      
+      "// Multi-objective setup": "",
+      "objectives": [
+        {
+          "target_variable": "Heating:EnergyTransfer [J](Hourly)",
+          "metric": "cvrmse",
+          "weight": 0.35,
+          "tolerance": 25.0
+        },
+        {
+          "target_variable": "Cooling:EnergyTransfer [J](Hourly)",
+          "metric": "cvrmse",
+          "weight": 0.35,
+          "tolerance": 25.0
+        },
+        {
+          "target_variable": "Electricity:Facility [J](Hourly)",
+          "metric": "cvrmse",
+          "weight": 0.3,
+          "tolerance": 20.0
+        }
+      ],
+      
+      "// Parameter filtering using sensitivity results": "",
+      "subset_sensitivity_csv": "enhanced_sensitivity.csv",
+      "top_n_params": 15,
       "calibrate_min_max": true,
-      "ga_pop_size": 10,
-      "ga_generations": 5,
-      "ga_crossover_prob": 0.7,
-      "ga_mutation_prob": 0.2,
-      "bayes_n_calls": 15,
-      "random_n_iter": 20,
-      "output_history_csv": "calibration_history.csv",
-      "best_params_folder": "calibrated",
-      "history_folder": "calibrated"
+      
+      "// Validation to prevent overfitting": "",
+      "validation": {
+        "cross_validate": true,
+        "n_folds": 3,
+        "overfitting_threshold": 0.15
+      },
+      
+      "output_history_csv": "enhanced_calibration_history.csv",
+      "best_params_folder": "calibrated_enhanced",
+      "history_folder": "calibrated_enhanced"
     }
   },
   "shading_tree": [

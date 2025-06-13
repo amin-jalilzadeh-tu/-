@@ -59,6 +59,49 @@ SCHEDULE_LOOKUP = {
                 "allday": [(0, 24, (0.90, 1.00))],
             }
         },
+        # FIX for VENT_003: Add missing Two-and-a-half-story House pattern
+        "Two-and-a-half-story House": {
+            "ventilation": {
+                "weekday": [(0, 6, (0.30, 0.50)),    # Night setback
+                            (6, 9, (0.80, 1.00)),    # Morning peak
+                            (9, 16, (0.40, 0.60)),   # Daytime low
+                            (16, 22, (0.90, 1.00)),  # Evening peak
+                            (22, 24, (0.30, 0.50))], # Night setback
+                "weekend": [(0, 8, (0.40, 0.60)),    # Later night setback
+                            (8, 23, (0.85, 1.00)),   # Broad daytime activity
+                            (23, 24, (0.40, 0.60))], # Night setback
+            },
+            "infiltration": {
+                "allday": [(0, 24, (0.90, 1.00))],
+            }
+        },
+        "Corner House": {
+            "ventilation": {
+                "weekday": [(0, 6, (0.30, 0.50)), (6, 9, (0.80, 1.00)), (9, 16, (0.40, 0.60)), (16, 22, (0.90, 1.00)), (22, 24, (0.30, 0.50))],
+                "weekend": [(0, 8, (0.40, 0.60)), (8, 23, (0.85, 1.00)), (23, 24, (0.40, 0.60))],
+            },
+            "infiltration": {
+                "allday": [(0, 24, (0.90, 1.00))],
+            }
+        },
+        "Terrace or Semi-detached House": {
+            "ventilation": {
+                "weekday": [(0, 6, (0.30, 0.50)), (6, 9, (0.80, 1.00)), (9, 16, (0.40, 0.60)), (16, 22, (0.90, 1.00)), (22, 24, (0.30, 0.50))],
+                "weekend": [(0, 8, (0.40, 0.60)), (8, 23, (0.85, 1.00)), (23, 24, (0.40, 0.60))],
+            },
+            "infiltration": {
+                "allday": [(0, 24, (0.90, 1.00))],
+            }
+        },
+        "Detached House": {
+            "ventilation": {
+                "weekday": [(0, 6, (0.30, 0.50)), (6, 9, (0.80, 1.00)), (9, 16, (0.40, 0.60)), (16, 22, (0.90, 1.00)), (22, 24, (0.30, 0.50))],
+                "weekend": [(0, 8, (0.40, 0.60)), (8, 23, (0.85, 1.00)), (23, 24, (0.40, 0.60))],
+            },
+            "infiltration": {
+                "allday": [(0, 24, (0.90, 1.00))],
+            }
+        },
     },
 
     # =====================================================================
@@ -71,8 +114,13 @@ SCHEDULE_LOOKUP = {
                 "weekend": [(0, 24, (0.00, 0.05))],
             },
             "infiltration": {
-                "weekday": [(0, 7, (0.80, 1.00)), (7, 18, (0.30, 0.50)), (18, 24, (0.80, 1.00))],
-                "weekend": [(0, 24, (0.90, 1.00))]
+                # FIX for VENT_010: Infiltration should be LOW when HVAC is ON (pressurized)
+                "weekday": [(0, 6, (0.90, 1.00)),    # High when unoccupied
+                            (6, 7, (0.60, 0.80)),    # Transition
+                            (7, 18, (0.05, 0.15)),   # VERY LOW when pressurized
+                            (18, 19, (0.40, 0.60)),  # Transition
+                            (19, 24, (0.90, 1.00))], # High when unoccupied
+                "weekend": [(0, 24, (0.95, 1.00))]   # High all day
             }
         },
         "Office Function": {
@@ -88,8 +136,13 @@ SCHEDULE_LOOKUP = {
                 "weekend": [(0, 24, (0.00, 0.10))],  # Weekend (minimal/off)
             },
             "infiltration": {
-                "weekday": [(0, 7, (0.80, 1.00)), (7, 18, (0.25, 0.45)), (18, 24, (0.80, 1.00))], # Suppressed by HVAC pressure during day
-                "weekend": [(0, 24, (0.90, 1.00))],
+                # FIX for VENT_010: Correct infiltration logic for pressurized building
+                "weekday": [(0, 6, (0.90, 1.00)),    # High when unoccupied
+                            (6, 7, (0.60, 0.80)),    # Transition
+                            (7, 18, (0.05, 0.15)),   # VERY LOW when pressurized
+                            (18, 19, (0.40, 0.60)),  # Transition
+                            (19, 24, (0.90, 1.00))], # High when unoccupied
+                "weekend": [(0, 24, (0.95, 1.00))],  # High all day
             }
         },
         "Retail Function": { # Assumes a store in a shopping street or mall
@@ -104,9 +157,14 @@ SCHEDULE_LOOKUP = {
                             (18, 20, (0.40, 0.60)),  # Closing
                             (20, 24, (0.05, 0.15))], # Closed
             },
-            "infiltration": { # Dominated by door openings
-                "weekday": [(0, 9, (0.40, 0.60)), (9, 20, (0.80, 1.00)), (20, 24, (0.40, 0.60))],
-                "weekend": [(0, 9, (0.40, 0.60)), (9, 19, (0.90, 1.00)), (19, 24, (0.40, 0.60))],
+            "infiltration": {
+                # FIX for VENT_010: Apply correct logic
+                "weekday": [(0, 8, (0.40, 0.60)),    # Moderate when closed
+                            (8, 19, (0.80, 1.00)),   # HIGH due to door openings
+                            (19, 24, (0.40, 0.60))], # Moderate when closed
+                "weekend": [(0, 9, (0.40, 0.60)),    # Moderate when closed
+                            (9, 18, (0.90, 1.00)),   # HIGH due to door openings
+                            (18, 24, (0.40, 0.60))], # Moderate when closed
             }
         },
         "Education Function": { # School
@@ -120,8 +178,11 @@ SCHEDULE_LOOKUP = {
                 "weekend": [(0, 24, (0.00, 0.05))],  # No regular activity
             },
             "infiltration": {
-                "weekday": [(0, 7, (0.70, 0.90)), (7, 17, (0.40, 0.60)), (17, 24, (0.70, 0.90))],
-                "weekend": [(0, 24, (0.80, 1.00))],
+                # FIX for VENT_010: Apply correct logic
+                "weekday": [(0, 7, (0.70, 0.90)),    # High when unoccupied
+                            (7, 17, (0.10, 0.20)),   # LOW when HVAC on
+                            (17, 24, (0.70, 0.90))], # High when unoccupied
+                "weekend": [(0, 24, (0.80, 1.00))],  # High all day
             }
         },
         "Healthcare Function": { # Hospital (24/7 operation)
@@ -145,6 +206,80 @@ SCHEDULE_LOOKUP = {
             },
             "infiltration": {
                 "allday": [(0, 24, (0.60, 0.80))] # Higher quality construction than average residential
+            }
+        },
+        "Meeting Function": {
+            "ventilation": {
+                "weekday": [(0, 8, (0.05, 0.15)), (8, 12, (0.90, 1.00)), (12, 14, (0.70, 0.85)), 
+                            (14, 17, (0.90, 1.00)), (17, 24, (0.05, 0.15))],
+                "weekend": [(0, 24, (0.00, 0.10))],
+            },
+            "infiltration": {
+                # FIX for VENT_010: Apply correct logic
+                "weekday": [(0, 7, (0.80, 1.00)),    # High when unoccupied
+                            (7, 18, (0.10, 0.20)),   # LOW when HVAC on
+                            (18, 24, (0.80, 1.00))], # High when unoccupied
+                "weekend": [(0, 24, (0.90, 1.00))],  # High all day
+            }
+        },
+        "Sport Function": {
+            "ventilation": {
+                "weekday": [(0, 9, (0.00, 0.10)), (9, 21, (0.90, 1.00)), (21, 24, (0.00, 0.10))],
+                "weekend": [(0, 9, (0.00, 0.10)), (9, 19, (0.90, 1.00)), (19, 24, (0.00, 0.10))],
+            },
+            "infiltration": {
+                # FIX for VENT_010: Apply correct logic - sports facilities often less pressurized
+                "weekday": [(0, 9, (0.70, 0.90)),    # High when unoccupied
+                            (9, 21, (0.30, 0.50)),   # Moderate when occupied
+                            (21, 24, (0.70, 0.90))], # High when unoccupied
+                "weekend": [(0, 9, (0.70, 0.90)),    # High when unoccupied
+                            (9, 19, (0.30, 0.50)),   # Moderate when occupied
+                            (19, 24, (0.70, 0.90))], # High when unoccupied
+            }
+        },
+        "Cell Function": {
+            "ventilation": {
+                "weekday": [(0, 8, (0.00, 0.10)), (8, 20, (0.90, 1.00)), (20, 24, (0.00, 0.10))],
+                "weekend": [(0, 9, (0.00, 0.10)), (9, 17, (0.70, 0.90)), (17, 24, (0.00, 0.10))],
+            },
+            "infiltration": {
+                # FIX for VENT_010: Apply correct logic
+                "weekday": [(0, 8, (0.80, 1.00)),    # High when unoccupied
+                            (8, 20, (0.10, 0.20)),   # LOW when HVAC on
+                            (20, 24, (0.80, 1.00))], # High when unoccupied
+                "weekend": [(0, 9, (0.80, 1.00)),    # High when unoccupied
+                            (9, 17, (0.20, 0.30)),   # Low-moderate when HVAC on
+                            (17, 24, (0.80, 1.00))], # High when unoccupied
+            }
+        },
+        "Industrial Function": {
+            "ventilation": {
+                "weekday": [(0, 6, (0.00, 0.10)), (6, 20, (0.90, 1.00)), (20, 24, (0.00, 0.10))],
+                "weekend": [(0, 7, (0.00, 0.10)), (7, 18, (0.80, 0.90)), (18, 24, (0.00, 0.10))],
+            },
+            "infiltration": {
+                # FIX for VENT_010: Industrial often has large openings, less pressurization
+                "weekday": [(0, 6, (0.60, 0.80)),    # Moderate when unoccupied
+                            (6, 20, (0.40, 0.60)),   # Moderate when occupied
+                            (20, 24, (0.60, 0.80))], # Moderate when unoccupied
+                "weekend": [(0, 7, (0.60, 0.80)),    # Moderate when unoccupied
+                            (7, 18, (0.50, 0.70)),   # Moderate when occupied
+                            (18, 24, (0.60, 0.80))], # Moderate when unoccupied
+            }
+        },
+        "Other Use Function": {
+            "ventilation": {
+                "weekday": [(0, 8, (0.00, 0.10)), (8, 18, (0.90, 1.00)), (18, 24, (0.00, 0.10))],
+                "weekend": [(0, 9, (0.00, 0.10)), (9, 17, (0.90, 1.00)), (17, 24, (0.00, 0.10))],
+            },
+            "infiltration": {
+                # FIX for VENT_010: Apply correct logic
+                "weekday": [(0, 8, (0.80, 1.00)),    # High when unoccupied
+                            (8, 18, (0.10, 0.20)),   # LOW when HVAC on
+                            (18, 24, (0.80, 1.00))], # High when unoccupied
+                "weekend": [(0, 9, (0.80, 1.00)),    # High when unoccupied
+                            (9, 17, (0.20, 0.30)),   # Low-moderate when HVAC on
+                            (17, 24, (0.80, 1.00))], # High when unoccupied
             }
         },
     }

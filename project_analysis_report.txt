@@ -1,0 +1,3907 @@
+================================================================================
+PROJECT DEPENDENCY ANALYSIS REPORT
+================================================================================
+
+PROJECT SUMMARY
+------------------------------------------------------------
+Total Python modules analyzed: 157
+Modules with errors: 0
+Modules with imports: 106
+Modules with file I/O: 1
+
+File types accessed:
+  - csv: 2 files
+
+================================================================================
+
+MODULE: Lookups.data_materials_non_residential
+Path: Lookups\data_materials_non_residential.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: Lookups.data_materials_non_residential_modified
+Path: Lookups\data_materials_non_residential_modified.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: Lookups.data_materials_residential
+Path: Lookups\data_materials_residential.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: Lookups.dhw_lookup
+Path: Lookups\dhw_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: Lookups.here.geometry_lookup
+Path: Lookups\here\geometry_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: Lookups.here.materials_lookup
+Path: Lookups\here\materials_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: ZZZz.__init__
+Path: ZZZz\__init__.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: ZZZz.check_files
+Path: ZZZz\check_files.py
+------------------------------------------------------------
+IMPORTS:
+  - os
+  - pandas
+  - sys
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - check_number_of_columns_and_extract()
+  - check_number_of_rows_and_extract()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: ZZZz.draft main
+Path: ZZZz\draft main.py
+------------------------------------------------------------
+IMPORTS:
+  - logging
+  - os
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - setup_logging()
+  - main()
+  - iterative_calibration_loop()
+  - run_sensitivity_workflow()
+  - run_surrogate_workflow()
+  - run_optimization_workflow()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: ZZZz.main
+Path: ZZZz\main.py
+------------------------------------------------------------
+IMPORTS:
+  - cal.unified_calibration
+  - cal.unified_sensitivity
+  - cal.unified_surrogate
+  - database_handler
+  - excel_overrides
+  - excel_overrides
+  - excel_overrides
+  - excel_overrides
+  - excel_overrides
+  - excel_overrides
+  - flask
+  - idf_creation
+  - idf_creation
+  - idf_creation
+  - idf_objects.fenez.fenez_config_manager
+  - idf_objects.fenez.fenez_config_manager
+  - idf_objects.structuring.dhw_structuring
+  - idf_objects.structuring.fenestration_structuring
+  - idf_objects.structuring.flatten_assigned_vent
+  - idf_objects.structuring.flatten_hvac
+  - json
+  - logging
+  - main_modifi
+  - os
+  - pandas
+  - queue
+  - splitter
+  - splitter
+  - threading
+  - time
+  - validation.main_validation
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - setup_logging_for_queue()
+  - load_json()
+  - orchestrate_workflow()
+  - run_workflow_api()
+  - __init__()
+  - emit()
+  - safe_load_subjson()
+  - background_workflow()
+  - log_stream()
+
+CLASSES:
+  - QueueLoggerHandler
+
+================================================================================
+
+MODULE: app
+Path: app.py
+------------------------------------------------------------
+IMPORTS:
+  - flask
+  - job_manager
+  - logging
+  - os
+  - splitter
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_job_endpoint()
+  - start_job()
+  - get_job_logs()
+  - cancel_job_endpoint()
+  - get_job_status_endpoint()
+  - get_job_results()
+  - log_stream()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: cal.__init__
+Path: cal\__init__.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: cal.calibration_algorithms
+Path: cal\calibration_algorithms.py
+------------------------------------------------------------
+IMPORTS:
+  - cma
+  - copy
+  - dataclasses
+  - logging
+  - numpy
+  - pymoo.algorithms.moo.nsga2
+  - pymoo.core.problem
+  - pymoo.operators.crossover.sbx
+  - pymoo.operators.mutation.pm
+  - pymoo.operators.sampling.rnd
+  - pymoo.optimize
+  - random
+  - typing
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_adaptive_optimizer()
+  - __init__()
+  - optimize()
+  - __init__()
+  - optimize()
+  - _array_to_dict()
+  - _select_random_indices()
+  - __init__()
+  - optimize()
+  - __init__()
+  - optimize()
+  - __init__()
+  - optimize()
+  - cma_objective()
+  - __init__()
+  - _evaluate()
+
+CLASSES:
+  - OptimizationResult
+  - ParticleSwarmOptimizer
+  - DifferentialEvolution
+  - NSGA2Optimizer
+  - CMAESOptimizer
+  - HybridOptimizer
+  - CalibrationProblem
+
+================================================================================
+
+MODULE: cal.calibration_objectives
+Path: cal\calibration_objectives.py
+------------------------------------------------------------
+IMPORTS:
+  - cal.time_slice_utils
+  - cal.time_slice_utils
+  - datetime
+  - logging
+  - numpy
+  - pandas
+  - typing
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_ashrae_objectives()
+  - create_peak_focused_objectives()
+  - apply_time_filter_to_data()
+  - create_seasonal_objectives()
+  - __init__()
+  - calculate()
+  - _rmse()
+  - _mae()
+  - _cvrmse()
+  - _r2()
+  - _mape()
+  - _peak_error()
+  - _peak_relative_error()
+  - _nmbe()
+  - _cv()
+  - _weighted_rmse()
+  - __init__()
+  - calculate_all()
+  - calculate_weighted_sum()
+  - check_tolerances()
+  - __init__()
+  - calculate_with_time_filter()
+
+CLASSES:
+  - CalibrationObjective
+  - MultiObjectiveFunction
+  - TimeBasedObjective
+
+================================================================================
+
+MODULE: cal.main cal
+Path: cal\main cal.py
+------------------------------------------------------------
+IMPORTS:
+  - cal.unified_sensitivity
+  - cal.unified_surrogate
+  - os
+  - os
+  - pandas
+  - unified_calibration
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - main()
+  - main()
+  - main()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: cal.ml_pipeline_utils
+Path: cal\ml_pipeline_utils.py
+------------------------------------------------------------
+IMPORTS:
+  - autogluon.tabular
+  - datetime
+  - flaml
+  - h2o
+  - h2o.automl
+  - joblib
+  - json
+  - lightgbm
+  - logging
+  - numpy
+  - pandas
+  - sklearn.ensemble
+  - sklearn.linear_model
+  - sklearn.metrics
+  - sklearn.model_selection
+  - sklearn.neural_network
+  - sklearn.preprocessing
+  - sklearn.svm
+  - time
+  - tpot
+  - typing
+  - xgboost
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - get_available_models()
+  - create_model_instance()
+  - get_cv_strategy()
+  - aggregate_time_series_data()
+  - extract_time_features()
+  - create_interaction_features()
+  - evaluate_model()
+  - select_features_from_sensitivity()
+  - save_model_metadata()
+  - load_model_metadata()
+  - get_available_automl_frameworks()
+  - run_automl_comparison()
+  - evaluate_model_simple()
+  - __init__()
+  - __init__()
+  - fit()
+  - predict()
+  - _fit_autogluon()
+  - _fit_h2o()
+  - _fit_tpot()
+  - _fit_flaml()
+  - get_feature_importance()
+  - save()
+  - load()
+
+CLASSES:
+  - ModelConfig
+  - AutoMLWrapper
+
+================================================================================
+
+MODULE: cal.time_slice_utils
+Path: cal\time_slice_utils.py
+------------------------------------------------------------
+IMPORTS:
+  - datetime
+  - logging
+  - numpy
+  - pandas
+  - typing
+  - typing
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - parse_time_columns()
+  - filter_results_by_time_slice()
+  - get_peak_hours()
+  - get_seasonal_definitions()
+  - apply_predefined_slice()
+  - aggregate_by_time_pattern()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: cal.unified_calibration
+Path: cal\unified_calibration.py
+------------------------------------------------------------
+IMPORTS:
+  - cal.calibration_algorithms
+  - cal.calibration_objectives
+  - cal.time_slice_utils
+  - cal.unified_sensitivity
+  - collections
+  - copy
+  - csv
+  - datetime
+  - glob
+  - joblib
+  - json
+  - logging
+  - numpy
+  - os
+  - pandas
+  - random
+  - skopt
+  - skopt.space
+  - skopt.utils
+  - time
+  - typing
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - load_real_data_once()
+  - calculate_error_with_time_slice()
+  - predict_with_surrogate()
+  - run_calibration_config()
+  - validate_calibration()
+  - run_unified_calibration()
+  - run_single_calibration()
+  - combine_calibration_results()
+  - save_calibration_results()
+  - save_combined_calibration_results()
+  - load_scenario_csvs()
+  - optionally_filter_by_sensitivity()
+  - build_param_specs_from_scenario()
+  - load_surrogate_once()
+  - transform_calib_name_to_surrogate_col()
+  - build_feature_row_from_param_dict()
+  - predict_error_with_surrogate()
+  - run_energyplus_and_compute_error()
+  - random_search_calibration()
+  - ga_calibration()
+  - bayes_calibration()
+  - save_history_to_csv()
+  - fix_min_max_relations()
+  - save_best_params_separately()
+  - __init__()
+  - sample_random()
+  - apply_constraints()
+  - random_individual()
+  - evaluate()
+  - tournament_select()
+  - crossover()
+  - mutate()
+  - objective()
+  - eval_func()
+  - eval_func()
+  - eval_func()
+
+CLASSES:
+  - ParamSpec
+
+================================================================================
+
+MODULE: cal.unified_sensitivity
+Path: cal\unified_sensitivity.py
+------------------------------------------------------------
+IMPORTS:
+  - SALib.analyze
+  - SALib.analyze
+  - SALib.sample
+  - SALib.sample
+  - cal.time_slice_utils
+  - glob
+  - numpy
+  - os
+  - pandas
+  - typing
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - encode_categorical_if_known()
+  - build_unified_param_name()
+  - get_scenario_files()
+  - load_scenario_params()
+  - correlation_sensitivity_with_time_slice()
+  - correlation_sensitivity()
+  - extract_parameter_ranges()
+  - build_salib_problem()
+  - default_simulation_function()
+  - run_morris_method()
+  - run_sobol_method()
+  - run_sensitivity_analysis()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: cal.unified_sensitivity copy
+Path: cal\unified_sensitivity copy.py
+------------------------------------------------------------
+IMPORTS:
+  - SALib.analyze
+  - SALib.analyze
+  - SALib.sample
+  - SALib.sample
+  - numpy
+  - os
+  - pandas
+  - typing
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - encode_categorical_if_known()
+  - build_unified_param_name()
+  - load_scenario_params()
+  - correlation_sensitivity()
+  - extract_parameter_ranges()
+  - build_salib_problem()
+  - default_simulation_function()
+  - run_morris_method()
+  - run_sobol_method()
+  - run_sensitivity_analysis()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: cal.unified_surrogate
+Path: cal\unified_surrogate.py
+------------------------------------------------------------
+IMPORTS:
+  - cal.ml_pipeline_utils
+  - datetime
+  - glob
+  - joblib
+  - logging
+  - numpy
+  - os
+  - pandas
+  - sklearn.ensemble
+  - sklearn.metrics
+  - sklearn.model_selection
+  - sklearn.multioutput
+  - sklearn.preprocessing
+  - typing
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - encode_categorical_if_known()
+  - load_scenario_file()
+  - load_scenario_params()
+  - pivot_scenario_params()
+  - load_sim_results()
+  - aggregate_results()
+  - merge_params_with_results()
+  - build_automated_ml_model()
+  - build_and_save_surrogate()
+  - load_surrogate_and_predict()
+  - filter_top_parameters()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: cleanup_old_jobs
+Path: cleanup_old_jobs.py
+------------------------------------------------------------
+IMPORTS:
+  - os
+  - shutil
+  - time
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - cleanup_old_results()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: database_handler
+Path: database_handler.py
+------------------------------------------------------------
+IMPORTS:
+  - os
+  - pandas
+  - sqlalchemy
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - load_buildings_from_db()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: epw.__init__
+Path: epw\__init__.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: epw.assign_epw_file
+Path: epw\assign_epw_file.py
+------------------------------------------------------------
+IMPORTS:
+  - .epw_lookup
+  - math
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - find_epw_overrides()
+  - assign_epw_for_building_with_overrides()
+  - pick_epw_from_lookup()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: epw.epw_lookup
+Path: epw\epw_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: epw.epw_overrides_from_excel
+Path: epw\epw_overrides_from_excel.py
+------------------------------------------------------------
+IMPORTS:
+  - copy
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - read_epw_overrides_from_excel()
+  - apply_epw_overrides_to_lookup()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: epw.run_epw_sims
+Path: epw\run_epw_sims.py
+------------------------------------------------------------
+IMPORTS:
+  - .assign_epw_file
+  - eppy.modeleditor
+  - logging
+  - multiprocessing
+  - os
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - run_simulation()
+  - generate_simulations()
+  - simulate_all()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: excel_overrides
+Path: excel_overrides.py
+------------------------------------------------------------
+IMPORTS:
+  - os
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - override_fenestration_dicts_from_excel()
+  - override_dhw_lookup_from_excel_file()
+  - override_epw_lookup_from_excel_file()
+  - override_lighting_lookup_from_excel_file()
+  - override_hvac_lookup_from_excel_file()
+  - override_vent_lookup_from_excel_file()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_creation
+Path: idf_creation.py
+------------------------------------------------------------
+IMPORTS:
+  - epw.run_epw_sims
+  - geomeppy
+  - idf_objects.DHW.water_heater
+  - idf_objects.Elec.lighting
+  - idf_objects.HVAC.custom_hvac
+  - idf_objects.eequip.equipment
+  - idf_objects.fenez.fenestration
+  - idf_objects.fenez.materials
+  - idf_objects.geomz.building
+  - idf_objects.other.zonelist
+  - idf_objects.outputdef.add_output_definitions
+  - idf_objects.outputdef.assign_output_settings
+  - idf_objects.setzone.add_outdoor_air_and_zone_sizing_to_all_zones
+  - idf_objects.tempground.add_ground_temperatures
+  - idf_objects.ventilation.add_ventilation
+  - idf_objects.wshading.create_shading_objects
+  - idf_objects.wshading.shading_overrides_from_excel
+  - logging
+  - os
+  - pandas
+  - postproc.merge_results
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_idf_for_building()
+  - create_idfs_for_all_buildings()
+  - _make_assigned_path()
+  - _write_generic_log_csv()
+  - _write_geometry_csv()
+  - _write_lighting_csv()
+  - _write_equipment_csv()
+  - _write_fenestration_csv()
+  - _write_dhw_csv()
+  - _write_hvac_csv()
+  - _write_vent_csv()
+  - _write_shading_csv()
+  - _write_groundtemp_csv()
+  - _write_setzone_csv()
+  - _write_epw_csv()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.DHW.assign_dhw_values
+Path: idf_objects\DHW\assign_dhw_values.py
+------------------------------------------------------------
+IMPORTS:
+  - .dhw_lookup
+  - random
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - find_dhw_overrides()
+  - pick_val_with_range()
+  - assign_dhw_parameters()
+  - override_range()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.DHW.building_type_map
+Path: idf_objects\DHW\building_type_map.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - map_building_function_to_dhw_key()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.DHW.dhw_lookup
+Path: idf_objects\DHW\dhw_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.DHW.dhw_overrides_from_excel
+Path: idf_objects\DHW\dhw_overrides_from_excel.py
+------------------------------------------------------------
+IMPORTS:
+  - copy
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - override_dhw_lookup_from_excel()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.DHW.parameters
+Path: idf_objects\DHW\parameters.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - calculate_dhw_parameters()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.DHW.schedules
+Path: idf_objects\DHW\schedules.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_dhw_schedules()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.DHW.water_heater
+Path: idf_objects\DHW\water_heater.py
+------------------------------------------------------------
+IMPORTS:
+  - .assign_dhw_values
+  - .parameters
+  - .schedules
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - add_dhw_to_idf()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.Elec.assign_lighting_values
+Path: idf_objects\Elec\assign_lighting_values.py
+------------------------------------------------------------
+IMPORTS:
+  - .constants
+  - .lighting_lookup
+  - .overrides_helper
+  - random
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - assign_lighting_parameters()
+  - pick_val()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.Elec.constants
+Path: idf_objects\Elec\constants.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.Elec.lighting
+Path: idf_objects\Elec\lighting.py
+------------------------------------------------------------
+IMPORTS:
+  - .assign_lighting_values
+  - .schedules
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - get_building_category_and_subtype()
+  - add_lights_and_parasitics()
+  - is_valid_type_string()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.Elec.lighting_lookup
+Path: idf_objects\Elec\lighting_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.Elec.lighting_overrides_from_excel
+Path: idf_objects\Elec\lighting_overrides_from_excel.py
+------------------------------------------------------------
+IMPORTS:
+  - copy
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - read_lighting_overrides_from_excel()
+  - apply_lighting_overrides_to_lookup()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.Elec.overrides_helper
+Path: idf_objects\Elec\overrides_helper.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - find_applicable_overrides()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.Elec.schedule_def
+Path: idf_objects\Elec\schedule_def.py
+------------------------------------------------------------
+IMPORTS:
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - read_schedule_overrides_from_excel()
+  - apply_schedule_overrides_to_schedules()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.Elec.schedules
+Path: idf_objects\Elec\schedules.py
+------------------------------------------------------------
+IMPORTS:
+  - .schedule_def
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_lighting_schedule()
+  - create_parasitic_schedule()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.HVAC.assign_hvac_values
+Path: idf_objects\HVAC\assign_hvac_values.py
+------------------------------------------------------------
+IMPORTS:
+  - .hvac_lookup
+  - random
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - find_hvac_overrides()
+  - pick_val_with_range()
+  - override_numeric_range()
+  - override_schedule_details()
+  - assign_hvac_ideal_parameters()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.HVAC.custom_hvac
+Path: idf_objects\HVAC\custom_hvac.py
+------------------------------------------------------------
+IMPORTS:
+  - .assign_hvac_values
+  - .schedule_creation
+  - typing
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - add_HVAC_Ideal_to_all_zones()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.HVAC.hvac_lookup
+Path: idf_objects\HVAC\hvac_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.HVAC.hvac_lookup2
+Path: idf_objects\HVAC\hvac_lookup2.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.HVAC.hvac_lookup3
+Path: idf_objects\HVAC\hvac_lookup3.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.HVAC.hvac_overrides_from_excel
+Path: idf_objects\HVAC\hvac_overrides_from_excel.py
+------------------------------------------------------------
+IMPORTS:
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - read_hvac_overrides_from_excel()
+  - apply_hvac_overrides_to_lookup()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.HVAC.schedule_creation
+Path: idf_objects\HVAC\schedule_creation.py
+------------------------------------------------------------
+IMPORTS:
+  - traceback
+  - typing
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - _validate_and_format_until_blocks()
+  - create_or_update_time_block_schedule()
+  - convert_setpoint_mode_to_values()
+  - _generate_standard_mode_blocks()
+  - create_schedules_for_building()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.eequip.assign_equip_values
+Path: idf_objects\eequip\assign_equip_values.py
+------------------------------------------------------------
+IMPORTS:
+  - .equip_lookup
+  - .overrides_helper
+  - idf_objects.Elec.constants
+  - random
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - assign_equipment_parameters()
+  - pick_val()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.eequip.equip_lookup
+Path: idf_objects\eequip\equip_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.eequip.equip_overrides_from_excel
+Path: idf_objects\eequip\equip_overrides_from_excel.py
+------------------------------------------------------------
+IMPORTS:
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - read_equipment_overrides_from_excel()
+  - apply_equipment_overrides_to_lookup()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.eequip.equipment
+Path: idf_objects\eequip\equipment.py
+------------------------------------------------------------
+IMPORTS:
+  - .assign_equip_values
+  - .schedules
+  - idf_objects.Elec.lighting
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - add_electric_equipment()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.eequip.overrides_helper
+Path: idf_objects\eequip\overrides_helper.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - find_applicable_overrides()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.eequip.schedule_def
+Path: idf_objects\eequip\schedule_def.py
+------------------------------------------------------------
+IMPORTS:
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - read_schedule_overrides_from_excel()
+  - apply_schedule_overrides_to_schedules()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.eequip.schedules
+Path: idf_objects\eequip\schedules.py
+------------------------------------------------------------
+IMPORTS:
+  - .schedule_def
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_equipment_schedule()
+  - create_equipment_parasitic_schedule()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.fenez.assign_fenestration_values
+Path: idf_objects\fenez\assign_fenestration_values.py
+------------------------------------------------------------
+IMPORTS:
+  - .materials_config
+  - random
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - assign_fenestration_parameters()
+  - compute_wwr_from_row()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.fenez.dict_override_excel
+Path: idf_objects\fenez\dict_override_excel.py
+------------------------------------------------------------
+IMPORTS:
+  - copy
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - override_dictionaries_from_excel()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.fenez.fenestration
+Path: idf_objects\fenez\fenestration.py
+------------------------------------------------------------
+IMPORTS:
+  - .assign_fenestration_values
+  - geomeppy
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - add_fenestration()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.fenez.fenez_config_manager
+Path: idf_objects\fenez\fenez_config_manager.py
+------------------------------------------------------------
+IMPORTS:
+  - copy
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - build_fenez_config()
+  - apply_user_fenez_overrides()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.fenez.materials
+Path: idf_objects\fenez\materials.py
+------------------------------------------------------------
+IMPORTS:
+  - .materials_config
+  - geomeppy
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - _store_material_picks()
+  - update_construction_materials()
+  - assign_constructions_to_surfaces()
+  - create_opaque_material()
+  - create_window_material()
+  - _layer_for_fallback()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.fenez.materials_config
+Path: idf_objects\fenez\materials_config.py
+------------------------------------------------------------
+IMPORTS:
+  - .materials_lookup
+  - Lookups.data_materials_non_residential
+  - Lookups.data_materials_residential
+  - random
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - pick_val()
+  - assign_material_from_lookup()
+  - compute_wwr()
+  - get_extended_materials_data()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.fenez.materials_lookup
+Path: idf_objects\fenez\materials_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.fenez.materials_lookup0
+Path: idf_objects\fenez\materials_lookup0.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.geomz.__init__
+Path: idf_objects\geomz\__init__.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.geomz.assign_geometry_values
+Path: idf_objects\geomz\assign_geometry_values.py
+------------------------------------------------------------
+IMPORTS:
+  - .geometry_lookup
+  - .geometry_overrides_from_excel
+  - random
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - find_geom_overrides()
+  - pick_val_with_range()
+  - assign_geometry_values()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.geomz.building
+Path: idf_objects\geomz\building.py
+------------------------------------------------------------
+IMPORTS:
+  - .assign_geometry_values
+  - .geometry
+  - .zoning
+  - math
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_building_with_roof_type()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.geomz.geometry
+Path: idf_objects\geomz\geometry.py
+------------------------------------------------------------
+IMPORTS:
+  - math
+  - math
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - rotate_point()
+  - compute_dimensions_from_area_perimeter()
+  - create_building_base_polygon()
+  - polygon_area()
+  - polygon_area_signed()
+  - inward_offset_polygon()
+  - edge_offset()
+  - line_intersect()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.geomz.geometry_lookup
+Path: idf_objects\geomz\geometry_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.geomz.geometry_overrides_from_excel
+Path: idf_objects\geomz\geometry_overrides_from_excel.py
+------------------------------------------------------------
+IMPORTS:
+  - copy
+  - math
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - read_geometry_overrides_excel()
+  - pick_geom_params_from_rules()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.geomz.geometry_overrides_helper
+Path: idf_objects\geomz\geometry_overrides_helper.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - find_geom_overrides()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.geomz.override_geometry_lookup_from_excel
+Path: idf_objects\geomz\override_geometry_lookup_from_excel.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - override_geometry_lookup_from_excel()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.geomz.zoning
+Path: idf_objects\geomz\zoning.py
+------------------------------------------------------------
+IMPORTS:
+  - .geometry
+  - .geometry
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - link_surfaces()
+  - create_zone_surfaces()
+  - create_zones_with_perimeter_depth()
+  - edge_to_bc()
+  - get_wall()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.other.zonelist
+Path: idf_objects\other\zonelist.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_zonelist()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.outputdef.add_output_definitions
+Path: idf_objects\outputdef\add_output_definitions.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - add_output_definitions()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.outputdef.assign_output_settings
+Path: idf_objects\outputdef\assign_output_settings.py
+------------------------------------------------------------
+IMPORTS:
+  - .output_lookup
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - assign_output_settings()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.outputdef.output_lookup
+Path: idf_objects\outputdef\output_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.postproc.merge_results
+Path: idf_objects\postproc\merge_results.py
+------------------------------------------------------------
+IMPORTS:
+  - calendar
+  - datetime
+  - numpy
+  - os
+  - pandas
+  - re
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - merge_all_results()
+  - aggregate_series()
+  - correct_time()
+  - parse_dt()
+  - safe_dt()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.setzone.add_outdoor_air_and_zone_sizing_to_all_zones
+Path: idf_objects\setzone\add_outdoor_air_and_zone_sizing_to_all_zones.py
+------------------------------------------------------------
+IMPORTS:
+  - .assign_zone_sizing_values
+  - .define_global_design_specs
+  - geomeppy
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - add_outdoor_air_and_zone_sizing_to_all_zones()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.setzone.assign_zone_sizing_values
+Path: idf_objects\setzone\assign_zone_sizing_values.py
+------------------------------------------------------------
+IMPORTS:
+  - .zone_sizing_lookup
+  - random
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - assign_zone_sizing_params()
+  - pick_val()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.setzone.define_global_design_specs
+Path: idf_objects\setzone\define_global_design_specs.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - define_global_design_specs()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.setzone.zone_sizing_lookup
+Path: idf_objects\setzone\zone_sizing_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.shading.shading
+Path: idf_objects\shading\shading.py
+------------------------------------------------------------
+IMPORTS:
+  - .shading_creator
+  - .transmittance_schedules
+  - json
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - add_shading_to_idf()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.shading.shading_creator
+Path: idf_objects\shading\shading_creator.py
+------------------------------------------------------------
+IMPORTS:
+  - ast
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_shading_detailed()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.shading.transmittance_schedules
+Path: idf_objects\shading\transmittance_schedules.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_tree_trans_schedule()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.structuring.dhw_structuring
+Path: idf_objects\structuring\dhw_structuring.py
+------------------------------------------------------------
+IMPORTS:
+  - ast
+  - os
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - transform_dhw_log_to_structured()
+  - main()
+  - get_subdict()
+  - try_float()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.structuring.equipment_structuring
+Path: idf_objects\structuring\equipment_structuring.py
+------------------------------------------------------------
+IMPORTS:
+  - os
+  - pandas
+  - shutil
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - transform_equipment_log_to_structured()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.structuring.fenestration_structuring
+Path: idf_objects\structuring\fenestration_structuring.py
+------------------------------------------------------------
+IMPORTS:
+  - ast
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - transform_fenez_log_to_structured_with_ranges()
+  - get_subdict()
+  - try_float()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.structuring.flatten_assigned_vent
+Path: idf_objects\structuring\flatten_assigned_vent.py
+------------------------------------------------------------
+IMPORTS:
+  - ast
+  - os
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - parse_assigned_value()
+  - flatten_ventilation_data()
+  - main()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.structuring.flatten_hvac
+Path: idf_objects\structuring\flatten_hvac.py
+------------------------------------------------------------
+IMPORTS:
+  - ast
+  - os
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - parse_assigned_value()
+  - flatten_hvac_data()
+  - main()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.structuring.shading_structuring
+Path: idf_objects\structuring\shading_structuring.py
+------------------------------------------------------------
+IMPORTS:
+  - os
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - transform_shading_log_to_structured()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.structuring.zone_sizing_structuring
+Path: idf_objects\structuring\zone_sizing_structuring.py
+------------------------------------------------------------
+IMPORTS:
+  - json
+  - os
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - transform_zone_sizing_log_to_structured()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.tempground.add_ground_temperatures
+Path: idf_objects\tempground\add_ground_temperatures.py
+------------------------------------------------------------
+IMPORTS:
+  - .assign_groundtemp_values
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - add_ground_temperatures()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.tempground.assign_groundtemp_values
+Path: idf_objects\tempground\assign_groundtemp_values.py
+------------------------------------------------------------
+IMPORTS:
+  - .groundtemp_lookup
+  - random
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - assign_ground_temperatures()
+  - pick_val()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.tempground.groundtemp_lookup
+Path: idf_objects\tempground\groundtemp_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.ventilation.add_ventilation
+Path: idf_objects\ventilation\add_ventilation.py
+------------------------------------------------------------
+IMPORTS:
+  - geomeppy
+  - idf_objects.ventilation
+  - idf_objects.ventilation.assign_ventilation_values
+  - idf_objects.ventilation.calc_functions
+  - idf_objects.ventilation.create_ventilation_systems
+  - idf_objects.ventilation.mappings
+  - math
+  - typing
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - get_zone_floor_area_from_surfaces()
+  - add_ventilation_to_idf()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.ventilation.assign_ventilation_values
+Path: idf_objects\ventilation\assign_ventilation_values.py
+------------------------------------------------------------
+IMPORTS:
+  - .ventilation_lookup
+  - math
+  - random
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - find_vent_overrides()
+  - pick_val_with_range()
+  - override_range()
+  - assign_ventilation_params_with_overrides()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.ventilation.calc_functions
+Path: idf_objects\ventilation\calc_functions.py
+------------------------------------------------------------
+IMPORTS:
+  - math
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - calc_infiltration_rate_at_1Pa_per_m2()
+  - calc_required_ventilation_flow()
+  - calc_fan_power()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.ventilation.config_systems
+Path: idf_objects\ventilation\config_systems.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.ventilation.create_ventilation_systems
+Path: idf_objects\ventilation\create_ventilation_systems.py
+------------------------------------------------------------
+IMPORTS:
+  - .config_systems
+  - geomeppy
+  - math
+  - random
+  - typing
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - apply_weather_coefficients()
+  - create_ventilation_system()
+  - pick_val()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.ventilation.mappings
+Path: idf_objects\ventilation\mappings.py
+------------------------------------------------------------
+IMPORTS:
+  - typing
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - safe_lower()
+  - map_age_range_to_year_key()
+  - map_infiltration_key()
+  - map_usage_key()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.ventilation.schedule_lookup
+Path: idf_objects\ventilation\schedule_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.ventilation.schedules
+Path: idf_objects\ventilation\schedules.py
+------------------------------------------------------------
+IMPORTS:
+  - .schedule_lookup
+  - geomeppy
+  - math
+  - random
+  - typing
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - ensure_schedule_type_limits()
+  - create_always_on_schedule()
+  - _pick_value_from_range()
+  - get_or_create_archetype_schedule()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.ventilation.schedules copy
+Path: idf_objects\ventilation\schedules copy.py
+------------------------------------------------------------
+IMPORTS:
+  - geomeppy
+  - typing
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - ensure_schedule_type_limits()
+  - create_always_on_schedule()
+  - create_day_night_schedule()
+  - create_workhours_schedule()
+  - create_schedule_from_pattern()
+  - create_schedule_from_weekday_weekend_pattern()
+  - ensure_dynamic_schedule()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.ventilation.ventilation_lookup
+Path: idf_objects\ventilation\ventilation_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.ventilation.ventilation_overrides_from_excel
+Path: idf_objects\ventilation\ventilation_overrides_from_excel.py
+------------------------------------------------------------
+IMPORTS:
+  - copy
+  - math
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - read_ventilation_overrides_from_excel()
+  - apply_ventilation_overrides_to_lookup()
+  - is_number()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.wshading.__init__
+Path: idf_objects\wshading\__init__.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.wshading.assign_shading_values
+Path: idf_objects\wshading\assign_shading_values.py
+------------------------------------------------------------
+IMPORTS:
+  - .shading_lookup
+  - logging
+  - random
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - pick_val_from_range()
+  - pick_shading_params()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.wshading.create_shading_objects
+Path: idf_objects\wshading\create_shading_objects.py
+------------------------------------------------------------
+IMPORTS:
+  - .assign_shading_values
+  - logging
+  - random
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - add_shading_objects()
+  - _create_overhang_example()
+  - add_shading_schedule()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.wshading.shading_lookup
+Path: idf_objects\wshading\shading_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: idf_objects.wshading.shading_overrides_from_excel
+Path: idf_objects\wshading\shading_overrides_from_excel.py
+------------------------------------------------------------
+IMPORTS:
+  - logging
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - read_shading_overrides_excel()
+  - pick_shading_params_from_rules()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: import streamlit as st
+Path: import streamlit as st.py
+------------------------------------------------------------
+IMPORTS:
+  - streamlit
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - main()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: job_manager
+Path: job_manager.py
+------------------------------------------------------------
+IMPORTS:
+  - enum
+  - orchestrator
+  - orchestrator
+  - queue
+  - threading
+  - time
+  - traceback
+  - typing
+  - uuid
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_job()
+  - enqueue_job()
+  - get_job()
+  - get_job_status()
+  - get_job_logs_queue()
+  - cancel_job()
+  - set_job_result()
+  - get_job_result()
+  - _start_job()
+  - _job_thread_runner()
+  - _try_start_next_queued_job()
+  - _remove_queued_job()
+  - _signal_end_of_logs()
+
+CLASSES:
+  - JobStatus
+
+================================================================================
+
+MODULE: lookup_pys.dhw_lookup_generated
+Path: lookup_pys\dhw_lookup_generated.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: lookup_pys.epw_lookup_generated
+Path: lookup_pys\epw_lookup_generated.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: lookup_pys.geometry_lookup2
+Path: lookup_pys\geometry_lookup2.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: lookup_pys.groundtemp_lookup_generated
+Path: lookup_pys\groundtemp_lookup_generated.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: lookup_pys.hc_dhw_lookup
+Path: lookup_pys\hc_dhw_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  - os
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - read_range_or_value()
+  - create_dhw_lookup()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: lookup_pys.hc_envelop_lookup
+Path: lookup_pys\hc_envelop_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  - os
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_envelop_lookup()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: lookup_pys.hc_epw_lookup
+Path: lookup_pys\hc_epw_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  - os
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_epw_lookup()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: lookup_pys.hc_geometry_lookup
+Path: lookup_pys\hc_geometry_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  - collections
+  - os
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_geometry_lookup()
+  - sort_dict()
+  - serialize_dict()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: lookup_pys.hc_groundtemp_lookup
+Path: lookup_pys\hc_groundtemp_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  - os
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - read_range()
+  - create_groundtemp_lookup()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: lookup_pys.hc_lighting_lookup
+Path: lookup_pys\hc_lighting_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  - os
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - read_range()
+  - create_lighting_lookup()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: lookup_pys.hc_schedules_lookup
+Path: lookup_pys\hc_schedules_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  - os
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_elec_schedules()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: lookup_pys.hc_ventilation_lookup
+Path: lookup_pys\hc_ventilation_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  - os
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - read_range()
+  - create_ventilation_lookup()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: lookup_pys.hvac_lookup
+Path: lookup_pys\hvac_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: lookup_pys.lighting_lookup
+Path: lookup_pys\lighting_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: lookup_pys.materials_lookup
+Path: lookup_pys\materials_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: lookup_pys.materials_lookup_generated
+Path: lookup_pys\materials_lookup_generated.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: lookup_pys.ventilation_lookup
+Path: lookup_pys\ventilation_lookup.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: lookup_pys.ventilation_lookup_generated
+Path: lookup_pys\ventilation_lookup_generated.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: main_modifi
+Path: main_modifi.py
+------------------------------------------------------------
+IMPORTS:
+  - epw.run_epw_sims
+  - logging
+  - modification.common_utils
+  - modification.dhw_functions
+  - modification.elec_functions
+  - modification.equipment_functions
+  - modification.fenez_functions2
+  - modification.hvac_functions
+  - modification.shading_functions
+  - modification.vent_functions
+  - modification.zone_sizing_functions
+  - os
+  - pandas
+  - postproc.merge_results
+  - validation.main_validation
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - run_all_idfs_in_folder()
+  - run_modification_workflow()
+  - _make_param_dict()
+  - filter_for_building()
+  - safe_load_scenario()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: modification.common_utils
+Path: modification\common_utils.py
+------------------------------------------------------------
+IMPORTS:
+  - geomeppy
+  - os
+  - pandas
+  - random
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - load_assigned_csv()
+  - filter_for_building()
+  - to_float_or_none()
+  - pick_value_in_range()
+  - define_building_param_strategy()
+  - generate_multiple_param_sets()
+  - save_param_scenarios_to_csv()
+  - load_idf()
+  - save_idf()
+  - load_scenario_csv()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: modification.dhw_functions
+Path: modification\dhw_functions.py
+------------------------------------------------------------
+IMPORTS:
+  - eppy.modeleditor
+  - os
+  - pandas
+  - random
+  - random
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_dhw_scenarios()
+  - parse_building_dhw_params()
+  - parse_tuple()
+  - pick_value()
+  - apply_dhw_params_to_idf()
+  - _create_or_update_dhw_schedules()
+  - _partially_update_fraction_schedule()
+  - _partially_update_setpoint_schedule()
+  - parse_schedule_until_line()
+  - _time_to_minutes()
+  - _pick_fraction_for_time()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: modification.elec_functions
+Path: modification\elec_functions.py
+------------------------------------------------------------
+IMPORTS:
+  - os
+  - pandas
+  - random
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_elec_scenarios()
+  - pick_value()
+  - apply_building_level_elec()
+  - _create_or_update_lights_object()
+  - _create_or_update_equip_object()
+  - apply_object_level_elec()
+  - _update_generic_lights_obj()
+  - _update_generic_equip_obj()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: modification.equipment_functions
+Path: modification\equipment_functions.py
+------------------------------------------------------------
+IMPORTS:
+  - modification.common_utils
+  - modification.hvac_functions
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_equipment_scenarios()
+  - apply_equipment_params_to_idf()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: modification.equipment_functions_first one
+Path: modification\equipment_functions_first one.py
+------------------------------------------------------------
+IMPORTS:
+  - idf_objects.eequip.schedules
+  - os
+  - pandas
+  - random
+  - random
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_equipment_scenarios()
+  - pick_value()
+  - apply_building_level_equipment()
+  - apply_object_level_equipment()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: modification.fenez_functions2
+Path: modification\fenez_functions2.py
+------------------------------------------------------------
+IMPORTS:
+  - idf_objects.fenez.fenestration
+  - idf_objects.fenez.materials
+  - pandas
+  - random
+
+FILE INPUTS:
+  - output/assigned/structured_fenez_params.csv (csv)
+  - structured_fenez_params.csv (csv)
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - apply_building_level_fenez()
+  - apply_object_level_fenez()
+  - _match_field_name()
+  - create_fenez_scenarios()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: modification.hvac_functions
+Path: modification\hvac_functions.py
+------------------------------------------------------------
+IMPORTS:
+  - eppy.modeleditor
+  - os
+  - pandas
+  - random
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_hvac_scenarios()
+  - parse_building_hvac_params()
+  - parse_zone_hvac_params()
+  - parse_tuple()
+  - pick_value()
+  - apply_building_level_hvac()
+  - _set_ideal_loads_supply_temps_all_zones()
+  - parse_schedule_until_line()
+  - _modify_schedule_compact()
+  - apply_zone_level_hvac()
+  - find_or_create_object()
+  - time_to_minutes()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: modification.main_modifi
+Path: modification\main_modifi.py
+------------------------------------------------------------
+IMPORTS:
+  - modification.common_utils
+  - modification.dhw_functions
+  - modification.dhw_functions
+  - modification.elec_functions
+  - modification.equipment_functions
+  - modification.fenez_functions2
+  - modification.hvac_functions
+  - modification.hvac_functions
+  - modification.vent_functions
+  - os
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - run_modification_workflow()
+  - _make_param_dict()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: modification.shading_functions
+Path: modification\shading_functions.py
+------------------------------------------------------------
+IMPORTS:
+  - modification.common_utils
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_shading_scenarios()
+  - apply_shading_params_to_idf()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: modification.vent_functions
+Path: modification\vent_functions.py
+------------------------------------------------------------
+IMPORTS:
+  - idf_objects.ventilation.create_ventilation_systems
+  - os
+  - pandas
+  - random
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_vent_scenarios()
+  - parse_building_vent_params()
+  - parse_zone_vent_params()
+  - parse_tuple()
+  - pick_value()
+  - apply_building_level_vent()
+  - apply_zone_level_vent()
+  - find_or_create_object()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: modification.zone_sizing_functions
+Path: modification\zone_sizing_functions.py
+------------------------------------------------------------
+IMPORTS:
+  - json
+  - modification.common_utils
+  - pandas
+  - random
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - create_zone_sizing_scenarios()
+  - apply_zone_sizing_params_to_idf()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: orchestrator
+Path: orchestrator.py
+------------------------------------------------------------
+IMPORTS:
+  - cal.unified_calibration
+  - cal.unified_sensitivity
+  - cal.unified_surrogate
+  - cleanup_old_jobs
+  - contextlib
+  - database_handler
+  - excel_overrides
+  - idf_creation
+  - idf_creation
+  - idf_objects.fenez.fenez_config_manager
+  - idf_objects.structuring.dhw_structuring
+  - idf_objects.structuring.equipment_structuring
+  - idf_objects.structuring.fenestration_structuring
+  - idf_objects.structuring.flatten_assigned_vent
+  - idf_objects.structuring.flatten_hvac
+  - idf_objects.structuring.shading_structuring
+  - idf_objects.structuring.zone_sizing_structuring
+  - json
+  - logging
+  - main_modifi
+  - os
+  - pandas
+  - splitter
+  - threading
+  - time
+  - validation.main_validation
+  - zip_and_mail
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - step_timer()
+  - orchestrate_workflow()
+  - check_canceled()
+  - patch_if_relative()
+  - safe_load_subjson()
+  - patch_if_relative()
+
+CLASSES:
+  - WorkflowCanceled
+
+================================================================================
+
+MODULE: postproc.merge_results
+Path: postproc\merge_results.py
+------------------------------------------------------------
+IMPORTS:
+  - calendar
+  - datetime
+  - numpy
+  - os
+  - pandas
+  - re
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - merge_all_results()
+  - aggregate_series()
+  - correct_time()
+  - parse_dt()
+  - safe_dt()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: splitter
+Path: splitter.py
+------------------------------------------------------------
+IMPORTS:
+  - json
+  - logging
+  - os
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - split_combined_json()
+  - deep_merge_dicts()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: tempground.groundtemp_lookup_generated
+Path: tempground\groundtemp_lookup_generated.py
+------------------------------------------------------------
+IMPORTS:
+  None
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  None
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: user_config_overrides
+Path: user_config_overrides.py
+------------------------------------------------------------
+IMPORTS:
+  - json
+  - os
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - load_json_file()
+  - load_all_user_configs()
+  - apply_geometry_user_config()
+  - apply_fenestration_user_config()
+  - apply_dhw_user_config()
+  - apply_lighting_user_config()
+  - apply_hvac_user_config()
+  - apply_ventilation_user_config()
+  - apply_epw_user_config()
+  - apply_shading_user_config()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: validation.compare_sims_with_measured
+Path: validation\compare_sims_with_measured.py
+------------------------------------------------------------
+IMPORTS:
+  - pandas
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - load_csv_as_df()
+  - align_data_for_variable()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: validation.main_validation
+Path: validation\main_validation.py
+------------------------------------------------------------
+IMPORTS:
+  - collections
+  - csv
+  - logging
+  - matplotlib.pyplot
+  - time
+  - validation.validate_results_custom
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - run_validation_process()
+  - save_detailed_metrics_to_csv()
+  - bar_chart_metrics_for_triple()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: validation.metrics
+Path: validation\metrics.py
+------------------------------------------------------------
+IMPORTS:
+  - numpy
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - mean_bias_error()
+  - cv_rmse()
+  - nmbe()
+  - analyze_peaks()
+  - analyze_ramp_rates()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: validation.validate_results_custom
+Path: validation\validate_results_custom.py
+------------------------------------------------------------
+IMPORTS:
+  - logging
+  - numpy
+  - pandas
+  - validation.compare_sims_with_measured
+  - validation.metrics
+  - validation.visualize
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - get_season()
+  - validate_with_ranges()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: validation.visualize
+Path: validation\visualize.py
+------------------------------------------------------------
+IMPORTS:
+  - matplotlib.pyplot
+  - numpy
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - plot_time_series_comparison()
+  - scatter_plot_comparison()
+  - bar_chart_metrics()
+  - plot_diurnal_profile()
+  - plot_ramp_rate_distribution()
+
+CLASSES:
+  None
+
+================================================================================
+
+MODULE: zip_and_mail
+Path: zip_and_mail.py
+------------------------------------------------------------
+IMPORTS:
+  - email.message
+  - os
+  - shutil
+  - smtplib
+  - ssl
+
+FILE INPUTS:
+  None
+
+FILE OUTPUTS:
+  None
+
+FUNCTIONS:
+  - zip_user_output()
+  - send_results_email()
+
+CLASSES:
+  None
+
+================================================================================
+

@@ -1,5 +1,5 @@
 """
-time_slice_utils.py
+time_slice_utils.py surrogate
 
 Utilities for filtering simulation results by time slices (months, hours, weekdays/weekends)
 for more granular sensitivity analysis.
@@ -12,6 +12,7 @@ import numpy as np
 from typing import Dict, List, Optional, Union, Tuple
 from datetime import datetime
 import logging
+from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 

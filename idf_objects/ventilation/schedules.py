@@ -143,6 +143,9 @@ def get_or_create_archetype_schedule(
         A tuple: (schedule_object, chosen_weekday_pattern, chosen_weekend_pattern).
         Patterns are None if the schedule already existed or creation failed.
     """
+    # FIX for VENT_003: Add debug logging for schedule creation
+    print(f"[SCHEDULE DEBUG] Creating schedule '{target_schedule_name}' for {building_function}/{archetype_key}/{purpose} with strategy {strategy}")
+    
     # Ensure the ScheduleTypeLimits object exists
     unit_type = "Dimensionless" if schedule_type_limits_name.lower() == "fraction" else None
     if schedule_type_limits_name.lower() == "temperature":
@@ -170,6 +173,7 @@ def get_or_create_archetype_schedule(
     purpose_patterns = archetype_patterns.get(purpose, {})
 
     if not purpose_patterns:
+        # FIX for VENT_003: Log when no patterns found
         print(f"[WARNING] schedules.py: No specific pattern for '{building_function}/{archetype_key}/{purpose}'. "
               f"Creating AlwaysOn schedule named '{target_schedule_name}'.")
         sched = create_always_on_schedule(idf, target_schedule_name)
@@ -192,6 +196,9 @@ def get_or_create_archetype_schedule(
         sched = create_always_on_schedule(idf, target_schedule_name)
         always_on_pattern = [(0, 24, 1.0)]
         return sched, always_on_pattern, always_on_pattern
+    
+    # FIX for VENT_003: Log found patterns
+    print(f"[SCHEDULE DEBUG] Found patterns: weekday={bool(ranged_weekday_pattern)}, weekend={bool(ranged_weekend_pattern)}")
 
     # 2. Convert ranged patterns to chosen patterns using strategy
     chosen_weekday_pattern: ChosenSchedulePattern = []

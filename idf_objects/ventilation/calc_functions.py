@@ -37,18 +37,31 @@ def calc_infiltration_rate_at_1Pa_per_m2(
                Returns 0.0 if inputs are invalid.
     """
     try:
+        # FIX for VENT_004: Add validation for unit conversion
         # Basic input validation
         if infiltration_base_at_10Pa_per_m2 < 0 or year_factor < 0 or flow_exponent <= 0:
             print(f"[WARNING] Invalid inputs to calc_infiltration_rate_at_1Pa_per_m2. "
                   f"base_rate={infiltration_base_at_10Pa_per_m2}, year_factor={year_factor}, exponent={flow_exponent}. Returning 0.")
             return 0.0
-
+        
+        # FIX for VENT_004: Add warning for unusually high base rates
+        if infiltration_base_at_10Pa_per_m2 > 10.0:
+            print(f"[WARNING] Unusually high infiltration base rate: {infiltration_base_at_10Pa_per_m2} L/s/m2 @ 10Pa")
+        
         # 1) Apply year factor => Rate per m2 @ 10 Pa, in original volumetric units
         qv10_effective_per_m2 = infiltration_base_at_10Pa_per_m2 * year_factor
 
         # 2) Convert from qv10 to qv1 using the exponent
         # The volumetric unit (e.g., L/s or m3/h) is preserved during this conversion.
         qv1_effective_per_m2 = qv10_effective_per_m2 * (1.0 / 10.0)**flow_exponent
+        
+        # FIX for VENT_004: Add output validation
+        if qv1_effective_per_m2 > 5.0:
+            print(f"[WARNING] Calculated infiltration rate seems high: {qv1_effective_per_m2} L/s/m2 @ 1Pa")
+        
+        # FIX for VENT_004: Add unit conversion logging
+        print(f"[UNIT TRACKING] Infiltration conversion: {infiltration_base_at_10Pa_per_m2:.4f} L/s/m2 @ 10Pa "
+              f"× year_factor {year_factor:.2f} × (1/10)^{flow_exponent:.2f} = {qv1_effective_per_m2:.4f} L/s/m2 @ 1Pa")
 
         # 3) Return the rate per m2 floor area @ 1 Pa (in original volumetric units per m2)
         return qv1_effective_per_m2
@@ -109,7 +122,7 @@ def calc_required_ventilation_flow(
             # This minimum applies AFTER the control factor potentially reduces the calculated rate.
             residential_min_m3_h = 126.0
             if qv_oda_req_actual_m3_h < residential_min_m3_h and f_ctrl_val > 0: # Only apply minimum if control factor didn't intend to shut it off
-                # print(f"[VENT INFO] Residential calculated vent {qv_oda_req_actual_m3_h:.1f} m3/h below minimum. Using {residential_min_m3_h} m3/h.")
+                print(f"[VENT INFO] Residential calculated vent {qv_oda_req_actual_m3_h:.1f} m3/h below minimum. Using {residential_min_m3_h} m3/h.")
                 qv_oda_req_actual_m3_h = residential_min_m3_h
             elif f_ctrl_val == 0: # If control factor is zero, required flow is zero
                  qv_oda_req_actual_m3_h = 0.0
@@ -149,6 +162,11 @@ def calc_required_ventilation_flow(
 
         # Final conversion from calculated m3/h to m3/s
         total_vent_flow_m3_s = qv_oda_req_actual_m3_h / 3600.0
+        
+        # FIX for VENT_004: Add unit conversion logging
+        print(f"[UNIT TRACKING] Ventilation calculation: {qv_oda_req_des_m3_h:.1f} m3/h × f_ctrl {f_ctrl_val:.2f} = "
+              f"{qv_oda_req_actual_m3_h:.1f} m3/h = {total_vent_flow_m3_s:.4f} m3/s")
+        
         return total_vent_flow_m3_s
 
     except Exception as e:

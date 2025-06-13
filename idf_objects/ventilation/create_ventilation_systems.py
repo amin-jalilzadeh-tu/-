@@ -28,37 +28,46 @@ def apply_weather_coefficients(
     typical_delta_t: float = 10.0,
     typical_wind: float = 3.0,
 ):
-    """Configure infiltration coefficients so that the infiltration flow
-    varies with temperature difference and wind speed.
-
-    The ``base_flow_per_area_m3_s_m2`` value is assumed to correspond to the flow
-    per m2 when ``typical_delta_t`` (degC) and ``typical_wind`` (m/s) occur.
-    Coefficients are chosen so that the resulting design flow rate (per m2)
-    equals ``base_flow_per_area_m3_s_m2`` under those typical conditions.
     """
-
-    # Simple default coefficients that introduce dependence on ΔT and wind
-    A = 0.5  # Constant term coefficient (base fraction)
-    B = 0.02 # Temperature term coefficient (per degC)
-    C = 0.04 # Velocity term coefficient (per m/s)
-    D = 0.0  # Velocity squared term coefficient (per (m/s)^2)
-
-    # Denominator for scaling the base flow rate
-    denom = A + B * typical_delta_t + C * typical_wind + D * (typical_wind ** 2)
-    if denom <= 1e-6: # Avoid division by zero or very small numbers leading to huge flows
-        print(f"[WARNING] Denominator in apply_weather_coefficients is near zero ({denom}). Using 1.0 to avoid instability.")
-        denom = 1.0
-
-    # The Design_Flow_Rate field will now store the m3/s/m2 value that,
-    # when multiplied by the coefficients at design conditions, yields the target flow.
-    # Or, more directly, this is the 'k' in Q = k * (A + B*dT + C*v + D*v^2)
-    # So, k = Q_target / (A + B*dT_typ + C*v_typ + D*v_typ^2)
-    # where Q_target is base_flow_per_area_m3_s_m2
-    infil_obj.Design_Flow_Rate = base_flow_per_area_m3_s_m2 / denom
-    infil_obj.Constant_Term_Coefficient = A
-    infil_obj.Temperature_Term_Coefficient = B
-    infil_obj.Velocity_Term_Coefficient = C
-    infil_obj.Velocity_Squared_Term_Coefficient = D
+    FIX for VENT_007: Configure infiltration coefficients correctly.
+    The Design_Flow_Rate should be the actual flow rate at design conditions,
+    NOT a coefficient 'k' value.
+    
+    The coefficients should multiply the Design_Flow_Rate to give actual flow.
+    At typical conditions (typical_delta_t, typical_wind), the total multiplier
+    should be approximately 1.0.
+    """
+    
+    # FIX for VENT_007: These coefficients should be normalized
+    # so that at typical conditions, the total multiplier ≈ 1.0
+    # Use pure weather dependence (A=0) for more realistic behavior
+    A = 0.0   # No constant term - pure weather dependence
+    B = 0.03  # Temperature term coefficient (per degC)
+    C = 0.04  # Velocity term coefficient (per m/s)
+    D = 0.0   # Velocity squared term coefficient (per (m/s)^2)
+    
+    # The Design_Flow_Rate should be the base rate at typical conditions
+    infil_obj.Design_Flow_Rate = base_flow_per_area_m3_s_m2
+    
+    # Calculate what the total multiplier would be at typical conditions
+    total_at_typical = A + B * typical_delta_t + C * typical_wind + D * (typical_wind ** 2)
+    
+    # Normalize coefficients so that at typical conditions, multiplier = 1.0
+    if total_at_typical > 1e-6:  # Avoid division by zero
+        infil_obj.Constant_Term_Coefficient = A / total_at_typical
+        infil_obj.Temperature_Term_Coefficient = B / total_at_typical
+        infil_obj.Velocity_Term_Coefficient = C / total_at_typical
+        infil_obj.Velocity_Squared_Term_Coefficient = D / total_at_typical
+        
+        print(f"[VENT_007 FIX] Weather coefficients normalized: A={A/total_at_typical:.3f}, "
+              f"B={B/total_at_typical:.3f}, C={C/total_at_typical:.3f}, D={D/total_at_typical:.3f}")
+    else:
+        # Fallback to constant if normalization fails
+        print(f"[WARNING] Weather coefficient normalization failed (total={total_at_typical}). Using constant infiltration.")
+        infil_obj.Constant_Term_Coefficient = 1.0
+        infil_obj.Temperature_Term_Coefficient = 0.0
+        infil_obj.Velocity_Term_Coefficient = 0.0
+        infil_obj.Velocity_Squared_Term_Coefficient = 0.0
 
 
 def create_ventilation_system(
@@ -172,7 +181,7 @@ def create_ventilation_system(
 
 
         if infiltration_model.lower() == "weather":
-            # apply_weather_coefficients now expects base_flow_per_area_m3_s_m2
+            # FIX for VENT_007: apply_weather_coefficients now works correctly
             apply_weather_coefficients(
                 iobj,
                 max(0.0, infiltration_flow_per_area_m3_s_m2), # Pass per-area rate
@@ -307,6 +316,21 @@ def create_ventilation_system(
 
             if hasattr(vobj, "Ventilation_Type"):
                 vobj.Ventilation_Type = chosen_vent_type_from_config
+
+            # FIX for VENT_013: Natural ventilation should vary with conditions
+            if chosen_vent_type_from_config == "Natural":
+                # Natural ventilation should respond to temperature and wind
+                vobj.Constant_Term_Coefficient = 0.0
+                vobj.Temperature_Term_Coefficient = 0.05  # Opens more with temp difference
+                vobj.Velocity_Term_Coefficient = 0.10    # Wind-driven ventilation
+                vobj.Velocity_Squared_Term_Coefficient = 0.02
+                print(f"[VENT_013 FIX] Natural ventilation configured with weather-dependent coefficients for zone {zone_name}")
+            else:
+                # Mechanical ventilation is constant (not affected by weather)
+                vobj.Constant_Term_Coefficient = 1.0
+                vobj.Temperature_Term_Coefficient = 0.0
+                vobj.Velocity_Term_Coefficient = 0.0
+                vobj.Velocity_Squared_Term_Coefficient = 0.0
 
             current_fan_pressure = 0.0
             current_fan_efficiency = 0.01 # Avoid division by zero

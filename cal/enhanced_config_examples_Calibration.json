@@ -1,0 +1,363 @@
+{
+  "main_config": {
+    "calibration": {
+      "perform_calibration": true,
+      "scenario_folder": "scenarios",
+      
+      "// Example 1: Simple enhanced calibration with PSO": "",
+      "simple_enhanced": {
+        "method": "pso",
+        "use_surrogate": true,
+        "real_data_csv": "data/measured_energy_use.csv",
+        "surrogate_model_path": "multi_output_surrogate.joblib",
+        "surrogate_columns_path": "multi_output_columns.joblib",
+        "target_variables": [
+          "Heating:EnergyTransfer [J](Hourly)",
+          "Cooling:EnergyTransfer [J](Hourly)"
+        ],
+        "algorithm_config": {
+          "pso": {
+            "n_particles": 50,
+            "max_iter": 100,
+            "inertia": 0.9,
+            "inertia_decay": 0.99,
+            "cognitive": 2.0,
+            "social": 2.0
+          }
+        },
+        "output_history_csv": "calibration/pso_history.csv",
+        "best_params_folder": "calibration/pso_results"
+      },
+      
+      "// Example 2: Multi-objective ASHRAE calibration": "",
+      "ashrae_calibration": {
+        "method": "nsga2",
+        "use_surrogate": true,
+        "objectives": [
+          {
+            "target_variable": "Electricity:Facility [J](Hourly)",
+            "metric": "cvrmse",
+            "weight": 0.5,
+            "tolerance": 30.0
+          },
+          {
+            "target_variable": "Electricity:Facility [J](Hourly)",
+            "metric": "nmbe",
+            "weight": 0.5,
+            "tolerance": 10.0
+          }
+        ],
+        "algorithm_config": {
+          "nsga2": {
+            "pop_size": 100,
+            "n_generations": 100,
+            "crossover_prob": 0.9,
+            "eta_crossover": 15,
+            "eta_mutation": 20
+          }
+        },
+        "validation": {
+          "cross_validate": true,
+          "n_folds": 3,
+          "overfitting_threshold": 0.15
+        }
+      },
+      
+      "// Example 3: Time-based seasonal calibration": "",
+      "seasonal_calibration": {
+        "calibration_configs": [
+          {
+            "name": "Winter Morning Heating",
+            "time_slice": {
+              "method": "custom",
+              "custom_config": {
+                "months": [12, 1, 2],
+                "hours": [6, 7, 8, 9],
+                "weekdays_only": true
+              }
+            },
+            "target_variables": ["Heating:EnergyTransfer [J](Hourly)"],
+            "param_filters": {
+              "param_name_contains": ["heating", "infiltration", "insulation"],
+              "exclude_params": ["cooling_day_setpoint", "cooling_night_setpoint"]
+            },
+            "method": "de",
+            "objectives": [
+              {
+                "target_variable": "Heating:EnergyTransfer [J](Hourly)",
+                "metric": "rmse",
+                "weight": 0.7
+              },
+              {
+                "target_variable": "Heating:EnergyTransfer [J](Hourly)",
+                "metric": "peak_error",
+                "weight": 0.3
+              }
+            ]
+          },
+          {
+            "name": "Summer Afternoon Cooling",
+            "time_slice": {
+              "method": "predefined",
+              "predefined_slice": "summer_afternoons"
+            },
+            "target_variables": ["Cooling:EnergyTransfer [J](Hourly)"],
+            "param_filters": {
+              "param_name_contains": ["cooling", "ventilation", "window", "blind"],
+              "exclude_params": ["heating_day_setpoint", "heating_night_setpoint"]
+            },
+            "method": "pso",
+            "objectives": [
+              {
+                "target_variable": "Cooling:EnergyTransfer [J](Hourly)",
+                "metric": "cvrmse",
+                "weight": 0.6
+              },
+              {
+                "target_variable": "Cooling:EnergyTransfer [J](Hourly)",
+                "metric": "peak_relative_error",
+                "weight": 0.4
+              }
+            ]
+          },
+          {
+            "name": "Annual Base Load",
+            "target_variables": ["Electricity:Facility [J](Hourly)"],
+            "param_filters": {
+              "param_name_contains": ["lights", "equipment", "parasitic"],
+              "source_files": ["scenario_params_elec.csv", "scenario_params_equipment.csv"]
+            },
+            "method": "cmaes",
+            "algorithm_config": {
+              "cmaes": {
+                "sigma0": 0.3,
+                "max_iter": 50
+              }
+            }
+          }
+        ],
+        "use_surrogate": true,
+        "real_data_csv": "data/hourly_measurements_2024.csv",
+        "best_params_folder": "calibration/seasonal"
+      },
+      
+      "// Example 4: Adaptive hybrid calibration": "",
+      "adaptive_calibration": {
+        "method": "hybrid",
+        "use_surrogate": true,
+        "scenario_files": ["scenario_params_hvac.csv", "scenario_params_dhw.csv"],
+        "subset_sensitivity_csv": "sensitivity_results.csv",
+        "top_n_params": 15,
+        "adaptive_config": {
+          "enable_adaptive": true,
+          "stages": [
+            {
+              "name": "Global Exploration",
+              "algorithm": "de",
+              "iterations": 50,
+              "strategy": "best2bin",
+              "mutation_factor": 0.8,
+              "crossover_prob": 0.9
+            },
+            {
+              "name": "Regional Search",
+              "algorithm": "pso",
+              "iterations": 30,
+              "bounds_multiplier": 0.5,
+              "n_particles": 40,
+              "inertia": 0.7
+            },
+            {
+              "name": "Local Refinement",
+              "algorithm": "cmaes",
+              "iterations": 20,
+              "bounds_multiplier": 0.2,
+              "sigma0": 0.1
+            }
+          ]
+        },
+        "objectives": [
+          {
+            "target_variable": "Heating:EnergyTransfer [J](Hourly)",
+            "metric": "weighted_rmse",
+            "weight": 0.4
+          },
+          {
+            "target_variable": "Cooling:EnergyTransfer [J](Hourly)",
+            "metric": "weighted_rmse",
+            "weight": 0.4
+          },
+          {
+            "target_variable": "Electricity:Facility [J](Hourly)",
+            "metric": "cvrmse",
+            "weight": 0.2,
+            "tolerance": 25.0
+          }
+        ],
+        "validation": {
+          "cross_validate": true,
+          "n_folds": 5,
+          "holdout_percentage": 0.2,
+          "overfitting_threshold": 0.1
+        }
+      },
+      
+      "// Example 5: Peak-focused calibration": "",
+      "peak_calibration": {
+        "method": "nsga2",
+        "use_surrogate": true,
+        "time_slice": {
+          "method": "custom",
+          "custom_config": {
+            "months": [7, 8],
+            "hours": [14, 15, 16, 17, 18]
+          }
+        },
+        "objectives": [
+          {
+            "target_variable": "Cooling:EnergyTransfer [J](Hourly)",
+            "metric": "peak_error",
+            "weight": 0.4
+          },
+          {
+            "target_variable": "Cooling:EnergyTransfer [J](Hourly)",
+            "metric": "peak_relative_error",
+            "weight": 0.3
+          },
+          {
+            "target_variable": "Electricity:Facility [J](Hourly)",
+            "metric": "peak_error",
+            "weight": 0.3
+          }
+        ],
+        "param_filters": {
+          "param_name_contains": ["cooling", "chiller", "fan", "pump"]
+        },
+        "algorithm_config": {
+          "nsga2": {
+            "pop_size": 150,
+            "n_generations": 80
+          }
+        }
+      },
+      
+      "// Example 6: Parameter groups and constraints": "",
+      "constrained_calibration": {
+        "method": "de",
+        "param_groups": {
+          "setpoints": [
+            "heating_day_setpoint",
+            "heating_night_setpoint",
+            "cooling_day_setpoint",
+            "cooling_night_setpoint"
+          ],
+          "ventilation": [
+            "infiltration_base",
+            "min_fresh_air_per_person",
+            "min_fresh_air_per_area"
+          ],
+          "equipment": [
+            "equip_wm2",
+            "lights_wm2",
+            "parasitic_wm2"
+          ]
+        },
+        "param_constraints": [
+          {
+            "param": "heating_day_setpoint",
+            "constraint": {
+              "type": "min_difference",
+              "other_param": "heating_night_setpoint",
+              "min_diff": 2.0
+            }
+          },
+          {
+            "param": "cooling_night_setpoint",
+            "constraint": {
+              "type": "max_difference",
+              "other_param": "cooling_day_setpoint",
+              "max_diff": 3.0
+            }
+          }
+        ]
+      },
+      
+      "// Production-ready configuration": "",
+      "perform_calibration": true,
+      "scenario_folder": "scenarios",
+      "method": "hybrid",
+      "use_surrogate": true,
+      "real_data_csv": "data/measured_building_energy.csv",
+      "surrogate_model_path": "automl_surrogate_model.joblib",
+      "surrogate_columns_path": "automl_surrogate_columns.joblib",
+      
+      "file_patterns": ["scenario_params_*.csv"],
+      "param_filters": {
+        "param_name_contains": ["setpoint", "temperature", "flow", "infiltration"],
+        "exclude_params": ["roughness"]
+      },
+      
+      "calibration_configs": [
+        {
+          "name": "Heating Season",
+          "time_slice": {
+            "method": "custom",
+            "custom_config": {
+              "months": [11, 12, 1, 2, 3]
+            }
+          },
+          "target_variables": [
+            "Heating:EnergyTransfer [J](Hourly)",
+            "Electricity:Facility [J](Hourly)"
+          ],
+          "param_filters": {
+            "param_name_contains": ["heating", "infiltration", "insulation"]
+          }
+        },
+        {
+          "name": "Cooling Season",
+          "time_slice": {
+            "method": "custom",
+            "custom_config": {
+              "months": [5, 6, 7, 8, 9]
+            }
+          },
+          "target_variables": [
+            "Cooling:EnergyTransfer [J](Hourly)",
+            "Electricity:Facility [J](Hourly)"
+          ],
+          "param_filters": {
+            "param_name_contains": ["cooling", "ventilation", "window"]
+          }
+        }
+      ],
+      
+      "adaptive_config": {
+        "enable_adaptive": true,
+        "stages": [
+          {
+            "algorithm": "de",
+            "iterations": 40,
+            "pop_size": 50
+          },
+          {
+            "algorithm": "pso",
+            "iterations": 30,
+            "bounds_multiplier": 0.6,
+            "n_particles": 40
+          }
+        ]
+      },
+      
+      "validation": {
+        "cross_validate": true,
+        "n_folds": 3,
+        "overfitting_threshold": 0.12
+      },
+      
+      "output_history_csv": "calibration/production_history.csv",
+      "best_params_folder": "calibration/production_results",
+      "history_folder": "calibration/production_results"
+    }
+  }
+}

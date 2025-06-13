@@ -1,0 +1,509 @@
+{
+  
+  "// Draft a simple model-spec schema (YAML/JSON) containing:"
+  "// inputs, targets, preprocessing, model_type, search_space, train_args."
+
+
+  "// ===== STANDARD ML EXAMPLES ===== ": "",
+  
+  "standard_ml_examples": {
+    "example_1_basic": {
+      "// Basic surrogate with default Random Forest": "",
+      "perform_surrogate": true,
+      "scenario_folder": "scenarios",
+      "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+      "target_variable": "Heating:EnergyTransfer [J](Hourly)",
+      "model_out": "heating_surrogate.joblib",
+      "cols_out": "heating_columns.joblib",
+      "automated_ml": false,
+      "use_automl": false,
+      "test_size": 0.3
+    },
+    
+    "example_2_automated_ml": {
+      "// Automated ML with multiple models": "",
+      "perform_surrogate": true,
+      "scenario_folder": "scenarios",
+      "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+      "target_variable": "Cooling:EnergyTransfer [J](Hourly)",
+      "automated_ml": true,
+      "use_automl": false,
+      "model_types": ["random_forest", "xgboost", "gradient_boosting", "lightgbm"],
+      "cv_strategy": "kfold",
+      "scale_features": true,
+      "scaler_type": "standard",
+      "model_out": "cooling_automated_ml.joblib",
+      "save_metadata": true
+    },
+    
+    "example_3_multi_output": {
+      "// Multiple target variables": "",
+      "perform_surrogate": true,
+      "scenario_folder": "scenarios",
+      "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+      "target_variable": [
+        "Heating:EnergyTransfer [J](Hourly)",
+        "Cooling:EnergyTransfer [J](Hourly)",
+        "Electricity:Facility [J](Daily)"
+      ],
+      "automated_ml": true,
+      "model_types": ["random_forest", "xgboost"],
+      "model_out": "multi_output_surrogate.joblib"
+    },
+    
+    "example_4_filtered_inputs": {
+      "// Filter to specific parameters": "",
+      "perform_surrogate": true,
+      "scenario_folder": "scenarios",
+      "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+      "target_variable": "Heating:EnergyTransfer [J](Hourly)",
+      "file_patterns": ["*hvac*.csv", "*dhw*.csv"],
+      "param_filters": {
+        "include_params": [
+          "heating_day_setpoint",
+          "heating_night_setpoint",
+          "max_heating_supply_air_temp",
+          "occupant_density_m2_per_person",
+          "default_heater_capacity_w"
+        ]
+      },
+      "automated_ml": true,
+      "model_out": "heating_filtered_params.joblib"
+    },
+    
+    "example_5_sensitivity_integration": {
+      "// Use sensitivity analysis results": "",
+      "perform_surrogate": true,
+      "scenario_folder": "scenarios",
+      "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+      "target_variable": "Cooling:EnergyTransfer [J](Hourly)",
+      "sensitivity_results_path": "multi_corr_sensitivity.csv",
+      "feature_selection": {
+        "method": "correlation",
+        "top_n": 20,
+        "threshold": null
+      },
+      "automated_ml": true,
+      "model_types": ["random_forest", "xgboost", "gradient_boosting"],
+      "model_out": "cooling_sensitivity_based.joblib"
+    },
+    
+    "example_6_time_aggregation": {
+      "// Different time aggregations": "",
+      "perform_surrogate": true,
+      "scenario_folder": "scenarios",
+      "results_csv": "results_scenarioes/merged_as_is_scenarios.csv",
+      "target_variable": "ZONE1_CORE:Zone Mean Air Temperature [C](Hourly)",
+      "time_aggregation": "mean",
+      "extract_time_features": true,
+      "automated_ml": true,
+      "cv_strategy": "time_series",
+      "model_out": "temperature_time_aware.joblib"
+    },
+    
+    "example_7_interaction_features": {
+      "// Create parameter interactions": "",
+      "perform_surrogate": true,
+      "scenario_folder": "scenarios",
+      "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+      "target_variable": "Heating:EnergyTransfer [J](Hourly)",
+      "create_interactions": true,
+      "interaction_features": 15,
+      "sensitivity_results_path": "sensitivity_results.csv",
+      "feature_selection": {
+        "method": "correlation",
+        "top_n": 10
+      },
+      "automated_ml": true,
+      "model_out": "heating_with_interactions.joblib"
+    }
+  },
+  
+  "// ===== AUTOML EXAMPLES ===== ": "",
+  
+  "automl_examples": {
+    "example_1_autogluon": {
+      "// AutoGluon - Best for accuracy": "",
+      "perform_surrogate": true,
+      "scenario_folder": "scenarios",
+      "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+      "target_variable": "Heating:EnergyTransfer [J](Hourly)",
+      "use_automl": true,
+      "automl_framework": "autogluon",
+      "automl_time_limit": 600,
+      "automl_config": {
+        "presets": "best_quality",
+        "eval_metric": "rmse",
+        "verbosity": 2,
+        "save_path": "autogluon_models/heating"
+      },
+      "model_out": "heating_autogluon.joblib",
+      "save_metadata": true
+    },
+    
+    "example_2_flaml": {
+      "// FLAML - Fast and lightweight": "",
+      "perform_surrogate": true,
+      "scenario_folder": "scenarios",
+      "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+      "target_variable": "Cooling:EnergyTransfer [J](Hourly)",
+      "use_automl": true,
+      "automl_framework": "flaml",
+      "automl_time_limit": 180,
+      "automl_config": {
+        "estimator_list": ["lgbm", "rf", "xgboost"],
+        "metric": "rmse",
+        "n_jobs": -1
+      },
+      "model_out": "cooling_flaml.joblib"
+    },
+    
+    "example_3_h2o": {
+      "// H2O AutoML - Good interpretability": "",
+      "perform_surrogate": true,
+      "scenario_folder": "scenarios",
+      "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+      "target_variable": "Electricity:Facility [J](Daily)",
+      "use_automl": true,
+      "automl_framework": "h2o",
+      "automl_time_limit": 300,
+      "automl_config": {
+        "max_models": 20,
+        "exclude_algos": ["DeepLearning"],
+        "seed": 42
+      },
+      "model_out": "electricity_h2o.joblib"
+    },
+    
+    "example_4_tpot": {
+      "// TPOT - Genetic programming": "",
+      "perform_surrogate": true,
+      "scenario_folder": "scenarios",
+      "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+      "target_variable": "Heating:EnergyTransfer [J](Hourly)",
+      "use_automl": true,
+      "automl_framework": "tpot",
+      "automl_time_limit": 600,
+      "automl_config": {
+        "generations": 10,
+        "population_size": 50,
+        "cv": 5,
+        "export_pipeline": "tpot_heating_pipeline.py",
+        "verbosity": 2
+      },
+      "model_out": "heating_tpot.joblib"
+    },
+    
+    "example_5_compare_frameworks": {
+      "// Compare all available AutoML frameworks": "",
+      "perform_surrogate": true,
+      "scenario_folder": "scenarios",
+      "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+      "target_variable": "Cooling:EnergyTransfer [J](Hourly)",
+      "use_automl": true,
+      "automl_framework": null,
+      "automl_time_limit": 300,
+      "automl_config": {
+        "compare_frameworks": true
+      },
+      "sensitivity_results_path": "sensitivity_results.csv",
+      "feature_selection": {
+        "method": "correlation",
+        "top_n": 15
+      },
+      "model_out": "best_automl_model.joblib",
+      "save_metadata": true
+    },
+    
+    "example_6_advanced_autogluon": {
+      "// Advanced AutoGluon with custom hyperparameters": "",
+      "perform_surrogate": true,
+      "scenario_folder": "scenarios",
+      "results_csv": "results_scenarioes/merged_as_is_scenarios.csv",
+      "target_variable": [
+        "Heating:EnergyTransfer [J](Hourly)",
+        "Cooling:EnergyTransfer [J](Hourly)"
+      ],
+      "time_aggregation": "sum",
+      "use_automl": true,
+      "automl_framework": "autogluon",
+      "automl_time_limit": 1200,
+      "automl_config": {
+        "presets": ["best_quality", "optimize_for_deployment"],
+        "eval_metric": "rmse",
+        "num_bag_folds": 10,
+        "num_bag_sets": 3,
+        "hyperparameters": {
+          "GBM": {
+            "num_boost_round": 1000,
+            "learning_rate": [0.01, 0.03, 0.1]
+          },
+          "NN_TORCH": {
+            "num_epochs": 100,
+            "learning_rate": [0.0001, 0.001, 0.01],
+            "dropout_prob": [0.0, 0.1, 0.3]
+          }
+        }
+      },
+      "model_out": "advanced_autogluon_model.joblib"
+    }
+  },
+  
+  "// ===== COMPLETE WORKFLOW EXAMPLES ===== ": "",
+  
+  "complete_workflow_examples": {
+    "workflow_1_quick_experiment": {
+      "// Quick 5-minute experiment": "",
+      "sensitivity": {
+        "perform_sensitivity": true,
+        "scenario_folder": "scenarios",
+        "method": "correlation",
+        "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+        "target_variable": "Heating:EnergyTransfer [J](Hourly)",
+        "output_csv": "quick_sensitivity.csv"
+      },
+      "surrogate": {
+        "perform_surrogate": true,
+        "scenario_folder": "scenarios",
+        "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+        "target_variable": "Heating:EnergyTransfer [J](Hourly)",
+        "sensitivity_results_path": "quick_sensitivity.csv",
+        "feature_selection": {
+          "method": "correlation",
+          "top_n": 10
+        },
+        "use_automl": true,
+        "automl_framework": "flaml",
+        "automl_time_limit": 60,
+        "model_out": "quick_heating_model.joblib"
+      }
+    },
+    
+    "workflow_2_production_model": {
+      "// Production-ready model with full pipeline": "",
+      "sensitivity": {
+        "perform_sensitivity": true,
+        "scenario_folder": "scenarios",
+        "method": "correlation",
+        "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+        "target_variable": [
+          "Heating:EnergyTransfer [J](Hourly)",
+          "Cooling:EnergyTransfer [J](Hourly)",
+          "Electricity:Facility [J](Daily)"
+        ],
+        "output_csv": "production_sensitivity.csv"
+      },
+      "surrogate": {
+        "perform_surrogate": true,
+        "scenario_folder": "scenarios",
+        "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+        "target_variable": [
+          "Heating:EnergyTransfer [J](Hourly)",
+          "Cooling:EnergyTransfer [J](Hourly)",
+          "Electricity:Facility [J](Daily)"
+        ],
+        "sensitivity_results_path": "production_sensitivity.csv",
+        "feature_selection": {
+          "method": "correlation",
+          "threshold": 0.1
+        },
+        "file_patterns": ["*hvac*.csv", "*dhw*.csv", "*vent*.csv", "*fenez*.csv"],
+        "time_aggregation": "sum",
+        "scale_features": true,
+        "create_interactions": true,
+        "use_automl": true,
+        "automl_framework": "autogluon",
+        "automl_time_limit": 1800,
+        "automl_config": {
+          "presets": "best_quality",
+          "eval_metric": "rmse"
+        },
+        "model_out": "production_multi_output.joblib",
+        "save_metadata": true
+      }
+    },
+    
+    "workflow_3_comparison_study": {
+      "// Compare ML vs AutoML approaches": "",
+      "surrogate_ml": {
+        "perform_surrogate": true,
+        "scenario_folder": "scenarios",
+        "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+        "target_variable": "Cooling:EnergyTransfer [J](Hourly)",
+        "automated_ml": true,
+        "use_automl": false,
+        "model_types": ["random_forest", "xgboost", "gradient_boosting", "lightgbm"],
+        "scale_features": true,
+        "model_out": "cooling_standard_ml.joblib",
+        "save_metadata": true
+      },
+      "surrogate_automl": {
+        "perform_surrogate": true,
+        "scenario_folder": "scenarios",
+        "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+        "target_variable": "Cooling:EnergyTransfer [J](Hourly)",
+        "use_automl": true,
+        "automl_framework": null,
+        "automl_time_limit": 600,
+        "model_out": "cooling_best_automl.joblib",
+        "save_metadata": true
+      }
+    }
+  },
+  
+  "// ===== MAIN CONFIG TEMPLATE ===== ": "",
+  
+  "main_config": {
+    "paths": {
+      "building_data": "data/df_buildings.csv"
+    },
+    
+    "sensitivity": {
+      "perform_sensitivity": true,
+      "scenario_folder": "scenarios",
+      "method": "correlation",
+      "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+      "target_variable": [
+        "Heating:EnergyTransfer [J](Hourly)",
+        "Cooling:EnergyTransfer [J](Hourly)",
+        "Electricity:Facility [J](Daily)"
+      ],
+      "output_csv": "multi_corr_sensitivity.csv"
+    },
+    
+    "surrogate": {
+      "perform_surrogate": true,
+      "scenario_folder": "scenarios",
+      "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+      
+      "// Target configuration": "",
+      "target_variable": "Heating:EnergyTransfer [J](Hourly)",
+      
+      "// Input selection and filtering": "",
+      "file_patterns": null,
+      "param_filters": null,
+      
+      "// Time aggregation": "",
+      "time_aggregation": "sum",
+      "extract_time_features": false,
+      
+      "// Feature engineering": "",
+      "create_interactions": false,
+      "interaction_features": 10,
+      "scale_features": true,
+      "scaler_type": "standard",
+      
+      "// Sensitivity integration": "",
+      "sensitivity_results_path": "multi_corr_sensitivity.csv",
+      "feature_selection": {
+        "method": "correlation",
+        "top_n": null,
+        "threshold": 0.1
+      },
+      
+      "// Model configuration - Choose ONE approach": "",
+      "// Option 1: Basic (fastest)": "",
+      "automated_ml": false,
+      "use_automl": false,
+      
+      "// Option 2: Standard ML (recommended)": "",
+      "automated_ml": true,
+      "use_automl": false,
+      "model_types": ["random_forest", "xgboost", "gradient_boosting"],
+      "cv_strategy": "kfold",
+      
+      "// Option 3: AutoML (best accuracy)": "",
+      "use_automl": true,
+      "automl_framework": "autogluon",
+      "automl_time_limit": 600,
+      "automl_config": {
+        "presets": "medium_quality",
+        "eval_metric": "rmse"
+      },
+      
+      "// Output configuration": "",
+      "model_out": "surrogate_model.joblib",
+      "cols_out": "surrogate_columns.joblib",
+      "save_metadata": true,
+      "test_size": 0.3,
+      "random_state": 42
+    }
+  },
+  
+  "// ===== PARAMETER REFERENCE ===== ": "",
+  
+  "parameter_reference": {
+    "target_variable": {
+      "type": "string or list",
+      "examples": [
+        "Heating:EnergyTransfer [J](Hourly)",
+        ["Heating:EnergyTransfer [J](Hourly)", "Cooling:EnergyTransfer [J](Hourly)"]
+      ],
+      "description": "Output variable(s) to predict"
+    },
+    
+    "file_patterns": {
+      "type": "list or null",
+      "examples": [
+        null,
+        ["*hvac*.csv", "*dhw*.csv"],
+        ["scenario_params_*.csv"]
+      ],
+      "description": "File patterns to include from scenario folder"
+    },
+    
+    "param_filters": {
+      "type": "dict or null",
+      "options": {
+        "include_params": "List of exact parameter names to include",
+        "exclude_params": "List of exact parameter names to exclude",
+        "param_name_contains": "List of substrings to match in parameter names",
+        "source_files": "List of specific files to use"
+      }
+    },
+    
+    "time_aggregation": {
+      "type": "string",
+      "options": ["sum", "mean", "max", "min", "std", "percentile_X"],
+      "default": "sum",
+      "description": "How to aggregate hourly data"
+    },
+    
+    "model_types": {
+      "type": "list",
+      "options": ["random_forest", "xgboost", "gradient_boosting", "lightgbm", "neural_network", "elastic_net"],
+      "default": ["random_forest", "xgboost", "gradient_boosting"]
+    },
+    
+    "automl_framework": {
+      "type": "string or null",
+      "options": ["autogluon", "flaml", "h2o", "tpot", null],
+      "description": "null means compare all available"
+    },
+    
+    "automl_config": {
+      "autogluon": {
+        "presets": ["best_quality", "high_quality", "good_quality", "medium_quality", "optimize_for_deployment"],
+        "eval_metric": ["rmse", "mae", "mse", "r2"],
+        "num_bag_folds": "integer (5-20)",
+        "num_bag_sets": "integer (1-10)"
+      },
+      "flaml": {
+        "estimator_list": ["lgbm", "rf", "xgboost", "extra_tree", "xgb_limitdepth"],
+        "metric": ["rmse", "mae", "mse", "r2"],
+        "n_jobs": "integer (-1 for all cores)"
+      },
+      "h2o": {
+        "max_models": "integer (10-50)",
+        "exclude_algos": ["GBM", "GLM", "DeepLearning", "DRF", "XGBoost"],
+        "include_algos": ["GBM", "GLM", "DeepLearning", "DRF", "XGBoost"]
+      },
+      "tpot": {
+        "generations": "integer (5-100)",
+        "population_size": "integer (20-100)",
+        "cv": "integer (2-10)",
+        "export_pipeline": "filepath.py"
+      }
+    }
+  }
+}

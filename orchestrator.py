@@ -807,9 +807,9 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
             )
     else:
         logger.info("[INFO] Skipping sensitivity analysis.")
-
-    # -------------------------------------------------------------------------
-    # 15) Surrogate Modeling
+        
+# -------------------------------------------------------------------------
+    # 15) Surrogate Modeling - ENHANCED VERSION with AutoML
     # -------------------------------------------------------------------------
     check_canceled()
     if sur_cfg.get("perform_surrogate", False):
@@ -828,39 +828,117 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
             cols_out = sur_cfg.get("cols_out", "")
             sur_cfg["cols_out"] = patch_if_relative(cols_out)
 
+            # Get configuration parameters
             target_var = sur_cfg["target_variable"]
-            test_size  = sur_cfg["test_size"]
+            test_size = sur_cfg.get("test_size", 0.3)
+            
+            # NEW: Enhanced parameters
+            file_patterns = sur_cfg.get("file_patterns")
+            param_filters = sur_cfg.get("param_filters")
+            time_aggregation = sur_cfg.get("time_aggregation", "sum")
+            time_features = sur_cfg.get("extract_time_features", False)
+            automated_ml = sur_cfg.get("automated_ml", False)
+            model_types = sur_cfg.get("model_types")
+            cv_strategy = sur_cfg.get("cv_strategy", "kfold")
+            scale_features = sur_cfg.get("scale_features", True)
+            create_interactions = sur_cfg.get("create_interactions", False)
+            sensitivity_path = sur_cfg.get("sensitivity_results_path")
+            feature_selection = sur_cfg.get("feature_selection")
+            
+            # NEW: AutoML parameters
+            use_automl = sur_cfg.get("use_automl", False)
+            automl_framework = sur_cfg.get("automl_framework")
+            automl_time_limit = sur_cfg.get("automl_time_limit", 300)
+            automl_config = sur_cfg.get("automl_config", {})
+            
+            # Patch sensitivity path if relative
+            if sensitivity_path:
+                sensitivity_path = patch_if_relative(sensitivity_path)
 
-            df_scen = sur_load_scenario_params(sur_cfg["scenario_folder"])
+            # Load scenario data with filtering
+            df_scen = sur_load_scenario_params(
+                sur_cfg["scenario_folder"],
+                file_patterns=file_patterns,
+                param_filters=param_filters
+            )
             pivot_df = pivot_scenario_params(df_scen)
 
-            df_sim = load_sim_results(sur_cfg["results_csv"])
-            df_agg = aggregate_results(df_sim)
-            merged_df = merge_params_with_results(pivot_df, df_agg, target_var)
+            # Load and aggregate results
+            df_sim = load_sim_results(
+                sur_cfg["results_csv"],
+                target_variables=target_var if isinstance(target_var, list) else [target_var]
+            )
+            df_agg = aggregate_results(
+                df_sim, 
+                time_aggregation=time_aggregation,
+                time_features=time_features
+            )
+            
+            # Merge with optional interaction features
+            merged_df = merge_params_with_results(
+                pivot_df, 
+                df_agg, 
+                target_var,
+                create_interactions=create_interactions,
+                interaction_features=sur_cfg.get("interaction_features", 10)
+            )
 
+            # Build surrogate with enhanced options
             rf_model, trained_cols = build_and_save_surrogate(
                 df_data=merged_df,
                 target_col=target_var,
                 model_out_path=sur_cfg["model_out"],
                 columns_out_path=sur_cfg["cols_out"],
                 test_size=test_size,
-                random_state=42
+                random_state=42,
+                # Enhanced parameters
+                model_types=model_types,
+                automated_ml=automated_ml,
+                scale_features=scale_features,
+                scaler_type=sur_cfg.get("scaler_type", "standard"),
+                cv_strategy=cv_strategy,
+                sensitivity_results_path=sensitivity_path,
+                feature_selection=feature_selection,
+                save_metadata=sur_cfg.get("save_metadata", True),
+                # AutoML parameters
+                use_automl=use_automl,
+                automl_framework=automl_framework,
+                automl_time_limit=automl_time_limit,
+                automl_config=automl_config
             )
+            
             if rf_model:
                 logger.info("[INFO] Surrogate model built & saved.")
+                if use_automl:
+                    logger.info(f"[INFO] Used AutoML framework: {automl_framework or 'auto-selected'}")
             else:
                 logger.warning("[WARN] Surrogate modeling failed or insufficient data.")
     else:
         logger.info("[INFO] Skipping surrogate modeling.")
 
+    # This is the updated calibration section for orchestrator.py
+
     # -------------------------------------------------------------------------
-    # 16) Calibration
+    # 16) Calibration - ENHANCED VERSION
     # -------------------------------------------------------------------------
     check_canceled()
     if cal_cfg.get("perform_calibration", False):
         with step_timer(logger, "calibration"):
             logger.info("[INFO] Calibration is ENABLED.")
+            
+            # Check if using enhanced features
+            has_multi_config = bool(cal_cfg.get("calibration_configs"))
+            has_multi_objective = bool(cal_cfg.get("objectives"))
+            uses_advanced_method = cal_cfg.get("method") in ["pso", "de", "nsga2", "cmaes", "hybrid"]
+            
+            if has_multi_config:
+                logger.info("[INFO] Using enhanced multi-configuration calibration")
+            if has_multi_objective:
+                logger.info("[INFO] Using multi-objective optimization")
+            if uses_advanced_method:
+                logger.info(f"[INFO] Using advanced optimization method: {cal_cfg.get('method')}")
 
+            # Standard path patching
             scen_folder = cal_cfg.get("scenario_folder", "")
             cal_cfg["scenario_folder"] = patch_if_relative(scen_folder)
 
@@ -878,8 +956,61 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
 
             best_params_folder = cal_cfg.get("best_params_folder", "")
             cal_cfg["best_params_folder"] = patch_if_relative(best_params_folder)
+            
+            # NEW: Enhanced calibration path patching
+            # Handle sensitivity results path
+            sens_path = cal_cfg.get("sensitivity_results_path", "")
+            if sens_path:
+                cal_cfg["sensitivity_results_path"] = patch_if_relative(sens_path)
+            
+            # Handle subset sensitivity CSV
+            subset_sens = cal_cfg.get("subset_sensitivity_csv", "")
+            if subset_sens:
+                cal_cfg["subset_sensitivity_csv"] = patch_if_relative(subset_sens)
+            
+            # Handle history folder if different from best_params_folder
+            hist_folder = cal_cfg.get("history_folder", "")
+            if hist_folder:
+                cal_cfg["history_folder"] = patch_if_relative(hist_folder)
+            
+            # Handle multiple calibration configurations
+            if has_multi_config:
+                for i, config in enumerate(cal_cfg["calibration_configs"]):
+                    # Each config might have its own paths
+                    if "real_data_csv" in config:
+                        config["real_data_csv"] = patch_if_relative(config["real_data_csv"])
+                    if "output_csv" in config:
+                        config["output_csv"] = patch_if_relative(config["output_csv"])
+                    if "surrogate_model_path" in config:
+                        config["surrogate_model_path"] = patch_if_relative(config["surrogate_model_path"])
+                    if "surrogate_columns_path" in config:
+                        config["surrogate_columns_path"] = patch_if_relative(config["surrogate_columns_path"])
+            
+            # Handle file patterns - these might have full paths
+            file_patterns = cal_cfg.get("file_patterns", [])
+            if file_patterns:
+                patched_patterns = []
+                for pattern in file_patterns:
+                    # Only patch if it looks like a path (contains /)
+                    if "/" in pattern:
+                        patched_patterns.append(patch_if_relative(pattern))
+                    else:
+                        # It's just a pattern like "*.csv", leave as is
+                        patched_patterns.append(pattern)
+                cal_cfg["file_patterns"] = patched_patterns
 
+            # Run the enhanced unified calibration
             run_unified_calibration(cal_cfg)
+            
+            # Log completion with enhanced info
+            if os.path.exists(os.path.join(best_params_folder, "calibration_metadata.json")):
+                logger.info("[INFO] Enhanced calibration completed with metadata saved")
+            if os.path.exists(os.path.join(best_params_folder, "convergence_data.json")):
+                logger.info("[INFO] Convergence data saved for analysis")
+            if has_multi_config:
+                summary_path = os.path.join(best_params_folder, "calibration_summary.json")
+                if os.path.exists(summary_path):
+                    logger.info("[INFO] Multi-configuration summary saved")
     else:
         logger.info("[INFO] Skipping calibration.")
 

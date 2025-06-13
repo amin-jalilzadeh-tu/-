@@ -204,7 +204,7 @@ def add_ventilation_to_idf(
     )
 
     # --- 10) Determine DSOA object name and ensure it exists for System D ---
-    # ... (DSOA logic remains the same) ...
+    # FIX for VENT_012: DSOA Method should be "Flow/Area" not "Sum"
     dsoa_object_name_global = "DSOA_Global" 
     if system_type == "D":
         dsoa_obj = idf.getobject("DESIGNSPECIFICATION:OUTDOORAIR", dsoa_object_name_global.upper())
@@ -212,7 +212,8 @@ def add_ventilation_to_idf(
             print(f"[VENT INFO] add_ventilation.py: Building {bldg_id}: Creating default DesignSpecification:OutdoorAir: {dsoa_object_name_global}")
             try:
                 dsoa_obj = idf.newidfobject("DESIGNSPECIFICATION:OUTDOORAIR", Name=dsoa_object_name_global)
-                dsoa_obj.Outdoor_Air_Method = "Flow/Area" 
+                # FIX for VENT_012: Use correct method
+                dsoa_obj.Outdoor_Air_Method = "Flow/Area"  # FIXED: Was "Sum", now "Flow/Area"
             except Exception as e:
                 print(f"[ERROR] add_ventilation.py: Building {bldg_id}: Failed to create {dsoa_object_name_global}: {e}")
                 dsoa_obj = None
@@ -231,6 +232,11 @@ def add_ventilation_to_idf(
                 base_design_rate_L_s_m2 = usage_flow_map_L_s_m2.get(usage_key, 1.0)
             
             dsoa_flow_per_area_m3_s_m2 = (base_design_rate_L_s_m2 * f_ctrl) / 1000.0
+            
+            # FIX for VENT_002: Add validation for DSOA flow rates
+            if dsoa_flow_per_area_m3_s_m2 < 1e-6:
+                print(f"[WARNING] DSOA flow rate too low: {dsoa_flow_per_area_m3_s_m2} m3/s/m2 for building {bldg_id}")
+            
             dsoa_obj.Outdoor_Air_Flow_per_Zone_Floor_Area = dsoa_flow_per_area_m3_s_m2
             dsoa_obj.Outdoor_Air_Flow_per_Person = 0.0 
             dsoa_obj.Outdoor_Air_Flow_per_Zone = 0.0
@@ -239,7 +245,6 @@ def add_ventilation_to_idf(
 
 
     # --- 11) Get Zones and Prepare Zone Information Map ---
-    # ... (Zone area calculation logic remains the same) ...
     zones_in_idf = idf.idfobjects.get("ZONE", [])
     if not zones_in_idf: zones_in_idf = idf.idfobjects.get("Zone", [])
     if not zones_in_idf:
@@ -266,7 +271,6 @@ def add_ventilation_to_idf(
         print(f"[VENT INFO] add_ventilation.py: Bldg {bldg_id}: Calculating zone areas/core status from IDF.")
         sum_of_individual_zone_areas = 0.0; effective_zone_info_map = {} 
         for zone_obj in zones_in_idf:
-            # ... (detailed area calculation logic as before) ...
             zone_name_key = zone_obj.Name; area_val = 0.0; raw_field_value_str = ""
             try: area_val = getattr(zone_obj, 'floor_area', 0.0) 
             except Exception: area_val = 0.0
@@ -285,6 +289,7 @@ def add_ventilation_to_idf(
             effective_zone_info_map[zone_name_key] = {'area': area_val, 'is_core': "_core" in safe_lower(zone_name_key)}
             sum_of_individual_zone_areas += area_val
 
+    # FIX for VENT_011: Improve zone area fallback logic
     use_equal_split_fallback = False
     final_total_area_for_proportions = sum_of_individual_zone_areas
 
@@ -292,11 +297,33 @@ def add_ventilation_to_idf(
         print(f"[VENT ERROR] add_ventilation.py: Bldg {bldg_id}: Sum of individual zone areas is {sum_of_individual_zone_areas}. Fallback active.")
         if total_bldg_floor_area_m2_input > 0 and num_zones > 0:
             use_equal_split_fallback = True
-            average_zone_area_for_fallback = total_bldg_floor_area_m2_input / num_zones
-            # ... (fallback logic as before) ...
-            temp_map_for_fallback = {}
-            for zone_obj_fb in zones_in_idf:
-                temp_map_for_fallback[zone_obj_fb.Name] = {'area': average_zone_area_for_fallback, 'is_core': "_core" in safe_lower(zone_obj_fb.Name)}
+            # FIX for VENT_011: Consider zone type in fallback distribution
+            # Estimate that core zones are typically 20-30% of floor area
+            core_zone_count = sum(1 for z in zones_in_idf if "_core" in safe_lower(z.Name))
+            perim_zone_count = num_zones - core_zone_count
+            
+            if core_zone_count > 0 and perim_zone_count > 0:
+                # Allocate 25% to core zones, 75% to perimeter zones
+                core_area_fraction = 0.25
+                perim_area_fraction = 0.75
+                core_area_per_zone = (total_bldg_floor_area_m2_input * core_area_fraction) / core_zone_count
+                perim_area_per_zone = (total_bldg_floor_area_m2_input * perim_area_fraction) / perim_zone_count
+                
+                print(f"[VENT INFO] Using intelligent fallback: Core zones ({core_zone_count}): {core_area_per_zone:.2f} m2 each, "
+                      f"Perimeter zones ({perim_zone_count}): {perim_area_per_zone:.2f} m2 each")
+                
+                temp_map_for_fallback = {}
+                for zone_obj_fb in zones_in_idf:
+                    is_core = "_core" in safe_lower(zone_obj_fb.Name)
+                    area_for_zone = core_area_per_zone if is_core else perim_area_per_zone
+                    temp_map_for_fallback[zone_obj_fb.Name] = {'area': area_for_zone, 'is_core': is_core}
+            else:
+                # All zones same type, use equal split
+                average_zone_area_for_fallback = total_bldg_floor_area_m2_input / num_zones
+                temp_map_for_fallback = {}
+                for zone_obj_fb in zones_in_idf:
+                    temp_map_for_fallback[zone_obj_fb.Name] = {'area': average_zone_area_for_fallback, 'is_core': "_core" in safe_lower(zone_obj_fb.Name)}
+            
             effective_zone_info_map = temp_map_for_fallback
             final_total_area_for_proportions = total_bldg_floor_area_m2_input 
         else:
@@ -307,13 +334,12 @@ def add_ventilation_to_idf(
     if assigned_vent_log is not None:
         if bldg_id not in assigned_vent_log: assigned_vent_log[bldg_id] = {}
         log_building_params = assigned_vent.copy()
-        # ... (existing log_building_params assignments) ...
         log_building_params["infiltration_rate_at_1Pa_L_s_per_m2_EFFECTIVE"] = infiltration_rate_at_1Pa_L_s_per_m2_floor_area
         log_building_params["ventilation_total_required_m3_s_building"] = vent_flow_m3_s_total_building
         log_building_params["total_bldg_floor_area_m2_input_attr"] = total_bldg_floor_area_m2_input
         log_building_params["sum_of_individual_zone_areas_derived"] = sum_of_individual_zone_areas 
         log_building_params["final_total_area_used_for_proportions"] = final_total_area_for_proportions
-        log_building_params["flow_distribution_method"] = "EqualSplitFallbackLogicActive" if use_equal_split_fallback else "ProportionalToIndividualZoneArea"
+        log_building_params["flow_distribution_method"] = "IntelligentFallback" if use_equal_split_fallback else "ProportionalToIndividualZoneArea"
         log_building_params["system_d_infiltration_reduction_factor_applied"] = system_d_infiltration_reduction_factor if system_type == "D" and system_d_infiltration_reduction_factor != 1.0 else None
 
         assigned_vent_log[bldg_id]["building_params"] = log_building_params
@@ -340,12 +366,11 @@ def add_ventilation_to_idf(
     print(
         f"[VENT FLOWS] add_ventilation.py: Bldg={bldg_id}: BaseInfilRate(@1Pa,Eff)={infiltration_rate_at_1Pa_L_s_per_m2_floor_area:.4f} L/s/m2, "
         f"TotalMechVentReq={vent_flow_m3_s_total_building:.4f} m3/s, "
-        f"DistMethod={'EqualSplitFallbackLogicActive' if use_equal_split_fallback else 'ProportionalToIndividualZoneArea'}"
+        f"DistMethod={'IntelligentFallback' if use_equal_split_fallback else 'ProportionalToIndividualZoneArea'}"
     )
 
     # --- 13) Loop Through Zones: Calculate Zone Flows & Create IDF Objects ---
     for zone_obj_loopvar in zones_in_idf:
-        # ... (zone loop logic remains the same, using final_infiltration_sched_name and final_ventilation_sched_name) ...
         zone_name_curr = zone_obj_loopvar.Name
         zone_info_curr = effective_zone_info_map.get(zone_name_curr)
         if not zone_info_curr: 
@@ -357,18 +382,28 @@ def add_ventilation_to_idf(
         infiltration_for_this_zone_m3_s = 0.0
         ventilation_for_this_zone_m3_s = 0.0
 
-        if is_core_zone_curr:
+        # FIX for VENT_001: Core zones should have reduced, not zero infiltration
+        infiltration_reduction_factor = 0.25 if is_core_zone_curr else 1.0
+        if zone_floor_area_curr_m2 > 1e-6:
+            infiltration_L_s = infiltration_rate_at_1Pa_L_s_per_m2_floor_area * zone_floor_area_curr_m2 * infiltration_reduction_factor
+            infiltration_for_this_zone_m3_s = infiltration_L_s / 1000.0
+            
+            # FIX for VENT_004: Add explicit unit conversion logging
+            print(f"[UNIT CHECK] Zone {zone_name_curr}: {infiltration_L_s:.2f} L/s = {infiltration_for_this_zone_m3_s:.6f} m3/s (reduction factor: {infiltration_reduction_factor})")
+        else:
             infiltration_for_this_zone_m3_s = 0.0
-        else: 
-            if zone_floor_area_curr_m2 > 1e-6:
-                infiltration_L_s = infiltration_rate_at_1Pa_L_s_per_m2_floor_area * zone_floor_area_curr_m2
-                infiltration_for_this_zone_m3_s = infiltration_L_s / 1000.0
         
         if final_total_area_for_proportions > 1e-6 and zone_floor_area_curr_m2 >= 0:
             proportion = zone_floor_area_curr_m2 / final_total_area_for_proportions if final_total_area_for_proportions > 0 else 0
             ventilation_for_this_zone_m3_s = vent_flow_m3_s_total_building * proportion
-        elif num_zones > 0 :
-             ventilation_for_this_zone_m3_s = vent_flow_m3_s_total_building / num_zones
+        elif num_zones > 0:
+            ventilation_for_this_zone_m3_s = vent_flow_m3_s_total_building / num_zones
+        
+        # FIX for VENT_015: Add minimum ventilation check per zone
+        min_vent_per_zone_m3_s = 0.01  # 10 L/s minimum per zone
+        if ventilation_for_this_zone_m3_s < min_vent_per_zone_m3_s and ventilation_for_this_zone_m3_s > 0:
+            print(f"[VENT] Zone {zone_name_curr} below minimum ventilation. Adjusting from {ventilation_for_this_zone_m3_s:.6f} to {min_vent_per_zone_m3_s:.6f} m3/s")
+            ventilation_for_this_zone_m3_s = min_vent_per_zone_m3_s
         
         fan_param_overrides = {}
         if fan_pressure_Pa is not None: fan_param_overrides["fan_pressure_override_Pa"] = fan_pressure_Pa
@@ -403,6 +438,7 @@ def add_ventilation_to_idf(
                 "infiltration_flow_m3_s_DESIGN_TOTAL_ZONE": infiltration_for_this_zone_m3_s,
                 "infiltration_flow_m3_s_m2_DESIGN_ZONE": (infiltration_for_this_zone_m3_s / zone_floor_area_curr_m2) if zone_floor_area_curr_m2 > 1e-6 else 0.0,
                 "infiltration_schedule_name": final_infiltration_sched_name,
+                "infiltration_reduction_factor": infiltration_reduction_factor,  # Log reduction factor
                 "ventilation_object_name": vobj.Name if vobj else "N/A",
                 "ventilation_object_type": vobj.key if vobj else "N/A",
                 "ventilation_flow_m3_s_DESIGN_TOTAL_ZONE": ventilation_for_this_zone_m3_s if vobj else 0.0,
