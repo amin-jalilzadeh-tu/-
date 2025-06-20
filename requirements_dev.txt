@@ -17,3 +17,4 @@ eppy
 # You can also place your local or internal packages here
 # Example:
 # -e .
+pyarrow 

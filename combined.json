@@ -269,7 +269,7 @@
         "num_workers": 4,
         "ep_force_overwrite": true
       },
-      "post_process": true,
+      "post_process": false,
       "post_process_config": {
         "base_output_dir": "Sim_Results",
         "outputs": [
@@ -293,6 +293,8 @@
           }
         ]
       },
+
+    
       "output_definitions": {
         "desired_variables": [
           "Facility Total Electric Demand Power",
@@ -311,6 +313,23 @@
         "include_summary": true
       }
     },
+
+  "parsing": {
+            "perform_parsing": true,
+            "parse_after_simulation": true,
+            "categories": null,
+            "validate_outputs": true,
+            "batch_size": 100,
+            "parallel_parsing": false,
+            "save_raw_objects": true
+          },
+
+
+
+
+
+
+
     "structuring": {
       "perform_structuring": true,
       "dhw": {
@@ -345,7 +364,7 @@
       }
     },
     "modification": {
-      "perform_modification": true,
+      "perform_modification": false,
       "modify_config": {
         "idd_path": "EnergyPlus/Energy+.idd",
         "assigned_csv": {
@@ -407,6 +426,37 @@
         }
       }
     },
+
+
+
+"validation": {
+    "perform_validation": true,
+    "config": {
+        "real_data_path": "data/test_validation_data/measured_data_parsed_format_daily.csv"
+    }
+},
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     "validation_base": {
       "perform_validation": true,
       "config": {

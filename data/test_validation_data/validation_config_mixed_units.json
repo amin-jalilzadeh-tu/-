@@ -1,0 +1,13 @@
+{
+  "description": "Test with mixed units",
+  "validation": {
+    "perform_validation": true,
+    "config": {
+      "real_data_path": "test_validation_data/measured_data_mixed.csv",
+      "logging": {
+        "level": "DEBUG",
+        "show_unit_conversions": true
+      }
+    }
+  }
+}

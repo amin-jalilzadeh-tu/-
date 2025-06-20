@@ -1,0 +1,126 @@
+{
+  "real_data": {
+    "path": "measured_data.csv",
+    "format": "auto",
+    "encoding": "utf-8",
+    "id_column": "BuildingID",
+    "date_parsing": {
+      "formats": [
+        "%m/%d",
+        "%m/%d/%Y", 
+        "%Y-%m-%d",
+        "%Y-%m-%d %H:%M:%S"
+      ],
+      "dayfirst": false,
+      "yearfirst": false,
+      "infer_datetime_format": true,
+      "output_format": "%m/%d"
+    }
+  },
+  
+  "units": {
+    "energy": "kWh",
+    "power": "kW",
+    "temperature": "F",
+    "comment": "Real data units - will be converted to simulation units (J, W, C) automatically"
+  },
+  
+  "variable_mappings": {
+    "Total_Electricity_kWh": "Electricity:Facility [J](Daily)",
+    "Heating_Energy_kWh": "Heating:EnergyTransfer [J](Daily)",
+    "Cooling_Energy_kWh": "Cooling:EnergyTransfer [J](Daily)",
+    "Zone_Temp_F": "Zone Mean Air Temperature [C](Hourly)",
+    "comment": "Map your real data variable names to EnergyPlus variable names"
+  },
+  
+  "building_mappings": {
+    "4136737": ["4136737"],
+    "4136738": ["4136738"],
+    "BuildingA": ["4136739", "4136740"],
+    "comment": "Map real building IDs to simulation building IDs. One real can map to multiple sim buildings."
+  },
+  
+  "variables_to_compare": [
+    "Electricity:Facility [J](Daily)",
+    "Heating:EnergyTransfer [J](Daily)",
+    "Cooling:EnergyTransfer [J](Daily)",
+    "Zone Mean Air Temperature [C](Hourly)"
+  ],
+  
+  "data_frequency": "daily",
+  
+  "thresholds": {
+    "cvrmse": 30.0,
+    "nmbe": 10.0,
+    "by_variable": {
+      "Zone Mean Air Temperature [C](Hourly)": {
+        "cvrmse": 20.0,
+        "nmbe": 5.0
+      },
+      "Electricity:Facility [J](Daily)": {
+        "cvrmse": 25.0,
+        "nmbe": 10.0
+      }
+    }
+  },
+  
+  "aggregation": {
+    "zones_to_building": true,
+    "time_aggregation": "auto",
+    "spatial_method": {
+      "energy": "sum",
+      "power": "sum",
+      "temperature": "weighted_average",
+      "rate": "average"
+    }
+  },
+  
+  "data_filtering": {
+    "remove_outliers": false,
+    "outlier_method": "zscore",
+    "outlier_threshold": 4.0,
+    "min_data_points": 0.9,
+    "interpolate_gaps": false,
+    "max_gap_size": 24
+  },
+  
+  "analysis_options": {
+    "data_frequency": "daily",
+    "timezone": "UTC",
+    "handle_dst": true,
+    "seasonal_analysis": true,
+    "peak_analysis": {
+      "perform": true,
+      "n_peaks": 10
+    },
+    "ramp_rate_analysis": true,
+    "granularity": ["annual", "monthly", "seasonal"],
+    "weekday_weekend": true,
+    "diurnal_profiles": true,
+    "extreme_day_analysis": {
+      "perform": true,
+      "n_days": 5,
+      "weather_variable": "Site Outdoor Air Drybulb Temperature [C](Hourly)"
+    }
+  },
+  
+  "output_options": {
+    "save_detailed_results": true,
+    "create_plots": true,
+    "plot_format": "png",
+    "report_format": "html"
+  },
+  
+  "_comments": {
+    "description": "This is an example validation configuration file",
+    "version": "1.0",
+    "notes": [
+      "1. Units will be automatically converted from real data units to simulation units",
+      "2. Variable mappings allow you to use your own variable names in the real data",
+      "3. Building mappings support many-to-many relationships",
+      "4. Variable-specific thresholds override global thresholds",
+      "5. Zone-level data will be aggregated to building level if needed",
+      "6. Date formats are tried in order until one works"
+    ]
+  }
+}

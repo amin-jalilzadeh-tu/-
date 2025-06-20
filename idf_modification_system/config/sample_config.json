@@ -1,0 +1,22 @@
+{
+  "modification": {
+    "modification_strategy": {
+      "type": "scenarios",
+      "num_variants": 5,
+      "seed": 42
+    },
+    "categories_to_modify": {
+      "hvac": {
+        "enabled": true,
+        "strategy": "efficiency_improvement",
+        "parameters": {}
+      }
+    },
+    "output_options": {
+      "save_modified_idfs": true,
+      "track_modifications": true,
+      "generate_report": true,
+      "output_dir": "modified_idfs"
+    }
+  }
+}

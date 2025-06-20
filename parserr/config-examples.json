@@ -1,0 +1,460 @@
+{
+  "simplest_config": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true
+      }
+    }
+  },
+  
+  "parse_everything": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "parse_mode": "all",
+        "parse_types": {
+          "idf": true,
+          "sql": true
+        }
+      }
+    }
+  },
+  
+  "parse_single_building": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "parse_mode": "selective",
+        "building_selection": {
+          "mode": "specific",
+          "building_ids": [413673000]
+        }
+      }
+    }
+  },
+  
+  "parse_multiple_buildings": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "parse_mode": "selective",
+        "building_selection": {
+          "mode": "specific",
+          "building_ids": [413673000, 413673001, 413673002]
+        }
+      }
+    }
+  },
+  
+  "parse_building_range": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "parse_mode": "selective",
+        "building_selection": {
+          "mode": "range",
+          "building_range": {
+            "start": 0,
+            "end": 10
+          }
+        }
+      }
+    }
+  },
+  
+  "parse_building_pattern": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "parse_mode": "selective",
+        "building_selection": {
+          "mode": "pattern",
+          "building_patterns": ["4136*", "4137*"]
+        }
+      }
+    }
+  },
+  
+  "parse_geometry_only": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "use_profile": "geometry_only"
+      },
+      "parsing_profiles": {
+        "geometry_only": {
+          "description": "Parse only geometric data",
+          "parse_types": {"idf": true, "sql": false},
+          "idf_content": {
+            "mode": "categories_only",
+            "categories": ["geometry"]
+          }
+        }
+      }
+    }
+  },
+  
+  "parse_idf_only": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "parse_types": {
+          "idf": true,
+          "sql": false
+        }
+      }
+    }
+  },
+  
+  "parse_sql_only": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "parse_types": {
+          "idf": false,
+          "sql": true
+        }
+      }
+    }
+  },
+  
+  "parse_energy_variables_only": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "parse_types": {
+          "idf": false,
+          "sql": true
+        },
+        "sql_content": {
+          "mode": "selective",
+          "variables": {
+            "mode": "pattern",
+            "variable_patterns": ["*Energy*", "*Power*"]
+          },
+          "frequency_filter": ["Daily", "Monthly"]
+        }
+      }
+    }
+  },
+  
+  "parse_specific_variables": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "sql_content": {
+          "mode": "selective",
+          "variables": {
+            "mode": "specific",
+            "variable_names": [
+              "Zone Mean Air Temperature",
+              "Zone Air System Sensible Cooling Energy",
+              "Zone Air System Sensible Heating Energy",
+              "Facility Total Electric Demand Power"
+            ]
+          }
+        }
+      }
+    }
+  },
+  
+  "parse_hvac_and_comfort": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "idf_content": {
+          "mode": "categories_only",
+          "categories": ["hvac", "hvac_thermostats", "hvac_equipment"]
+        },
+        "sql_content": {
+          "mode": "selective",
+          "variables": {
+            "mode": "categories",
+            "categories": ["hvac", "comfort"]
+          }
+        }
+      }
+    }
+  },
+  
+  "parse_specific_objects": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "idf_content": {
+          "mode": "objects_only",
+          "object_types": [
+            "ZONE",
+            "BUILDINGSURFACE:DETAILED",
+            "LIGHTS",
+            "ELECTRICEQUIPMENT",
+            "ZONEHVAC:IDEALLOADSAIRSYSTEM"
+          ]
+        }
+      }
+    }
+  },
+  
+  "parse_exclude_schedules": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "idf_content": {
+          "mode": "selective",
+          "exclude_categories": ["schedules"],
+          "exclude_objects": ["SCHEDULE:COMPACT", "SCHEDULE:FILE"]
+        }
+      }
+    }
+  },
+  
+  "parse_specific_files": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "parse_mode": "specific_files",
+        "building_selection": {
+          "specific_files": {
+            "idf": [
+              "output_IDFs/building_413673000.idf",
+              "output_IDFs/building_413673001.idf"
+            ],
+            "sql": [
+              "Sim_Results/2020/simulation_bldg0_413673000.sql"
+            ]
+          }
+        }
+      }
+    }
+  },
+  
+  "parse_with_time_filter": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "sql_content": {
+          "time_filter": {
+            "start_date": "2020-01-01",
+            "end_date": "2020-03-31",
+            "hours": [8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+          }
+        }
+      }
+    }
+  },
+  
+  "parse_summer_winter_only": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "sql_content": {
+          "time_filter": {
+            "months": [1, 2, 6, 7, 8, 12]
+          }
+        }
+      }
+    }
+  },
+  
+  "parse_daily_data_only": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "sql_content": {
+          "frequency_filter": ["Daily", "Monthly"],
+          "components": {
+            "timeseries": true,
+            "schedules": false,
+            "summary_metrics": true
+          }
+        }
+      }
+    }
+  },
+  
+  "parse_specific_zones": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "sql_content": {
+          "zone_filter": {
+            "mode": "specific",
+            "zones": ["ZONE1", "ZONE2", "ZONE3"]
+          }
+        }
+      }
+    }
+  },
+  
+  "parse_exclude_plenum": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "sql_content": {
+          "zone_filter": {
+            "mode": "exclude",
+            "exclude_zones": ["PLENUM", "ATTIC"]
+          }
+        }
+      }
+    }
+  },
+  
+  "minimal_quick_parse": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "use_profile": "minimal"
+      },
+      "parsing_profiles": {
+        "minimal": {
+          "description": "Minimal parsing for quick checks",
+          "idf_content": {
+            "mode": "categories_only",
+            "categories": ["geometry", "hvac"],
+            "parse_parameters": false
+          },
+          "sql_content": {
+            "variables": {
+              "mode": "specific",
+              "variable_names": [
+                "Zone Mean Air Temperature",
+                "Facility Total Electric Demand Power"
+              ]
+            },
+            "frequency_filter": ["Daily"],
+            "components": {
+              "timeseries": true,
+              "schedules": false,
+              "summary_metrics": false
+            }
+          }
+        }
+      }
+    }
+  },
+  
+  "energy_analysis_profile": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "use_profile": "energy_analysis"
+      },
+      "parsing_profiles": {
+        "energy_analysis": {
+          "description": "Parse data needed for energy analysis",
+          "idf_content": {
+            "categories": ["hvac", "equipment", "lighting", "dhw", "outputs"]
+          },
+          "sql_content": {
+            "variables": {
+              "categories": ["energy", "hvac"]
+            },
+            "frequency_filter": ["Hourly", "Daily", "Monthly"]
+          }
+        }
+      }
+    }
+  },
+  
+  "outputs_only_profile": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "use_profile": "outputs_only"
+      },
+      "parsing_profiles": {
+        "outputs_only": {
+          "description": "Parse only output definitions",
+          "parse_types": {"idf": true, "sql": false},
+          "idf_content": {
+            "mode": "objects_only",
+            "object_types": [
+              "OUTPUT:VARIABLE",
+              "OUTPUT:METER",
+              "OUTPUT:TABLE:SUMMARYREPORTS",
+              "OUTPUT:SQLITE",
+              "OUTPUTCONTROL:TABLE:STYLE"
+            ]
+          }
+        }
+      }
+    }
+  },
+  
+  "full_analysis_config": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "parse_mode": "selective",
+        "building_selection": {
+          "mode": "range",
+          "building_range": {"start": 0, "end": 10}
+        },
+        "idf_content": {
+          "mode": "selective",
+          "exclude_categories": ["schedules"],
+          "parse_relationships": true
+        },
+        "sql_content": {
+          "mode": "selective",
+          "variables": {
+            "mode": "categories",
+            "categories": ["energy", "comfort", "hvac"]
+          },
+          "time_filter": {
+            "months": [1, 2, 6, 7, 8, 12]
+          },
+          "frequency_filter": ["Hourly", "Daily"],
+          "zone_filter": {
+            "mode": "pattern",
+            "zone_patterns": ["*ZONE*"],
+            "exclude_zones": ["PLENUM"]
+          }
+        },
+        "output_options": {
+          "save_format": "parquet",
+          "compression": "snappy",
+          "create_summary": true,
+          "save_metadata": true
+        },
+        "performance": {
+          "batch_size": 100,
+          "parallel_parsing": false,
+          "memory_limit_mb": 2048,
+          "chunk_large_files": true
+        },
+        "validation": {
+          "validate_before_parsing": true,
+          "continue_on_error": true,
+          "save_validation_report": true
+        }
+      }
+    }
+  },
+  
+  "debug_everything": {
+    "main_config": {
+      "parsing": {
+        "perform_parsing": true,
+        "use_profile": "debug_mode"
+      },
+      "parsing_profiles": {
+        "debug_mode": {
+          "description": "Parse everything with detailed metadata",
+          "parse_mode": "all",
+          "idf_content": {"mode": "all"},
+          "sql_content": {"mode": "all"},
+          "output_options": {
+            "save_metadata": true,
+            "create_summary": true
+          },
+          "validation": {
+            "validate_before_parsing": true,
+            "save_validation_report": true
+          }
+        }
+      }
+    }
+  }
+}

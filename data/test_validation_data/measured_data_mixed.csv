@@ -1,0 +1,271 @@
+building_id,DateTime,Variable,Value,Units
+4136737,2013-01-01,Electricity Consumption,1692.18,kWh
+4136737,2013-01-01,Heating Energy,5036.91,kWh
+4136737,2013-01-01,Indoor Temperature,21.2,C
+4136737,2013-01-02,Electricity Consumption,5369.28,kWh
+4136737,2013-01-02,Heating Energy,3726.59,kWh
+4136737,2013-01-02,Indoor Temperature,22.4,C
+4136737,2013-01-03,Electricity Consumption,2039.03,kWh
+4136737,2013-01-03,Heating Energy,1680.45,kWh
+4136737,2013-01-03,Indoor Temperature,23.8,C
+4136737,2013-01-04,Electricity Consumption,5179.67,kWh
+4136737,2013-01-04,Heating Energy,5552.88,kWh
+4136737,2013-01-04,Indoor Temperature,20.0,C
+4136737,2013-01-05,Electricity Consumption,2226.36,kWh
+4136737,2013-01-05,Heating Energy,1850.22,kWh
+4136737,2013-01-05,Indoor Temperature,20.2,C
+4136737,2013-01-06,Electricity Consumption,5319.48,kWh
+4136737,2013-01-06,Heating Energy,4185.77,kWh
+4136737,2013-01-06,Indoor Temperature,21.6,C
+4136737,2013-01-07,Electricity Consumption,4473.97,kWh
+4136737,2013-01-07,Heating Energy,3106.01,kWh
+4136737,2013-01-07,Indoor Temperature,22.6,C
+4136737,2013-01-08,Electricity Consumption,1842.77,kWh
+4136737,2013-01-08,Heating Energy,3413.24,kWh
+4136737,2013-01-08,Indoor Temperature,22.4,C
+4136737,2013-01-09,Electricity Consumption,2283.67,kWh
+4136737,2013-01-09,Heating Energy,2705.42,kWh
+4136737,2013-01-09,Indoor Temperature,22.3,C
+4136737,2013-01-10,Electricity Consumption,1778.23,kWh
+4136737,2013-01-10,Heating Energy,2680.48,kWh
+4136737,2013-01-10,Indoor Temperature,20.7,C
+4136737,2013-01-11,Electricity Consumption,4459.44,kWh
+4136737,2013-01-11,Heating Energy,3466.16,kWh
+4136737,2013-01-11,Indoor Temperature,22.4,C
+4136737,2013-01-12,Electricity Consumption,1223.63,kWh
+4136737,2013-01-12,Heating Energy,3648.61,kWh
+4136737,2013-01-12,Indoor Temperature,22.3,C
+4136737,2013-01-13,Electricity Consumption,5541.06,kWh
+4136737,2013-01-13,Heating Energy,4949.6,kWh
+4136737,2013-01-13,Indoor Temperature,23.3,C
+4136737,2013-01-14,Electricity Consumption,2143.79,kWh
+4136737,2013-01-14,Heating Energy,4320.69,kWh
+4136737,2013-01-14,Indoor Temperature,20.5,C
+4136737,2013-01-15,Electricity Consumption,4344.85,kWh
+4136737,2013-01-15,Heating Energy,3673.05,kWh
+4136737,2013-01-15,Indoor Temperature,20.9,C
+4136737,2013-01-16,Electricity Consumption,2649.41,kWh
+4136737,2013-01-16,Heating Energy,4459.62,kWh
+4136737,2013-01-16,Indoor Temperature,22.5,C
+4136737,2013-01-17,Electricity Consumption,2427.6,kWh
+4136737,2013-01-17,Heating Energy,5615.01,kWh
+4136737,2013-01-17,Indoor Temperature,23.9,C
+4136737,2013-01-18,Electricity Consumption,3366.04,kWh
+4136737,2013-01-18,Heating Energy,4898.81,kWh
+4136737,2013-01-18,Indoor Temperature,21.6,C
+4136737,2013-01-19,Electricity Consumption,5666.03,kWh
+4136737,2013-01-19,Heating Energy,1564.06,kWh
+4136737,2013-01-19,Indoor Temperature,21.2,C
+4136737,2013-01-20,Electricity Consumption,3576.16,kWh
+4136737,2013-01-20,Heating Energy,1300.51,kWh
+4136737,2013-01-20,Indoor Temperature,21.9,C
+4136737,2013-01-21,Electricity Consumption,5911.81,kWh
+4136737,2013-01-21,Heating Energy,4185.36,kWh
+4136737,2013-01-21,Indoor Temperature,20.7,C
+4136737,2013-01-22,Electricity Consumption,5110.4,kWh
+4136737,2013-01-22,Heating Energy,1220.45,kWh
+4136737,2013-01-22,Indoor Temperature,22.3,C
+4136737,2013-01-23,Electricity Consumption,4208.15,kWh
+4136737,2013-01-23,Heating Energy,5067.63,kWh
+4136737,2013-01-23,Indoor Temperature,23.0,C
+4136737,2013-01-24,Electricity Consumption,5238.4,kWh
+4136737,2013-01-24,Heating Energy,2390.53,kWh
+4136737,2013-01-24,Indoor Temperature,21.2,C
+4136737,2013-01-25,Electricity Consumption,2322.26,kWh
+4136737,2013-01-25,Heating Energy,4612.73,kWh
+4136737,2013-01-25,Indoor Temperature,23.2,C
+4136737,2013-01-26,Electricity Consumption,5039.7,kWh
+4136737,2013-01-26,Heating Energy,1256.05,kWh
+4136737,2013-01-26,Indoor Temperature,20.2,C
+4136737,2013-01-27,Electricity Consumption,1249.21,kWh
+4136737,2013-01-27,Heating Energy,5943.25,kWh
+4136737,2013-01-27,Indoor Temperature,20.6,C
+4136737,2013-01-28,Electricity Consumption,5906.78,kWh
+4136737,2013-01-28,Heating Energy,2008.19,kWh
+4136737,2013-01-28,Indoor Temperature,23.9,C
+4136737,2013-01-29,Electricity Consumption,4358.45,kWh
+4136737,2013-01-29,Heating Energy,2377.04,kWh
+4136737,2013-01-29,Indoor Temperature,22.8,C
+4136737,2013-01-30,Electricity Consumption,5127.58,kWh
+4136737,2013-01-30,Heating Energy,2595.08,kWh
+4136737,2013-01-30,Indoor Temperature,22.5,C
+4136738,01/01/2013,Electricity Consumption,3.91,MWh
+4136738,01/01/2013,Space Heating,20572.93,MJ
+4136738,01/01/2013,Indoor Temp,74.1,F
+4136738,01/02/2013,Electricity Consumption,5.39,MWh
+4136738,01/02/2013,Space Heating,10711.88,MJ
+4136738,01/02/2013,Indoor Temp,69.9,F
+4136738,01/03/2013,Electricity Consumption,4.43,MWh
+4136738,01/03/2013,Space Heating,15591.25,MJ
+4136738,01/03/2013,Indoor Temp,71.9,F
+4136738,01/04/2013,Electricity Consumption,1.56,MWh
+4136738,01/04/2013,Space Heating,9540.81,MJ
+4136738,01/04/2013,Indoor Temp,69.6,F
+4136738,01/05/2013,Electricity Consumption,3.26,MWh
+4136738,01/05/2013,Space Heating,12027.47,MJ
+4136738,01/05/2013,Indoor Temp,70.4,F
+4136738,01/06/2013,Electricity Consumption,4.97,MWh
+4136738,01/06/2013,Space Heating,10323.84,MJ
+4136738,01/06/2013,Indoor Temp,68.7,F
+4136738,01/07/2013,Electricity Consumption,4.18,MWh
+4136738,01/07/2013,Space Heating,20540.76,MJ
+4136738,01/07/2013,Indoor Temp,74.6,F
+4136738,01/08/2013,Electricity Consumption,5.68,MWh
+4136738,01/08/2013,Space Heating,15857.62,MJ
+4136738,01/08/2013,Indoor Temp,69.1,F
+4136738,01/09/2013,Electricity Consumption,5.46,MWh
+4136738,01/09/2013,Space Heating,12395.79,MJ
+4136738,01/09/2013,Indoor Temp,69.7,F
+4136738,01/10/2013,Electricity Consumption,5.45,MWh
+4136738,01/10/2013,Space Heating,18660.47,MJ
+4136738,01/10/2013,Indoor Temp,72.2,F
+4136738,01/11/2013,Electricity Consumption,4.68,MWh
+4136738,01/11/2013,Space Heating,12838.49,MJ
+4136738,01/11/2013,Indoor Temp,74.9,F
+4136738,01/12/2013,Electricity Consumption,3.24,MWh
+4136738,01/12/2013,Space Heating,16819.54,MJ
+4136738,01/12/2013,Indoor Temp,69.6,F
+4136738,01/13/2013,Electricity Consumption,3.12,MWh
+4136738,01/13/2013,Space Heating,9654.13,MJ
+4136738,01/13/2013,Indoor Temp,73.5,F
+4136738,01/14/2013,Electricity Consumption,4.66,MWh
+4136738,01/14/2013,Space Heating,21034.49,MJ
+4136738,01/14/2013,Indoor Temp,74.2,F
+4136738,01/15/2013,Electricity Consumption,5.55,MWh
+4136738,01/15/2013,Space Heating,4567.51,MJ
+4136738,01/15/2013,Indoor Temp,72.5,F
+4136738,01/16/2013,Electricity Consumption,4.37,MWh
+4136738,01/16/2013,Space Heating,4366.93,MJ
+4136738,01/16/2013,Indoor Temp,72.0,F
+4136738,01/17/2013,Electricity Consumption,4.61,MWh
+4136738,01/17/2013,Space Heating,7973.12,MJ
+4136738,01/17/2013,Indoor Temp,70.3,F
+4136738,01/18/2013,Electricity Consumption,2.52,MWh
+4136738,01/18/2013,Space Heating,4739.21,MJ
+4136738,01/18/2013,Indoor Temp,69.8,F
+4136738,01/19/2013,Electricity Consumption,2.38,MWh
+4136738,01/19/2013,Space Heating,20867.73,MJ
+4136738,01/19/2013,Indoor Temp,71.8,F
+4136738,01/20/2013,Electricity Consumption,5.45,MWh
+4136738,01/20/2013,Space Heating,13987.64,MJ
+4136738,01/20/2013,Indoor Temp,69.4,F
+4136738,01/21/2013,Electricity Consumption,5.96,MWh
+4136738,01/21/2013,Space Heating,21027.73,MJ
+4136738,01/21/2013,Indoor Temp,69.5,F
+4136738,01/22/2013,Electricity Consumption,1.62,MWh
+4136738,01/22/2013,Space Heating,15658.13,MJ
+4136738,01/22/2013,Indoor Temp,68.1,F
+4136738,01/23/2013,Electricity Consumption,4.53,MWh
+4136738,01/23/2013,Space Heating,12547.44,MJ
+4136738,01/23/2013,Indoor Temp,70.0,F
+4136738,01/24/2013,Electricity Consumption,3.13,MWh
+4136738,01/24/2013,Space Heating,12330.38,MJ
+4136738,01/24/2013,Indoor Temp,74.2,F
+4136738,01/25/2013,Electricity Consumption,4.03,MWh
+4136738,01/25/2013,Space Heating,12772.14,MJ
+4136738,01/25/2013,Indoor Temp,75.0,F
+4136738,01/26/2013,Electricity Consumption,3.92,MWh
+4136738,01/26/2013,Space Heating,7580.28,MJ
+4136738,01/26/2013,Indoor Temp,70.1,F
+4136738,01/27/2013,Electricity Consumption,5.59,MWh
+4136738,01/27/2013,Space Heating,16638.05,MJ
+4136738,01/27/2013,Indoor Temp,72.1,F
+4136738,01/28/2013,Electricity Consumption,3.28,MWh
+4136738,01/28/2013,Space Heating,16132.44,MJ
+4136738,01/28/2013,Indoor Temp,71.5,F
+4136738,01/29/2013,Electricity Consumption,5.76,MWh
+4136738,01/29/2013,Space Heating,4537.33,MJ
+4136738,01/29/2013,Indoor Temp,69.0,F
+4136738,01/30/2013,Electricity Consumption,5.36,MWh
+4136738,01/30/2013,Space Heating,9789.19,MJ
+4136738,01/30/2013,Indoor Temp,74.4,F
+4136739,01/01/2013,Electricity Consumption,13205411538.88,J
+4136739,01/01/2013,Heating,17600105394.42,J
+4136739,01/01/2013,Indoor Temperature,21.7,C
+4136739,02/01/2013,Electricity Consumption,5960561278.42,J
+4136739,02/01/2013,Heating,11651984547.5,J
+4136739,02/01/2013,Indoor Temperature,22.9,C
+4136739,03/01/2013,Electricity Consumption,4414947856.97,J
+4136739,03/01/2013,Heating,15528657026.85,J
+4136739,03/01/2013,Indoor Temperature,22.5,C
+4136739,04/01/2013,Electricity Consumption,19099390273.71,J
+4136739,04/01/2013,Heating,4946514610.16,J
+4136739,04/01/2013,Indoor Temperature,22.5,C
+4136739,05/01/2013,Electricity Consumption,18460821366.02,J
+4136739,05/01/2013,Heating,11731607804.16,J
+4136739,05/01/2013,Indoor Temperature,22.3,C
+4136739,06/01/2013,Electricity Consumption,6154829239.9,J
+4136739,06/01/2013,Heating,9138788274.37,J
+4136739,06/01/2013,Indoor Temperature,21.1,C
+4136739,07/01/2013,Electricity Consumption,12802293636.24,J
+4136739,07/01/2013,Heating,17779825809.28,J
+4136739,07/01/2013,Indoor Temperature,22.1,C
+4136739,08/01/2013,Electricity Consumption,9949536188.84,J
+4136739,08/01/2013,Heating,13947756863.51,J
+4136739,08/01/2013,Indoor Temperature,21.3,C
+4136739,09/01/2013,Electricity Consumption,16735311565.48,J
+4136739,09/01/2013,Heating,20263524505.78,J
+4136739,09/01/2013,Indoor Temperature,23.8,C
+4136739,10/01/2013,Electricity Consumption,17398092478.96,J
+4136739,10/01/2013,Heating,5240703920.91,J
+4136739,10/01/2013,Indoor Temperature,21.6,C
+4136739,11/01/2013,Electricity Consumption,8895200900.09,J
+4136739,11/01/2013,Heating,7875075674.51,J
+4136739,11/01/2013,Indoor Temperature,20.8,C
+4136739,12/01/2013,Electricity Consumption,21275857670.31,J
+4136739,12/01/2013,Heating,4362235601.79,J
+4136739,12/01/2013,Indoor Temperature,22.9,C
+4136739,13/01/2013,Electricity Consumption,13667771480.76,J
+4136739,13/01/2013,Heating,4840769585.57,J
+4136739,13/01/2013,Indoor Temperature,23.1,C
+4136739,14/01/2013,Electricity Consumption,17951763029.14,J
+4136739,14/01/2013,Heating,11424028043.58,J
+4136739,14/01/2013,Indoor Temperature,23.6,C
+4136739,15/01/2013,Electricity Consumption,16886756544.45,J
+4136739,15/01/2013,Heating,13067588317.64,J
+4136739,15/01/2013,Indoor Temperature,23.3,C
+4136739,16/01/2013,Electricity Consumption,6395884312.98,J
+4136739,16/01/2013,Heating,18619281949.67,J
+4136739,16/01/2013,Indoor Temperature,21.9,C
+4136739,17/01/2013,Electricity Consumption,5428088831.81,J
+4136739,17/01/2013,Heating,16801106775.62,J
+4136739,17/01/2013,Indoor Temperature,23.2,C
+4136739,18/01/2013,Electricity Consumption,13525591591.73,J
+4136739,18/01/2013,Heating,12919392925.67,J
+4136739,18/01/2013,Indoor Temperature,23.9,C
+4136739,19/01/2013,Electricity Consumption,14242279922.14,J
+4136739,19/01/2013,Heating,16445091570.84,J
+4136739,19/01/2013,Indoor Temperature,22.5,C
+4136739,20/01/2013,Electricity Consumption,10423166085.09,J
+4136739,20/01/2013,Heating,10711771753.61,J
+4136739,20/01/2013,Indoor Temperature,20.9,C
+4136739,21/01/2013,Electricity Consumption,21304529473.0,J
+4136739,21/01/2013,Heating,14592794897.36,J
+4136739,21/01/2013,Indoor Temperature,22.4,C
+4136739,22/01/2013,Electricity Consumption,20546447434.87,J
+4136739,22/01/2013,Heating,7557871626.41,J
+4136739,22/01/2013,Indoor Temperature,21.4,C
+4136739,23/01/2013,Electricity Consumption,8495728504.82,J
+4136739,23/01/2013,Heating,16146892268.29,J
+4136739,23/01/2013,Indoor Temperature,22.0,C
+4136739,24/01/2013,Electricity Consumption,17766611952.15,J
+4136739,24/01/2013,Heating,6168077944.55,J
+4136739,24/01/2013,Indoor Temperature,20.1,C
+4136739,25/01/2013,Electricity Consumption,16681515880.82,J
+4136739,25/01/2013,Heating,16019383130.45,J
+4136739,25/01/2013,Indoor Temperature,23.1,C
+4136739,26/01/2013,Electricity Consumption,8779801072.89,J
+4136739,26/01/2013,Heating,20300720757.42,J
+4136739,26/01/2013,Indoor Temperature,20.7,C
+4136739,27/01/2013,Electricity Consumption,8774363255.01,J
+4136739,27/01/2013,Heating,7397718421.06,J
+4136739,27/01/2013,Indoor Temperature,22.3,C
+4136739,28/01/2013,Electricity Consumption,19133003300.85,J
+4136739,28/01/2013,Heating,13821339329.16,J
+4136739,28/01/2013,Indoor Temperature,21.8,C
+4136739,29/01/2013,Electricity Consumption,4967040584.66,J
+4136739,29/01/2013,Heating,21192776559.76,J
+4136739,29/01/2013,Indoor Temperature,23.2,C
+4136739,30/01/2013,Electricity Consumption,12590199525.55,J
+4136739,30/01/2013,Heating,17760478932.44,J
+4136739,30/01/2013,Indoor Temperature,23.3,C

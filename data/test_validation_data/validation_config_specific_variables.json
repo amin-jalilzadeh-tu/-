@@ -1,0 +1,14 @@
+{
+  "description": "Validate only specific variables",
+  "validation": {
+    "perform_validation": true,
+    "config": {
+      "real_data_path": "test_validation_data/measured_data_energyplus_format.csv",
+      "variables_to_validate": [
+        "Electricity",
+        "Heating",
+        "Temperature"
+      ]
+    }
+  }
+}

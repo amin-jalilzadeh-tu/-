@@ -1,0 +1,278 @@
+{
+  "example_1_minimal": {
+    "_description": "Minimal configuration - validates everything with defaults",
+    "validation": {
+      "perform_validation": true,
+      "config": {
+        "real_data_path": "test_validation_data/measured_data_simple.csv"
+      }
+    }
+  },
+
+  "example_2_specific_variables": {
+    "_description": "Validate only specific variables",
+    "validation": {
+      "perform_validation": true,
+      "config": {
+        "real_data_path": "test_validation_data/measured_data_mixed.csv",
+        "variables_to_validate": [
+          "Electricity",
+          "Heating",
+          "Temperature"
+        ]
+      }
+    }
+  },
+
+  "example_3_custom_thresholds": {
+    "_description": "Custom thresholds for different variables",
+    "validation": {
+      "perform_validation": true,
+      "config": {
+        "real_data_path": "test_validation_data/measured_data_simple.csv",
+        "thresholds": {
+          "default": {
+            "cvrmse": 30.0,
+            "nmbe": 10.0
+          },
+          "by_variable": {
+            "Temperature": {
+              "cvrmse": 15.0,
+              "nmbe": 5.0
+            },
+            "Electricity": {
+              "cvrmse": 25.0,
+              "nmbe": 8.0
+            },
+            "Heating": {
+              "cvrmse": 35.0,
+              "nmbe": 12.0
+            }
+          }
+        }
+      }
+    }
+  },
+
+  "example_4_hourly_to_daily": {
+    "_description": "Aggregate hourly data to daily for comparison",
+    "validation": {
+      "perform_validation": true,
+      "config": {
+        "real_data_path": "test_validation_data/measured_data_hourly.csv",
+        "aggregation": {
+          "target_frequency": "daily",
+          "methods": {
+            "energy": "sum",
+            "temperature": "mean",
+            "power": "mean"
+          }
+        }
+      }
+    }
+  },
+
+  "example_5_debug_mode": {
+    "_description": "Debug mode with detailed logging",
+    "validation": {
+      "perform_validation": true,
+      "config": {
+        "real_data_path": "test_validation_data/measured_data_incomplete.csv",
+        "variables_to_validate": ["Heating"],
+        "logging": {
+          "level": "DEBUG",
+          "show_mappings": true,
+          "show_aggregations": true,
+          "show_unit_conversions": true
+        }
+      }
+    }
+  },
+
+  "example_6_production": {
+    "_description": "Production configuration with strict thresholds",
+    "validation": {
+      "perform_validation": true,
+      "config": {
+        "real_data_path": "data/building_measured_2023.csv",
+        "variables_to_validate": [
+          "Electricity",
+          "Heating Energy",
+          "Cooling Energy",
+          "Indoor Temperature"
+        ],
+        "aggregation": {
+          "target_frequency": "daily",
+          "methods": {
+            "energy": "sum",
+            "temperature": "mean",
+            "power": "mean"
+          }
+        },
+        "thresholds": {
+          "default": {
+            "cvrmse": 20.0,
+            "nmbe": 7.5
+          },
+          "by_variable": {
+            "Indoor Temperature": {
+              "cvrmse": 10.0,
+              "nmbe": 3.0
+            }
+          }
+        },
+        "logging": {
+          "level": "INFO",
+          "show_mappings": true,
+          "show_aggregations": false,
+          "show_unit_conversions": true
+        }
+      }
+    }
+  },
+
+  "example_7_multi_building": {
+    "_description": "Multiple buildings with different settings",
+    "validation": {
+      "perform_validation": true,
+      "config": {
+        "real_data_path": "test_validation_data/measured_data_energyplus_format.csv",
+        "variables_to_validate": [
+          "Electricity:Facility",
+          "Zone Air System Sensible Heating",
+          "Zone Air System Sensible Cooling",
+          "Zone Mean Air Temperature"
+        ],
+        "thresholds": {
+          "default": {
+            "cvrmse": 30.0,
+            "nmbe": 10.0
+          }
+        }
+      }
+    }
+  },
+
+  "example_8_wide_format": {
+    "_description": "Handle wide format data",
+    "validation": {
+      "perform_validation": true,
+      "config": {
+        "real_data_path": "test_validation_data/measured_data_wide_format.csv"
+      }
+    }
+  },
+
+  "example_9_monthly_analysis": {
+    "_description": "Monthly frequency analysis",
+    "validation": {
+      "perform_validation": true,
+      "config": {
+        "real_data_path": "measured_monthly_data.csv",
+        "aggregation": {
+          "target_frequency": "monthly",
+          "methods": {
+            "energy": "sum",
+            "temperature": "mean",
+            "power": "mean"
+          }
+        },
+        "thresholds": {
+          "default": {
+            "cvrmse": 15.0,
+            "nmbe": 5.0
+          }
+        }
+      }
+    }
+  },
+
+  "example_10_calibration_focused": {
+    "_description": "Configuration focused on calibration needs",
+    "validation": {
+      "perform_validation": true,
+      "config": {
+        "real_data_path": "calibration_data.csv",
+        "variables_to_validate": [
+          "Electricity:Facility",
+          "Heating:EnergyTransfer",
+          "Cooling:EnergyTransfer"
+        ],
+        "aggregation": {
+          "target_frequency": "daily"
+        },
+        "thresholds": {
+          "default": {
+            "cvrmse": 25.0,
+            "nmbe": 10.0
+          }
+        },
+        "logging": {
+          "level": "INFO",
+          "show_mappings": false,
+          "show_aggregations": false,
+          "show_unit_conversions": false
+        }
+      }
+    }
+  },
+
+  "main_config_integration": {
+    "_description": "Example of full main_config.json with validation",
+    "main_config": {
+      "paths": {
+        "building_data": "data/df_buildings.csv"
+      },
+      "idf_creation": {
+        "perform_idf_creation": true,
+        "run_simulations": true
+      },
+      "parsing": {
+        "perform_parsing": true,
+        "parse_after_simulation": true
+      },
+      "validation": {
+        "perform_validation": true,
+        "config": {
+          "real_data_path": "data/measured_data.csv",
+          "variables_to_validate": [
+            "Electricity",
+            "Heating",
+            "Cooling",
+            "Temperature"
+          ],
+          "aggregation": {
+            "target_frequency": "daily"
+          },
+          "thresholds": {
+            "default": {
+              "cvrmse": 30.0,
+              "nmbe": 10.0
+            },
+            "by_variable": {
+              "Temperature": {
+                "cvrmse": 20.0,
+                "nmbe": 5.0
+              }
+            }
+          },
+          "logging": {
+            "level": "INFO",
+            "show_mappings": true,
+            "show_aggregations": true,
+            "show_unit_conversions": true
+          }
+        }
+      },
+      "sensitivity": {
+        "perform_sensitivity": false
+      },
+      "surrogate": {
+        "perform_surrogate": false
+      },
+      "calibration": {
+        "perform_calibration": false
+      }
+    }
+  }
+}

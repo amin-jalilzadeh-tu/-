@@ -116,7 +116,7 @@ from modification.zone_sizing_functions import create_zone_sizing_scenarios, app
 # ---------------------------------------------------------------------------
 from epw.run_epw_sims import simulate_all
 from postproc.merge_results import merge_all_results
-from validation.main_validation import run_validation_process
+#from validation.main_validation import run_validation_process
 
 
 def run_all_idfs_in_folder(
