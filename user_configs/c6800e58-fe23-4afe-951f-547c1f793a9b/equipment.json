@@ -1,0 +1,21 @@
+{
+  "equipment": [
+    {
+      "param_name": "equip_wm2",
+      "min_val": 3.0,
+      "max_val": 7.0
+    },
+    {
+      "param_name": "tD",
+      "description": "Schedule value for day occupancy (W)",
+      "min_val": 400.0,
+      "max_val": 800.0
+    },
+    {
+      "param_name": "tN",
+      "description": "Schedule value for night occupancy (W)",
+      "min_val": 150.0,
+      "max_val": 350.0
+    }
+  ]
+}

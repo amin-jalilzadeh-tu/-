@@ -60,14 +60,27 @@ import idf_creation
 from idf_creation import create_idfs_for_all_buildings
 
 # Scenario modification
-from main_modifi import run_modification_workflow
+# New modification system imports
+# New modification system imports
+from idf_modification.modification_engine import ModificationEngine
 
+from idf_modification.modification_config import ModificationConfig
+
+from pathlib import Path
+
+from datetime import datetime
 # Validation - Updated imports
 from validation.smart_validation_wrapper import run_smart_validation
 
 
 # Sensitivity / Surrogate / Calibration
-from cal.unified_sensitivity import run_sensitivity_analysis
+from c_sensitivity.sensitivity_data_manager import SensitivityDataManager
+from c_sensitivity.unified_sensitivity import run_enhanced_sensitivity_analysis
+from c_sensitivity.sensitivity_reporter import SensitivityReporter
+
+
+
+
 from cal.unified_surrogate import (
     load_scenario_params as sur_load_scenario_params,
     pivot_scenario_params,
@@ -629,10 +642,13 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
     else:
         logger.info("[INFO] Skipping structuring.")
 
+
+
+
+
     # -------------------------------------------------------------------------
     # 12) Parse IDF/SQL files to Parquet format
     # -------------------------------------------------------------------------
-
     check_canceled()
     if perform_parsing:
         # Handle parsing based on configuration
@@ -671,143 +687,362 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
                     if "sql_content" in profile_cfg:
                         sql_content_cfg.update(profile_cfg["sql_content"])
             
-            # Prepare file pairs based on configuration
-            from parserr.helpers import prepare_selective_file_pairs
+            # Use the same approach as in your successful test
+            idf_map_csv = os.path.join(job_output_dir, "extracted_idf_buildings.csv")
             
-            file_pairs = prepare_selective_file_pairs(
-                job_output_dir=job_output_dir,
-                parse_mode=parse_mode,
-                parse_types=parse_types,
-                building_selection=building_selection,
-                idf_map_csv=os.path.join(job_output_dir, "extracted_idf_buildings.csv") if perform_idf_creation else None
-            )
-            
-            if file_pairs:
-                logger.info(f"[INFO] Found {len(file_pairs)} file pairs to parse")
-                logger.info(f"[INFO] Parse types: IDF={parse_types.get('idf', True)}, SQL={parse_types.get('sql', True)}")
+            # Check if we have the mapping file
+            if os.path.isfile(idf_map_csv):
+                # Use the proven method from your test
+                from parserr.helpers import prepare_idf_sql_pairs_with_mapping
                 
-                # Run the analysis with selective parsing
-                analyzer.analyze_project_selective(
-                    file_pairs=file_pairs,
-                    idf_content_config=idf_content_cfg,
-                    sql_content_config=sql_content_cfg,
-                    output_options=parsing_cfg.get("output_options", {}),
-                    performance_options=parsing_cfg.get("performance", {}),
-                    validation_options=parsing_cfg.get("validation", {}),
-                    validate_outputs=True
-                )
+                idf_sql_pairs, building_id_map = prepare_idf_sql_pairs_with_mapping(job_output_dir)
                 
-                # Get parsing summary
-                parsed_info = get_parsed_data_info(parser_output_dir)
-                
-                # Save enhanced summary
-                parsing_summary = {
-                    'job_id': job_id,
-                    'parse_mode': parse_mode,
-                    'parse_types': parse_types,
-                    'files_parsed': len(file_pairs),
-                    'parser_output_dir': parser_output_dir,
-                    'timestamp': datetime.now().isoformat(),
-                    'parsed_data_info': parsed_info,
-                    'configuration': {
-                        'building_selection': building_selection,
-                        'idf_content': idf_content_cfg,
-                        'sql_content': sql_content_cfg
+                if idf_sql_pairs:
+                    logger.info(f"[INFO] Found {len(idf_sql_pairs)} file pairs to parse")
+                    logger.info(f"[INFO] Parse mode: {parse_mode}")
+                    
+                    # Apply building selection if needed
+                    if parse_mode == "selective" and building_selection:
+                        mode = building_selection.get("mode", "all")
+                        if mode == "specific":
+                            building_ids = building_selection.get("building_ids", [])
+                            if building_ids:
+                                # Filter pairs based on building IDs
+                                filtered_pairs = []
+                                filtered_map = {}
+                                for idf_path, sql_path in idf_sql_pairs:
+                                    if idf_path in building_id_map:
+                                        bid = int(building_id_map[idf_path])
+                                        if bid in building_ids:
+                                            filtered_pairs.append((idf_path, sql_path))
+                                            filtered_map[idf_path] = building_id_map[idf_path]
+                                idf_sql_pairs = filtered_pairs
+                                building_id_map = filtered_map
+                                logger.info(f"[INFO] Filtered to {len(idf_sql_pairs)} buildings")
+                    
+                    # Run the standard analysis (which works in your test)
+                    analyzer.analyze_project(
+                        idf_sql_pairs=idf_sql_pairs,
+                        categories=categories_to_parse,  # Use the categories from config
+                        validate_outputs=True,
+                        building_id_map=building_id_map
+                    )
+                    
+                    # Get parsing summary
+                    parsed_info = get_parsed_data_info(parser_output_dir)
+                    
+                    # Save enhanced summary
+                    parsing_summary = {
+                        'job_id': job_id,
+                        'parse_mode': parse_mode,
+                        'parse_types': parse_types,
+                        'files_parsed': len(idf_sql_pairs),
+                        'parser_output_dir': parser_output_dir,
+                        'timestamp': datetime.now().isoformat(),
+                        'parsed_data_info': parsed_info,
+                        'configuration': {
+                            'parse_mode': parse_mode,
+                            'categories': categories_to_parse
+                        }
                     }
-                }
-                
-                summary_path = os.path.join(parser_output_dir, 'parsing_summary.json')
-                with open(summary_path, 'w') as f:
-                    json.dump(parsing_summary, f, indent=2)
-                
-                logger.info(f"[INFO] Parsing complete. Data saved to: {parser_output_dir}")
-                logger.info(f"[INFO] Total categories: {len(parsed_info['categories'])}")
-                logger.info(f"[INFO] Total files: {parsed_info['total_files']}")
-                
-                # Close analyzer connections
-                analyzer.close()
+                    
+                    summary_path = os.path.join(parser_output_dir, 'parsing_summary.json')
+                    with open(summary_path, 'w') as f:
+                        json.dump(parsing_summary, f, indent=2)
+                    
+                    logger.info(f"[INFO] Parsing complete. Data saved to: {parser_output_dir}")
+                    logger.info(f"[INFO] Total categories: {len(parsed_info['categories'])}")
+                    logger.info(f"[INFO] Total files: {parsed_info['total_files']}")
+                    
+                    # Close analyzer connections
+                    analyzer.close()
+                else:
+                    logger.warning("[WARN] No valid file pairs found")
             else:
-                logger.warning("[WARN] No valid file pairs found for parsing based on configuration")
+                logger.error(f"[ERROR] IDF mapping file not found: {idf_map_csv}")
+                logger.error("[ERROR] Please run IDF creation first or provide mapping file")
+    else:
+        logger.info("[INFO] Skipping parsing.")
 
-    # -------------------------------------------------------------------------
-    # 13) Scenario Modification
+
+
+
+
+
+
+
+
+
+# -------------------------------------------------------------------------
+    # 13) Scenario Modification (Using New Parquet-based System)
     # -------------------------------------------------------------------------
     check_canceled()
     if modification_cfg.get("perform_modification", False):
         with step_timer(logger, "modification"):
             logger.info("[INFO] Scenario modification is ENABLED.")
-
-            mod_cfg = modification_cfg["modify_config"]
-
-            # 1) Ensure scenario IDFs go to <job_output_dir>/scenario_idfs
-            scenario_idf_dir = os.path.join(job_output_dir, "scenario_idfs")
-            os.makedirs(scenario_idf_dir, exist_ok=True)
-            mod_cfg["output_idf_dir"] = scenario_idf_dir
-
-            # 2) Ensure scenario sims => <job_output_dir>/Sim_Results/Scenarios
-            if "simulation_config" in mod_cfg:
-                sim_out = os.path.join(job_output_dir, "Sim_Results", "Scenarios")
-                os.makedirs(sim_out, exist_ok=True)
-                mod_cfg["simulation_config"]["output_dir"] = sim_out
-
-            # 3) Post-process => <job_output_dir>/results_scenarioes
-            if "post_process_config" in mod_cfg:
-                ppcfg = mod_cfg["post_process_config"]
-                as_is_csv = os.path.join(job_output_dir, "results_scenarioes", "merged_as_is_scenarios.csv")
-                daily_csv = os.path.join(job_output_dir, "results_scenarioes", "merged_daily_mean_scenarios.csv")
-                os.makedirs(os.path.dirname(as_is_csv), exist_ok=True)
-                os.makedirs(os.path.dirname(daily_csv), exist_ok=True)
-                ppcfg["output_csv_as_is"] = as_is_csv
-                ppcfg["output_csv_daily_mean"] = daily_csv
-
-            # 4) Fix assigned_csv paths
-            assigned_csv_dict = mod_cfg.get("assigned_csv", {})
-            for key, rel_path in assigned_csv_dict.items():
-                assigned_csv_dict[key] = os.path.join(job_output_dir, rel_path)
-
-            # 5) Fix scenario_csv paths
-            scenario_csv_dict = mod_cfg.get("scenario_csv", {})
-            for key, rel_path in scenario_csv_dict.items():
-                scenario_csv_dict[key] = os.path.join(job_output_dir, rel_path)
-
-            # NEW LOGIC: pick the base_idf_path from building_id automatically
-            building_id = mod_cfg["building_id"]
-
-            # We need the CSV that was saved right after create_idfs_for_all_buildings(...)
-            idf_map_csv = os.path.join(job_output_dir, "extracted_idf_buildings.csv")
-            if not os.path.isfile(idf_map_csv):
-                raise FileNotFoundError(
-                    f"Cannot find building->IDF map CSV at {idf_map_csv}. "
-                    f"Did you skip 'perform_idf_creation'?"
+            
+            # Check if parsing was performed
+            parsed_data_path = os.path.join(job_output_dir, "parsed_data")
+            if not os.path.exists(parsed_data_path):
+                logger.error("[ERROR] Parsed data not found. Please enable parsing before modification.")
+                logger.error("[ERROR] Set 'parsing.perform_parsing': true in configuration.")
+                return
+            
+            # Initialize modification engine
+            try:
+                # Create the workflow config from loaded modification_cfg
+                workflow_config = {
+                    "modifications": modification_cfg,
+                    "project_id": job_id,
+                    "iddfile": idf_creation.idf_config.get("iddfile", "Energy+.idd")
+                }
+                
+                # Initialize modification engine with correct directory
+                mod_engine = ModificationEngine(
+                    project_dir=job_output_dir,
+                    config=workflow_config
                 )
-
-            # Read the mapping: each row has "ogc_fid" and "idf_name"
-            df_idf_map = pd.read_csv(idf_map_csv)
-            row_match = df_idf_map.loc[df_idf_map["ogc_fid"] == building_id]
-
-            if row_match.empty:
-                raise ValueError(
-                    f"No building found for building_id={building_id} in {idf_map_csv}"
-                )
-
-            # e.g. "building_0.idf", "building_16.idf", "building_16_ba62d0.idf", etc.
-            idf_filename = row_match.iloc[0]["idf_name"]
-
-            # Build the full path to that IDF in output_IDFs
-            base_idf_path = os.path.join(job_output_dir, "output_IDFs", idf_filename)
-            mod_cfg["base_idf_path"] = base_idf_path
-            logger.info(f"[INFO] Auto-selected base IDF => {base_idf_path}")
-
-            # Finally, run the scenario workflow
-            run_modification_workflow(mod_cfg)
+                
+                # Generate session ID
+                session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+                mod_engine.session_id = session_id
+                
+                # Get base IDF selection configuration
+                base_idf_selection = modification_cfg.get("base_idf_selection", {})
+                method = base_idf_selection.get("method", "specific")
+                
+                generated_files_all = []
+                
+                if method == "specific":
+                    # Use specific building IDs
+                    building_ids = base_idf_selection.get("building_ids", [])
+                    
+                    if not building_ids:
+                        logger.error("[ERROR] No building_ids specified for 'specific' method")
+                        return
+                    
+                    # Load IDF mapping
+                    idf_map_csv = os.path.join(job_output_dir, "extracted_idf_buildings.csv")
+                    if not os.path.isfile(idf_map_csv):
+                        logger.error(f"[ERROR] IDF mapping file not found: {idf_map_csv}")
+                        logger.error("[ERROR] Please run IDF creation first.")
+                        return
+                    
+                    df_idf_map = pd.read_csv(idf_map_csv)
+                    
+                    for building_id in building_ids:
+                        row_match = df_idf_map.loc[df_idf_map["ogc_fid"] == building_id]
+                        
+                        if not row_match.empty:
+                            idf_filename = row_match.iloc[0]["idf_name"]
+                            base_idf_path = os.path.join(job_output_dir, "output_IDFs", idf_filename)
+                            
+                            if os.path.exists(base_idf_path):
+                                logger.info(f"[INFO] Processing building {building_id} with IDF: {idf_filename}")
+                                
+                                # Generate modifications
+                                generated_files = mod_engine.generate_modifications(
+                                    base_idf_path=base_idf_path,
+                                    building_id=str(building_id)
+                                )
+                                
+                                generated_files_all.extend(generated_files)
+                                logger.info(f"[INFO] Generated {len(generated_files)} variants for building {building_id}")
+                            else:
+                                logger.warning(f"[WARN] IDF file not found: {base_idf_path}")
+                        else:
+                            logger.warning(f"[WARN] Building ID {building_id} not found in IDF mapping")
+                            
+                elif method == "representative":
+                    # Select representative buildings based on some criteria
+                    # This would need implementation based on your criteria
+                    logger.warning("[WARN] 'representative' method not yet implemented")
+                    
+                elif method == "all":
+                    # Process all available IDFs
+                    idf_dir = os.path.join(job_output_dir, "output_IDFs")
+                    if not os.path.exists(idf_dir):
+                        logger.error(f"[ERROR] IDF directory not found: {idf_dir}")
+                        return
+                    
+                    idf_files = list(Path(idf_dir).glob("*.idf"))
+                    logger.info(f"[INFO] Found {len(idf_files)} IDF files to modify")
+                    
+                    for idf_path in idf_files:
+                        # Extract building ID from filename (e.g., "building_123.idf" -> "123")
+                        building_id = idf_path.stem.split('_')[1] if '_' in idf_path.stem else 'unknown'
+                        
+                        logger.info(f"[INFO] Processing {idf_path.name}")
+                        
+                        generated_files = mod_engine.generate_modifications(
+                            base_idf_path=str(idf_path),
+                            building_id=building_id
+                        )
+                        
+                        generated_files_all.extend(generated_files)
+                        logger.info(f"[INFO] Generated {len(generated_files)} variants for {idf_path.name}")
+                
+                else:
+                    logger.error(f"[ERROR] Unknown base_idf_selection method: {method}")
+                    return
+                
+                # Generate modification report
+                if generated_files_all:
+                    report_path = mod_engine.generate_modification_report()
+                    logger.info(f"[INFO] Modification report saved to: {report_path}")
+                    logger.info(f"[INFO] Total variants generated: {len(generated_files_all)}")
+                    
+                    # Optionally run simulations on modified IDFs
+                    if modification_cfg.get("post_modification", {}).get("run_simulations", False):
+                        logger.info("[INFO] Running simulations on modified IDFs...")
+                        
+                        # Import required modules
+                        from epw.run_epw_sims import simulate_all
+                        
+                        # Get simulation configuration
+                        sim_config = modification_cfg.get("post_modification", {}).get("simulation_config", {})
+                        num_workers = sim_config.get("num_workers", simulate_config.get("num_workers", 4))
+                        
+                        # Prepare modified IDF data for simulation
+                        modified_idfs_dir = os.path.join(job_output_dir, mod_engine.config['output_options']['output_dir'])
+                        logger.info(f"[INFO] Looking for modified IDFs in: {modified_idfs_dir}")
+                        
+                        # Load the IDF mapping data
+                        idf_map_csv = os.path.join(job_output_dir, "extracted_idf_buildings.csv")
+                        if not os.path.isfile(idf_map_csv):
+                            logger.error(f"[ERROR] IDF mapping file not found: {idf_map_csv}")
+                            logger.error("[ERROR] Cannot run simulations without building data.")
+                        else:
+                            df_map = pd.read_csv(idf_map_csv)
+                            
+                            # CRITICAL FIX: Ensure consistent data types for comparison
+                            # Convert ogc_fid to string to match the building_id extracted from filename
+                            df_map['ogc_fid'] = df_map['ogc_fid'].astype(str)
+                            logger.debug(f"[DEBUG] Loaded {len(df_map)} buildings from mapping file")
+                            logger.debug(f"[DEBUG] Building IDs in mapping: {df_map['ogc_fid'].tolist()}")
+                            
+                            # Create a dataframe for modified IDFs
+                            modified_buildings = []
+                            
+                            # Walk through all subdirectories to find IDF files
+                            for root, dirs, files in os.walk(modified_idfs_dir):
+                                for file in files:
+                                    if file.endswith('.idf'):
+                                        # Get full path
+                                        full_path = os.path.join(root, file)
+                                        
+                                        # Extract building info from filename
+                                        # Expected format: building_<id>_<variant>.idf
+                                        base_name = os.path.basename(file)
+                                        parts = base_name.replace('.idf', '').split('_')
+                                        
+                                        if len(parts) >= 3 and parts[0] == 'building':
+                                            building_id = parts[1]  # This is a string
+                                            variant_id = '_'.join(parts[2:])
+                                            
+                                            logger.debug(f"[DEBUG] Processing file: {file}, building_id: {building_id}, variant: {variant_id}")
+                                            
+                                            # Find original building data
+                                            orig_building = df_map[df_map['ogc_fid'] == building_id]
+                                            
+                                            if not orig_building.empty:
+                                                building_data = orig_building.iloc[0].to_dict()
+                                                
+                                                # Store the full filename with relative path from modified_idfs_dir
+                                                # This is important for simulate_all to find the files
+                                                rel_path = os.path.relpath(full_path, modified_idfs_dir)
+                                                building_data['idf_name'] = rel_path
+                                                building_data['variant_id'] = variant_id
+                                                building_data['original_ogc_fid'] = building_id  # Keep original ID
+                                                
+                                                modified_buildings.append(building_data)
+                                                logger.debug(f"[DEBUG] Added modified building: {building_id}, variant: {variant_id}, path: {rel_path}")
+                                            else:
+                                                logger.warning(f"[WARN] No building data found for ID '{building_id}'")
+                                                logger.warning(f"[WARN] Available IDs: {df_map['ogc_fid'].unique()[:5]}...")  # Show first 5 for debugging
+                            
+                            if modified_buildings:
+                                df_modified = pd.DataFrame(modified_buildings)
+                                logger.info(f"[INFO] Found {len(df_modified)} modified IDF files to simulate")
+                                logger.info(f"[INFO] Buildings to simulate: {df_modified.groupby('original_ogc_fid').size().to_dict()}")
+                                
+                                # Set output directory for modified simulation results
+                                modified_sim_output = os.path.join(job_output_dir, "Modified_Sim_Results")
+                                os.makedirs(modified_sim_output, exist_ok=True)
+                                
+                                # Get EPW configuration
+                                # Check if job_config_dir is defined (should be from earlier in orchestrator)
+                                if 'job_config_dir' not in locals():
+                                    job_config_dir = os.path.join("user_configs", job_id)
+                                
+                                # Re-load the EPW configuration if needed
+                                user_config_epw = None
+                                if 'user_flags' in locals() and user_flags.get("override_epw_json", False):
+                                    epw_json_path = os.path.join(job_config_dir, "user_config_epw.json")
+                                    if os.path.isfile(epw_json_path):
+                                        with open(epw_json_path, 'r') as f:
+                                            epw_data = json.load(f)
+                                            user_config_epw = epw_data.get("epw")
+                                            logger.debug("[DEBUG] Loaded user EPW configuration")
+                                
+                                # Use the EPW assignment from simulation config if specified
+                                epw_assignment = sim_config.get("epw_assignment", "use_original")
+                                if epw_assignment != "use_original":
+                                    logger.info(f"[INFO] Using EPW assignment strategy: {epw_assignment}")
+                                    # You can implement custom EPW assignment logic here
+                                
+                                assigned_epw_log = {}  # Initialize empty log for EPW assignments
+                                
+                                # Log simulation setup
+                                logger.info(f"[INFO] Simulation setup:")
+                                logger.info(f"  - IDF directory: {modified_idfs_dir}")
+                                logger.info(f"  - Output directory: {modified_sim_output}")
+                                logger.info(f"  - Number of workers: {num_workers}")
+                                logger.info(f"  - IDD file: {idf_creation.idf_config['iddfile']}")
+                                
+                                # Run simulations
+                                try:
+                                    simulate_all(
+                                        df_buildings=df_modified,
+                                        idf_directory=modified_idfs_dir,
+                                        iddfile=idf_creation.idf_config["iddfile"],
+                                        base_output_dir=modified_sim_output,
+                                        user_config_epw=user_config_epw,
+                                        assigned_epw_log=assigned_epw_log,
+                                        num_workers=num_workers
+                                    )
+                                    
+                                    logger.info(f"[INFO] Completed simulations for {len(df_modified)} modified IDFs")
+                                    
+                                    # Optionally parse results
+                                    if modification_cfg.get("post_modification", {}).get("parse_results", {}).get("enabled", False):
+                                        logger.info("[INFO] Parsing modified simulation results...")
+                                        # Add parsing logic here if needed
+                                        # You could use the same parsing approach as in section 12
+                                        # but pointing to the Modified_Sim_Results directory
+                                        
+                                except Exception as e:
+                                    logger.error(f"[ERROR] Simulation failed: {str(e)}")
+                                    import traceback
+                                    traceback.print_exc()
+                                    
+                            else:
+                                logger.warning("[WARN] No modified IDF files found to simulate")
+                                logger.warning(f"[WARN] Check directory: {modified_idfs_dir}")
+                else:
+                    logger.warning("[WARN] No IDF variants were generated")
+                    
+            except Exception as e:
+                logger.error(f"[ERROR] Modification failed: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                
     else:
         logger.info("[INFO] Skipping scenario modification.")
 
     # -------------------------------------------------------------------------
     # 14) Enhanced Validation with Parquet Support
     # -------------------------------------------------------------------------
-    # orchestrator.py - REPLACE THE ENTIRE VALIDATION SECTION WITH THIS:
-
     # -------------------------------------------------------------------------
     # 14) Smart Validation (Replaces Enhanced Validation)
     # -------------------------------------------------------------------------
@@ -874,103 +1109,104 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
 
 
     # -------------------------------------------------------------------------
-    # 15) Base Validation (legacy) - Updated with config support
-    # -------------------------------------------------------------------------
-    check_canceled()
-    base_validation_cfg = main_config.get("validation_base", {})
-    if base_validation_cfg.get("perform_validation", False):
-        with step_timer(logger, "base validation"):
-            logger.info("[INFO] BASE Validation is ENABLED.")
-            val_conf = base_validation_cfg["config"]
-
-            # Create ValidationConfig for base validation
-            base_val_config = ValidationConfig(config_dict=val_conf)
-
-            # Patch relative paths
-            sim_csv = val_conf.get("sim_data_csv")
-            if sim_csv:
-                val_conf["sim_data_csv"] = patch_if_relative(sim_csv)
-
-            real_csv = val_conf.get("real_data_csv")
-            if real_csv:
-                val_conf["real_data_csv"] = patch_if_relative(real_csv)
-
-            out_csv = val_conf.get("output_csv")
-            if out_csv:
-                val_conf["output_csv"] = patch_if_relative(out_csv)
-
-            # Add ValidationConfig
-            val_conf["validation_config"] = base_val_config
-
-            # Now run the validation
-            run_validation_process(val_conf)
-    else:
-        logger.info("[INFO] Skipping BASE validation or not requested.")
-
-    # -------------------------------------------------------------------------
-    # 16) Scenario Validation (legacy) - Updated with config support
-    # -------------------------------------------------------------------------
-    check_canceled()
-    scenario_validation_cfg = main_config.get("validation_scenarios", {})
-    if scenario_validation_cfg.get("perform_validation", False):
-        with step_timer(logger, "scenario validation"):
-            logger.info("[INFO] SCENARIO Validation is ENABLED.")
-            val_conf = scenario_validation_cfg["config"]
-
-            # Create ValidationConfig for scenario validation
-            scenario_val_config = ValidationConfig(config_dict=val_conf)
-
-            # Patch relative paths
-            sim_csv = val_conf.get("sim_data_csv")
-            if sim_csv:
-                val_conf["sim_data_csv"] = patch_if_relative(sim_csv)
-
-            real_csv = val_conf.get("real_data_csv")
-            if real_csv:
-                val_conf["real_data_csv"] = patch_if_relative(real_csv)
-
-            out_csv = val_conf.get("output_csv")
-            if out_csv:
-                val_conf["output_csv"] = patch_if_relative(out_csv)
-
-            # Add ValidationConfig
-            val_conf["validation_config"] = scenario_val_config
-
-            # Now run the validation
-            run_validation_process(val_conf)
-    else:
-        logger.info("[INFO] Skipping SCENARIO validation or not requested.")
-
-
-    # -------------------------------------------------------------------------
-    # 17) Sensitivity Analysis
+    # 17) Enhanced Sensitivity Analysis
     # -------------------------------------------------------------------------
     check_canceled()
     if sens_cfg.get("perform_sensitivity", False):
-        with step_timer(logger, "sensitivity analysis"):
-            logger.info("[INFO] Sensitivity Analysis is ENABLED.")
-
-            scenario_folder = sens_cfg.get("scenario_folder", "")
-            sens_cfg["scenario_folder"] = patch_if_relative(scenario_folder)
-
-            results_csv = sens_cfg.get("results_csv", "")
-            sens_cfg["results_csv"] = patch_if_relative(results_csv)
-
-            out_csv = sens_cfg.get("output_csv", "sensitivity_output.csv")
-            sens_cfg["output_csv"] = patch_if_relative(out_csv)
-
-            run_sensitivity_analysis(
-                scenario_folder=sens_cfg["scenario_folder"],
-                method=sens_cfg["method"],
-                results_csv=sens_cfg.get("results_csv", ""),
-                target_variable=sens_cfg.get("target_variable", []),
-                output_csv=sens_cfg.get("output_csv", "sensitivity_output.csv"),
-                n_morris_trajectories=sens_cfg.get("n_morris_trajectories", 10),
-                num_levels=sens_cfg.get("num_levels", 4),
-                n_sobol_samples=sens_cfg.get("n_sobol_samples", 128)
-            )
+        with step_timer(logger, "enhanced sensitivity analysis"):
+            logger.info("[INFO] Enhanced Sensitivity Analysis is ENABLED.")
+            
+            # Check configuration flags
+            building_specific = sens_cfg.get("building_specific_analysis", False)
+            multi_objective = sens_cfg.get("multi_objective_analysis", False)
+            hierarchical = sens_cfg.get("hierarchical_analysis", False)
+            validation_weighted = sens_cfg.get("validation_weighted_analysis", False)
+            export_for_surrogate = sens_cfg.get("export_for_surrogate", False)
+            export_for_calibration = sens_cfg.get("export_for_calibration", False)
+            generate_visualizations = sens_cfg.get("generate_visualizations", False)
+            
+            logger.info("[INFO] Running enhanced sensitivity analysis with:")
+            logger.info(f"  - Building-specific analysis: {building_specific}")
+            logger.info(f"  - Multi-objective analysis: {multi_objective}")
+            logger.info(f"  - Hierarchical analysis: {hierarchical}")
+            logger.info(f"  - Validation-weighted analysis: {validation_weighted}")
+            
+            # Patch paths
+            validation_csv = sens_cfg.get("validation_csv", "")
+            sens_cfg["validation_csv"] = patch_if_relative(validation_csv)
+            
+            if validation_weighted and validation_csv:
+                logger.info(f"  - Validation CSV: {os.path.basename(validation_csv)}")
+            
+            logger.info(f"  - Export for surrogate: {export_for_surrogate}")
+            logger.info(f"  - Export for calibration: {export_for_calibration}")
+            logger.info(f"  - Generate visualizations: {generate_visualizations}")
+            
+            try:
+                # Initialize the data manager
+                manager = SensitivityDataManager(
+                    project_root=job_output_dir  # FIXED: Changed from output_dir to job_output_dir
+                    
+                )
+                
+                # Check if we have the required data
+                if not manager.has_parsed_data():
+                    logger.error("[ERROR] No parsed data found. Please run parsing first.")
+                elif not manager.has_time_series_data():
+                    logger.error("[ERROR] No time series data found. Check parsing results.")
+                else:
+                    # Run the enhanced sensitivity analysis
+                    report_path = run_enhanced_sensitivity_analysis(
+                        manager=manager,
+                        config=sens_cfg,
+                        logger=logger
+                    )
+                    
+                    if report_path and os.path.exists(report_path):
+                        logger.info(f"[INFO] Sensitivity analysis complete. Report saved to: {report_path}")
+                        
+                        # Generate visualizations if requested
+                        if generate_visualizations:
+                            reporter = SensitivityReporter(manager)
+                            viz_dir = os.path.join(job_output_dir, "sensitivity_visualizations")
+                            os.makedirs(viz_dir, exist_ok=True)
+                            
+                            # Generate various plots
+                            figs_created = 0
+                            
+                            # Parameter importance plot
+                            fig = reporter.plot_parameter_importance()
+                            if fig:
+                                fig.savefig(os.path.join(viz_dir, "parameter_importance.png"))
+                                plt.close(fig)
+                                figs_created += 1
+                            
+                            # Building-specific plots
+                            if building_specific:
+                                fig = reporter.plot_building_specific_sensitivity()
+                                if fig:
+                                    fig.savefig(os.path.join(viz_dir, "building_sensitivity.png"))
+                                    plt.close(fig)
+                                    figs_created += 1
+                            
+                            # Category hierarchy plot
+                            if hierarchical:
+                                fig = reporter.plot_category_hierarchy()
+                                if fig:
+                                    fig.savefig(os.path.join(viz_dir, "category_hierarchy.png"))
+                                    plt.close(fig)
+                                    figs_created += 1
+                            
+                            logger.info(f"[INFO] Generated {figs_created} visualization(s) in: {viz_dir}")
+                    else:
+                        logger.warning("[WARN] Sensitivity analysis completed but no report generated.")
+                        
+            except Exception as e:
+                logger.error(f"[ERROR] Enhanced sensitivity analysis failed: {e}")
+                import traceback
+                traceback.print_exc()
     else:
-        logger.info("[INFO] Skipping sensitivity analysis.")
+        logger.info("[INFO] Skipping enhanced sensitivity analysis.")
 
     # -------------------------------------------------------------------------
     # 18) Surrogate Modeling - ENHANCED VERSION with AutoML

@@ -493,7 +493,7 @@ def run_single_calibration(config: dict) -> Dict[str, Any]:
     
     if config.get("param_filters"):
         # Use enhanced filtering
-        from cal.unified_sensitivity import load_scenario_params
+        from c_sensitivity.unified_sensitivity import load_scenario_params
         df_scen = load_scenario_params(
             scenario_folder,
             file_patterns=config.get("file_patterns"),

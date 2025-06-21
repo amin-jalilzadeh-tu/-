@@ -5,7 +5,7 @@ Example script that demonstrates how to call enhanced sensitivity analysis
 functions with time slicing and parameter filtering.
 """
 
-from cal.unified_sensitivity import run_sensitivity_analysis
+from c_sensitivity.unified_sensitivity import run_sensitivity_analysis
 
 
 def main():

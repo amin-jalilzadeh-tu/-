@@ -1,4 +1,4 @@
-# epw/run_epw_sims.py
+# epw/run_epw_sims.py - Complete fixed version
 
 import os
 import logging
@@ -7,14 +7,34 @@ from multiprocessing import Pool
 
 from .assign_epw_file import assign_epw_for_building_with_overrides
 
+# Global flag to track if IDD has been initialized
+_IDD_INITIALIZED = False
+
+def initialize_idd(iddfile):
+    """Initialize the IDD file once for the process."""
+    global _IDD_INITIALIZED
+    if not _IDD_INITIALIZED:
+        try:
+            IDF.setiddname(iddfile)
+            _IDD_INITIALIZED = True
+            logging.info(f"[initialize_idd] IDD initialized with: {iddfile}")
+        except Exception as e:
+            if "IDD file is set" in str(e):
+                _IDD_INITIALIZED = True
+                logging.debug("[initialize_idd] IDD was already set")
+            else:
+                raise
+
 def run_simulation(args):
     """
     :param args: tuple (idf_path, epwfile, iddfile, output_directory, building_index, building_id)
     """
     idf_path, epwfile, iddfile, output_directory, bldg_idx, building_id = args
     try:
-        # Set up IDF
-        IDF.setiddname(iddfile)
+        # Initialize IDD if needed (handles already-set case)
+        initialize_idd(iddfile)
+        
+        # Load the IDF with the EPW file
         idf = IDF(idf_path, epwfile)
 
         # Build run options
@@ -32,9 +52,11 @@ def run_simulation(args):
         # Execute
         idf.run(**run_opts)
         logging.info(f"[run_simulation] OK: {idf_path} (Bldg idx={bldg_idx}, ID={building_id}) with EPW {epwfile} -> {output_directory}")
+        return True, f"Success: {idf_path}"
     except Exception as e:
         logging.error(f"[run_simulation] Error for building idx={bldg_idx}, ID={building_id} with {idf_path} & {epwfile}: {e}",
                       exc_info=True)
+        return False, f"Error: {idf_path} - {str(e)}"
 
 
 def generate_simulations(
@@ -103,6 +125,9 @@ def simulate_all(
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     logging.info("[simulate_all] Starting...")
 
+    # Initialize IDD in the parent process before creating workers
+    initialize_idd(iddfile)
+
     tasks = list(
         generate_simulations(
             df_buildings,
@@ -119,7 +144,14 @@ def simulate_all(
         return
 
     logging.info(f"[simulate_all] Found {len(tasks)} tasks. Using {num_workers} workers.")
+    
+    # Run simulations with better error handling
+    results = []
     with Pool(num_workers) as pool:
-        pool.map(run_simulation, tasks)
-
+        results = pool.map(run_simulation, tasks)
+    
+    # Summary of results
+    successful = sum(1 for success, _ in results if success if isinstance(results[0], tuple))
+    logging.info(f"[simulate_all] Completed: {successful}/{len(tasks)} simulations successful")
+    
     logging.info("[simulate_all] All simulations complete.")

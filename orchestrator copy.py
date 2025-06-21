@@ -67,7 +67,7 @@ from validation.smart_validation_wrapper import run_smart_validation
 
 
 # Sensitivity / Surrogate / Calibration
-from cal.unified_sensitivity import run_sensitivity_analysis
+from c_sensitivity.unified_sensitivity import run_sensitivity_analysis
 from cal.unified_surrogate import (
     load_scenario_params as sur_load_scenario_params,
     pivot_scenario_params,

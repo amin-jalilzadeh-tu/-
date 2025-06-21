@@ -9,7 +9,7 @@ Lighting Modifier - Handles lighting objects
 from typing import List, Dict, Any
 from ..base_modifier import BaseModifier, ParameterDefinition
 
-class LightingModifier(BaseModifier):
+class LightingModifier(BaseModifier): 
     """Modifier for lighting-related IDF objects"""
     
     def _initialize_parameters(self):
