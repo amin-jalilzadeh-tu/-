@@ -1,0 +1,876 @@
+{
+  "main_config": {
+    "paths": {
+      "building_data": "data/df_buildings.csv",
+      "fenez_excel": "excel_data/envelop.xlsx",
+      "dhw_excel": "excel_data/dhw_overrides.xlsx",
+      "epw_excel": "excel_data/epw_overrides.xlsx",
+      "lighting_excel": "excel_data/lighting_overrides.xlsx",
+      "hvac_excel": "excel_data/hvac_overrides.xlsx",
+      "vent_excel": "excel_data/vent_overrides.xlsx"
+    },
+    "use_database": false,
+    "filter_by": "meestvoorkomendepostcode",
+    "db_filter": {
+      "meestvoorkomendepostcode": [
+        "3066HG"
+      ],
+      "pand_id": [
+        "0383100000001369",
+        "0383100000001370",
+        "5473VX"
+      ],
+      "pand_ids": [
+        "XYZ123",
+        "XYZ999"
+      ],
+      "bbox_xy": [
+        120000.0,
+        487000.0,
+        121000.0,
+        488000.0
+      ],
+      "bbox_latlon": [
+        51.873,
+        5.589,
+        51.878,
+        5.6
+      ]
+    },
+    "excel_overrides": {
+      "override_fenez_excel": false,
+      "override_dhw_excel": false,
+      "override_epw_excel": false,
+      "override_lighting_excel": false,
+      "override_hvac_excel": false,
+      "override_vent_excel": false
+    },
+    "user_config_overrides": {
+      "override_fenez_json": true,
+      "override_dhw_json": true,
+      "override_epw_json": true,
+      "override_lighting_json": true,
+      "override_hvac_json": true,
+      "override_vent_json": true,
+      "override_geometry_json": true,
+      "override_shading_json": true
+    },
+    "idf_creation": {
+      "perform_idf_creation": true,
+      "scenario": "scenario1",
+      "calibration_stage": "pre_calibration",
+      "strategy": "B",
+      "random_seed": 42,
+      "iddfile": "EnergyPlus/Energy+.idd",
+      "idf_file_path": "EnergyPlus/Minimal.idf",
+      "output_idf_dir": "output_IDFs",
+      "run_simulations": true,
+      "simulate_config": {
+        "num_workers": 4,
+        "ep_force_overwrite": true
+      },
+      "post_process": false,
+      "post_process_config": {
+        "base_output_dir": "Sim_Results",
+        "outputs": [
+          {
+            "convert_to_daily": true,
+            "convert_to_monthly": false,
+            "aggregator": "none",
+            "output_csv": "output/results/merged_as_is.csv"
+          },
+          {
+            "convert_to_daily": true,
+            "convert_to_monthly": false,
+            "aggregator": "mean",
+            "output_csv": "output/results/merged_daily_mean.csv"
+          },
+          {
+            "convert_to_daily": true,
+            "convert_to_monthly": true,
+            "aggregator": "mean",
+            "output_csv": "output/results/merged_monthly_mean.csv"
+          }
+        ]
+      },
+      "output_definitions": {
+        "desired_variables": [
+          "Facility Total Electric Demand Power",
+          "Zone Air Temperature",
+          "Boiler Heating Energy",
+          "Water Heater Heating Energy"
+        ],
+        "desired_meters": [
+          "Electricity:Facility",
+          "Heating:EnergyTransfer",
+          "Cooling:EnergyTransfer"
+        ],
+        "override_variable_frequency": "Daily",
+        "override_meter_frequency": "Daily",
+        "include_tables": true,
+        "include_summary": true
+      }
+    },
+    "parsing": {
+      "perform_parsing": true,
+      "parse_after_simulation": true,
+      "parse_mode": "all",
+      "parse_types": {
+        "idf": true,
+        "sql": true
+      },
+      "categories": null,
+      "validate_outputs": true,
+      "batch_size": 100,
+      "parallel_parsing": false,
+      "save_raw_objects": true,
+      "output_options": {
+        "save_summary": true,
+        "save_by_category": true,
+        "save_by_building": true
+      }
+    },
+    "structuring": {
+      "perform_structuring": true,
+      "dhw": {
+        "csv_in": "assigned/assigned_dhw_params.csv",
+        "csv_out": "assigned/structured_dhw_params.csv"
+      },
+      "fenestration": {
+        "csv_in": "assigned/assigned_fenez_params.csv",
+        "csv_out": "assigned/structured_fenez_params.csv"
+      },
+      "hvac": {
+        "csv_in": "assigned/assigned_hvac_params.csv",
+        "build_out": "assigned/assigned_hvac_building.csv",
+        "zone_out": "assigned/assigned_hvac_zones.csv"
+      },
+      "vent": {
+        "csv_in": "assigned/assigned_ventilation.csv",
+        "build_out": "assigned/assigned_vent_building.csv",
+        "zone_out": "assigned/assigned_vent_zones.csv"
+      },
+      "shading": {
+        "csv_in": "assigned/assigned_shading_params.csv",
+        "csv_out": "assigned/structured_shading_params.csv"
+      },
+      "equipment": {
+        "csv_in": "assigned/assigned_equipment.csv",
+        "csv_out": "assigned/structured_equipment.csv"
+      },
+      "zone_sizing": {
+        "csv_in": "assigned/assigned_zone_sizing_outdoor_air.csv",
+        "csv_out": "assigned/structured_zone_sizing.csv"
+      }
+    },
+    "modification": {
+      "perform_modification": true,
+      "base_idf_selection": {
+        "method": "all",
+        "building_ids": [
+          "1",
+          "2",
+          "3"
+        ],
+        "num_buildings": 3
+      },
+      "modification_strategy": {
+        "type": "scenarios",
+        "num_variants": 3,
+        "seed": 42,
+        "sampling_method": "latin_hypercube"
+      },
+      "categories_to_modify": {
+        "hvac": {
+          "enabled": true,
+          "strategy": "high_efficiency",
+          "parameters": {
+            "cooling_cop": {
+              "method": "percentage",
+              "change": 30,
+              "comment": "Increase cooling COP by 30%"
+            },
+            "heating_efficiency": {
+              "method": "absolute",
+              "value": 0.95,
+              "comment": "Set heating efficiency to 95%"
+            },
+            "fan_efficiency": {
+              "method": "range",
+              "range": [
+                0.85,
+                0.92
+              ],
+              "comment": "High-efficiency fan motors"
+            }
+          }
+        },
+        "lighting": {
+          "enabled": true,
+          "strategy": "led_retrofit",
+          "parameters": {
+            "watts_per_area": {
+              "method": "percentage",
+              "change": -50,
+              "comment": "LED retrofit reduces power by 50%"
+            },
+            "fraction_radiant": {
+              "method": "absolute",
+              "value": 0.25,
+              "comment": "LEDs have lower radiant fraction"
+            }
+          }
+        },
+        "materials": {
+          "enabled": true,
+          "strategy": "insulation_upgrade",
+          "parameters": {
+            "conductivity": {
+              "method": "percentage",
+              "change": -30,
+              "comment": "Reduce conductivity by 30% for better insulation"
+            },
+            "thermal_resistance": {
+              "method": "multiplier",
+              "factor": 1.5,
+              "comment": "Increase R-value by 50%"
+            },
+            "u_factor": {
+              "method": "absolute",
+              "value": 1.2,
+              "comment": "High-performance windows"
+            },
+            "shgc": {
+              "method": "range",
+              "range": [
+                0.25,
+                0.35
+              ],
+              "comment": "Low solar heat gain for cooling climates"
+            }
+          }
+        },
+        "infiltration": {
+          "enabled": true,
+          "strategy": "air_sealing",
+          "parameters": {
+            "air_changes_per_hour": {
+              "method": "percentage",
+              "change": -40,
+              "comment": "Reduce infiltration by 40%"
+            },
+            "flow_per_zone_area": {
+              "method": "multiplier",
+              "factor": 0.6,
+              "comment": "Tighter construction"
+            }
+          }
+        },
+        "ventilation": {
+          "enabled": true,
+          "strategy": "demand_controlled",
+          "parameters": {
+            "outdoor_air_flow_per_person": {
+              "method": "absolute",
+              "value": 0.0025,
+              "comment": "DCV minimum rate"
+            },
+            "sensible_effectiveness": {
+              "method": "range",
+              "range": [
+                0.75,
+                0.85
+              ],
+              "comment": "Heat recovery effectiveness"
+            }
+          }
+        },
+        "equipment": {
+          "enabled": true,
+          "strategy": "energy_star",
+          "parameters": {
+            "design_level": {
+              "method": "percentage",
+              "change": -25,
+              "comment": "Energy Star equipment"
+            },
+            "watts_per_area": {
+              "method": "multiplier",
+              "factor": 0.75,
+              "comment": "Reduce plug loads"
+            }
+          }
+        },
+        "dhw": {
+          "enabled": true,
+          "strategy": "efficiency_upgrade",
+          "parameters": {
+            "heater_efficiency": {
+              "method": "absolute",
+              "value": 0.95,
+              "comment": "High-efficiency water heater"
+            },
+            "tank_volume": {
+              "method": "percentage",
+              "change": -10,
+              "comment": "Right-sized tank"
+            },
+            "use_flow_rate": {
+              "method": "multiplier",
+              "factor": 0.7,
+              "comment": "Low-flow fixtures"
+            }
+          }
+        },
+        "geometry": {
+          "enabled": false,
+          "strategy": "window_optimization",
+          "parameters": {
+            "window_multiplier": {
+              "method": "range",
+              "range": [
+                0.8,
+                1.2
+              ],
+              "comment": "Optimize window area"
+            },
+            "ceiling_height": {
+              "method": "percentage",
+              "change": 10,
+              "comment": "Increase ceiling height"
+            }
+          }
+        },
+        "schedules": {
+          "enabled": false,
+          "strategy": "occupancy_optimization",
+          "parameters": {
+            "constant_value": {
+              "method": "multiplier",
+              "factor": 0.9,
+              "comment": "Reduce base occupancy"
+            }
+          }
+        },
+        "shading": {
+          "enabled": true,
+          "strategy": "dynamic_shading",
+          "parameters": {
+            "shading_control_type": {
+              "method": "discrete",
+              "options": [
+                "OnIfHighSolarOnWindow"
+              ],
+              "comment": "Solar-responsive shading"
+            },
+            "shading_setpoint": {
+              "method": "range",
+              "range": [
+                200,
+                400
+              ],
+              "comment": "Shading activation threshold W/m2"
+            }
+          }
+        },
+        "simulation_control": {
+          "enabled": true,
+          "strategy": "balanced",
+          "parameters": {
+            "timesteps_per_hour": {
+              "method": "absolute",
+              "value": 6,
+              "comment": "10-minute timesteps"
+            },
+            "shadow_calculation_frequency": {
+              "method": "absolute",
+              "value": 20,
+              "comment": "Calculate shadows every 20 days"
+            }
+          }
+        },
+        "site_location": {
+          "enabled": true,
+          "strategy": "climate_adjustment",
+          "parameters": {
+            "ground_temp_january": {
+              "method": "percentage",
+              "change": 5,
+              "comment": "Climate warming scenario"
+            },
+            "ground_temp_february": {
+              "method": "percentage",
+              "change": 5,
+              "comment": "Climate warming scenario"
+            },
+            "ground_temp_march": {
+              "method": "percentage",
+              "change": 5,
+              "comment": "Climate warming scenario"
+            },
+            "ground_temp_april": {
+              "method": "percentage",
+              "change": 5,
+              "comment": "Climate warming scenario"
+            },
+            "ground_temp_may": {
+              "method": "percentage",
+              "change": 5,
+              "comment": "Climate warming scenario"
+            },
+            "ground_temp_june": {
+              "method": "percentage",
+              "change": 5,
+              "comment": "Climate warming scenario"
+            },
+            "ground_temp_july": {
+              "method": "percentage",
+              "change": 5,
+              "comment": "Climate warming scenario"
+            },
+            "ground_temp_august": {
+              "method": "percentage",
+              "change": 5,
+              "comment": "Climate warming scenario"
+            },
+            "ground_temp_september": {
+              "method": "percentage",
+              "change": 5,
+              "comment": "Climate warming scenario"
+            },
+            "ground_temp_october": {
+              "method": "percentage",
+              "change": 5,
+              "comment": "Climate warming scenario"
+            },
+            "ground_temp_november": {
+              "method": "percentage",
+              "change": 5,
+              "comment": "Climate warming scenario"
+            },
+            "ground_temp_december": {
+              "method": "percentage",
+              "change": 5,
+              "comment": "Climate warming scenario"
+            }
+          }
+        }
+      },
+      "output_options": {
+        "save_modified_idfs": true,
+        "track_modifications": true,
+        "generate_report": true,
+        "output_dir": "modified_idfs",
+        "report_formats": [
+          "json",
+          "html",
+          "csv",
+          "markdown",
+          "parquet"
+        ],
+        "report_settings": {
+          "include_charts": true,
+          "include_parameter_matrix": true,
+          "include_detailed_modifications": true,
+          "max_modifications_per_variant": 50,
+          "generate_comparison_plots": true
+        },
+        "file_naming": {
+          "include_timestamp": true,
+          "include_strategy": true,
+          "include_variant_id": true,
+          "format": "{building_id}_{strategy}_{variant_id}_{timestamp}"
+        },
+        "logging": {
+          "log_level": "INFO",
+          "save_log_file": true,
+          "log_modifications": true,
+          "log_errors_separately": true
+        }
+      },
+      "post_modification": {
+        "run_simulations": true,
+        "parse_results": {
+          "parse_idf": false,
+          "parse_sql": true,
+          "categories": [
+            "energy",
+            "comfort",
+            "loads"
+          ]
+        },
+        "compare_with_baseline": true,
+        "analysis_options": {
+          "calculate_savings": true,
+          "generate_comparison_charts": true,
+          "export_to_database": false,
+          "create_summary_dashboard": true
+        }
+      },
+      "validation_options": {
+        "validate_modifications": true,
+        "check_parameter_ranges": true,
+        "verify_idf_syntax": true,
+        "run_epcheck": false,
+        "validation_rules": {
+          "max_cop_value": 10.0,
+          "min_efficiency": 0.5,
+          "max_u_factor": 5.0,
+          "min_shgc": 0.1,
+          "max_shgc": 0.9
+        }
+      },
+      "scenarios": [
+        {
+          "name": "baseline",
+          "description": "No modifications - baseline case",
+          "overrides": {}
+        },
+        {
+          "name": "high_performance_envelope",
+          "description": "Focus on envelope improvements",
+          "overrides": {
+            "materials": {
+              "enabled": true,
+              "parameters": {
+                "conductivity": {
+                  "method": "percentage",
+                  "change": -50
+                }
+              }
+            },
+            "infiltration": {
+              "enabled": true,
+              "parameters": {
+                "air_changes_per_hour": {
+                  "method": "absolute",
+                  "value": 0.1
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "efficient_systems",
+          "description": "Focus on HVAC and lighting efficiency",
+          "overrides": {
+            "hvac": {
+              "enabled": true,
+              "strategy": "high_efficiency"
+            },
+            "lighting": {
+              "enabled": true,
+              "strategy": "led_retrofit"
+            }
+          }
+        },
+        {
+          "name": "comprehensive_retrofit",
+          "description": "All energy efficiency measures",
+          "overrides": {
+            "materials": {
+              "enabled": true,
+              "parameters": {
+                "conductivity": {
+                  "method": "percentage",
+                  "change": -40
+                },
+                "u_factor": {
+                  "method": "absolute",
+                  "value": 1.0
+                }
+              }
+            },
+            "hvac": {
+              "enabled": true,
+              "parameters": {
+                "cooling_cop": {
+                  "method": "percentage",
+                  "change": 40
+                }
+              }
+            },
+            "lighting": {
+              "enabled": true,
+              "parameters": {
+                "watts_per_area": {
+                  "method": "percentage",
+                  "change": -60
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "validation": {
+      "perform_validation": true,
+      "config": {
+        "real_data_path": "data/test_validation_data/measured_data_parsed_format_daily.csv"
+      }
+    },
+    "validation_base": {
+      "perform_validation": true,
+      "config": {
+        "real_data_csv": "data/mock_merged_daily_mean.csv",
+        "sim_data_csv": "results/merged_daily_mean.csv",
+        "bldg_ranges": {
+          "0": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        "variables_to_compare": [
+          "Electricity:Facility [J](Hourly)",
+          "Heating:EnergyTransfer [J](Hourly)",
+          "Cooling:EnergyTransfer [J](Hourly)"
+        ],
+        "threshold_cv_rmse": 30.0,
+        "skip_plots": true,
+        "output_csv": "validation_report_base.csv",
+        "analysis_options": {
+          "date_format": [
+            "%d/%m/%Y %H:%M",
+            "%d/%m/%y",
+            "%Y-%m-%d %H:%M:%S"
+          ],
+          "granularity": [
+            "annual",
+            "monthly",
+            "seasonal"
+          ],
+          "weekday_weekend": true,
+          "diurnal_profiles": true,
+          "peak_analysis": {
+            "perform": true,
+            "n_peaks": 10
+          },
+          "ramp_rate_analysis": true,
+          "extreme_day_analysis": {
+            "perform": true,
+            "n_days": 5,
+            "weather_variable": "Environment:Site Outdoor Air Drybulb Temperature [C](Daily)"
+          }
+        }
+      }
+    },
+    "validation_scenarios": {
+      "perform_validation": false,
+      "config": {
+        "real_data_csv": "data/mock_merged_daily_mean.csv",
+        "sim_data_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+        "bldg_ranges": {
+          "0": [
+            0,
+            1,
+            2
+          ]
+        },
+        "variables_to_compare": [
+          "Electricity:Facility [J](Hourly)",
+          "Heating:EnergyTransfer [J](Hourly)",
+          "Cooling:EnergyTransfer [J](Hourly)"
+        ],
+        "threshold_cv_rmse": 30.0,
+        "skip_plots": true,
+        "output_csv": "validation_report_scenarios.csv"
+      }
+    },
+    "sensitivity": {
+      "perform_sensitivity": true,
+      "// Basic configuration (backward compatible)": "",
+      "scenario_folder": "scenarios",
+      "method": "correlation",
+      "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+      "target_variable": [
+        "Heating:EnergyTransfer [J](Hourly)",
+        "Cooling:EnergyTransfer [J](Hourly)",
+        "Electricity:Facility [J](Hourly)"
+      ],
+      "output_csv": "sensitivity_output.csv",
+      "// Enhanced features": "",
+      "project_root": ".",
+      "output_base_dir": "sensitivity_results",
+      "// Analysis options": "",
+      "perform_building_specific": true,
+      "perform_multi_objective": true,
+      "perform_hierarchical": true,
+      "perform_validation_weighted": true,
+      "// Building grouping": "",
+      "building_groups": {
+        "auto_generate": true,
+        "group_by": [
+          "building_function",
+          "age_range"
+        ],
+        "min_buildings_per_group": 3
+      },
+      "// Parameter grouping for hierarchical analysis": "",
+      "parameter_groups": {
+        "hvac_system": [
+          "heating_day_setpoint",
+          "cooling_day_setpoint",
+          "max_heating_supply_air_temp",
+          "min_cooling_supply_air_temp"
+        ],
+        "envelope": [
+          "wall_R_value",
+          "roof_R_value",
+          "window_U_factor",
+          "infiltration_rate"
+        ],
+        "internal_loads": [
+          "lights_wm2",
+          "equip_wm2",
+          "occupant_density"
+        ],
+        "dhw_system": [
+          "setpoint_c",
+          "tank_volume",
+          "heater_capacity"
+        ]
+      },
+      "// Multi-objective configuration": "",
+      "objective_weights": {
+        "Heating:EnergyTransfer [J](Hourly)": 0.35,
+        "Cooling:EnergyTransfer [J](Hourly)": 0.35,
+        "Electricity:Facility [J](Hourly)": 0.3
+      },
+      "// Validation integration": "",
+      "validation_csv": "validation_report_base.csv",
+      "validation_options": {
+        "focus_on_failed": true,
+        "failure_threshold": 30.0,
+        "weight_method": "inverse_error"
+      },
+      "// Export options": "",
+      "export_for_surrogate": true,
+      "export_for_calibration": true,
+      "export_top_n_parameters": 20,
+      "// Visualization options": "",
+      "generate_visualizations": true,
+      "visualization_types": [
+        "tornado_diagram",
+        "sensitivity_heatmap",
+        "building_clusters",
+        "multi_objective_scatter"
+      ],
+      "// Time slice configuration (existing feature)": "",
+      "time_slice_config": {
+        "method": "predefined",
+        "predefined_slice": "peak_cooling_months"
+      },
+      "// Parameter filtering (existing feature)": "",
+      "file_patterns": [
+        "*hvac*.csv",
+        "*dhw*.csv",
+        "*equipment*.csv"
+      ],
+      "param_filters": {
+        "param_name_contains": [
+          "setpoint",
+          "temperature",
+          "wm2"
+        ],
+        "exclude_params": [
+          "roughness"
+        ]
+      }
+    },
+    "// ENHANCED SURROGATE V1": "Uses automated ML and feature selection",
+    "surrogate": {
+      "perform_surrogate": true,
+      "scenario_folder": "scenarios",
+      "results_csv": "results_scenarioes/merged_daily_mean_scenarios.csv",
+      "target_variable": [
+        "Heating:EnergyTransfer [J](Hourly)",
+        "Cooling:EnergyTransfer [J](Hourly)",
+        "Electricity:Facility [J](Hourly)"
+      ],
+      "model_out": "enhanced_multi_output_surrogate.joblib",
+      "cols_out": "enhanced_multi_output_columns.joblib",
+      "test_size": 0.2,
+      "// Automated ML configuration": "",
+      "automated_ml": true,
+      "model_types": [
+        "random_forest",
+        "xgboost",
+        "gradient_boosting"
+      ],
+      "scale_features": true,
+      "cv_strategy": "kfold",
+      "// Feature selection from sensitivity": "",
+      "sensitivity_results_path": "enhanced_sensitivity.csv",
+      "feature_selection": {
+        "method": "correlation",
+        "top_n": 20
+      },
+      "// Time aggregation": "",
+      "time_aggregation": "sum",
+      "save_metadata": true
+    },
+    "// ENHANCED CALIBRATION V1": "Uses PSO and multi-objective optimization",
+    "calibration": {
+      "perform_calibration": true,
+      "scenario_folder": "scenarios",
+      "method": "pso",
+      "use_surrogate": true,
+      "real_data_csv": "data/mock_merged_daily_mean.csv",
+      "surrogate_model_path": "enhanced_multi_output_surrogate.joblib",
+      "surrogate_columns_path": "enhanced_multi_output_columns.joblib",
+      "// Multi-variable calibration": "",
+      "target_variables": [
+        "Heating:EnergyTransfer [J](Hourly)",
+        "Cooling:EnergyTransfer [J](Hourly)",
+        "Electricity:Facility [J](Hourly)"
+      ],
+      "// PSO configuration": "",
+      "algorithm_config": {
+        "pso": {
+          "n_particles": 50,
+          "max_iter": 100,
+          "inertia": 0.9,
+          "inertia_decay": 0.99,
+          "cognitive": 2.0,
+          "social": 2.0
+        }
+      },
+      "// Multi-objective setup": "",
+      "objectives": [
+        {
+          "target_variable": "Heating:EnergyTransfer [J](Hourly)",
+          "metric": "cvrmse",
+          "weight": 0.35,
+          "tolerance": 25.0
+        },
+        {
+          "target_variable": "Cooling:EnergyTransfer [J](Hourly)",
+          "metric": "cvrmse",
+          "weight": 0.35,
+          "tolerance": 25.0
+        },
+        {
+          "target_variable": "Electricity:Facility [J](Hourly)",
+          "metric": "cvrmse",
+          "weight": 0.3,
+          "tolerance": 20.0
+        }
+      ],
+      "// Parameter filtering using sensitivity results": "",
+      "subset_sensitivity_csv": "enhanced_sensitivity.csv",
+      "top_n_params": 15,
+      "calibrate_min_max": true,
+      "// Validation to prevent overfitting": "",
+      "validation": {
+        "cross_validate": true,
+        "n_folds": 3,
+        "overfitting_threshold": 0.15
+      },
+      "output_history_csv": "enhanced_calibration_history.csv",
+      "best_params_folder": "calibrated_enhanced",
+      "history_folder": "calibrated_enhanced"
+    }
+  }
+}

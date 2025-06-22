@@ -695,6 +695,10 @@
     },
     "post_modification": {
       "run_simulations": true,
+      "simulation_config": {
+            "num_workers": 4,     
+            "epw_assignment": "use_original"  
+        },
       "parse_results": {
         "parse_idf": false,
         "parse_sql": true,
