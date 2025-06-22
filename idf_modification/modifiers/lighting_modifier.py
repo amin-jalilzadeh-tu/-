@@ -1,19 +1,14 @@
 """
-Lighting system and control modifications.
-
-This module handles modifications to lighting system and control modifications.
-"""
-"""
-Lighting Modifier - Handles lighting objects
+Lighting Modifier - Compatible with parsed IDF structure
 """
 from typing import List, Dict, Any
 from ..base_modifier import BaseModifier, ParameterDefinition
 
-class LightingModifier(BaseModifier): 
+class LightingModifier(BaseModifier):
     """Modifier for lighting-related IDF objects"""
     
     def _initialize_parameters(self):
-        """Initialize lighting parameter definitions"""
+        """Initialize lighting parameter definitions matching parser field names"""
         self.parameter_definitions = {
             'lighting_level': ParameterDefinition(
                 object_type='LIGHTS',
@@ -33,10 +28,20 @@ class LightingModifier(BaseModifier):
                 max_value=30.0,
                 performance_impact='lighting_energy'
             ),
+            'watts_per_person': ParameterDefinition(
+                object_type='LIGHTS',
+                field_name='Watts per Person',
+                field_index=6,
+                data_type=float,
+                units='W/person',
+                min_value=0.0,
+                max_value=200.0,
+                performance_impact='lighting_energy'
+            ),
             'fraction_radiant': ParameterDefinition(
                 object_type='LIGHTS',
                 field_name='Fraction Radiant',
-                field_index=8,
+                field_index=7,
                 data_type=float,
                 min_value=0.0,
                 max_value=1.0,
@@ -45,7 +50,7 @@ class LightingModifier(BaseModifier):
             'fraction_visible': ParameterDefinition(
                 object_type='LIGHTS',
                 field_name='Fraction Visible',
-                field_index=9,
+                field_index=8,
                 data_type=float,
                 min_value=0.0,
                 max_value=1.0
@@ -53,11 +58,28 @@ class LightingModifier(BaseModifier):
             'return_air_fraction': ParameterDefinition(
                 object_type='LIGHTS',
                 field_name='Return Air Fraction',
-                field_index=7,
+                field_index=9,
                 data_type=float,
                 min_value=0.0,
                 max_value=1.0,
                 performance_impact='zone_loads'
+            ),
+            'dimmer_control': ParameterDefinition(
+                object_type='DAYLIGHTING:CONTROLS',
+                field_name='Lighting Control Type',
+                field_index=5,
+                data_type=str,
+                allowed_values=['Continuous', 'Stepped', 'ContinuousOff'],
+                performance_impact='lighting_control'
+            ),
+            'minimum_light_output': ParameterDefinition(
+                object_type='DAYLIGHTING:CONTROLS',
+                field_name='Minimum Light Output Fraction',
+                field_index=8,
+                data_type=float,
+                min_value=0.0,
+                max_value=0.5,
+                performance_impact='lighting_control'
             )
         }
     
@@ -68,7 +90,8 @@ class LightingModifier(BaseModifier):
         return [
             'LIGHTS',
             'DAYLIGHTING:CONTROLS',
-            'DAYLIGHTING:REFERENCEPOINT',
+            'DAYLIGHTING:DETAILED',
+            'LIGHTINGDESIGNOBJECT',
             'EXTERIORLIGHTS'
         ]
     
@@ -76,20 +99,177 @@ class LightingModifier(BaseModifier):
         return ['lighting']
     
     def apply_modifications(self, 
-                          idf, 
+                          parsed_objects: Dict[str, List[Any]], 
                           modifiable_params: Dict[str, List[Dict[str, Any]]],
                           strategy: str = 'default') -> List:
         """Apply lighting-specific modifications"""
         
         if strategy == 'led_retrofit':
-            return self._apply_led_retrofit(idf, modifiable_params)
-        elif strategy == 'occupancy_controls':
-            return self._apply_occupancy_controls(idf, modifiable_params)
+            return self._apply_led_retrofit(parsed_objects, modifiable_params)
+        elif strategy == 'occupancy_sensors':
+            return self._apply_occupancy_sensors(parsed_objects, modifiable_params)
+        elif strategy == 'daylight_harvesting':
+            return self._apply_daylight_harvesting(parsed_objects, modifiable_params)
+        elif strategy == 'task_tuning':
+            return self._apply_task_tuning(parsed_objects, modifiable_params)
         else:
-            return super().apply_modifications(idf, modifiable_params, strategy)
+            return super().apply_modifications(parsed_objects, modifiable_params, strategy)
     
-    def _apply_led_retrofit(self, idf, modifiable_params):
-        """Apply LED retrofit modifications"""
+    def _apply_led_retrofit(self, parsed_objects, modifiable_params):
+        """Apply LED retrofit improvements"""
+        modifications = []
+        import random
+        
+        for obj_type, objects in modifiable_params.items():
+            if obj_type == 'LIGHTS':
+                for obj_info in objects:
+                    obj = obj_info['object']
+                    
+                    # LEDs reduce power by 50-70% compared to traditional lighting
+                    reduction = random.uniform(0.5, 0.7)
+                    
+                    # Find calculation method (usually parameter index 3)
+                    calc_method = None
+                    if len(obj.parameters) > 3:
+                        calc_method = obj.parameters[3].value
+                    
+                    if calc_method == 'LightingLevel':
+                        # Modify Lighting Level
+                        for param in obj.parameters:
+                            if param.field_name == 'Lighting Level' and param.numeric_value:
+                                old_value = param.numeric_value
+                                new_value = old_value * (1 - reduction)
+                                
+                                param.value = str(new_value)
+                                param.numeric_value = new_value
+                                
+                                modifications.append(self._create_modification_result(
+                                    obj, 'lighting_level', old_value, new_value, 'led_retrofit'
+                                ))
+                                break
+                    
+                    elif calc_method == 'Watts/Area':
+                        # Modify Watts per Zone Floor Area
+                        for param in obj.parameters:
+                            if param.field_name == 'Watts per Zone Floor Area' and param.numeric_value:
+                                old_value = param.numeric_value
+                                new_value = old_value * (1 - reduction)
+                                
+                                param.value = str(new_value)
+                                param.numeric_value = new_value
+                                
+                                modifications.append(self._create_modification_result(
+                                    obj, 'watts_per_area', old_value, new_value, 'led_retrofit'
+                                ))
+                                break
+                    
+                    elif calc_method == 'Watts/Person':
+                        # Modify Watts per Person
+                        for param in obj.parameters:
+                            if param.field_name == 'Watts per Person' and param.numeric_value:
+                                old_value = param.numeric_value
+                                new_value = old_value * (1 - reduction)
+                                
+                                param.value = str(new_value)
+                                param.numeric_value = new_value
+                                
+                                modifications.append(self._create_modification_result(
+                                    obj, 'watts_per_person', old_value, new_value, 'led_retrofit'
+                                ))
+                                break
+                    
+                    # LEDs also have different heat characteristics
+                    for param in obj.parameters:
+                        if param.field_name == 'Fraction Radiant':
+                            old_value = param.numeric_value or float(param.value)
+                            # LEDs have lower radiant fraction (0.2-0.3)
+                            new_value = random.uniform(0.2, 0.3)
+                            
+                            param.value = str(new_value)
+                            param.numeric_value = new_value
+                            
+                            modifications.append(self._create_modification_result(
+                                obj, 'fraction_radiant', old_value, new_value, 'led_retrofit'
+                            ))
+                            break
+        
+        return modifications
+    
+    def _apply_occupancy_sensors(self, parsed_objects, modifiable_params):
+        """Apply occupancy sensor control"""
+        modifications = []
+        
+        # Occupancy sensors reduce lighting by modifying schedules
+        # This is a simplified approach - actual implementation would modify schedules
+        for obj_type, objects in modifiable_params.items():
+            if obj_type == 'LIGHTS':
+                for obj_info in objects:
+                    obj = obj_info['object']
+                    
+                    # Occupancy sensors can reduce lighting energy by 20-30%
+                    # We'll simulate this by reducing the lighting power
+                    import random
+                    reduction = random.uniform(0.2, 0.3)
+                    
+                    for param in obj.parameters:
+                        if param.field_name in ['Lighting Level', 'Watts per Zone Floor Area', 'Watts per Person']:
+                            if param.numeric_value:
+                                old_value = param.numeric_value
+                                new_value = old_value * (1 - reduction)
+                                
+                                param.value = str(new_value)
+                                param.numeric_value = new_value
+                                
+                                param_key = self._get_param_key_from_field_name(param.field_name)
+                                modifications.append(self._create_modification_result(
+                                    obj, param_key, old_value, new_value, 'occupancy_sensors'
+                                ))
+                                break
+        
+        return modifications
+    
+    def _apply_daylight_harvesting(self, parsed_objects, modifiable_params):
+        """Apply daylight harvesting controls"""
+        modifications = []
+        
+        for obj_type, objects in modifiable_params.items():
+            if obj_type == 'DAYLIGHTING:CONTROLS':
+                for obj_info in objects:
+                    obj = obj_info['object']
+                    
+                    # Set to continuous dimming for best performance
+                    for param in obj.parameters:
+                        if param.field_name == 'Lighting Control Type':
+                            old_value = param.value
+                            new_value = 'Continuous'
+                            
+                            param.value = new_value
+                            
+                            modifications.append(self._create_modification_result(
+                                obj, 'dimmer_control', old_value, new_value, 'daylight_harvesting'
+                            ))
+                            break
+                    
+                    # Set minimum light output for continuous dimming
+                    for param in obj.parameters:
+                        if param.field_name == 'Minimum Light Output Fraction':
+                            old_value = param.numeric_value or float(param.value)
+                            # Allow dimming down to 10-20%
+                            import random
+                            new_value = random.uniform(0.1, 0.2)
+                            
+                            param.value = str(new_value)
+                            param.numeric_value = new_value
+                            
+                            modifications.append(self._create_modification_result(
+                                obj, 'minimum_light_output', old_value, new_value, 'daylight_harvesting'
+                            ))
+                            break
+        
+        return modifications
+    
+    def _apply_task_tuning(self, parsed_objects, modifiable_params):
+        """Apply task tuning to reduce over-lighting"""
         modifications = []
         
         for obj_type, objects in modifiable_params.items():
@@ -97,45 +277,29 @@ class LightingModifier(BaseModifier):
                 for obj_info in objects:
                     obj = obj_info['object']
                     
-                    # Check calculation method
-                    if obj.Design_Level_Calculation_Method == 'Watts/Area':
-                        current_wpf = float(obj.Watts_per_Zone_Floor_Area) if obj.Watts_per_Zone_Floor_Area else 0
-                        
-                        if current_wpf > 0:
-                            # LED reduces by 40-60%
-                            import random
-                            reduction = random.uniform(0.4, 0.6)
-                            new_wpf = current_wpf * (1 - reduction)
+                    # Task tuning typically reduces lighting by 10-20%
+                    import random
+                    reduction = random.uniform(0.1, 0.2)
+                    
+                    # Find watts per area parameter
+                    for param in obj.parameters:
+                        if param.field_name == 'Watts per Zone Floor Area' and param.numeric_value:
+                            old_value = param.numeric_value
+                            new_value = old_value * (1 - reduction)
                             
-                            obj.Watts_per_Zone_Floor_Area = new_wpf
-                            
-                            # Also update fractions for LED characteristics
-                            obj.Fraction_Radiant = 0.72  # Less radiant for LED
-                            obj.Fraction_Visible = 0.20  # Higher visible fraction
+                            param.value = str(new_value)
+                            param.numeric_value = new_value
                             
                             modifications.append(self._create_modification_result(
-                                obj, 'watts_per_area', current_wpf, new_wpf, 'led_retrofit'
+                                obj, 'watts_per_area', old_value, new_value, 'task_tuning'
                             ))
+                            break
         
         return modifications
     
-    def _apply_occupancy_controls(self, idf, modifiable_params):
-        """Apply occupancy-based controls"""
-        # This would modify schedules or add controls
-        return []
-    
-    def _create_modification_result(self, obj, param_name, old_value, new_value, rule):
-        """Helper to create modification result"""
-        from ..base_modifier import ModificationResult
-        
-        return ModificationResult(
-            success=True,
-            object_type=obj.obj[0],
-            object_name=obj.Name,
-            parameter=param_name,
-            original_value=old_value,
-            new_value=new_value,
-            change_type='absolute',
-            rule_applied=rule,
-            validation_status='valid'
-        )
+    def _get_param_key_from_field_name(self, field_name: str) -> str:
+        """Convert field name to parameter key"""
+        for key, param_def in self.parameter_definitions.items():
+            if param_def.field_name == field_name:
+                return key
+        return field_name.lower().replace(' ', '_')

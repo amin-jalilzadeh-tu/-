@@ -1,5 +1,5 @@
 """
-Efficiency Rules - Define rules for improving building efficiency
+Efficiency Rules - Updated with parser-compatible parameter names
 """
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
@@ -28,14 +28,14 @@ class EfficiencyRuleEngine:
         self._initialize_rules()
     
     def _initialize_rules(self):
-        """Initialize default efficiency rules"""
+        """Initialize default efficiency rules with parser-compatible parameter names"""
         
         # HVAC Efficiency Rules
         self.add_rule(EfficiencyRule(
             name='high_efficiency_cooling',
             description='Upgrade to high efficiency cooling equipment',
             category='hvac',
-            target_parameter='cooling_cop',
+            target_parameter='cooling_cop',  # Matches HVACModifier parameter
             modification_type='multiplier',
             modification_value=1.4,
             conditions={'current_cop': {'max': 3.5}},
@@ -48,7 +48,7 @@ class EfficiencyRuleEngine:
             name='premium_efficiency_motors',
             description='Upgrade to premium efficiency fan motors',
             category='hvac',
-            target_parameter='fan_efficiency',
+            target_parameter='fan_efficiency',  # Matches HVACModifier parameter
             modification_type='absolute',
             modification_value=0.9,
             conditions={'current_efficiency': {'max': 0.7}},
@@ -57,65 +57,78 @@ class EfficiencyRuleEngine:
             applicability=['commercial', 'institutional']
         ))
         
+        self.add_rule(EfficiencyRule(
+            name='high_efficiency_heating',
+            description='Upgrade heating equipment efficiency',
+            category='hvac',
+            target_parameter='heating_efficiency',  # Matches HVACModifier parameter
+            modification_type='absolute',
+            modification_value=0.95,
+            conditions={'current_efficiency': {'max': 0.8}},
+            expected_impact={'heating_energy': -15},
+            cost_level='high',
+            applicability=['all_buildings']
+        ))
+        
         # Envelope Rules
         self.add_rule(EfficiencyRule(
             name='super_insulation_walls',
             description='Add super insulation to walls',
             category='materials',
-            target_parameter='wall_r_value',
+            target_parameter='conductivity',  # Matches MaterialsModifier parameter
             modification_type='multiplier',
-            modification_value=2.0,
-            conditions={'climate_zone': ['4', '5', '6', '7', '8']},
+            modification_value=0.5,
+            conditions={'wall_r_value': {'max': 20}},
             expected_impact={'heating_energy': -20, 'cooling_energy': -10},
             cost_level='high',
-            applicability=['residential', 'small_commercial']
+            applicability=['residential', 'commercial']
         ))
         
         self.add_rule(EfficiencyRule(
-            name='cool_roof',
-            description='Install cool roof with high reflectance',
+            name='low_e_windows',
+            description='Install low-e high performance windows',
             category='materials',
-            target_parameter='roof_solar_absorptance',
+            target_parameter='u_factor',  # Matches MaterialsModifier parameter
             modification_type='absolute',
-            modification_value=0.2,
-            conditions={'climate_zone': ['1', '2', '3']},
-            expected_impact={'cooling_energy': -15},
-            cost_level='medium',
+            modification_value=1.2,
+            conditions={'window_type': 'single_pane'},
+            expected_impact={'heating_energy': -15, 'cooling_energy': -10},
+            cost_level='high',
             applicability=['all_buildings']
         ))
         
         self.add_rule(EfficiencyRule(
-            name='triple_pane_windows',
-            description='Upgrade to triple pane windows',
+            name='low_shgc_windows',
+            description='Install low solar heat gain windows',
             category='materials',
-            target_parameter='window_u_factor',
-            modification_type='multiplier',
-            modification_value=0.4,
-            conditions={'climate_zone': ['5', '6', '7', '8']},
-            expected_impact={'heating_energy': -15, 'cooling_energy': -5},
-            cost_level='high',
-            applicability=['residential', 'office']
+            target_parameter='shgc',  # Matches MaterialsModifier parameter
+            modification_type='absolute',
+            modification_value=0.25,
+            conditions={'climate': ['hot', 'warm']},
+            expected_impact={'cooling_energy': -20},
+            cost_level='medium',
+            applicability=['all_buildings']
         ))
         
         # Lighting Rules
         self.add_rule(EfficiencyRule(
             name='led_retrofit',
-            description='Complete LED lighting retrofit',
+            description='LED lighting retrofit',
             category='lighting',
-            target_parameter='lighting_power_density',
+            target_parameter='watts_per_area',  # Matches LightingModifier parameter
             modification_type='multiplier',
-            modification_value=0.4,
-            conditions={'current_lpd': {'min': 10}},
-            expected_impact={'lighting_energy': -60},
+            modification_value=0.5,
+            conditions={'lighting_type': ['fluorescent', 'incandescent']},
+            expected_impact={'lighting_energy': -50},
             cost_level='medium',
             applicability=['all_buildings']
         ))
         
         self.add_rule(EfficiencyRule(
-            name='task_ambient_lighting',
-            description='Implement task-ambient lighting strategy',
+            name='task_lighting',
+            description='Implement task/ambient lighting strategy',
             category='lighting',
-            target_parameter='lighting_power_density',
+            target_parameter='watts_per_area',  # Matches LightingModifier parameter
             modification_type='multiplier',
             modification_value=0.7,
             conditions={'space_type': ['office', 'classroom']},
@@ -129,7 +142,7 @@ class EfficiencyRuleEngine:
             name='energy_star_equipment',
             description='Upgrade to Energy Star rated equipment',
             category='equipment',
-            target_parameter='equipment_power_density',
+            target_parameter='watts_per_area',  # Matches EquipmentModifier parameter
             modification_type='multiplier',
             modification_value=0.75,
             conditions={'equipment_age': {'min': 10}},
@@ -138,16 +151,42 @@ class EfficiencyRuleEngine:
             applicability=['office', 'institutional']
         ))
         
+        self.add_rule(EfficiencyRule(
+            name='plug_load_reduction',
+            description='Plug load management and reduction',
+            category='equipment',
+            target_parameter='design_level',  # Matches EquipmentModifier parameter
+            modification_type='multiplier',
+            modification_value=0.8,
+            conditions={'has_plug_load_management': False},
+            expected_impact={'plug_loads': -20},
+            cost_level='low',
+            applicability=['office', 'educational']
+        ))
+        
         # Infiltration Rules
         self.add_rule(EfficiencyRule(
             name='air_sealing_retrofit',
             description='Comprehensive air sealing retrofit',
             category='infiltration',
-            target_parameter='infiltration_rate',
+            target_parameter='air_changes_per_hour',  # Matches InfiltrationModifier parameter
             modification_type='multiplier',
             modification_value=0.3,
             conditions={'building_age': {'min': 20}},
             expected_impact={'heating_energy': -10, 'cooling_energy': -5},
+            cost_level='low',
+            applicability=['all_buildings']
+        ))
+        
+        self.add_rule(EfficiencyRule(
+            name='weatherstripping',
+            description='Add weatherstripping to doors and windows',
+            category='infiltration',
+            target_parameter='flow_per_zone_area',  # Matches InfiltrationModifier parameter
+            modification_type='multiplier',
+            modification_value=0.5,
+            conditions={'has_weatherstripping': False},
+            expected_impact={'heating_energy': -5, 'cooling_energy': -3},
             cost_level='low',
             applicability=['all_buildings']
         ))
@@ -157,7 +196,7 @@ class EfficiencyRuleEngine:
             name='demand_controlled_ventilation',
             description='Implement CO2-based demand controlled ventilation',
             category='ventilation',
-            target_parameter='outdoor_air_flow',
+            target_parameter='outdoor_air_flow_per_person',  # Matches VentilationModifier parameter
             modification_type='multiplier',
             modification_value=0.6,
             conditions={'occupancy_type': 'variable'},
@@ -170,49 +209,85 @@ class EfficiencyRuleEngine:
             name='energy_recovery_ventilation',
             description='Add energy recovery to ventilation system',
             category='ventilation',
-            target_parameter='heat_recovery_effectiveness',
+            target_parameter='sensible_effectiveness',  # Matches VentilationModifier parameter
             modification_type='absolute',
-            modification_value=0.75,
-            conditions={'outdoor_air_flow': {'min': 0.5}},
-            expected_impact={'ventilation_energy': -50},
+            modification_value=0.8,
+            conditions={'has_heat_recovery': False},
+            expected_impact={'ventilation_energy': -40},
             cost_level='high',
             applicability=['all_buildings']
+        ))
+        
+        # DHW Rules
+        self.add_rule(EfficiencyRule(
+            name='high_efficiency_water_heater',
+            description='Install high efficiency water heater',
+            category='dhw',
+            target_parameter='heater_efficiency',  # Matches DHWModifier parameter
+            modification_type='absolute',
+            modification_value=0.95,
+            conditions={'current_efficiency': {'max': 0.8}},
+            expected_impact={'dhw_energy': -20},
+            cost_level='medium',
+            applicability=['all_buildings']
+        ))
+        
+        self.add_rule(EfficiencyRule(
+            name='low_flow_fixtures',
+            description='Install low flow fixtures',
+            category='dhw',
+            target_parameter='use_flow_rate',  # Matches DHWModifier parameter
+            modification_type='multiplier',
+            modification_value=0.6,
+            conditions={'has_low_flow': False},
+            expected_impact={'dhw_energy': -15},
+            cost_level='low',
+            applicability=['all_buildings']
+        ))
+        
+        # Shading Rules
+        self.add_rule(EfficiencyRule(
+            name='automated_shading',
+            description='Install automated shading controls',
+            category='shading',
+            target_parameter='shading_control_type',  # Matches ShadingModifier parameter
+            modification_type='discrete',
+            modification_value='OnIfHighSolarOnWindow',
+            conditions={'has_automated_shading': False},
+            expected_impact={'cooling_energy': -15},
+            cost_level='medium',
+            applicability=['office', 'educational']
         ))
     
     def add_rule(self, rule: EfficiencyRule):
         """Add a rule to the engine"""
         self.rules[rule.name] = rule
     
+    def get_rules_by_category(self, category: str) -> List[EfficiencyRule]:
+        """Get all rules for a specific category"""
+        return [rule for rule in self.rules.values() if rule.category == category]
+    
     def get_applicable_rules(self, 
                            building_characteristics: Dict[str, Any],
                            categories: Optional[List[str]] = None,
                            cost_levels: Optional[List[str]] = None) -> List[EfficiencyRule]:
-        """
-        Get rules applicable to a building
-        
-        Args:
-            building_characteristics: Building properties
-            categories: Filter by categories
-            cost_levels: Filter by cost levels
-            
-        Returns:
-            List of applicable rules
-        """
+        """Get rules applicable to a specific building"""
         applicable_rules = []
         
         for rule in self.rules.values():
-            # Category filter
+            # Filter by category
             if categories and rule.category not in categories:
                 continue
             
-            # Cost level filter
+            # Filter by cost level
             if cost_levels and rule.cost_level not in cost_levels:
                 continue
             
             # Check applicability
-            building_type = building_characteristics.get('building_type', 'all_buildings')
-            if 'all_buildings' not in rule.applicability and building_type not in rule.applicability:
-                continue
+            if 'all_buildings' not in rule.applicability:
+                building_type = building_characteristics.get('building_type', 'unknown')
+                if building_type not in rule.applicability:
+                    continue
             
             # Check conditions
             if self._check_conditions(rule.conditions, building_characteristics):
@@ -220,71 +295,44 @@ class EfficiencyRuleEngine:
         
         return applicable_rules
     
-    def _check_conditions(self, 
-                         conditions: Dict[str, Any], 
-                         characteristics: Dict[str, Any]) -> bool:
-        """Check if conditions are met"""
-        for key, condition in conditions.items():
-            if key not in characteristics:
-                continue
+    def _check_conditions(self, conditions: Dict[str, Any], characteristics: Dict[str, Any]) -> bool:
+        """Check if conditions are met for a rule"""
+        for param, condition in conditions.items():
+            if param not in characteristics:
+                continue  # Skip if characteristic not available
             
-            value = characteristics[key]
+            value = characteristics[param]
             
             if isinstance(condition, dict):
-                # Range conditions
                 if 'min' in condition and value < condition['min']:
                     return False
                 if 'max' in condition and value > condition['max']:
                     return False
             elif isinstance(condition, list):
-                # Value must be in list
                 if value not in condition:
                     return False
             else:
-                # Direct comparison
                 if value != condition:
                     return False
         
         return True
     
-    def rank_rules_by_impact(self, 
-                           rules: List[EfficiencyRule],
-                           impact_weights: Optional[Dict[str, float]] = None) -> List[Tuple[EfficiencyRule, float]]:
-        """
-        Rank rules by expected impact
-        
-        Args:
-            rules: List of rules to rank
-            impact_weights: Weights for different impact types
-            
-        Returns:
-            List of (rule, score) tuples sorted by score
-        """
-        if not impact_weights:
-            impact_weights = {
-                'heating_energy': 1.0,
-                'cooling_energy': 1.0,
-                'lighting_energy': 1.0,
-                'plug_loads': 0.8,
-                'fan_energy': 0.6,
-                'ventilation_energy': 0.6
-            }
-        
-        rule_scores = []
+    def rank_rules_by_impact(self, rules: List[EfficiencyRule]) -> List[Tuple[EfficiencyRule, float]]:
+        """Rank rules by their expected impact"""
+        ranked = []
         
         for rule in rules:
-            score = 0
-            for impact_type, reduction in rule.expected_impact.items():
-                weight = impact_weights.get(impact_type, 0.5)
-                # Negative reduction means savings
-                score += abs(reduction) * weight
+            # Calculate total impact score
+            total_impact = sum(abs(impact) for impact in rule.expected_impact.values())
+            avg_impact = total_impact / len(rule.expected_impact) if rule.expected_impact else 0
             
-            rule_scores.append((rule, score))
+            # Adjust for cost level
+            cost_factor = {'low': 1.2, 'medium': 1.0, 'high': 0.8}
+            score = avg_impact * cost_factor.get(rule.cost_level, 1.0)
+            
+            ranked.append((rule, score))
         
-        # Sort by score (highest first)
-        rule_scores.sort(key=lambda x: x[1], reverse=True)
-        
-        return rule_scores
+        return sorted(ranked, key=lambda x: x[1], reverse=True)
     
     def create_efficiency_package(self,
                                 building_characteristics: Dict[str, Any],
@@ -336,8 +384,8 @@ class EfficiencyRuleEngine:
         dependencies = {
             'demand_controlled_ventilation': ['co2_sensors'],
             'energy_recovery_ventilation': ['balanced_ventilation'],
-            'task_ambient_lighting': ['lighting_controls'],
-            'cool_roof': ['roof_replacement_scheduled']
+            'task_lighting': ['lighting_controls'],
+            'automated_shading': ['shading_controls']
         }
         
         return dependencies.get(rule.name, [])
@@ -406,3 +454,23 @@ class EfficiencyRuleEngine:
         
         with open(output_path, 'w') as f:
             json.dump(rules_data, f, indent=2)
+    
+    def import_rules(self, input_path: str):
+        """Import rules from JSON"""
+        with open(input_path, 'r') as f:
+            rules_data = json.load(f)
+        
+        for name, rule_data in rules_data.items():
+            rule = EfficiencyRule(
+                name=name,
+                description=rule_data['description'],
+                category=rule_data['category'],
+                target_parameter=rule_data['target_parameter'],
+                modification_type=rule_data['modification_type'],
+                modification_value=rule_data['modification_value'],
+                conditions=rule_data.get('conditions', {}),
+                expected_impact=rule_data.get('expected_impact', {}),
+                cost_level=rule_data.get('cost_level', 'medium'),
+                applicability=rule_data.get('applicability', [])
+            )
+            self.add_rule(rule)

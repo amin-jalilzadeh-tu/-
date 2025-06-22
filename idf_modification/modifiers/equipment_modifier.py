@@ -1,10 +1,5 @@
 """
-Equipment and appliance modifications.
-
-This module handles modifications to equipment and appliance modifications.
-"""
-"""
-Equipment Modifier - Handles electrical and other equipment
+Equipment Modifier - Compatible with parsed IDF structure
 """
 from typing import List, Dict, Any
 from ..base_modifier import BaseModifier, ParameterDefinition
@@ -13,7 +8,7 @@ class EquipmentModifier(BaseModifier):
     """Modifier for equipment-related IDF objects"""
     
     def _initialize_parameters(self):
-        """Initialize equipment parameter definitions"""
+        """Initialize equipment parameter definitions matching parser field names"""
         self.parameter_definitions = {
             'design_level': ParameterDefinition(
                 object_type='ELECTRICEQUIPMENT',
@@ -70,21 +65,15 @@ class EquipmentModifier(BaseModifier):
                 max_value=1.0,
                 performance_impact='zone_loads'
             ),
-            'gas_design_level': ParameterDefinition(
-                object_type='GASEQUIPMENT',
-                field_name='Design Level',
-                field_index=4,
-                data_type=float,
-                units='W',
-                performance_impact='gas_loads'
-            ),
-            'exterior_design_level': ParameterDefinition(
-                object_type='EXTERIOREQUIPMENT',
-                field_name='Design Level',
-                field_index=2,
-                data_type=float,
-                units='W',
-                performance_impact='exterior_loads'
+            'fuel_type': ParameterDefinition(
+                object_type='FUELEQUIPMENT',
+                field_name='Fuel Type',
+                field_index=10,
+                data_type=str,
+                allowed_values=['Electricity', 'NaturalGas', 'PropaneGas', 
+                               'FuelOilNo1', 'FuelOilNo2', 'Coal', 'Diesel', 
+                               'Gasoline', 'OtherFuel1', 'OtherFuel2'],
+                performance_impact='fuel_use'
             )
         }
     
@@ -94,36 +83,32 @@ class EquipmentModifier(BaseModifier):
     def get_modifiable_object_types(self) -> List[str]:
         return [
             'ELECTRICEQUIPMENT',
-            'GASEQUIPMENT',
-            'HOTWATEREQUIPMENT',
+            'FUELEQUIPMENT',
+            'HOTWAREREQUIPMENT',
             'STEAMEQUIPMENT',
-            'OTHEREQUIPMENT',
-            'EXTERIOREQUIPMENT',
-            'EXTERIOR:LIGHTS',
-            'REFRIGERATION:SYSTEM',
-            'REFRIGERATION:COMPRESSORRACK'
+            'OTHEREQU IPMENT'
         ]
     
     def _get_category_files(self) -> List[str]:
         return ['equipment']
     
     def apply_modifications(self, 
-                          idf, 
+                          parsed_objects: Dict[str, List[Any]], 
                           modifiable_params: Dict[str, List[Dict[str, Any]]],
                           strategy: str = 'default') -> List:
         """Apply equipment-specific modifications"""
         
-        if strategy == 'energy_star':
-            return self._apply_energy_star_equipment(idf, modifiable_params)
+        if strategy == 'efficient_equipment':
+            return self._apply_efficient_equipment(parsed_objects, modifiable_params)
+        elif strategy == 'energy_star':
+            return self._apply_energy_star_standards(parsed_objects, modifiable_params)
         elif strategy == 'plug_load_reduction':
-            return self._apply_plug_load_reduction(idf, modifiable_params)
-        elif strategy == 'schedule_optimization':
-            return self._apply_schedule_optimization(idf, modifiable_params)
+            return self._apply_plug_load_reduction(parsed_objects, modifiable_params)
         else:
-            return super().apply_modifications(idf, modifiable_params, strategy)
+            return super().apply_modifications(parsed_objects, modifiable_params, strategy)
     
-    def _apply_energy_star_equipment(self, idf, modifiable_params):
-        """Upgrade to Energy Star equipment"""
+    def _apply_efficient_equipment(self, parsed_objects, modifiable_params):
+        """Apply efficient equipment upgrades"""
         modifications = []
         
         for obj_type, objects in modifiable_params.items():
@@ -131,128 +116,118 @@ class EquipmentModifier(BaseModifier):
                 for obj_info in objects:
                     obj = obj_info['object']
                     
-                    # Check calculation method
-                    calc_method = obj.Design_Level_Calculation_Method
-                    
-                    # Reduce equipment power by 20-35% for Energy Star
-                    import random
-                    reduction = random.uniform(0.20, 0.35)
-                    
-                    if calc_method == 'EquipmentLevel' and obj.Design_Level:
-                        old_level = float(obj.Design_Level)
-                        new_level = old_level * (1 - reduction)
-                        obj.Design_Level = new_level
-                        param_name = 'design_level'
-                        
-                        modifications.append(self._create_modification_result(
-                            obj, param_name, old_level, new_level, 'energy_star_upgrade'
-                        ))
-                        
-                    elif calc_method == 'Watts/Area' and obj.Watts_per_Zone_Floor_Area:
-                        old_wpf = float(obj.Watts_per_Zone_Floor_Area)
-                        new_wpf = old_wpf * (1 - reduction)
-                        obj.Watts_per_Zone_Floor_Area = new_wpf
-                        param_name = 'watts_per_area'
-                        
-                        modifications.append(self._create_modification_result(
-                            obj, param_name, old_wpf, new_wpf, 'energy_star_upgrade'
-                        ))
-                        
-                    elif calc_method == 'Watts/Person' and obj.Watts_per_Person:
-                        old_wpp = float(obj.Watts_per_Person)
-                        new_wpp = old_wpp * (1 - reduction)
-                        obj.Watts_per_Person = new_wpp
-                        param_name = 'watts_per_person'
-                        
-                        modifications.append(self._create_modification_result(
-                            obj, param_name, old_wpp, new_wpp, 'energy_star_upgrade'
-                        ))
+                    # Reduce equipment power by 15-30%
+                    modifications.extend(self._reduce_equipment_power_parsed(
+                        obj, 0.15, 0.30, 'efficient_equipment'
+                    ))
         
         return modifications
     
-    def _apply_plug_load_reduction(self, idf, modifiable_params):
+    def _apply_energy_star_standards(self, parsed_objects, modifiable_params):
+        """Apply Energy Star equipment standards"""
+        modifications = []
+        
+        for obj_type, objects in modifiable_params.items():
+            if obj_type == 'ELECTRICEQUIPMENT':
+                for obj_info in objects:
+                    obj = obj_info['object']
+                    
+                    # Energy Star typically reduces consumption by 20-50%
+                    modifications.extend(self._reduce_equipment_power_parsed(
+                        obj, 0.20, 0.50, 'energy_star'
+                    ))
+        
+        return modifications
+    
+    def _apply_plug_load_reduction(self, parsed_objects, modifiable_params):
         """Apply plug load reduction strategies"""
         modifications = []
+        import random
         
-        # Reduce both power and adjust load fractions
         for obj_type, objects in modifiable_params.items():
             if obj_type == 'ELECTRICEQUIPMENT':
                 for obj_info in objects:
                     obj = obj_info['object']
                     
-                    # Reduce plug loads
-                    modifications.extend(self._reduce_equipment_power(obj, 0.15, 0.25, 'plug_load_management'))
+                    # Smart power strips and controls reduce loads by 10-25%
+                    modifications.extend(self._reduce_equipment_power_parsed(
+                        obj, 0.10, 0.25, 'plug_load_reduction'
+                    ))
                     
-                    # Also adjust fractions for more efficient equipment
-                    if obj.Fraction_Lost:
-                        old_lost = float(obj.Fraction_Lost)
-                        # Reduce losses by 50%
-                        new_lost = old_lost * 0.5
-                        obj.Fraction_Lost = new_lost
-                        
-                        # Redistribute to radiant
-                        if obj.Fraction_Radiant:
-                            old_radiant = float(obj.Fraction_Radiant)
-                            obj.Fraction_Radiant = old_radiant + (old_lost - new_lost)
-                        
-                        modifications.append(self._create_modification_result(
-                            obj, 'fraction_lost', old_lost, new_lost, 'efficient_equipment'
-                        ))
+                    # Also adjust fractions to represent better equipment
+                    for param in obj.parameters:
+                        if param.field_name == 'Fraction Lost':
+                            old_value = param.numeric_value or float(param.value)
+                            # Reduce lost fraction by 30-50%
+                            reduction = random.uniform(0.3, 0.5)
+                            new_value = old_value * (1 - reduction)
+                            
+                            param.value = str(new_value)
+                            param.numeric_value = new_value
+                            
+                            modifications.append(self._create_modification_result(
+                                obj, 'fraction_lost', old_value, new_value, 'plug_load_reduction'
+                            ))
+                            break
         
         return modifications
     
-    def _apply_schedule_optimization(self, idf, modifiable_params):
-        """Optimize equipment schedules"""
-        # This would modify schedules, not equipment values directly
-        # For now, return empty - schedule modification is handled separately
-        return []
-    
-    def _reduce_equipment_power(self, obj, min_reduction, max_reduction, rule):
-        """Helper to reduce equipment power"""
+    def _reduce_equipment_power_parsed(self, obj, min_reduction, max_reduction, rule):
+        """Helper to reduce equipment power in parsed objects"""
         modifications = []
         import random
         reduction = random.uniform(min_reduction, max_reduction)
         
-        calc_method = obj.Design_Level_Calculation_Method
+        # Find the calculation method parameter (usually index 3)
+        calc_method = None
+        if len(obj.parameters) > 3:
+            calc_method_param = obj.parameters[3]
+            calc_method = calc_method_param.value
         
-        if calc_method == 'EquipmentLevel' and obj.Design_Level:
-            old_value = float(obj.Design_Level)
-            new_value = old_value * (1 - reduction)
-            obj.Design_Level = new_value
-            modifications.append(self._create_modification_result(
-                obj, 'design_level', old_value, new_value, rule
-            ))
-            
-        elif calc_method == 'Watts/Area' and obj.Watts_per_Zone_Floor_Area:
-            old_value = float(obj.Watts_per_Zone_Floor_Area)
-            new_value = old_value * (1 - reduction)
-            obj.Watts_per_Zone_Floor_Area = new_value
-            modifications.append(self._create_modification_result(
-                obj, 'watts_per_area', old_value, new_value, rule
-            ))
-            
-        elif calc_method == 'Watts/Person' and obj.Watts_per_Person:
-            old_value = float(obj.Watts_per_Person)
-            new_value = old_value * (1 - reduction)
-            obj.Watts_per_Person = new_value
-            modifications.append(self._create_modification_result(
-                obj, 'watts_per_person', old_value, new_value, rule
-            ))
+        # Based on calculation method, modify appropriate parameter
+        if calc_method == 'EquipmentLevel':
+            # Modify Design Level
+            for param in obj.parameters:
+                if param.field_name == 'Design Level' and param.numeric_value:
+                    old_value = param.numeric_value
+                    new_value = old_value * (1 - reduction)
+                    
+                    param.value = str(new_value)
+                    param.numeric_value = new_value
+                    
+                    modifications.append(self._create_modification_result(
+                        obj, 'design_level', old_value, new_value, rule
+                    ))
+                    break
+                    
+        elif calc_method == 'Watts/Area':
+            # Modify Watts per Zone Floor Area
+            for param in obj.parameters:
+                if param.field_name == 'Watts per Zone Floor Area' and param.numeric_value:
+                    old_value = param.numeric_value
+                    new_value = old_value * (1 - reduction)
+                    
+                    param.value = str(new_value)
+                    param.numeric_value = new_value
+                    
+                    modifications.append(self._create_modification_result(
+                        obj, 'watts_per_area', old_value, new_value, rule
+                    ))
+                    break
+                    
+        elif calc_method == 'Watts/Person':
+            # Modify Watts per Person
+            for param in obj.parameters:
+                if param.field_name == 'Watts per Person' and param.numeric_value:
+                    old_value = param.numeric_value
+                    new_value = old_value * (1 - reduction)
+                    
+                    param.value = str(new_value)
+                    param.numeric_value = new_value
+                    
+                    modifications.append(self._create_modification_result(
+                        obj, 'watts_per_person', old_value, new_value, rule
+                    ))
+                    break
         
         return modifications
-    
-    def _create_modification_result(self, obj, param_name, old_value, new_value, rule):
-        """Helper to create modification result"""
-        from ..base_modifier import ModificationResult
-        
-        return ModificationResult(
-            success=True,
-            object_type=obj.obj[0],
-            object_name=obj.Name if hasattr(obj, 'Name') else str(obj),
-            parameter=param_name,
-            original_value=old_value,
-            new_value=new_value,
-            change_type='absolute',
-            rule_applied=rule,
-            validation_status='valid'
-        )

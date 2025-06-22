@@ -1,0 +1,23 @@
+{
+  "shading": [
+    {
+      "param_name": "slat_angle_deg",
+      "min_val": 30.0,
+      "max_val": 60.0
+    },
+    {
+      "param_name": "slat_beam_solar_reflectance",
+      "min_val": 0.6,
+      "max_val": 0.8
+    },
+    {
+      "param_name": "blind_to_glass_distance",
+      "fixed_value": 0.075
+    },
+    {
+      "param_name": "slat_width",
+      "min_val": 0.02,
+      "max_val": 0.03
+    }
+  ]
+}

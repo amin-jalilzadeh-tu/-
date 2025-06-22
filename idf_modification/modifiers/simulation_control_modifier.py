@@ -1,10 +1,5 @@
 """
-Simulation control parameter modifications.
-
-This module handles modifications to simulation control parameter modifications.
-"""
-"""
-Simulation Control Modifier - Handles simulation control objects
+Simulation Control Modifier - Compatible with parsed IDF structure
 """
 from typing import List, Dict, Any
 from ..base_modifier import BaseModifier, ParameterDefinition
@@ -13,7 +8,7 @@ class SimulationControlModifier(BaseModifier):
     """Modifier for simulation control related IDF objects"""
     
     def _initialize_parameters(self):
-        """Initialize simulation control parameter definitions"""
+        """Initialize simulation control parameter definitions matching parser field names"""
         self.parameter_definitions = {
             # Timestep
             'timesteps_per_hour': ParameterDefinition(
@@ -30,8 +25,8 @@ class SimulationControlModifier(BaseModifier):
             # Shadow calculation
             'shadow_calculation_frequency': ParameterDefinition(
                 object_type='SHADOWCALCULATION',
-                field_name='Shading Calculation Update Frequency',
-                field_index=1,
+                field_name='Calculation Frequency',
+                field_index=0,
                 data_type=int,
                 min_value=1,
                 max_value=365,
@@ -40,7 +35,7 @@ class SimulationControlModifier(BaseModifier):
             'maximum_shadow_figures': ParameterDefinition(
                 object_type='SHADOWCALCULATION',
                 field_name='Maximum Figures in Shadow Overlap Calculations',
-                field_index=2,
+                field_index=1,
                 data_type=int,
                 min_value=200,
                 max_value=50000,
@@ -48,7 +43,7 @@ class SimulationControlModifier(BaseModifier):
             ),
             
             # Convergence limits
-            'loads_convergence_tolerance': ParameterDefinition(
+            'minimum_system_timestep': ParameterDefinition(
                 object_type='CONVERGENCELIMITS',
                 field_name='Minimum System Timestep',
                 field_index=0,
@@ -56,6 +51,15 @@ class SimulationControlModifier(BaseModifier):
                 units='minutes',
                 min_value=1,
                 max_value=60,
+                performance_impact='convergence'
+            ),
+            'maximum_hvac_iterations': ParameterDefinition(
+                object_type='CONVERGENCELIMITS',
+                field_name='Maximum HVAC Iterations',
+                field_index=1,
+                data_type=int,
+                min_value=1,
+                max_value=50,
                 performance_impact='convergence'
             ),
             
@@ -69,34 +73,44 @@ class SimulationControlModifier(BaseModifier):
                                'ConductionFiniteDifference', 'CombinedHeatAndMoistureFiniteElement'],
                 performance_impact='simulation_method'
             ),
+            'surface_temperature_upper_limit': ParameterDefinition(
+                object_type='HEATBALANCEALGORITHM',
+                field_name='Surface Temperature Upper Limit',
+                field_index=1,
+                data_type=float,
+                units='C',
+                min_value=100,
+                max_value=300,
+                performance_impact='convergence'
+            ),
             
-            # Solar distribution
+            # Building parameters
+            'terrain': ParameterDefinition(
+                object_type='BUILDING',
+                field_name='Terrain',
+                field_index=5,
+                data_type=str,
+                allowed_values=['Country', 'Suburbs', 'City', 'Ocean', 'Urban'],
+                performance_impact='wind_calculations'
+            ),
             'solar_distribution': ParameterDefinition(
                 object_type='BUILDING',
                 field_name='Solar Distribution',
-                field_index=5,
+                field_index=7,
                 data_type=str,
                 allowed_values=['MinimalShadowing', 'FullExterior', 'FullInteriorAndExterior', 
                                'FullExteriorWithReflections', 'FullInteriorAndExteriorWithReflections'],
-                performance_impact='solar_accuracy'
+                performance_impact='solar_calculations'
             ),
             
-            # Surface convection algorithms
-            'inside_convection_algorithm': ParameterDefinition(
-                object_type='SURFACECONVECTIONALGORITHM:INSIDE',
-                field_name='Algorithm',
-                field_index=0,
+            # Output control
+            'output_variable_reporting_frequency': ParameterDefinition(
+                object_type='OUTPUT:VARIABLE',
+                field_name='Reporting Frequency',
+                field_index=2,
                 data_type=str,
-                allowed_values=['Simple', 'TARP', 'CeilingDiffuser', 'AdaptiveConvectionAlgorithm'],
-                performance_impact='heat_transfer_accuracy'
-            ),
-            'outside_convection_algorithm': ParameterDefinition(
-                object_type='SURFACECONVECTIONALGORITHM:OUTSIDE',
-                field_name='Algorithm',
-                field_index=0,
-                data_type=str,
-                allowed_values=['SimpleCombined', 'TARP', 'MoWiTT', 'DOE-2', 'AdaptiveConvectionAlgorithm'],
-                performance_impact='heat_transfer_accuracy'
+                allowed_values=['Detailed', 'Timestep', 'Hourly', 'Daily', 'Monthly', 'RunPeriod', 'Environment', 'Annual'],
+                performance_impact='output_file_size'
             )
         }
     
@@ -105,226 +119,252 @@ class SimulationControlModifier(BaseModifier):
     
     def get_modifiable_object_types(self) -> List[str]:
         return [
-            'VERSION',
             'SIMULATIONCONTROL',
             'BUILDING',
-            'TIMESTEP',
             'SHADOWCALCULATION',
+            'TIMESTEP',
+            'CONVERGENCELIMITS',
+            'HEATBALANCEALGORITHM',
             'SURFACECONVECTIONALGORITHM:INSIDE',
             'SURFACECONVECTIONALGORITHM:OUTSIDE',
-            'HEATBALANCEALGORITHM',
-            'CONVERGENCELIMITS'
+            'ZONECAPACITANCEMULTIPLIER:RESEARCHSPECIAL',
+            'OUTPUT:VARIABLE',
+            'OUTPUT:METER',
+            'OUTPUT:SQLITE',
+            'OUTPUTCONTROL:TABLE:STYLE'
         ]
     
     def _get_category_files(self) -> List[str]:
         return ['simulation_control']
     
     def apply_modifications(self, 
-                          idf, 
+                          parsed_objects: Dict[str, List[Any]], 
                           modifiable_params: Dict[str, List[Dict[str, Any]]],
                           strategy: str = 'default') -> List:
         """Apply simulation control specific modifications"""
         
-        if strategy == 'high_accuracy':
-            return self._apply_high_accuracy(idf, modifiable_params)
-        elif strategy == 'fast_simulation':
-            return self._apply_fast_simulation(idf, modifiable_params)
-        elif strategy == 'detailed_solar':
-            return self._apply_detailed_solar(idf, modifiable_params)
-        elif strategy == 'adaptive_algorithms':
-            return self._apply_adaptive_algorithms(idf, modifiable_params)
+        if strategy == 'accuracy_focus':
+            return self._apply_accuracy_focus(parsed_objects, modifiable_params)
+        elif strategy == 'speed_focus':
+            return self._apply_speed_focus(parsed_objects, modifiable_params)
+        elif strategy == 'detailed_output':
+            return self._apply_detailed_output(parsed_objects, modifiable_params)
+        elif strategy == 'balanced':
+            return self._apply_balanced_settings(parsed_objects, modifiable_params)
         else:
-            return super().apply_modifications(idf, modifiable_params, strategy)
+            return super().apply_modifications(parsed_objects, modifiable_params, strategy)
     
-    def _apply_high_accuracy(self, idf, modifiable_params):
-        """Apply high accuracy simulation settings"""
+    def _apply_accuracy_focus(self, parsed_objects, modifiable_params):
+        """Apply settings for maximum simulation accuracy"""
         modifications = []
         
         for obj_type, objects in modifiable_params.items():
-            # Increase timesteps
             if obj_type == 'TIMESTEP':
                 for obj_info in objects:
                     obj = obj_info['object']
-                    if obj.Number_of_Timesteps_per_Hour:
-                        old_timesteps = int(obj.Number_of_Timesteps_per_Hour)
-                        new_timesteps = 6  # 10-minute timesteps
-                        obj.Number_of_Timesteps_per_Hour = new_timesteps
-                        
-                        modifications.append(self._create_modification_result(
-                            obj, 'timesteps_per_hour', old_timesteps, new_timesteps,
-                            'high_accuracy_timestep'
-                        ))
-            
-            # More frequent shadow calculations
-            elif obj_type == 'SHADOWCALCULATION':
-                for obj_info in objects:
-                    obj = obj_info['object']
-                    if obj.Shading_Calculation_Update_Frequency:
-                        old_freq = int(obj.Shading_Calculation_Update_Frequency)
-                        new_freq = 7  # Weekly updates
-                        obj.Shading_Calculation_Update_Frequency = new_freq
-                        
-                        modifications.append(self._create_modification_result(
-                            obj, 'shadow_calculation_frequency', old_freq, new_freq,
-                            'frequent_shadow_updates'
-                        ))
-            
-            # Detailed solar distribution
-            elif obj_type == 'BUILDING':
-                for obj_info in objects:
-                    obj = obj_info['object']
-                    if obj.Solar_Distribution:
-                        old_solar = obj.Solar_Distribution
-                        new_solar = 'FullInteriorAndExteriorWithReflections'
-                        obj.Solar_Distribution = new_solar
-                        
-                        modifications.append(self._create_modification_result(
-                            obj, 'solar_distribution', old_solar, new_solar,
-                            'detailed_solar_distribution'
-                        ))
-        
-        return modifications
-    
-    def _apply_fast_simulation(self, idf, modifiable_params):
-        """Apply fast simulation settings"""
-        modifications = []
-        
-        for obj_type, objects in modifiable_params.items():
-            # Reduce timesteps
-            if obj_type == 'TIMESTEP':
-                for obj_info in objects:
-                    obj = obj_info['object']
-                    if obj.Number_of_Timesteps_per_Hour:
-                        old_timesteps = int(obj.Number_of_Timesteps_per_Hour)
-                        new_timesteps = 2  # 30-minute timesteps
-                        obj.Number_of_Timesteps_per_Hour = new_timesteps
-                        
-                        modifications.append(self._create_modification_result(
-                            obj, 'timesteps_per_hour', old_timesteps, new_timesteps,
-                            'fast_simulation_timestep'
-                        ))
-            
-            # Less frequent shadow calculations
-            elif obj_type == 'SHADOWCALCULATION':
-                for obj_info in objects:
-                    obj = obj_info['object']
-                    if obj.Shading_Calculation_Update_Frequency:
-                        old_freq = int(obj.Shading_Calculation_Update_Frequency)
-                        new_freq = 30  # Monthly updates
-                        obj.Shading_Calculation_Update_Frequency = new_freq
-                        
-                        modifications.append(self._create_modification_result(
-                            obj, 'shadow_calculation_frequency', old_freq, new_freq,
-                            'infrequent_shadow_updates'
-                        ))
-            
-            # Simplified solar distribution
-            elif obj_type == 'BUILDING':
-                for obj_info in objects:
-                    obj = obj_info['object']
-                    if obj.Solar_Distribution:
-                        old_solar = obj.Solar_Distribution
-                        new_solar = 'FullExterior'
-                        obj.Solar_Distribution = new_solar
-                        
-                        modifications.append(self._create_modification_result(
-                            obj, 'solar_distribution', old_solar, new_solar,
-                            'simplified_solar_distribution'
-                        ))
-        
-        return modifications
-    
-    def _apply_detailed_solar(self, idf, modifiable_params):
-        """Apply detailed solar modeling"""
-        modifications = []
-        
-        for obj_type, objects in modifiable_params.items():
-            if obj_type == 'BUILDING':
-                for obj_info in objects:
-                    obj = obj_info['object']
-                    if obj.Solar_Distribution:
-                        old_solar = obj.Solar_Distribution
-                        new_solar = 'FullInteriorAndExteriorWithReflections'
-                        obj.Solar_Distribution = new_solar
-                        
-                        modifications.append(self._create_modification_result(
-                            obj, 'solar_distribution', old_solar, new_solar,
-                            'full_solar_with_reflections'
-                        ))
+                    
+                    # Set high timesteps per hour for accuracy
+                    for param in obj.parameters:
+                        if param.field_name == 'Number of Timesteps per Hour':
+                            old_value = param.numeric_value or int(param.value)
+                            new_value = 10  # 6-minute timesteps for good accuracy
+                            
+                            param.value = str(new_value)
+                            param.numeric_value = float(new_value)
+                            
+                            modifications.append(self._create_modification_result(
+                                obj, 'timesteps_per_hour', old_value, new_value, 'accuracy_focus'
+                            ))
+                            break
             
             elif obj_type == 'SHADOWCALCULATION':
                 for obj_info in objects:
                     obj = obj_info['object']
                     
-                    # Daily shadow updates
-                    if obj.Shading_Calculation_Update_Frequency:
-                        old_freq = int(obj.Shading_Calculation_Update_Frequency)
-                        new_freq = 1  # Daily
-                        obj.Shading_Calculation_Update_Frequency = new_freq
-                        
-                        modifications.append(self._create_modification_result(
-                            obj, 'shadow_calculation_frequency', old_freq, new_freq,
-                            'daily_shadow_calculation'
-                        ))
+                    # Frequent shadow calculations
+                    for param in obj.parameters:
+                        if param.field_name == 'Calculation Frequency':
+                            old_value = param.numeric_value or int(param.value)
+                            new_value = 7  # Weekly calculations
+                            
+                            param.value = str(new_value)
+                            param.numeric_value = float(new_value)
+                            
+                            modifications.append(self._create_modification_result(
+                                obj, 'shadow_calculation_frequency', old_value, new_value, 'accuracy_focus'
+                            ))
+                            break
                     
-                    # Increase figure limit
-                    if obj.Maximum_Figures_in_Shadow_Overlap_Calculations:
-                        old_figures = int(obj.Maximum_Figures_in_Shadow_Overlap_Calculations)
-                        new_figures = min(old_figures * 2, 30000)
-                        obj.Maximum_Figures_in_Shadow_Overlap_Calculations = new_figures
-                        
-                        modifications.append(self._create_modification_result(
-                            obj, 'maximum_shadow_figures', old_figures, new_figures,
-                            'increased_shadow_figures'
-                        ))
+                    # High figure count for complex shading
+                    for param in obj.parameters:
+                        if param.field_name == 'Maximum Figures in Shadow Overlap Calculations':
+                            old_value = param.numeric_value or int(param.value)
+                            new_value = 15000  # High figure count
+                            
+                            param.value = str(new_value)
+                            param.numeric_value = float(new_value)
+                            
+                            modifications.append(self._create_modification_result(
+                                obj, 'maximum_shadow_figures', old_value, new_value, 'accuracy_focus'
+                            ))
+                            break
+            
+            elif obj_type == 'BUILDING':
+                for obj_info in objects:
+                    obj = obj_info['object']
+                    
+                    # Full solar distribution with reflections
+                    for param in obj.parameters:
+                        if param.field_name == 'Solar Distribution':
+                            old_value = param.value
+                            new_value = 'FullInteriorAndExteriorWithReflections'
+                            
+                            param.value = new_value
+                            
+                            modifications.append(self._create_modification_result(
+                                obj, 'solar_distribution', old_value, new_value, 'accuracy_focus'
+                            ))
+                            break
         
         return modifications
     
-    def _apply_adaptive_algorithms(self, idf, modifiable_params):
-        """Apply adaptive convection algorithms"""
+    def _apply_speed_focus(self, parsed_objects, modifiable_params):
+        """Apply settings for faster simulation speed"""
         modifications = []
         
         for obj_type, objects in modifiable_params.items():
-            if obj_type == 'SURFACECONVECTIONALGORITHM:INSIDE':
+            if obj_type == 'TIMESTEP':
                 for obj_info in objects:
                     obj = obj_info['object']
-                    if obj.Algorithm:
-                        old_algo = obj.Algorithm
-                        new_algo = 'AdaptiveConvectionAlgorithm'
-                        obj.Algorithm = new_algo
-                        
-                        modifications.append(self._create_modification_result(
-                            obj, 'inside_convection_algorithm', old_algo, new_algo,
-                            'adaptive_inside_convection'
-                        ))
+                    
+                    # Lower timesteps for speed
+                    for param in obj.parameters:
+                        if param.field_name == 'Number of Timesteps per Hour':
+                            old_value = param.numeric_value or int(param.value)
+                            new_value = 4  # 15-minute timesteps
+                            
+                            param.value = str(new_value)
+                            param.numeric_value = float(new_value)
+                            
+                            modifications.append(self._create_modification_result(
+                                obj, 'timesteps_per_hour', old_value, new_value, 'speed_focus'
+                            ))
+                            break
             
-            elif obj_type == 'SURFACECONVECTIONALGORITHM:OUTSIDE':
+            elif obj_type == 'SHADOWCALCULATION':
                 for obj_info in objects:
                     obj = obj_info['object']
-                    if obj.Algorithm:
-                        old_algo = obj.Algorithm
-                        new_algo = 'AdaptiveConvectionAlgorithm'
-                        obj.Algorithm = new_algo
-                        
-                        modifications.append(self._create_modification_result(
-                            obj, 'outside_convection_algorithm', old_algo, new_algo,
-                            'adaptive_outside_convection'
-                        ))
+                    
+                    # Less frequent shadow calculations
+                    for param in obj.parameters:
+                        if param.field_name == 'Calculation Frequency':
+                            old_value = param.numeric_value or int(param.value)
+                            new_value = 30  # Monthly calculations
+                            
+                            param.value = str(new_value)
+                            param.numeric_value = float(new_value)
+                            
+                            modifications.append(self._create_modification_result(
+                                obj, 'shadow_calculation_frequency', old_value, new_value, 'speed_focus'
+                            ))
+                            break
+                    
+                    # Lower figure count
+                    for param in obj.parameters:
+                        if param.field_name == 'Maximum Figures in Shadow Overlap Calculations':
+                            old_value = param.numeric_value or int(param.value)
+                            new_value = 1000  # Lower figure count
+                            
+                            param.value = str(new_value)
+                            param.numeric_value = float(new_value)
+                            
+                            modifications.append(self._create_modification_result(
+                                obj, 'maximum_shadow_figures', old_value, new_value, 'speed_focus'
+                            ))
+                            break
+            
+            elif obj_type == 'BUILDING':
+                for obj_info in objects:
+                    obj = obj_info['object']
+                    
+                    # Simpler solar distribution
+                    for param in obj.parameters:
+                        if param.field_name == 'Solar Distribution':
+                            old_value = param.value
+                            new_value = 'FullExterior'
+                            
+                            param.value = new_value
+                            
+                            modifications.append(self._create_modification_result(
+                                obj, 'solar_distribution', old_value, new_value, 'speed_focus'
+                            ))
+                            break
         
         return modifications
     
-    def _create_modification_result(self, obj, param_name, old_value, new_value, rule):
-        """Helper to create modification result"""
-        from ..base_modifier import ModificationResult
+    def _apply_detailed_output(self, parsed_objects, modifiable_params):
+        """Apply settings for detailed output reporting"""
+        modifications = []
         
-        return ModificationResult(
-            success=True,
-            object_type=obj.obj[0],
-            object_name=obj.Name if hasattr(obj, 'Name') else obj.obj[0],
-            parameter=param_name,
-            original_value=old_value,
-            new_value=new_value,
-            change_type='absolute',
-            rule_applied=rule,
-            validation_status='valid'
-        )
+        for obj_type, objects in modifiable_params.items():
+            if obj_type == 'OUTPUT:VARIABLE':
+                for obj_info in objects:
+                    obj = obj_info['object']
+                    
+                    # Set to timestep reporting for maximum detail
+                    for param in obj.parameters:
+                        if param.field_name == 'Reporting Frequency':
+                            old_value = param.value
+                            new_value = 'Timestep'
+                            
+                            param.value = new_value
+                            
+                            modifications.append(self._create_modification_result(
+                                obj, 'output_variable_reporting_frequency', old_value, new_value, 'detailed_output'
+                            ))
+                            break
+        
+        return modifications
+    
+    def _apply_balanced_settings(self, parsed_objects, modifiable_params):
+        """Apply balanced settings for accuracy and speed"""
+        modifications = []
+        
+        for obj_type, objects in modifiable_params.items():
+            if obj_type == 'TIMESTEP':
+                for obj_info in objects:
+                    obj = obj_info['object']
+                    
+                    # Balanced timesteps
+                    for param in obj.parameters:
+                        if param.field_name == 'Number of Timesteps per Hour':
+                            old_value = param.numeric_value or int(param.value)
+                            new_value = 6  # 10-minute timesteps
+                            
+                            param.value = str(new_value)
+                            param.numeric_value = float(new_value)
+                            
+                            modifications.append(self._create_modification_result(
+                                obj, 'timesteps_per_hour', old_value, new_value, 'balanced'
+                            ))
+                            break
+            
+            elif obj_type == 'CONVERGENCELIMITS':
+                for obj_info in objects:
+                    obj = obj_info['object']
+                    
+                    # Balanced convergence settings
+                    for param in obj.parameters:
+                        if param.field_name == 'Maximum HVAC Iterations':
+                            old_value = param.numeric_value or int(param.value)
+                            new_value = 25  # Balanced iterations
+                            
+                            param.value = str(new_value)
+                            param.numeric_value = float(new_value)
+                            
+                            modifications.append(self._create_modification_result(
+                                obj, 'maximum_hvac_iterations', old_value, new_value, 'balanced'
+                            ))
+                            break
+        
+        return modifications

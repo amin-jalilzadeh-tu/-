@@ -1,10 +1,5 @@
 """
-Domestic Hot Water (DHW) system modifications.
-
-This module handles modifications to domestic hot water (dhw) system modifications.
-"""
-"""
-DHW (Domestic Hot Water) Modifier - Handles water heating objects
+DHW (Domestic Hot Water) Modifier - Compatible with parsed IDF structure
 """
 from typing import List, Dict, Any
 from ..base_modifier import BaseModifier, ParameterDefinition
@@ -13,11 +8,11 @@ class DHWModifier(BaseModifier):
     """Modifier for domestic hot water related IDF objects"""
     
     def _initialize_parameters(self):
-        """Initialize DHW parameter definitions"""
+        """Initialize DHW parameter definitions matching parser field names"""
         self.parameter_definitions = {
             'tank_volume': ParameterDefinition(
                 object_type='WATERHEATER:MIXED',
-                field_name='Tank Volume',
+                field_name='Tank Volume',  # Must match parser's field name exactly
                 field_index=1,
                 data_type=float,
                 units='m3',
@@ -25,7 +20,7 @@ class DHWModifier(BaseModifier):
                 max_value=10.0,
                 performance_impact='dhw_capacity'
             ),
-            'setpoint_temperature': ParameterDefinition(
+            'setpoint_temperature_schedule': ParameterDefinition(
                 object_type='WATERHEATER:MIXED',
                 field_name='Setpoint Temperature Schedule Name',
                 field_index=2,
@@ -115,24 +110,23 @@ class DHWModifier(BaseModifier):
         return ['dhw']
     
     def apply_modifications(self, 
-                          idf, 
+                          parsed_objects: Dict[str, List[Any]], 
                           modifiable_params: Dict[str, List[Dict[str, Any]]],
                           strategy: str = 'default') -> List:
         """Apply DHW-specific modifications"""
         
-        if strategy == 'high_efficiency_water_heater':
-            return self._apply_high_efficiency_heater(idf, modifiable_params)
-        elif strategy == 'heat_pump_water_heater':
-            return self._apply_heat_pump_conversion(idf, modifiable_params)
-        elif strategy == 'temperature_optimization':
-            return self._apply_temperature_optimization(idf, modifiable_params)
-        elif strategy == 'demand_reduction':
-            return self._apply_demand_reduction(idf, modifiable_params)
+        if strategy == 'efficiency_upgrade':
+            return self._apply_efficiency_upgrades(parsed_objects, modifiable_params)
+        elif strategy == 'low_flow':
+            return self._apply_low_flow_fixtures(parsed_objects, modifiable_params)
+        elif strategy == 'heat_pump_conversion':
+            return self._apply_heat_pump_conversion(parsed_objects, modifiable_params)
         else:
-            return super().apply_modifications(idf, modifiable_params, strategy)
+            # Default strategy - apply standard modifications
+            return super().apply_modifications(parsed_objects, modifiable_params, strategy)
     
-    def _apply_high_efficiency_heater(self, idf, modifiable_params):
-        """Upgrade to high efficiency water heater"""
+    def _apply_efficiency_upgrades(self, parsed_objects, modifiable_params):
+        """Apply efficiency improvements to water heaters"""
         modifications = []
         
         for obj_type, objects in modifiable_params.items():
@@ -140,53 +134,44 @@ class DHWModifier(BaseModifier):
                 for obj_info in objects:
                     obj = obj_info['object']
                     
-                    # Improve efficiency
-                    if obj.Heater_Thermal_Efficiency:
-                        old_eff = float(obj.Heater_Thermal_Efficiency)
-                        new_eff = min(0.95, old_eff * 1.15)  # 15% improvement, max 95%
-                        obj.Heater_Thermal_Efficiency = new_eff
-                        
-                        modifications.append(self._create_modification_result(
-                            obj, 'heater_efficiency', old_eff, new_eff, 'high_efficiency_upgrade'
-                        ))
+                    # Find and modify efficiency parameter
+                    for param in obj.parameters:
+                        if param.field_name == 'Heater Thermal Efficiency':
+                            old_eff = param.numeric_value or float(param.value)
+                            # Increase efficiency by 10-20%
+                            import random
+                            improvement = random.uniform(0.1, 0.2)
+                            new_eff = min(0.99, old_eff * (1 + improvement))
+                            
+                            # Update the parameter
+                            param.value = str(new_eff)
+                            param.numeric_value = new_eff
+                            
+                            modifications.append(self._create_modification_result(
+                                obj, 'heater_efficiency', old_eff, new_eff, 'efficiency_upgrade'
+                            ))
+                            break
                     
                     # Reduce standby losses
-                    if obj.Off_Cycle_Loss_Coefficient_to_Ambient_Temperature:
-                        old_loss = float(obj.Off_Cycle_Loss_Coefficient_to_Ambient_Temperature)
-                        new_loss = old_loss * 0.5  # 50% reduction in standby losses
-                        obj.Off_Cycle_Loss_Coefficient_to_Ambient_Temperature = new_loss
-                        
-                        modifications.append(self._create_modification_result(
-                            obj, 'off_cycle_loss_coefficient', old_loss, new_loss, 'improved_insulation'
-                        ))
+                    for param in obj.parameters:
+                        if param.field_name == 'Off Cycle Loss Coefficient to Ambient Temperature':
+                            old_loss = param.numeric_value or float(param.value)
+                            # Reduce losses by 20-40%
+                            reduction = random.uniform(0.2, 0.4)
+                            new_loss = old_loss * (1 - reduction)
+                            
+                            param.value = str(new_loss)
+                            param.numeric_value = new_loss
+                            
+                            modifications.append(self._create_modification_result(
+                                obj, 'off_cycle_loss_coefficient', old_loss, new_loss, 'efficiency_upgrade'
+                            ))
+                            break
         
         return modifications
     
-    def _apply_temperature_optimization(self, idf, modifiable_params):
-        """Optimize DHW temperature setpoints"""
-        modifications = []
-        
-        # This would modify temperature schedules
-        # For now, adjust deadband for better efficiency
-        for obj_type, objects in modifiable_params.items():
-            if obj_type == 'WATERHEATER:MIXED':
-                for obj_info in objects:
-                    obj = obj_info['object']
-                    
-                    if obj.Deadband_Temperature_Difference:
-                        old_db = float(obj.Deadband_Temperature_Difference)
-                        # Increase deadband to reduce cycling
-                        new_db = min(5.0, old_db * 1.5)
-                        obj.Deadband_Temperature_Difference = new_db
-                        
-                        modifications.append(self._create_modification_result(
-                            obj, 'deadband_temperature', old_db, new_db, 'reduce_cycling'
-                        ))
-        
-        return modifications
-    
-    def _apply_demand_reduction(self, idf, modifiable_params):
-        """Reduce hot water demand"""
+    def _apply_low_flow_fixtures(self, parsed_objects, modifiable_params):
+        """Apply low-flow fixture modifications"""
         modifications = []
         
         for obj_type, objects in modifiable_params.items():
@@ -194,24 +179,27 @@ class DHWModifier(BaseModifier):
                 for obj_info in objects:
                     obj = obj_info['object']
                     
-                    if obj.Peak_Flow_Rate:
-                        old_flow = float(obj.Peak_Flow_Rate)
-                        # Reduce flow by 20-30% (low-flow fixtures)
-                        import random
-                        reduction = random.uniform(0.2, 0.3)
-                        new_flow = old_flow * (1 - reduction)
-                        obj.Peak_Flow_Rate = new_flow
-                        
-                        modifications.append(self._create_modification_result(
-                            obj, 'use_flow_rate', old_flow, new_flow, 'low_flow_fixtures'
-                        ))
+                    # Find and modify flow rate
+                    for param in obj.parameters:
+                        if param.field_name == 'Peak Flow Rate':
+                            old_flow = param.numeric_value or float(param.value)
+                            # Reduce flow by 20-40%
+                            import random
+                            reduction = random.uniform(0.2, 0.4)
+                            new_flow = old_flow * (1 - reduction)
+                            
+                            param.value = str(new_flow)
+                            param.numeric_value = new_flow
+                            
+                            modifications.append(self._create_modification_result(
+                                obj, 'use_flow_rate', old_flow, new_flow, 'low_flow_fixtures'
+                            ))
+                            break
         
         return modifications
     
-    def _apply_heat_pump_conversion(self, idf, modifiable_params):
+    def _apply_heat_pump_conversion(self, parsed_objects, modifiable_params):
         """Convert to heat pump water heater"""
-        # This would be more complex - changing object types
-        # For now, improve efficiency significantly
         modifications = []
         
         for obj_type, objects in modifiable_params.items():
@@ -220,30 +208,19 @@ class DHWModifier(BaseModifier):
                     obj = obj_info['object']
                     
                     # Heat pump water heaters have COP of 2-3
-                    if obj.Heater_Thermal_Efficiency:
-                        old_eff = float(obj.Heater_Thermal_Efficiency)
-                        # Simulate heat pump by setting very high efficiency
-                        new_eff = min(0.99, old_eff * 2.5)
-                        obj.Heater_Thermal_Efficiency = new_eff
-                        
-                        modifications.append(self._create_modification_result(
-                            obj, 'heater_efficiency', old_eff, new_eff, 'heat_pump_conversion'
-                        ))
+                    # Simulate by setting very high efficiency
+                    for param in obj.parameters:
+                        if param.field_name == 'Heater Thermal Efficiency':
+                            old_eff = param.numeric_value or float(param.value)
+                            # Heat pump equivalent efficiency
+                            new_eff = min(0.99, old_eff * 2.5)
+                            
+                            param.value = str(new_eff)
+                            param.numeric_value = new_eff
+                            
+                            modifications.append(self._create_modification_result(
+                                obj, 'heater_efficiency', old_eff, new_eff, 'heat_pump_conversion'
+                            ))
+                            break
         
         return modifications
-    
-    def _create_modification_result(self, obj, param_name, old_value, new_value, rule):
-        """Helper to create modification result"""
-        from ..base_modifier import ModificationResult
-        
-        return ModificationResult(
-            success=True,
-            object_type=obj.obj[0],
-            object_name=obj.Name if hasattr(obj, 'Name') else str(obj),
-            parameter=param_name,
-            original_value=old_value,
-            new_value=new_value,
-            change_type='absolute',
-            rule_applied=rule,
-            validation_status='valid'
-        )

@@ -19,14 +19,7 @@ Steps:
   10. Respect any cancel_event from job_manager.
 """
 
-"""
-orchestrator.py - Updated with validation configuration support
 
-Key changes:
-1. Load validation-specific configuration
-2. Pass ValidationConfig to validation functions
-3. Better error handling for validation failures
-"""
 
 import os
 import json
@@ -36,7 +29,7 @@ import time
 from contextlib import contextmanager
 import pandas as pd
 from datetime import datetime
-
+import shutil
 # Splitting / deep-merge
 from splitter import deep_merge_dicts
 
@@ -62,9 +55,10 @@ from idf_creation import create_idfs_for_all_buildings
 # Scenario modification
 # New modification system imports
 # New modification system imports
+# Wrong imports
 from idf_modification.modification_engine import ModificationEngine
-
 from idf_modification.modification_config import ModificationConfig
+
 
 from pathlib import Path
 
@@ -212,6 +206,8 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
     def_dicts        = main_config.get("default_dicts", {})
     structuring_cfg  = main_config.get("structuring", {})
     modification_cfg = main_config.get("modification", {})
+    perform_modification = modification_cfg.get("perform_modification", False)  # ADD THIS LINE
+
     validation_cfg   = main_config.get("validation", {})
     sens_cfg         = main_config.get("sensitivity", {})
     sur_cfg          = main_config.get("surrogate", {})
@@ -773,272 +769,179 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
 
 
 
-# -------------------------------------------------------------------------
-    # 13) Scenario Modification (Using New Parquet-based System)
+    # -------------------------------------------------------------------------
+    # 13) IDF Modification (if enabled)
     # -------------------------------------------------------------------------
     check_canceled()
-    if modification_cfg.get("perform_modification", False):
-        with step_timer(logger, "modification"):
-            logger.info("[INFO] Scenario modification is ENABLED.")
+    if perform_modification:
+        with step_timer(logger, "IDF modification"):
+            logger.info("[STEP] Starting IDF modification ...")
             
-            # Check if parsing was performed
-            parsed_data_path = os.path.join(job_output_dir, "parsed_data")
-            if not os.path.exists(parsed_data_path):
-                logger.error("[ERROR] Parsed data not found. Please enable parsing before modification.")
-                logger.error("[ERROR] Set 'parsing.perform_parsing': true in configuration.")
-                return
+            # Get modification configuration
+            mod_strategy = modification_cfg.get("modification_strategy", {})
+            categories_to_modify = modification_cfg.get("categories_to_modify", {})
+            base_idf_selection = modification_cfg.get("base_idf_selection", {})
+            output_options = modification_cfg.get("output_options", {})
             
-            # Initialize modification engine
-            try:
-                # Create the workflow config from loaded modification_cfg
-                workflow_config = {
-                    "modifications": modification_cfg,
-                    "project_id": job_id,
-                    "iddfile": idf_creation.idf_config.get("iddfile", "Energy+.idd")
-                }
+            # Update configuration for modification engine
+            mod_config = {
+                "base_idf_selection": base_idf_selection,
+                "output_options": output_options,
+                "categories": categories_to_modify
+            }
+            
+            # Import and initialize modification engine
+            from idf_modification.modification_engine import ModificationEngine
+            mod_engine = ModificationEngine(
+                project_dir=Path(job_output_dir),
+                config=mod_config
+            )
+            
+            logger.info(f"[INFO] Loaded {len(mod_engine.modifiers)} modifiers")
+            
+            # Select IDFs to modify
+            idf_files_to_modify = []
+            
+            if base_idf_selection.get("use_output_idfs", True) and os.path.exists(job_idf_dir):
+                # Use generated IDFs
+                selection_method = base_idf_selection.get("method", "all")
                 
-                # Initialize modification engine with correct directory
-                mod_engine = ModificationEngine(
-                    project_dir=job_output_dir,
-                    config=workflow_config
-                )
+                if selection_method == "all":
+                    idf_files_to_modify = [
+                        (idf_file, idf_file.stem.replace("building_", "").split("_")[0])
+                        for idf_file in Path(job_idf_dir).glob("*.idf")
+                    ]
                 
-                # Generate session ID
-                session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-                mod_engine.session_id = session_id
-                
-                # Get base IDF selection configuration
-                base_idf_selection = modification_cfg.get("base_idf_selection", {})
-                method = base_idf_selection.get("method", "specific")
-                
-                generated_files_all = []
-                
-                if method == "specific":
-                    # Use specific building IDs
+                elif selection_method == "specific":
                     building_ids = base_idf_selection.get("building_ids", [])
-                    
-                    if not building_ids:
-                        logger.error("[ERROR] No building_ids specified for 'specific' method")
-                        return
-                    
-                    # Load IDF mapping
-                    idf_map_csv = os.path.join(job_output_dir, "extracted_idf_buildings.csv")
-                    if not os.path.isfile(idf_map_csv):
-                        logger.error(f"[ERROR] IDF mapping file not found: {idf_map_csv}")
-                        logger.error("[ERROR] Please run IDF creation first.")
-                        return
-                    
-                    df_idf_map = pd.read_csv(idf_map_csv)
-                    
                     for building_id in building_ids:
-                        row_match = df_idf_map.loc[df_idf_map["ogc_fid"] == building_id]
-                        
-                        if not row_match.empty:
-                            idf_filename = row_match.iloc[0]["idf_name"]
-                            base_idf_path = os.path.join(job_output_dir, "output_IDFs", idf_filename)
-                            
-                            if os.path.exists(base_idf_path):
-                                logger.info(f"[INFO] Processing building {building_id} with IDF: {idf_filename}")
-                                
-                                # Generate modifications
-                                generated_files = mod_engine.generate_modifications(
-                                    base_idf_path=base_idf_path,
-                                    building_id=str(building_id)
-                                )
-                                
-                                generated_files_all.extend(generated_files)
-                                logger.info(f"[INFO] Generated {len(generated_files)} variants for building {building_id}")
-                            else:
-                                logger.warning(f"[WARN] IDF file not found: {base_idf_path}")
-                        else:
-                            logger.warning(f"[WARN] Building ID {building_id} not found in IDF mapping")
-                            
-                elif method == "representative":
-                    # Select representative buildings based on some criteria
-                    # This would need implementation based on your criteria
-                    logger.warning("[WARN] 'representative' method not yet implemented")
+                        idf_files = list(Path(job_idf_dir).glob(f"*{building_id}*.idf"))
+                        if idf_files:
+                            idf_files_to_modify.append((idf_files[0], str(building_id)))
+                
+                else:  # representative
+                    num_buildings = base_idf_selection.get("num_buildings", 5)
+                    all_idfs = list(Path(job_idf_dir).glob("*.idf"))[:num_buildings]
+                    for idf_file in all_idfs:
+                        building_id = idf_file.stem.replace("building_", "").split("_")[0]
+                        idf_files_to_modify.append((idf_file, building_id))
+            
+            logger.info(f"[INFO] Found {len(idf_files_to_modify)} IDF files to modify")
+            
+            # Output directory for modified IDFs
+            modified_idfs_dir = Path(job_output_dir) / "modified_idfs"
+            modified_idfs_dir.mkdir(exist_ok=True)
+            
+            # Process each building
+            all_modifications = []
+            modification_results = []
+            
+            for idf_path, building_id in idf_files_to_modify:
+                logger.info(f"[INFO] Modifying building {building_id}")
+                
+                try:
+                    # Generate variants based on strategy
+                    strategy_type = mod_strategy.get("type", "scenarios")
+                    num_variants = mod_strategy.get("num_variants", 1)
                     
-                elif method == "all":
-                    # Process all available IDFs
-                    idf_dir = os.path.join(job_output_dir, "output_IDFs")
-                    if not os.path.exists(idf_dir):
-                        logger.error(f"[ERROR] IDF directory not found: {idf_dir}")
-                        return
-                    
-                    idf_files = list(Path(idf_dir).glob("*.idf"))
-                    logger.info(f"[INFO] Found {len(idf_files)} IDF files to modify")
-                    
-                    for idf_path in idf_files:
-                        # Extract building ID from filename (e.g., "building_123.idf" -> "123")
-                        building_id = idf_path.stem.split('_')[1] if '_' in idf_path.stem else 'unknown'
+                    for variant_idx in range(num_variants):
+                        variant_id = f"variant_{variant_idx}"
                         
-                        logger.info(f"[INFO] Processing {idf_path.name}")
-                        
-                        generated_files = mod_engine.generate_modifications(
-                            base_idf_path=str(idf_path),
-                            building_id=building_id
+                        # Use modification engine's modify_building method
+                        result = mod_engine.modify_building(
+                            building_id=building_id,
+                            idf_path=idf_path,
+                            parameter_values=categories_to_modify,
+                            variant_id=variant_id
                         )
                         
-                        generated_files_all.extend(generated_files)
-                        logger.info(f"[INFO] Generated {len(generated_files)} variants for {idf_path.name}")
-                
-                else:
-                    logger.error(f"[ERROR] Unknown base_idf_selection method: {method}")
-                    return
-                
-                # Generate modification report
-                if generated_files_all:
-                    report_path = mod_engine.generate_modification_report()
-                    logger.info(f"[INFO] Modification report saved to: {report_path}")
-                    logger.info(f"[INFO] Total variants generated: {len(generated_files_all)}")
-                    
-                    # Optionally run simulations on modified IDFs
-                    if modification_cfg.get("post_modification", {}).get("run_simulations", False):
-                        logger.info("[INFO] Running simulations on modified IDFs...")
-                        
-                        # Import required modules
-                        from epw.run_epw_sims import simulate_all
-                        
-                        # Get simulation configuration
-                        sim_config = modification_cfg.get("post_modification", {}).get("simulation_config", {})
-                        num_workers = sim_config.get("num_workers", simulate_config.get("num_workers", 4))
-                        
-                        # Prepare modified IDF data for simulation
-                        modified_idfs_dir = os.path.join(job_output_dir, mod_engine.config['output_options']['output_dir'])
-                        logger.info(f"[INFO] Looking for modified IDFs in: {modified_idfs_dir}")
-                        
-                        # Load the IDF mapping data
-                        idf_map_csv = os.path.join(job_output_dir, "extracted_idf_buildings.csv")
-                        if not os.path.isfile(idf_map_csv):
-                            logger.error(f"[ERROR] IDF mapping file not found: {idf_map_csv}")
-                            logger.error("[ERROR] Cannot run simulations without building data.")
+                        if result['success']:
+                            logger.info(f"[INFO] Created variant: {result['output_file']}")
+                            all_modifications.extend(result['modifications'])
+                            modification_results.append(result)
                         else:
-                            df_map = pd.read_csv(idf_map_csv)
+                            logger.error(f"[ERROR] Failed to create variant {variant_id}: {result['errors']}")
                             
-                            # CRITICAL FIX: Ensure consistent data types for comparison
-                            # Convert ogc_fid to string to match the building_id extracted from filename
-                            df_map['ogc_fid'] = df_map['ogc_fid'].astype(str)
-                            logger.debug(f"[DEBUG] Loaded {len(df_map)} buildings from mapping file")
-                            logger.debug(f"[DEBUG] Building IDs in mapping: {df_map['ogc_fid'].tolist()}")
-                            
-                            # Create a dataframe for modified IDFs
-                            modified_buildings = []
-                            
-                            # Walk through all subdirectories to find IDF files
-                            for root, dirs, files in os.walk(modified_idfs_dir):
-                                for file in files:
-                                    if file.endswith('.idf'):
-                                        # Get full path
-                                        full_path = os.path.join(root, file)
-                                        
-                                        # Extract building info from filename
-                                        # Expected format: building_<id>_<variant>.idf
-                                        base_name = os.path.basename(file)
-                                        parts = base_name.replace('.idf', '').split('_')
-                                        
-                                        if len(parts) >= 3 and parts[0] == 'building':
-                                            building_id = parts[1]  # This is a string
-                                            variant_id = '_'.join(parts[2:])
-                                            
-                                            logger.debug(f"[DEBUG] Processing file: {file}, building_id: {building_id}, variant: {variant_id}")
-                                            
-                                            # Find original building data
-                                            orig_building = df_map[df_map['ogc_fid'] == building_id]
-                                            
-                                            if not orig_building.empty:
-                                                building_data = orig_building.iloc[0].to_dict()
-                                                
-                                                # Store the full filename with relative path from modified_idfs_dir
-                                                # This is important for simulate_all to find the files
-                                                rel_path = os.path.relpath(full_path, modified_idfs_dir)
-                                                building_data['idf_name'] = rel_path
-                                                building_data['variant_id'] = variant_id
-                                                building_data['original_ogc_fid'] = building_id  # Keep original ID
-                                                
-                                                modified_buildings.append(building_data)
-                                                logger.debug(f"[DEBUG] Added modified building: {building_id}, variant: {variant_id}, path: {rel_path}")
-                                            else:
-                                                logger.warning(f"[WARN] No building data found for ID '{building_id}'")
-                                                logger.warning(f"[WARN] Available IDs: {df_map['ogc_fid'].unique()[:5]}...")  # Show first 5 for debugging
-                            
-                            if modified_buildings:
-                                df_modified = pd.DataFrame(modified_buildings)
-                                logger.info(f"[INFO] Found {len(df_modified)} modified IDF files to simulate")
-                                logger.info(f"[INFO] Buildings to simulate: {df_modified.groupby('original_ogc_fid').size().to_dict()}")
-                                
-                                # Set output directory for modified simulation results
-                                modified_sim_output = os.path.join(job_output_dir, "Modified_Sim_Results")
-                                os.makedirs(modified_sim_output, exist_ok=True)
-                                
-                                # Get EPW configuration
-                                # Check if job_config_dir is defined (should be from earlier in orchestrator)
-                                if 'job_config_dir' not in locals():
-                                    job_config_dir = os.path.join("user_configs", job_id)
-                                
-                                # Re-load the EPW configuration if needed
-                                user_config_epw = None
-                                if 'user_flags' in locals() and user_flags.get("override_epw_json", False):
-                                    epw_json_path = os.path.join(job_config_dir, "user_config_epw.json")
-                                    if os.path.isfile(epw_json_path):
-                                        with open(epw_json_path, 'r') as f:
-                                            epw_data = json.load(f)
-                                            user_config_epw = epw_data.get("epw")
-                                            logger.debug("[DEBUG] Loaded user EPW configuration")
-                                
-                                # Use the EPW assignment from simulation config if specified
-                                epw_assignment = sim_config.get("epw_assignment", "use_original")
-                                if epw_assignment != "use_original":
-                                    logger.info(f"[INFO] Using EPW assignment strategy: {epw_assignment}")
-                                    # You can implement custom EPW assignment logic here
-                                
-                                assigned_epw_log = {}  # Initialize empty log for EPW assignments
-                                
-                                # Log simulation setup
-                                logger.info(f"[INFO] Simulation setup:")
-                                logger.info(f"  - IDF directory: {modified_idfs_dir}")
-                                logger.info(f"  - Output directory: {modified_sim_output}")
-                                logger.info(f"  - Number of workers: {num_workers}")
-                                logger.info(f"  - IDD file: {idf_creation.idf_config['iddfile']}")
-                                
-                                # Run simulations
-                                try:
-                                    simulate_all(
-                                        df_buildings=df_modified,
-                                        idf_directory=modified_idfs_dir,
-                                        iddfile=idf_creation.idf_config["iddfile"],
-                                        base_output_dir=modified_sim_output,
-                                        user_config_epw=user_config_epw,
-                                        assigned_epw_log=assigned_epw_log,
-                                        num_workers=num_workers
-                                    )
-                                    
-                                    logger.info(f"[INFO] Completed simulations for {len(df_modified)} modified IDFs")
-                                    
-                                    # Optionally parse results
-                                    if modification_cfg.get("post_modification", {}).get("parse_results", {}).get("enabled", False):
-                                        logger.info("[INFO] Parsing modified simulation results...")
-                                        # Add parsing logic here if needed
-                                        # You could use the same parsing approach as in section 12
-                                        # but pointing to the Modified_Sim_Results directory
-                                        
-                                except Exception as e:
-                                    logger.error(f"[ERROR] Simulation failed: {str(e)}")
-                                    import traceback
-                                    traceback.print_exc()
-                                    
-                            else:
-                                logger.warning("[WARN] No modified IDF files found to simulate")
-                                logger.warning(f"[WARN] Check directory: {modified_idfs_dir}")
-                else:
-                    logger.warning("[WARN] No IDF variants were generated")
-                    
-            except Exception as e:
-                logger.error(f"[ERROR] Modification failed: {str(e)}")
-                import traceback
-                traceback.print_exc()
+                except Exception as e:
+                    logger.error(f"[ERROR] Failed to modify building {building_id}: {e}")
+                    import traceback
+                    logger.debug(traceback.format_exc())
+            
+            # Generate modification report
+            # Generate modification reports based on configured formats
+            if output_options.get("save_report", True):
+                report_formats = output_options.get("report_formats", ["json"])
+                logger.info(f"[INFO] Generating modification reports: {report_formats}")
                 
-    else:
-        logger.info("[INFO] Skipping scenario modification.")
+                # Prepare comprehensive results for reporting
+                all_results = []
+                for result in modification_results:
+                    result['timestamp'] = datetime.now().isoformat()
+                    all_results.append(result)
+                
+                # Import report generation functions from your standalone runner
+                # You can either import these or copy them to orchestrator.py
+                from standalone_modification_runner import (
+                    StandaloneModificationRunner
+                )
+                
+                # Create a temporary runner instance to use its report methods
+                temp_runner = StandaloneModificationRunner(job_id, env_out_dir)
+                temp_runner.modification_cfg = modification_cfg
+                temp_runner.categories_to_modify = categories_to_modify
+                temp_runner.modified_idfs_dir = modified_idfs_dir
+                
+                # Generate reports using the standalone runner's methods
+                generated_reports = []
+                
+                # Always generate JSON report
+                if "json" in report_formats or True:
+                    report_path = temp_runner.generate_summary_report(all_results)
+                    generated_reports.append(('JSON', report_path))
+                
+                # Generate HTML report if requested
+                if "html" in report_formats:
+                    try:
+                        report_path = temp_runner.generate_html_report(all_results)
+                        generated_reports.append(('HTML', report_path))
+                    except Exception as e:
+                        logger.error(f"[ERROR] Failed to generate HTML report: {e}")
+                
+                # Generate CSV reports if requested
+                if "csv" in report_formats:
+                    try:
+                        temp_runner.generate_csv_report(all_results)
+                        generated_reports.append(('CSV', modified_idfs_dir / "modifications_*.csv"))
+                    except Exception as e:
+                        logger.error(f"[ERROR] Failed to generate CSV reports: {e}")
+                
+                # Generate Markdown report if requested
+                if "markdown" in report_formats:
+                    try:
+                        report_path = temp_runner.generate_markdown_report(all_results)
+                        generated_reports.append(('Markdown', report_path))
+                    except Exception as e:
+                        logger.error(f"[ERROR] Failed to generate Markdown report: {e}")
+                
+                # Generate Parquet reports if requested
+                if "parquet" in report_formats:
+                    try:
+                        success = temp_runner.generate_parquet_report(all_results)
+                        if success:
+                            generated_reports.append(('Parquet Database', modified_idfs_dir / 'parquet_database'))
+                            logger.info("[INFO] Parquet database generated successfully")
+                    except Exception as e:
+                        logger.error(f"[ERROR] Failed to generate Parquet reports: {e}")
+                        import traceback
+                        traceback.print_exc()
+                
+                # Log report generation summary
+                logger.info("[INFO] Generated reports:")
+                for report_type, path in generated_reports:
+                    logger.info(f"  {report_type}: {path}")
+            
+            logger.info(f"[INFO] Total modifications applied: {len(all_modifications)}")
+        
 
     # -------------------------------------------------------------------------
     # 14) Enhanced Validation with Parquet Support

@@ -1,836 +1,877 @@
+# modification_engine.py - Fixed version
 """
-Main orchestrator for IDF modifications.
-
-This module coordinates the execution of various modifiers and manages the
-modification workflow.
+Enhanced Modification Engine with IDF writing capability
 """
-import os
-import json
 import logging
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Union, Tuple
-import pandas as pd
-from eppy.modeleditor import IDF
-import shutil
+import traceback
 from datetime import datetime
-import importlib
-import inspect
-import numpy as np
+from pathlib import Path
+from typing import Dict, List, Any, Optional, Tuple
+import pandas as pd
+import copy
 
-from .base_modifier import BaseModifier, ModificationResult
-from .modification_tracker import ModificationTracker
-from .modification_config import ModificationConfig
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Global flag to track IDD initialization
-_IDD_INITIALIZED = False
+from idf_modification.data_classes import (
+    BuildingData, IDFObject, IDFParameter, 
+    Modification, ParameterDefinition
+)
+from parserr.idf_parser import EnhancedIDFParser
+
+from idf_modification.modification_tracker import ModificationTracker
+
+# Import modifiers
+from .modifiers.hvac_modifier import HVACModifier
+from .modifiers.lighting_modifier import LightingModifier
+from .modifiers.materials_modifier import MaterialsModifier
+from .modifiers.infiltration_modifier import InfiltrationModifier
+from .modifiers.ventilation_modifier import VentilationModifier
+from .modifiers.equipment_modifier import EquipmentModifier
+from .modifiers.dhw_modifier import DHWModifier
+from .modifiers.schedules_modifier import SchedulesModifier
+from .modifiers.shading_modifier import ShadingModifier
+from .modifiers.simulation_control_modifier import SimulationControlModifier
+from .modifiers.site_location_modifier import SiteLocationModifier
+from .modifiers.geometry_modifier import GeometryModifier
+
 
 class ModificationEngine:
-    """Main orchestrator for IDF modifications"""
+    """
+    Main engine for applying modifications to parsed IDF files
+    """
     
-    def __init__(self, project_dir, config):
-        """Initialize the modification engine.
+    # Fix for modification_engine.py - Replace the __init__ method with this:
+
+    def __init__(self, project_dir=None, config=None, output_path=None, session_id=None):
+        """Initialize the modification engine
         
         Args:
-            project_dir: Path to project directory
-            config: Either a config dict or session_id string (for backward compatibility)
+            project_dir: Path to project directory containing parsed data
+            config: Configuration dictionary
+            output_path: Path to output directory (optional, defaults to project_dir/modified_idfs)
+            session_id: Session identifier (optional)
         """
-        import json
-        from pathlib import Path
-        from datetime import datetime
+        # Set project directory
+        self.project_dir = Path(project_dir) if project_dir else Path.cwd()
         
-        self.project_dir = Path(project_dir)
-        self.output_dir = self.project_dir / "modified_idfs"
-        self.output_dir.mkdir(exist_ok=True)
+        # Set configuration
+        self.config = config or {}
         
-        # Handle both dict config and string session_id
-        if isinstance(config, str):
-            # Legacy mode - config is actually session_id
-            self.session_id = config
-            # Try to load config from project
-            config_path = self.project_dir / "combined.json"
-            if config_path.exists():
-                with open(config_path, 'r') as f:
-                    self.config = json.load(f)
-            else:
-                # Create minimal config
-                self.config = {
-                    "modifications": {
-                        "enable_modifications": True,
-                        "scenarios": {}
-                    }
-                }
-            self.config_manager = ModificationConfig(self.config)
+        # Set output path
+        if output_path:
+            self.output_path = Path(output_path)
         else:
-            # New mode - config is a dict
-            self.config = config
-            self.session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-            self.config_manager = ModificationConfig(config)
+            self.output_path = self.project_dir / "modified_idfs"
         
-        # Continue with rest of initialization...
-        self.tracker = ModificationTracker()
-        # (keep the rest of your existing __init__ code)
-    
-    def _ensure_idd_initialized(self, idd_path: str):
-        """Ensure IDD is initialized only once"""
-        global _IDD_INITIALIZED
-        if not _IDD_INITIALIZED:
-            try:
-                IDF.setiddname(idd_path)
-                _IDD_INITIALIZED = True
-                self.logger.info(f"IDD initialized with: {idd_path}")
-            except Exception as e:
-                if "IDD file is set" in str(e) or "IDDAlreadySetError" in str(e.__class__.__name__):
-                    _IDD_INITIALIZED = True
-                    self.logger.debug("IDD was already set")
-                else:
-                    raise
+        # Create output directory
+        self.output_path.mkdir(parents=True, exist_ok=True)
         
-    def _setup_logger(self) -> logging.Logger:
-        """Setup logger with file and console handlers"""
-        logger = logging.getLogger('ModificationEngine')
-        logger.setLevel(logging.INFO)
+        # Set output directory for modified IDFs
+        self.output_dir = self.output_path
         
-        # Console handler
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.INFO)
+        # Initialize session
+        self.session_id = session_id or datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.modifications = []
+        self.modification_count = 0
+        self.building_modifications = {}
+        self.session_start = datetime.now()
+        self.current_session = None
+        self.variants = {}
+        self.current_variant = None
+        self.logger = logging.getLogger(self.__class__.__name__)
         
-        # File handler
-        log_dir = self.project_path / 'logs'
-        log_dir.mkdir(exist_ok=True)
-        fh = logging.FileHandler(log_dir / f'modification_{datetime.now():%Y%m%d_%H%M%S}.log')
-        fh.setLevel(logging.DEBUG)
+        # Initialize parser
+        from parserr.idf_parser import EnhancedIDFParser
+        self.parser = EnhancedIDFParser()
         
-        # Formatter
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
-        ch.setFormatter(formatter)
-        fh.setFormatter(formatter)
+        # Initialize tracker
+        self.tracker = ModificationTracker(output_path=self.output_path)
+        self.tracker.session_id = self.session_id
         
-        logger.addHandler(ch)
-        logger.addHandler(fh)
+        # Load modifiers
+        self.modifiers = self._load_modifiers()
         
-        return logger
-    
-    # In modification_engine.py, find the _load_modifiers method and replace it with this:
-
-    
+        # Log initialization
+        self.logger.info(f"ModificationEngine initialized")
+        self.logger.info(f"Project directory: {self.project_dir}")
+        self.logger.info(f"Output directory: {self.output_path}")
+        self.logger.info(f"Session ID: {self.session_id}")
     
 
 
 
-
-    # In modification_engine.py, find the _load_modifiers method and replace it with this CORRECTED version:
-
-    def _load_modifiers(self) -> Dict[str, BaseModifier]:
-        """Dynamically load all available modifiers with flexible class name detection"""
+    def _load_modifiers(self) -> Dict[str, Any]:
+        """Load all available modifiers"""
         modifiers = {}
         
-        # Get the directory containing modifiers
-        modifiers_dir = Path(__file__).parent / 'modifiers'
-        
-        # Categories to load with their possible class name variations
-        category_mappings = {
-            'dhw': ['DHWModifier', 'DhwModifier', 'DomesticHotWaterModifier'],
-            'equipment': ['EquipmentModifier'],
-            'geometry': ['GeometryModifier'],
-            'hvac': ['HVACModifier', 'HvacModifier'],
-            'infiltration': ['InfiltrationModifier'],
-            'lighting': ['LightingModifier'],
-            'materials': ['MaterialsModifier'],
-            'schedules': ['SchedulesModifier'],
-            'shading': ['ShadingModifier'],
-            'simulation_control': ['SimulationControlModifier', 'SimulationcontrolModifier'],
-            'site_location': ['SiteLocationModifier', 'SitelocationModifier'],
-            'ventilation': ['VentilationModifier']
+        # Map of category to modifier class
+        modifier_classes = {
+            'hvac': HVACModifier,
+            'lighting': LightingModifier,
+            'materials': MaterialsModifier,
+            'infiltration': InfiltrationModifier,
+            'ventilation': VentilationModifier,
+            'equipment': EquipmentModifier,
+            'dhw': DHWModifier,
+            'schedules': SchedulesModifier,
+            'shading': ShadingModifier,
+            'simulation_control': SimulationControlModifier,
+            'site_location': SiteLocationModifier,
+            'geometry': GeometryModifier
         }
         
-        for category, possible_class_names in category_mappings.items():
+        # Instantiate modifiers
+        parsed_data_path = self.project_dir / "parsed_data"
+        
+        for category, modifier_class in modifier_classes.items():
             try:
-                # Construct module name
-                module_name = f"idf_modification.modifiers.{category}_modifier"
-                
-                # Import module dynamically
-                try:
-                    module = importlib.import_module(module_name)
-                except ImportError as e:
-                    self.logger.warning(f"Module {module_name} not found: {e}")
-                    continue
-                
-                # Try to find the modifier class with different naming conventions
-                modifier_class = None
-                actual_class_name = None
-                
-                # First try the provided class names
-                for class_name in possible_class_names:
-                    if hasattr(module, class_name):
-                        modifier_class = getattr(module, class_name)
-                        actual_class_name = class_name
-                        break
-                
-                # If not found, try to find any class that inherits from BaseModifier
-                if not modifier_class:
-                    for name, obj in inspect.getmembers(module, inspect.isclass):
-                        if obj.__module__ == module_name:
-                            # Check if it inherits from BaseModifier
-                            try:
-                                if hasattr(obj, '__bases__') and any('BaseModifier' in str(base) for base in obj.__bases__):
-                                    modifier_class = obj
-                                    actual_class_name = name
-                                    self.logger.debug(f"Auto-detected modifier class: {name} in {module_name}")
-                                    break
-                            except:
-                                pass
-                
-                if not modifier_class:
-                    self.logger.error(f"No suitable modifier class found in {module_name}")
-                    continue
-                
-                # Instantiate modifier
-                category_config = self.config.get('categories_to_modify', {}).get(category, {})
                 modifiers[category] = modifier_class(
-                    parsed_data_path=self.parsed_data_path,
-                    modification_config=category_config,
-                    logger=self.logger
+                    parsed_data_path=parsed_data_path,
+                    modification_config=self.config.get('categories', {}).get(category, {})  # <-- Fixed: correct parameter name
+                )
+                self.logger.info(f"Loaded modifier: {modifier_class.__name__} for category '{category}'")
+            except Exception as e:
+                self.logger.error(f"Failed to load modifier for {category}: {e}")
+        
+        self.logger.info(f"Successfully loaded {len(modifiers)} modifiers: {list(modifiers.keys())}")
+        return modifiers
+    
+    def apply_modifications_to_parsed(self,
+                                    building_id: str,
+                                    parsed_objects: Dict[str, List[IDFObject]],
+                                    variant_id: str = "default",
+                                    parameter_values: Dict[str, Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+        """
+        Apply modifications to parsed IDF objects
+        
+        Args:
+            building_id: Building identifier
+            parsed_objects: Dictionary of parsed objects by type
+            variant_id: Variant identifier
+            parameter_values: Dictionary of parameter values by category
+            
+        Returns:
+            List of applied modifications
+        """
+        all_modifications = []
+        
+        # Track variant
+        self.tracker.start_variant(variant_id)  # <-- Only pass variant_id
+        
+        # Get categories to modify
+        if parameter_values:
+            categories_to_modify = {k: v for k, v in parameter_values.items() 
+                                  if k in self.modifiers}
+        else:
+            # Use all categories with default values
+            categories_to_modify = {k: {} for k in self.modifiers.keys()}
+        
+        # Apply modifications for each category
+        for category, params in categories_to_modify.items():
+            if category not in self.modifiers:
+                self.logger.warning(f"No modifier found for category: {category}")
+                continue
+            
+            try:
+                modifier = self.modifiers[category]
+                
+                # Load current values from parsed data with proper file mapping
+                current_values = self._load_current_values_with_mapping(modifier, building_id)
+                
+                # Identify modifiable parameters
+                modifiable_params = modifier.identify_modifiable_parameters(parsed_objects)
+                
+                # Apply modifications
+                modifications = modifier.apply_modifications(
+                    parsed_objects=parsed_objects,
+                    modifiable_params=modifiable_params,
+                    strategy=params.get('strategy', 'default')
                 )
                 
-                self.logger.info(f"Loaded modifier: {actual_class_name} for category '{category}'")
+                # Validate and track modifications
+                validated_mods = []
+                for mod in modifications:
+                    if modifier.validate_modification(mod):
+                        validated_mods.append(mod)
+                
+                # Track modifications
+                for mod in validated_mods:
+                    self.tracker.add_modification(variant_id, mod)
+                    
+                    # Convert to dict for results
+                    mod_dict = {
+                        'building_id': building_id,
+                        'variant_id': variant_id,
+                        'category': category,
+                        'object_type': mod.object_type,
+                        'object_name': mod.object_name,
+                        'parameter': mod.parameter,
+                        'original_value': mod.original_value,
+                        'new_value': mod.new_value,
+                        'change_type': mod.change_type,
+                        'rule_applied': mod.rule_applied,
+                        'success': mod.success,
+                        'validation_status': mod.validation_status,
+                        'message': mod.message
+                    }
+                    all_modifications.append(mod_dict)
+                
+                self.logger.info(f"Applied {len(modifications)} modifications for {category}")
                 
             except Exception as e:
-                self.logger.error(f"Failed to load modifier {category}: {e}")
+                self.logger.error(f"Error applying {category} modifications: {e}")
                 import traceback
                 self.logger.debug(traceback.format_exc())
         
-        # Log summary
-        if modifiers:
-            self.logger.info(f"Successfully loaded {len(modifiers)} modifiers: {list(modifiers.keys())}")
-        else:
-            self.logger.warning("No modifiers were loaded successfully")
+        # Complete variant tracking
+        self.tracker.complete_variant(variant_id, None, all_modifications)
         
-        return modifiers
-
-
-
-
-
-
-
-
-
-    def can_proceed_with_modifications(self) -> Tuple[bool, str]:
-        """
-        Check if all prerequisites are met for modifications
-        
-        Returns:
-            Tuple of (can_proceed, error_message)
-        """
-        # Check parsed data exists
-        if not self.parsed_data_path.exists():
-            return False, f"Parsed data directory not found: {self.parsed_data_path}"
-        
-        # Check if parsed data has content
-        parquet_files = list(self.parsed_data_path.glob("*.parquet"))
-        if not parquet_files:
-            return False, "No parsed data files found"
-        
-        # Check if modifiers are loaded
-        if not self.modifiers:
-            return False, "No modifiers loaded"
-        
-        # Check if at least one category is enabled
-        enabled_categories = [
-            cat for cat, config in self.config.get('categories_to_modify', {}).items()
-            if config.get('enabled', False)
-        ]
-        
-        if not enabled_categories:
-            return False, "No modification categories are enabled"
-        
-        self.logger.info(f"Prerequisites check passed. Enabled categories: {enabled_categories}")
-        return True, ""
+        return all_modifications
     
-    def generate_modifications(self, 
-                             base_idf_path: Union[str, Path],
-                             building_id: Optional[str] = None,
-                             epw_path: Optional[Union[str, Path]] = None) -> List[Path]:
+    def _load_current_values_with_mapping(self, modifier, building_id: str) -> Dict[str, pd.DataFrame]:
         """
-        Generate modified IDF files from base IDF
+        Load current values with proper file name mapping
+        
+        This handles the mismatch between expected file names and actual file names
+        """
+        current_values = {}
+        
+        # Get the base path
+        parsed_data_path = self.project_dir / "parsed_data" / 'idf_data' / 'by_category'
+        
+        # Define file name mappings
+        file_mappings = {
+            'materials': ['materials_materials', 'materials_windowmaterials'],
+            'constructions': ['materials_constructions']
+        }
+        
+        # Get expected files from modifier
+        category_files = modifier._get_category_files()
+        
+        for expected_file in category_files:
+            loaded = False
+            
+            # Check if we have a mapping for this file
+            if expected_file in file_mappings:
+                # Try mapped file names
+                for actual_file in file_mappings[expected_file]:
+                    file_path = parsed_data_path / f"{actual_file}.parquet"
+                    if file_path.exists():
+                        df = pd.read_parquet(file_path)
+                        if 'building_id' in df.columns:
+                            df = df[df['building_id'] == building_id]
+                        current_values[expected_file] = df
+                        self.logger.debug(f"Loaded {len(df)} records from {actual_file} (mapped from {expected_file})")
+                        loaded = True
+                        break
+            
+            # If not loaded through mapping, try direct file name
+            if not loaded:
+                file_path = parsed_data_path / f"{expected_file}.parquet"
+                if file_path.exists():
+                    df = pd.read_parquet(file_path)
+                    if 'building_id' in df.columns:
+                        df = df[df['building_id'] == building_id]
+                    current_values[expected_file] = df
+                    self.logger.debug(f"Loaded {len(df)} records from {expected_file}")
+                else:
+                    self.logger.warning(f"File not found: {file_path}")
+        
+        modifier.current_values = current_values
+        return current_values
+    
+    def write_parsed_objects_to_idf(self, parsed_objects: Dict[str, List[IDFObject]], 
+                                   output_path: Path, 
+                                   building_data: BuildingData) -> bool:
+        """
+        Write parsed objects back to IDF format
         
         Args:
-            base_idf_path: Path to base IDF file
-            building_id: Building identifier
-            epw_path: Optional path to EPW weather file
+            parsed_objects: Dictionary of parsed objects by type
+            output_path: Path to write the IDF file
+            building_data: Original BuildingData for reference
             
         Returns:
-            List of paths to generated IDF files
-        """
-        base_idf_path = Path(base_idf_path)
-        
-        if not base_idf_path.exists():
-            self.logger.error(f"Base IDF file not found: {base_idf_path}")
-            return []
-        
-        if not building_id:
-            # Extract from filename
-            building_id = base_idf_path.stem.split('_')[1] if '_' in base_idf_path.stem else 'unknown'
-            
-        self.logger.info(f"Starting modifications for building {building_id}")
-        self.logger.info(f"Base IDF: {base_idf_path.name}")
-        if epw_path:
-            self.logger.info(f"EPW file: {Path(epw_path).name}")
-        
-        # Create output directory for this building
-        building_output_dir = self.output_base_path / f"building_{building_id}" / self.session_id
-        building_output_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Initialize tracking
-        self.tracker.start_session(self.session_id, building_id, str(base_idf_path))
-        
-        # Set IDD file path
-        idd_path = self.config.get('iddfile', 'EnergyPlus/Energy+.idd')
-        if not Path(idd_path).is_absolute():
-            # Check if it's relative to current working directory
-            if Path(idd_path).exists():
-                idd_path = str(Path(idd_path).resolve())
-            else:
-                # Try relative to project path
-                project_idd = self.project_path / idd_path
-                if project_idd.exists():
-                    idd_path = str(project_idd.resolve())
-                else:
-                    self.logger.error(f"IDD file not found at: {idd_path} or {project_idd}")
-                    raise FileNotFoundError(f"IDD file not found: {idd_path}")
-
-        # Use the safe IDD initialization
-        self._ensure_idd_initialized(idd_path)
-        
-        # Generate variants
-        strategy = self.config['modification_strategy']['type']
-        num_variants = self.config['modification_strategy']['num_variants']
-        
-        self.logger.info(f"Generating {num_variants} variants using strategy: {strategy}")
-        
-        generated_files = []
-        
-        if strategy == 'scenarios':
-            generated_files = self._generate_scenario_variants(
-                base_idf_path, building_id, building_output_dir, num_variants, epw_path
-            )
-        elif strategy == 'sampling':
-            generated_files = self._generate_sampling_variants(
-                base_idf_path, building_id, building_output_dir, num_variants, epw_path
-            )
-        elif strategy == 'optimization':
-            generated_files = self._generate_optimization_variants(
-                base_idf_path, building_id, building_output_dir, num_variants, epw_path
-            )
-        else:
-            self.logger.error(f"Unknown strategy: {strategy}")
-        
-        # Log summary
-        self.logger.info(f"Generated {len(generated_files)} variants for building {building_id}")
-        
-        # Save session summary
-        self.tracker.save_session_summary(building_output_dir)
-        
-        return generated_files
-    
-    def _generate_scenario_variants(self,
-                                  base_idf_path: Path,
-                                  building_id: str,
-                                  output_dir: Path,
-                                  num_variants: int,
-                                  epw_path: Optional[Path] = None) -> List[Path]:
-        """Generate variants based on predefined scenarios"""
-        generated_files = []
-        
-        # Define scenarios (can be loaded from config)
-        scenarios = self._define_scenarios()
-        
-        for i in range(min(num_variants, len(scenarios))):
-            scenario = scenarios[i]
-            variant_id = f"scenario_{i:03d}"
-            
-            self.logger.info(f"Generating variant {variant_id}: {scenario['name']}")
-            
-            # Create variant
-            variant_path = self._create_variant(
-                base_idf_path,
-                building_id,
-                variant_id,
-                output_dir,
-                scenario['modifications'],
-                epw_path
-            )
-            
-            if variant_path:
-                generated_files.append(variant_path)
-                
-        return generated_files
-    
-    def _generate_sampling_variants(self,
-                                  base_idf_path: Path,
-                                  building_id: str,
-                                  output_dir: Path,
-                                  num_variants: int,
-                                  epw_path: Optional[Path] = None) -> List[Path]:
-        """Generate variants using parameter sampling"""
-        generated_files = []
-        
-        # Get sampling method
-        sampling_method = self.config['modification_strategy'].get('sampling_method', 'uniform')
-        
-        # Set random seed for reproducibility
-        np.random.seed(self.config['modification_strategy'].get('seed', 42))
-        
-        for i in range(num_variants):
-            variant_id = f"sample_{i:03d}"
-            
-            self.logger.info(f"Generating variant {variant_id} using {sampling_method} sampling")
-            
-            # Generate parameter values
-            param_values = self._generate_parameter_sample(sampling_method, i, num_variants)
-            
-            # Create variant
-            variant_path = self._create_variant(
-                base_idf_path,
-                building_id,
-                variant_id,
-                output_dir,
-                param_values,
-                epw_path
-            )
-            
-            if variant_path:
-                generated_files.append(variant_path)
-                
-        return generated_files
-    
-    def _generate_optimization_variants(self,
-                                      base_idf_path: Path,
-                                      building_id: str,
-                                      output_dir: Path,
-                                      num_variants: int,
-                                      epw_path: Optional[Path] = None) -> List[Path]:
-        """Generate variants for optimization objectives"""
-        generated_files = []
-        
-        # Define optimization objectives
-        objectives = self.config['modification_strategy'].get('objectives', ['energy'])
-        
-        for i in range(num_variants):
-            variant_id = f"opt_{i:03d}"
-            
-            self.logger.info(f"Generating optimization variant {variant_id}")
-            
-            # Generate parameter values based on objectives
-            param_values = self._generate_optimization_sample(objectives, i, num_variants)
-            
-            # Create variant
-            variant_path = self._create_variant(
-                base_idf_path,
-                building_id,
-                variant_id,
-                output_dir,
-                param_values,
-                epw_path
-            )
-            
-            if variant_path:
-                generated_files.append(variant_path)
-                
-        return generated_files
-    
-    def _create_variant(self,
-                       base_idf_path: Path,
-                       building_id: str,
-                       variant_id: str,
-                       output_dir: Path,
-                       modifications_override: Optional[Dict] = None,
-                       epw_path: Optional[Path] = None) -> Optional[Path]:
-        """Create a single IDF variant"""
-        try:
-            # Load IDF with better error handling
-            try:
-                if epw_path:
-                    idf = IDF(str(base_idf_path), str(epw_path))
-                else:
-                    idf = IDF(str(base_idf_path))
-            except Exception as e:
-                self.logger.error(f"Failed to load base IDF {base_idf_path}: {e}")
-                return None
-            
-            # Track variant
-            self.tracker.start_variant(variant_id)
-            
-            # Load current values for all modifiers
-            for category, modifier in self.modifiers.items():
-                if self.config['categories_to_modify'].get(category, {}).get('enabled', False):
-                    modifier.load_current_values(building_id)
-            
-            # Apply modifications
-            all_modifications = []
-            
-            for category, modifier in self.modifiers.items():
-                category_config = self.config['categories_to_modify'].get(category, {})
-                
-                if category_config.get('enabled', False):
-                    self.logger.debug(f"Applying {category} modifications")
-                    
-                    # Override config if needed
-                    if modifications_override and category in modifications_override:
-                        modifier.config = modifications_override[category]
-                    
-                    # Identify modifiable parameters
-                    modifiable = modifier.identify_modifiable_parameters(idf)
-                    
-                    if not modifiable:
-                        self.logger.warning(f"No modifiable parameters found for {category}")
-                        continue
-                    
-                    # Apply modifications
-                    modifications = modifier.apply_modifications(
-                        idf,
-                        modifiable,
-                        strategy=self.config['modification_strategy']['type']
-                    )
-                    
-                    all_modifications.extend(modifications)
-                    
-                    # Track modifications
-                    for mod in modifications:
-                        self.tracker.add_modification(variant_id, mod)
-            
-            # Log modification summary
-            self._log_modification_summary(all_modifications)
-            
-            # Validate modified IDF
-            validation_results = self._validate_idf(idf)
-            
-            if validation_results['valid']:
-                # Save modified IDF
-                variant_filename = f"{building_id}_{variant_id}.idf"
-                variant_path = output_dir / variant_filename
-                idf.save(str(variant_path))
-                
-                self.logger.info(f"Created variant: {variant_filename}")
-                
-                # Verify modifications
-                if base_idf_path != variant_path:
-                    self._verify_modifications(base_idf_path, variant_path)
-                
-                return variant_path
-            else:
-                self.logger.error(f"Variant {variant_id} failed validation: {validation_results['errors']}")
-                return None
-                
-        except Exception as e:
-            self.logger.error(f"Failed to create variant {variant_id}: {e}")
-            import traceback
-            self.logger.debug(traceback.format_exc())
-            return None
-    
-    def _log_modification_summary(self, modifications: List[ModificationResult]):
-        """Log a summary of modifications made"""
-        if not modifications:
-            self.logger.warning("No modifications were made")
-            return
-        
-        # Group by success/failure
-        successful = [m for m in modifications if m.success]
-        failed = [m for m in modifications if not m.success]
-        
-        self.logger.info(f"Modification Summary:")
-        self.logger.info(f"  - Total modifications: {len(modifications)}")
-        self.logger.info(f"  - Successful: {len(successful)}")
-        self.logger.info(f"  - Failed: {len(failed)}")
-        
-        # Log failures
-        if failed:
-            self.logger.warning("Failed modifications:")
-            for mod in failed[:5]:  # Show first 5 failures
-                self.logger.warning(f"  - {mod.object_type}.{mod.parameter}: {mod.message}")
-            if len(failed) > 5:
-                self.logger.warning(f"  ... and {len(failed) - 5} more failures")
-        
-        # Log parameter changes summary
-        if successful:
-            param_changes = {}
-            for mod in successful:
-                key = f"{mod.object_type}.{mod.parameter}"
-                if key not in param_changes:
-                    param_changes[key] = 0
-                param_changes[key] += 1
-            
-            self.logger.info("Modified parameters:")
-            for param, count in sorted(param_changes.items())[:10]:
-                self.logger.info(f"  - {param}: {count} objects")
-    
-    def _verify_modifications(self, 
-                             original_idf_path: Path, 
-                             modified_idf_path: Path) -> bool:
-        """
-        Verify that the IDF was actually modified
-        
-        Returns:
-            True if modifications were detected
+            True if successful
         """
         try:
-            # Simple check - compare file sizes
-            original_size = original_idf_path.stat().st_size
-            modified_size = modified_idf_path.stat().st_size
+            with open(output_path, 'w') as f:
+                # Write header
+                f.write("!-Generator IDFEditor 1.34\n")
+                f.write("!-Option OriginalOrderTop UseSpecialFormat\n")
+                f.write(f"!-Modified by Parser-Compatible Modification System\n")
+                f.write(f"!-Modified Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write(f"!-Session ID: {self.session_id}\n\n")
+                
+                # Define object order for proper IDF structure
+                object_order = [
+                    'VERSION',
+                    'SIMULATIONCONTROL',
+                    'BUILDING',
+                    'SHADOWCALCULATION',
+                    'SURFACECONVECTIONALGORITHM:INSIDE',
+                    'SURFACECONVECTIONALGORITHM:OUTSIDE',
+                    'HEATBALANCEALGORITHM',
+                    'TIMESTEP',
+                    'CONVERGENCELIMITS',
+                    'SITE:LOCATION',
+                    'SITE:GROUNDTEMPERATURE:BUILDINGSURFACE',
+                    'SIZINGPERIOD:DESIGNDAY',
+                    'RUNPERIOD',
+                    'MATERIAL',
+                    'MATERIAL:NOMASS',
+                    'WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM',
+                    'CONSTRUCTION',
+                    'GLOBALGEOMETRYRULES',
+                    'ZONE',
+                    'BUILDINGSURFACE:DETAILED',
+                    'FENESTRATIONSURFACE:DETAILED',
+                    'SCHEDULETYPELIMITS',
+                    'SCHEDULE:COMPACT',
+                    'SCHEDULE:CONSTANT',
+                    'PEOPLE',
+                    'LIGHTS',
+                    'ELECTRICEQUIPMENT',
+                    'ZONEINFILTRATION:DESIGNFLOWRATE',
+                    'ZONEVENTILATION:DESIGNFLOWRATE',
+                    'DESIGNSPECIFICATION:OUTDOORAIR',
+                    'ZONEHVAC:IDEALLOADSAIRSYSTEM',
+                    'ZONEHVAC:EQUIPMENTCONNECTIONS',
+                    'ZONEHVAC:EQUIPMENTLIST',
+                    'THERMOSTATSETPOINT:DUALSETPOINT',
+                    'WATERHEATER:MIXED',
+                    'OUTPUT:VARIABLE',
+                    'OUTPUT:METER',
+                    'OUTPUTCONTROL:TABLE:STYLE',
+                    'OUTPUT:TABLE:SUMMARYREPORTS',
+                    'OUTPUT:SQLITE'
+                ]
+                
+                # Write objects in order
+                written_types = set()
+                
+                # First pass: write in preferred order
+                for obj_type in object_order:
+                    if obj_type in parsed_objects:
+                        objects = parsed_objects[obj_type]
+                        for obj in objects:
+                            self._write_idf_object(f, obj)
+                        written_types.add(obj_type)
+                
+                # Second pass: write any remaining object types
+                for obj_type, objects in parsed_objects.items():
+                    if obj_type not in written_types:
+                        for obj in objects:
+                            self._write_idf_object(f, obj)
             
-            if original_size == modified_size:
-                self.logger.warning("Modified IDF has same size as original - modifications may have failed")
-                return False
-            else:
-                size_diff = modified_size - original_size
-                self.logger.debug(f"File size difference: {size_diff} bytes")
-            
-            # Could add more sophisticated checks here
-            # like comparing specific object values
-            
+            self.logger.info(f"Successfully wrote modified IDF to {output_path}")
             return True
             
         except Exception as e:
-            self.logger.error(f"Failed to verify modifications: {e}")
+            self.logger.error(f"Error writing IDF file: {e}")
             return False
     
-    def _define_scenarios(self) -> List[Dict[str, Any]]:
-        """Define modification scenarios"""
-        scenarios = [
-            {
-                'name': 'Baseline',
-                'modifications': {}
-            },
-            {
-                'name': 'High Efficiency HVAC',
-                'modifications': {
-                    'hvac': {
-                        'parameters': {
-                            'cop': {'method': 'percentage', 'value': 20},
-                            'efficiency': {'method': 'percentage', 'value': 15}
-                        }
-                    }
-                }
-            },
-            {
-                'name': 'Improved Envelope',
-                'modifications': {
-                    'materials': {
-                        'parameters': {
-                            'thermal_resistance': {'method': 'percentage', 'value': 30},
-                            'u_factor': {'method': 'percentage', 'value': -20}
-                        }
-                    }
-                }
-            },
-            {
-                'name': 'Efficient Lighting',
-                'modifications': {
-                    'lighting': {
-                        'parameters': {
-                            'watts_per_zone_floor_area': {'method': 'percentage', 'value': -30}
-                        }
-                    }
-                }
-            },
-            {
-                'name': 'Combined Efficiency',
-                'modifications': {
-                    'hvac': {
-                        'parameters': {
-                            'cop': {'method': 'percentage', 'value': 15},
-                            'efficiency': {'method': 'percentage', 'value': 10}
-                        }
-                    },
-                    'materials': {
-                        'parameters': {
-                            'thermal_resistance': {'method': 'percentage', 'value': 20}
-                        }
-                    },
-                    'lighting': {
-                        'parameters': {
-                            'watts_per_zone_floor_area': {'method': 'percentage', 'value': -20}
-                        }
-                    }
-                }
-            }
-        ]
+    def _write_idf_object(self, file_handle, obj: IDFObject):
+        """Write a single IDF object to file"""
+        # Write object type
+        file_handle.write(f"\n{obj.object_type},\n")
         
-        # Load custom scenarios from config if available
-        custom_scenarios = self.config.get('scenarios', [])
-        if custom_scenarios:
-            scenarios.extend(custom_scenarios)
+        # Write parameters
+        for i, param in enumerate(obj.parameters):
+            # Format the line with value and comment
+            value = param.value if param.value else ""
             
-        return scenarios
-    
-    def _generate_parameter_sample(self, 
-                                 method: str, 
-                                 index: int, 
-                                 total: int) -> Dict[str, Dict[str, Any]]:
-        """Generate parameter values using sampling method"""
-        param_values = {}
-        
-        # Get parameter ranges from config
-        param_ranges = self.config.get('parameter_ranges', {})
-        
-        if method == 'uniform':
-            # Uniform random sampling
-            for category, params in param_ranges.items():
-                param_values[category] = {'parameters': {}}
-                for param, range_config in params.items():
-                    min_val = range_config.get('min', -30)
-                    max_val = range_config.get('max', 30)
-                    value = np.random.uniform(min_val, max_val)
-                    param_values[category]['parameters'][param] = {
-                        'method': 'percentage',
-                        'value': value
-                    }
-                    
-        elif method == 'latin_hypercube':
-            # Latin Hypercube Sampling
-            # This is simplified - real implementation would generate all samples at once
-            for category, params in param_ranges.items():
-                param_values[category] = {'parameters': {}}
-                for param, range_config in params.items():
-                    min_val = range_config.get('min', -30)
-                    max_val = range_config.get('max', 30)
-                    # Simple LHS approximation
-                    segment = (max_val - min_val) / total
-                    value = min_val + segment * index + np.random.uniform(0, segment)
-                    param_values[category]['parameters'][param] = {
-                        'method': 'percentage',
-                        'value': value
-                    }
-                    
-        elif method == 'sobol':
-            # Sobol sequence sampling
-            # Placeholder - would need proper Sobol implementation
-            param_values = self._generate_parameter_sample('uniform', index, total)
+            # Build comment
+            comment_parts = []
+            if param.field_name:
+                comment_parts.append(param.field_name)
+            if param.units:
+                comment_parts.append(f"{{{param.units}}}")
+            if param.comment:
+                comment_parts.append(param.comment)
             
-        return param_values
+            comment = ", ".join(comment_parts) if comment_parts else ""
+            
+            # Determine line ending
+            if i == len(obj.parameters) - 1:
+                ending = ";"  # Last parameter
+            else:
+                ending = ","
+            
+            # Format the line with proper indentation
+            if comment:
+                file_handle.write(f"    {value}{ending}  !- {comment}\n")
+            else:
+                file_handle.write(f"    {value}{ending}\n")
     
-    def _generate_optimization_sample(self,
-                                    objectives: List[str],
-                                    index: int,
-                                    total: int) -> Dict[str, Dict[str, Any]]:
-        """Generate parameter values for optimization objectives"""
-        param_values = {}
+    def modify_building(self, 
+                       building_id: str, 
+                       idf_path: Path,
+                       parameter_values: Dict[str, Dict[str, Any]],
+                       variant_id: str = "default") -> Dict[str, Any]:
+        """
+        Modify a single building's IDF using parsed structure
         
-        # Define parameter mappings for objectives
-        objective_params = {
-            'energy': {
-                'hvac': ['cop', 'efficiency'],
-                'lighting': ['watts_per_zone_floor_area'],
-                'materials': ['thermal_resistance', 'u_factor']
-            },
-            'comfort': {
-                'hvac': ['heating_setpoint', 'cooling_setpoint'],
-                'ventilation': ['outdoor_air_flow_rate']
-            },
-            'cost': {
-                'equipment': ['efficiency_vs_cost_curve'],
-                'materials': ['insulation_thickness']
-            }
-        }
-        
-        # Generate values based on objectives
-        for objective in objectives:
-            if objective in objective_params:
-                for category, params in objective_params[objective].items():
-                    if category not in param_values:
-                        param_values[category] = {'parameters': {}}
-                    
-                    for param in params:
-                        # Progressive improvement with index
-                        improvement = (index / total) * 30  # Up to 30% improvement
-                        param_values[category]['parameters'][param] = {
-                            'method': 'percentage',
-                            'value': improvement if param != 'watts_per_zone_floor_area' else -improvement
-                        }
-                        
-        return param_values
-    
-    def _validate_idf(self, idf: IDF) -> Dict[str, Any]:
-        """Validate modified IDF"""
-        validation_results = {
-            'valid': True,
+        Args:
+            building_id: Building identifier
+            idf_path: Path to IDF file
+            parameter_values: Dictionary of parameter values by category
+            variant_id: Variant identifier
+            
+        Returns:
+            Dictionary with modification results
+        """
+        results = {
+            'building_id': building_id,
+            'variant_id': variant_id,
+            'success': False,
+            'modifications': [],
             'errors': [],
-            'warnings': []
+            'output_file': None
         }
         
         try:
-            # Check required objects
-            required_objects = ['Building', 'SimulationControl', 'RunPeriod']
-            for obj_type in required_objects:
-                if obj_type not in idf.idfobjects or not idf.idfobjects[obj_type]:
-                    validation_results['valid'] = False
-                    validation_results['errors'].append(f"Missing required object: {obj_type}")
+            # Parse the IDF file
+            self.logger.info(f"Parsing IDF file: {idf_path}")
+            building_data = self.parser.parse_file(idf_path)
             
-            # Check for zones
-            if 'Zone' in idf.idfobjects:
-                num_zones = len(idf.idfobjects['Zone'])
-                if num_zones == 0:
-                    validation_results['warnings'].append("No thermal zones defined")
+            # Get parsed objects
+            parsed_objects = building_data.objects
+            
+            # Apply modifications
+            all_modifications = self.apply_modifications_to_parsed(
+                building_id=building_id,
+                parsed_objects=parsed_objects,
+                variant_id=variant_id,
+                parameter_values=parameter_values
+            )
+            
+            results['modifications'] = all_modifications
+            
+            # Write modified IDF if modifications were made
+            if all_modifications and self.config['output_options'].get('save_modified_idfs', True):
+                output_filename = f"building_{building_id}_{variant_id}.idf"
+                output_path = self.output_dir / output_filename
+                
+                # Use the internal write method
+                success = self.write_parsed_objects_to_idf(
+                    parsed_objects=parsed_objects,
+                    output_path=output_path,
+                    building_data=building_data
+                )
+                
+                if success:
+                    results['success'] = True
+                    results['output_file'] = str(output_path)
+                    self.logger.info(f"Created modified IDF: {output_path}")
                 else:
-                    self.logger.debug(f"IDF contains {num_zones} zones")
-            
-            # Check for surfaces
-            surface_types = ['BuildingSurface:Detailed', 'FenestrationSurface:Detailed']
-            total_surfaces = 0
-            for surface_type in surface_types:
-                if surface_type in idf.idfobjects:
-                    total_surfaces += len(idf.idfobjects[surface_type])
-            
-            if total_surfaces == 0:
-                validation_results['warnings'].append("No surfaces defined")
-            
-            # Check HVAC systems
-            hvac_objects = ['HVACTemplate:Zone:IdealLoadsAirSystem', 'AirLoopHVAC', 
-                           'HVACTemplate:System:VRF', 'HVACTemplate:System:PackagedVAV']
-            has_hvac = False
-            for hvac_type in hvac_objects:
-                if hvac_type in idf.idfobjects and len(idf.idfobjects[hvac_type]) > 0:
-                    has_hvac = True
-                    break
-            
-            if not has_hvac:
-                validation_results['warnings'].append("No HVAC system defined")
+                    results['errors'].append("Failed to write modified IDF")
             
         except Exception as e:
-            validation_results['valid'] = False
-            validation_results['errors'].append(f"Validation error: {str(e)}")
-            
-        return validation_results
-    
-    def generate_modification_report(self) -> Path:
-        """Generate summary report of all modifications"""
-        report_path = self.output_base_path / f"modification_report_{self.session_id}.json"
+            self.logger.error(f"Failed to modify building {building_id}: {e}")
+            results['errors'].append(str(e))
+            import traceback
+            self.logger.debug(traceback.format_exc())
         
-        report = {
-            'session_id': self.session_id,
-            'timestamp': datetime.now().isoformat(),
-            'configuration': self.config,
-            'summary': self.tracker.get_summary(),
-            'variants': self.tracker.get_all_variants()
-        }
-        
-        with open(report_path, 'w') as f:
-            json.dump(report, f, indent=2, default=str)
-            
-        self.logger.info(f"Generated modification report: {report_path}")
-        return report_path
+        return results
     
-    def get_modified_idfs(self, building_id: Optional[str] = None) -> List[Path]:
+    def run_modifications(self, 
+                         building_ids: Optional[List[str]] = None,
+                         scenarios: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
         """
-        Get list of all modified IDF files
+        Run modifications on multiple buildings and scenarios
         
         Args:
-            building_id: Optional building ID to filter by
+            building_ids: List of building IDs to process
+            scenarios: List of scenario configurations
             
         Returns:
-            List of paths to modified IDF files
+            Dictionary with overall results
         """
-        pattern = f"building_{building_id}/**/*.idf" if building_id else "**/*.idf"
-        return list(self.output_base_path.glob(pattern))
+        results = {
+            'session_id': self.session_id,
+            'buildings_processed': 0,
+            'variants_created': 0,
+            'modifications_applied': 0,
+            'errors': []
+        }
+        
+        try:
+            # Start session
+            self.tracker.start_session()
+            
+            # Select buildings
+            buildings = self._select_buildings(building_ids)
+            
+            if not buildings:
+                results['errors'].append("No buildings found to modify")
+                return results
+            
+            # Process each building
+            for building_id, idf_path in buildings:
+                try:
+                    # Apply each scenario
+                    if scenarios:
+                        for scenario in scenarios:
+                            variant_id = scenario.get('id', 'default')
+                            parameter_values = scenario.get('modifications', {})
+                            
+                            building_results = self.modify_building(
+                                building_id=building_id,
+                                idf_path=idf_path,
+                                parameter_values=parameter_values,
+                                variant_id=variant_id
+                            )
+                            
+                            if building_results['success']:
+                                results['variants_created'] += 1
+                                results['modifications_applied'] += len(building_results['modifications'])
+                            else:
+                                results['errors'].extend(building_results['errors'])
+                    else:
+                        # Run with default modifications
+                        building_results = self.modify_building(
+                            building_id=building_id,
+                            idf_path=idf_path,
+                            parameter_values={},
+                            variant_id='default'
+                        )
+                        
+                        if building_results['success']:
+                            results['variants_created'] += 1
+                            results['modifications_applied'] += len(building_results['modifications'])
+                    
+                    results['buildings_processed'] += 1
+                    
+                except Exception as e:
+                    self.logger.error(f"Error processing building {building_id}: {e}")
+                    results['errors'].append(str(e))
+            
+        finally:
+            self.tracker.end_session(results)
+            
+        return results
+    
+    def _select_buildings(self, building_ids: Optional[List[str]] = None) -> List[Tuple[str, Path]]:
+        """Select buildings to modify based on configuration"""
+        buildings = []
+        
+        # Get IDF directory
+        idf_dir = self.project_dir / "output_IDFs"
+        if not idf_dir.exists():
+            idf_dir = self.project_dir
+        
+        # Get selection method from config
+        selection = self.config.get('base_idf_selection', {})
+        method = selection.get('method', 'all')
+        
+        if building_ids:
+            # Use provided building IDs
+            for bid in building_ids:
+                pattern = f"*{bid}*.idf"
+                files = list(idf_dir.glob(pattern))
+                if files:
+                    buildings.append((str(bid), files[0]))
+        
+        elif method == 'specific':
+            # Use specific building IDs from config
+            for bid in selection.get('building_ids', []):
+                pattern = f"*{bid}*.idf"
+                files = list(idf_dir.glob(pattern))
+                if files:
+                    buildings.append((str(bid), files[0]))
+        
+        elif method == 'representative':
+            # Select representative buildings
+            num_buildings = selection.get('num_buildings', 5)
+            all_idfs = list(idf_dir.glob("*.idf"))[:num_buildings]
+            for idf_file in all_idfs:
+                bid = idf_file.stem.replace("building_", "").split("_")[0]
+                buildings.append((bid, idf_file))
+        
+        else:  # method == 'all'
+            # Select all buildings
+            for idf_file in idf_dir.glob("*.idf"):
+                bid = idf_file.stem.replace("building_", "").split("_")[0]
+                buildings.append((bid, idf_file))
+        
+        self.logger.info(f"Selected {len(buildings)} buildings for modification")
+        return buildings
+    
+    
+    
+    
+    def _run_scenario_modifications(self, 
+                                  buildings: List[Tuple[str, Path]], 
+                                  dry_run: bool) -> Dict[str, Any]:
+        """Run scenario-based modifications"""
+        results = {
+            'strategy': 'scenarios',
+            'scenarios_processed': 0,
+            'variants_by_scenario': {}
+        }
+        
+        # Get scenarios
+        scenarios = self.scenario_generator.generate_scenarios()
+        results['scenarios_processed'] = len(scenarios)
+        
+        for scenario in scenarios:
+            scenario_name = scenario['name']
+            self.logger.info(f"Processing scenario: {scenario_name}")
+            
+            scenario_results = {
+                'buildings': 0,
+                'modifications': 0,
+                'errors': []
+            }
+            
+            # Create output directory for scenario
+            scenario_dir = self.output_dir / scenario_name
+            scenario_dir.mkdir(exist_ok=True)
+            
+            for building_id, idf_path in buildings:
+                try:
+                    # Apply scenario modifications
+                    result = self.modify_building(
+                        building_id=building_id,
+                        idf_path=idf_path,
+                        parameter_values=scenario['modifications'],
+                        variant_id=scenario_name
+                    )
+                    
+                    if result['success']:
+                        scenario_results['buildings'] += 1
+                        scenario_results['modifications'] += len(result['modifications'])
+                    else:
+                        scenario_results['errors'].extend(result['errors'])
+                    
+                except Exception as e:
+                    self.logger.error(f"Error processing {building_id} for scenario {scenario_name}: {e}")
+                    scenario_results['errors'].append(str(e))
+            
+            results['variants_by_scenario'][scenario_name] = scenario_results
+        
+        return results
+    
+    def _run_sampling_modifications(self, 
+                                  buildings: List[Tuple[str, Path]], 
+                                  dry_run: bool) -> Dict[str, Any]:
+        """Run sampling-based modifications"""
+        results = {
+            'strategy': 'sampling',
+            'samples_generated': 0,
+            'sampling_method': self.config['modification_strategy'].get('sampling_method', 'uniform')
+        }
+        
+        num_variants = self.config['modification_strategy'].get('num_variants', 10)
+        results['samples_generated'] = num_variants
+        
+        # Generate parameter samples
+        samples = self.scenario_generator.generate_samples(num_variants)
+        
+        for i, sample in enumerate(samples):
+            variant_id = f"sample_{i:03d}"
+            self.logger.info(f"Processing sample {i+1}/{num_variants}")
+            
+            for building_id, idf_path in buildings:
+                try:
+                    result = self.modify_building(
+                        building_id=building_id,
+                        idf_path=idf_path,
+                        parameter_values=sample,
+                        variant_id=variant_id
+                    )
+                    
+                    results['modifications_applied'] = results.get('modifications_applied', 0)
+                    if result['success']:
+                        results['modifications_applied'] += len(result['modifications'])
+                    
+                except Exception as e:
+                    self.logger.error(f"Error processing {building_id} for sample {i}: {e}")
+                    results.setdefault('errors', []).append(str(e))
+        
+        return results
+    
+    def _run_optimization_modifications(self, 
+                                      buildings: List[Tuple[str, Path]], 
+                                      dry_run: bool) -> Dict[str, Any]:
+        """Run optimization-based modifications"""
+        results = {
+            'strategy': 'optimization',
+            'optimization_objectives': self.config['modification_strategy'].get('objectives', ['energy'])
+        }
+        
+        # This is a simplified version - real optimization would use
+        # iterative algorithms and simulation feedback
+        self.logger.info("Running optimization-based modifications...")
+        
+        for objective in results['optimization_objectives']:
+            self.logger.info(f"Optimizing for: {objective}")
+            
+            # Generate optimized parameters based on objective
+            optimized_params = self.scenario_generator.generate_optimized_parameters(objective)
+            
+            for building_id, idf_path in buildings:
+                try:
+                    variant_id = f"optimized_{objective}"
+                    result = self.modify_building(
+                        building_id=building_id,
+                        idf_path=idf_path,
+                        parameter_values=optimized_params,
+                        variant_id=variant_id
+                    )
+                    
+                    results['variants_created'] = results.get('variants_created', 0) + 1
+                    
+                except Exception as e:
+                    self.logger.error(f"Error optimizing {building_id} for {objective}: {e}")
+                    results.setdefault('errors', []).append(str(e))
+        
+        return results
+    
+    def _generate_reports(self, results: Dict[str, Any]):
+        """Generate modification reports"""
+        report_dir = self.output_dir / "reports"
+        report_dir.mkdir(exist_ok=True)
+        
+        # Summary report
+        summary_path = report_dir / f"modification_summary_{self.session_id}.json"
+        with open(summary_path, 'w') as f:
+            json.dump(results, f, indent=2)
+        
+        self.logger.info(f"Generated summary report: {summary_path}")
+        
+        # Detailed modifications report
+        if self.tracker.modifications:
+            mods_df = pd.DataFrame(self.tracker.modifications)
+            mods_path = report_dir / f"detailed_modifications_{self.session_id}.csv"
+            mods_df.to_csv(mods_path, index=False)
+            self.logger.info(f"Generated detailed modifications report: {mods_path}")
+        
+        # Parameter changes report
+        if self.config['output_options'].get('track_modifications', True):
+            param_changes = self._analyze_parameter_changes()
+            param_path = report_dir / f"parameter_changes_{self.session_id}.json"
+            with open(param_path, 'w') as f:
+                json.dump(param_changes, f, indent=2)
+            self.logger.info(f"Generated parameter changes report: {param_path}")
+    
+    def _analyze_parameter_changes(self) -> Dict[str, Any]:
+        """Analyze parameter changes across all modifications"""
+        analysis = {
+            'by_category': {},
+            'by_parameter': {},
+            'by_building': {},
+            'statistics': {}
+        }
+        
+        for mod in self.tracker.modifications:
+            # By category
+            category = mod.get('category', 'unknown')
+            if category not in analysis['by_category']:
+                analysis['by_category'][category] = 0
+            analysis['by_category'][category] += 1
+            
+            # By parameter
+            param = mod.get('parameter', 'unknown')
+            if param not in analysis['by_parameter']:
+                analysis['by_parameter'][param] = {
+                    'count': 0,
+                    'changes': []
+                }
+            analysis['by_parameter'][param]['count'] += 1
+            
+            # Track numeric changes
+            if isinstance(mod.get('original_value'), (int, float)) and \
+               isinstance(mod.get('new_value'), (int, float)):
+                change_pct = ((mod['new_value'] - mod['original_value']) / 
+                             mod['original_value'] * 100) if mod['original_value'] != 0 else 0
+                analysis['by_parameter'][param]['changes'].append(change_pct)
+            
+            # By building
+            building = mod.get('building_id', 'unknown')
+            if building not in analysis['by_building']:
+                analysis['by_building'][building] = 0
+            analysis['by_building'][building] += 1
+        
+        # Calculate statistics
+        analysis['statistics'] = {
+            'total_modifications': len(self.tracker.modifications),
+            'categories_modified': len(analysis['by_category']),
+            'parameters_modified': len(analysis['by_parameter']),
+            'buildings_modified': len(analysis['by_building'])
+        }
+        
+        # Calculate average changes for numeric parameters
+        for param, data in analysis['by_parameter'].items():
+            if data['changes']:
+                data['avg_change_pct'] = np.mean(data['changes'])
+                data['std_change_pct'] = np.std(data['changes'])
+        
+        return analysis
+    
+    def process_batch(self, 
+                     scenarios: List[Dict[str, Any]], 
+                     parallel: bool = True, 
+                     max_workers: int = None) -> pd.DataFrame:
+        """
+        Process multiple modification scenarios
+        
+        Args:
+            scenarios: List of scenario configurations
+            parallel: Whether to process in parallel
+            max_workers: Maximum number of parallel workers
+            
+        Returns:
+            DataFrame with all results
+        """
+        results = []
+        
+        if parallel and len(scenarios) > 1:
+            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+                future_to_scenario = {
+                    executor.submit(self._process_single_scenario, scenario): scenario 
+                    for scenario in scenarios
+                }
+                
+                for future in concurrent.futures.as_completed(future_to_scenario):
+                    scenario = future_to_scenario[future]
+                    try:
+                        result = future.result()
+                        results.append(result)
+                    except Exception as e:
+                        self.logger.error(f"Error processing scenario: {e}")
+                        results.append({
+                            'scenario_id': scenario.get('scenario_id', 'unknown'),
+                            'success': False,
+                            'error': str(e)
+                        })
+        else:
+            for scenario in scenarios:
+                result = self._process_single_scenario(scenario)
+                results.append(result)
+        
+        return pd.DataFrame(results)
+    
+    def _process_single_scenario(self, scenario: Dict[str, Any]) -> Dict[str, Any]:
+        """Process a single scenario"""
+        scenario_id = scenario.get('scenario_id', 'unknown')
+        building_id = scenario.get('building_id')
+        idf_path = Path(scenario.get('idf_path'))
+        parameter_values = scenario.get('parameters', {})
+        
+        self.logger.info(f"Processing scenario {scenario_id} for building {building_id}")
+        
+        # Apply modifications
+        result = self.modify_building(
+            building_id=building_id,
+            idf_path=idf_path,
+            parameter_values=parameter_values,
+            variant_id=scenario_id
+        )
+        
+        result['scenario_id'] = scenario_id
+        
+        return result

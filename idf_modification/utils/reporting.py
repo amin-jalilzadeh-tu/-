@@ -532,3 +532,375 @@ def create_modification_summary(modifications: List[Dict[str, Any]]) -> Dict[str
     summary['numeric_changes'].sort(key=lambda x: abs(x['change_percent']), reverse=True)
     
     return summary
+
+
+
+
+
+# Add these functions to your reporting.py file
+
+def export_modifications_to_parquet(modifications: List[Dict[str, Any]], 
+                                  output_path: Path,
+                                  include_metadata: bool = True) -> bool:
+    """
+    Export modifications to Parquet file
+    
+    Args:
+        modifications: List of modification dictionaries
+        output_path: Path for the Parquet file
+        include_metadata: Whether to include metadata in file metadata
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        # Prepare data for Parquet
+        rows = []
+        for mod in modifications:
+            row = {
+                'timestamp': mod.get('timestamp', datetime.datetime.now().isoformat()),
+                'building_id': mod.get('building_id', ''),
+                'variant_id': mod.get('variant_id', ''),
+                'category': mod.get('category', ''),
+                'object_type': mod.get('object_type', ''),
+                'object_name': mod.get('object_name', ''),
+                'parameter': mod.get('parameter', ''),
+                'field': mod.get('field', ''),
+                'original_value': str(mod.get('original_value', '')),
+                'new_value': str(mod.get('new_value', mod.get('value', ''))),
+                'original_value_numeric': None,
+                'new_value_numeric': None,
+                'change_type': mod.get('change_type', 'unknown'),
+                'change_percentage': None,
+                'rule_applied': mod.get('rule_applied', ''),
+                'action': mod.get('action', 'modify'),
+                'scenario': mod.get('scenario', ''),
+                'modifier': mod.get('modifier', ''),
+                'validation_status': mod.get('validation_status', 'unknown'),
+                'success': mod.get('success', True),
+                'message': mod.get('message', '')
+            }
+            
+            # Try to extract numeric values
+            try:
+                row['original_value_numeric'] = float(mod.get('original_value', 0))
+                row['new_value_numeric'] = float(mod.get('new_value', mod.get('value', 0)))
+                if row['original_value_numeric'] != 0:
+                    row['change_percentage'] = ((row['new_value_numeric'] - row['original_value_numeric']) / 
+                                               row['original_value_numeric']) * 100
+            except (ValueError, TypeError):
+                pass
+            
+            rows.append(row)
+        
+        # Create DataFrame
+        df = pd.DataFrame(rows)
+        
+        # Define optimal dtypes for Parquet
+        dtype_mapping = {
+            'timestamp': 'string',
+            'building_id': 'string',
+            'variant_id': 'string',
+            'category': 'category',
+            'object_type': 'category',
+            'object_name': 'string',
+            'parameter': 'string',
+            'field': 'string',
+            'original_value': 'string',
+            'new_value': 'string',
+            'original_value_numeric': 'float64',
+            'new_value_numeric': 'float64',
+            'change_percentage': 'float64',
+            'change_type': 'category',
+            'rule_applied': 'string',
+            'action': 'category',
+            'scenario': 'string',
+            'modifier': 'category',
+            'validation_status': 'category',
+            'success': 'bool',
+            'message': 'string'
+        }
+        
+        # Apply dtypes
+        for col, dtype in dtype_mapping.items():
+            if col in df.columns:
+                try:
+                    if dtype == 'category':
+                        df[col] = df[col].astype('category')
+                    elif dtype == 'bool':
+                        df[col] = df[col].astype('bool')
+                    elif dtype == 'float64':
+                        df[col] = pd.to_numeric(df[col], errors='coerce')
+                    else:
+                        df[col] = df[col].astype(dtype)
+                except Exception as e:
+                    logger.debug(f"Could not convert column {col} to {dtype}: {e}")
+        
+        # Write to Parquet with metadata
+        if include_metadata:
+            metadata = {
+                'version': '1.0',
+                'creation_timestamp': datetime.datetime.now().isoformat(),
+                'total_modifications': len(modifications),
+                'unique_buildings': df['building_id'].nunique(),
+                'unique_categories': df['category'].nunique(),
+                'unique_object_types': df['object_type'].nunique(),
+            }
+            
+            # Convert metadata to bytes for Parquet
+            import pyarrow as pa
+            import pyarrow.parquet as pq
+            
+            table = pa.Table.from_pandas(df)
+            # Add metadata to schema
+            existing_metadata = table.schema.metadata or {}
+            combined_metadata = {**existing_metadata, 
+                               **{k.encode(): str(v).encode() for k, v in metadata.items()}}
+            table = table.replace_schema_metadata(combined_metadata)
+            pq.write_table(table, output_path, compression='snappy')
+        else:
+            df.to_parquet(output_path, engine='pyarrow', compression='snappy', index=False)
+        
+        logger.info(f"Exported {len(modifications)} modifications to Parquet: {output_path}")
+        logger.info(f"File size: {output_path.stat().st_size / 1024:.1f} KB")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error exporting to Parquet: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+def export_summary_statistics_to_parquet(modifications: List[Dict[str, Any]], 
+                                       output_path: Path) -> bool:
+    """
+    Export summary statistics to a separate Parquet file
+    
+    Args:
+        modifications: List of modification dictionaries
+        output_path: Path for the summary Parquet file
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        # Create summary statistics by various dimensions
+        summary_data = []
+        
+        # Group modifications for analysis
+        from collections import defaultdict
+        
+        # By building and category
+        building_category_stats = defaultdict(lambda: defaultdict(int))
+        
+        # By parameter
+        parameter_stats = defaultdict(lambda: {
+            'count': 0,
+            'numeric_changes': [],
+            'categories': set(),
+            'buildings': set()
+        })
+        
+        # Process each modification
+        for mod in modifications:
+            building_id = mod.get('building_id', 'unknown')
+            category = mod.get('category', 'unknown')
+            parameter = mod.get('parameter', 'unknown')
+            
+            # Count by building and category
+            building_category_stats[building_id][category] += 1
+            
+            # Track parameter statistics
+            param_stat = parameter_stats[parameter]
+            param_stat['count'] += 1
+            param_stat['categories'].add(category)
+            param_stat['buildings'].add(building_id)
+            
+            # Track numeric changes
+            try:
+                old_val = float(mod.get('original_value', 0))
+                new_val = float(mod.get('new_value', mod.get('value', 0)))
+                if old_val != 0:
+                    pct_change = ((new_val - old_val) / old_val) * 100
+                    param_stat['numeric_changes'].append(pct_change)
+            except:
+                pass
+        
+        # Create summary rows
+        # 1. Building-Category Summary
+        for building_id, categories in building_category_stats.items():
+            for category, count in categories.items():
+                summary_data.append({
+                    'summary_type': 'building_category',
+                    'building_id': building_id,
+                    'category': category,
+                    'parameter': '',
+                    'modification_count': count,
+                    'avg_change_percentage': None,
+                    'min_change_percentage': None,
+                    'max_change_percentage': None,
+                    'unique_parameters': 0,
+                    'unique_buildings': 1
+                })
+        
+        # 2. Parameter Summary
+        for parameter, stats in parameter_stats.items():
+            numeric_changes = stats['numeric_changes']
+            
+            summary_data.append({
+                'summary_type': 'parameter',
+                'building_id': '',
+                'category': ','.join(sorted(stats['categories'])),
+                'parameter': parameter,
+                'modification_count': stats['count'],
+                'avg_change_percentage': sum(numeric_changes) / len(numeric_changes) if numeric_changes else None,
+                'min_change_percentage': min(numeric_changes) if numeric_changes else None,
+                'max_change_percentage': max(numeric_changes) if numeric_changes else None,
+                'unique_parameters': 1,
+                'unique_buildings': len(stats['buildings'])
+            })
+        
+        # 3. Overall Summary
+        all_numeric_changes = []
+        for mod in modifications:
+            try:
+                old_val = float(mod.get('original_value', 0))
+                new_val = float(mod.get('new_value', mod.get('value', 0)))
+                if old_val != 0:
+                    pct_change = ((new_val - old_val) / old_val) * 100
+                    all_numeric_changes.append(pct_change)
+            except:
+                pass
+        
+        summary_data.append({
+            'summary_type': 'overall',
+            'building_id': 'all',
+            'category': 'all',
+            'parameter': 'all',
+            'modification_count': len(modifications),
+            'avg_change_percentage': sum(all_numeric_changes) / len(all_numeric_changes) if all_numeric_changes else None,
+            'min_change_percentage': min(all_numeric_changes) if all_numeric_changes else None,
+            'max_change_percentage': max(all_numeric_changes) if all_numeric_changes else None,
+            'unique_parameters': len(parameter_stats),
+            'unique_buildings': len(building_category_stats)
+        })
+        
+        # Create DataFrame
+        df = pd.DataFrame(summary_data)
+        
+        # Write to Parquet
+        df.to_parquet(output_path, engine='pyarrow', compression='snappy', index=False)
+        
+        logger.info(f"Exported summary statistics to Parquet: {output_path}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error exporting summary to Parquet: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+def create_modification_database(job_output_dir: Path, 
+                               include_parsed_data: bool = True) -> bool:
+    """
+    Create a comprehensive Parquet database of all modifications and related data
+    
+    Args:
+        job_output_dir: The job output directory containing all data
+        include_parsed_data: Whether to include parsed IDF data
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        db_dir = job_output_dir / 'modification_database'
+        db_dir.mkdir(exist_ok=True)
+        
+        logger.info(f"Creating modification database in: {db_dir}")
+        
+        # 1. Find all modification reports
+        mod_reports = list(job_output_dir.glob('**/modification_report_*.json'))
+        
+        all_modifications = []
+        all_results = []
+        
+        for report_path in mod_reports:
+            with open(report_path, 'r') as f:
+                data = json.load(f)
+                
+            # Extract modifications
+            if 'detailed_results' in data:
+                for result in data['detailed_results']:
+                    all_results.append(result)
+                    for mod in result.get('modifications', []):
+                        # Add context from result
+                        mod['building_id'] = result.get('building_id', '')
+                        mod['variant_id'] = result.get('variant_id', '')
+                        mod['success'] = result.get('success', True)
+                        all_modifications.append(mod)
+        
+        # 2. Export modifications to Parquet
+        if all_modifications:
+            mods_parquet = db_dir / 'modifications.parquet'
+            export_modifications_to_parquet(all_modifications, mods_parquet)
+            
+            # Export summary statistics
+            summary_parquet = db_dir / 'modification_summary.parquet'
+            export_summary_statistics_to_parquet(all_modifications, summary_parquet)
+        
+        # 3. Create results summary Parquet
+        if all_results:
+            results_df = pd.DataFrame([{
+                'building_id': r.get('building_id', ''),
+                'variant_id': r.get('variant_id', ''),
+                'success': r.get('success', False),
+                'modification_count': len(r.get('modifications', [])),
+                'output_file': r.get('output_file', ''),
+                'timestamp': r.get('timestamp', ''),
+                'errors': '; '.join(r.get('errors', []))
+            } for r in all_results])
+            
+            results_parquet = db_dir / 'results_summary.parquet'
+            results_df.to_parquet(results_parquet, engine='pyarrow', compression='snappy', index=False)
+            logger.info(f"Exported results summary to: {results_parquet}")
+        
+        # 4. Include parsed data if requested
+        if include_parsed_data:
+            parsed_dir = job_output_dir / 'parsed_data'
+            if parsed_dir.exists():
+                # Copy relevant parquet files
+                import shutil
+                for parquet_file in parsed_dir.glob('**/*.parquet'):
+                    if 'parameter_matrix' in parquet_file.name:
+                        dest = db_dir / f'parsed_{parquet_file.name}'
+                        shutil.copy2(parquet_file, dest)
+                        logger.info(f"Included parsed data: {parquet_file.name}")
+        
+        # 5. Create index file
+        index_data = {
+            'database_version': '1.0',
+            'creation_timestamp': datetime.datetime.now().isoformat(),
+            'job_id': job_output_dir.name,
+            'total_modifications': len(all_modifications),
+            'total_results': len(all_results),
+            'files': {
+                'modifications': 'modifications.parquet',
+                'summary': 'modification_summary.parquet',
+                'results': 'results_summary.parquet'
+            }
+        }
+        
+        index_path = db_dir / 'index.json'
+        with open(index_path, 'w') as f:
+            json.dump(index_data, f, indent=2)
+        
+        logger.info(f"Modification database created successfully in: {db_dir}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error creating modification database: {e}")
+        import traceback
+        traceback.print_exc()
+        return False

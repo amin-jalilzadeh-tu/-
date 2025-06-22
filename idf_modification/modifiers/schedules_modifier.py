@@ -1,10 +1,5 @@
 """
-Schedule and occupancy pattern modifications.
-
-This module handles modifications to schedule and occupancy pattern modifications.
-"""
-"""
-Schedules Modifier - Handles schedule objects
+Schedules Modifier - Compatible with parsed IDF structure
 """
 from typing import List, Dict, Any
 import re
@@ -14,7 +9,7 @@ class SchedulesModifier(BaseModifier):
     """Modifier for schedule-related IDF objects"""
     
     def _initialize_parameters(self):
-        """Initialize schedule parameter definitions"""
+        """Initialize schedule parameter definitions matching parser field names"""
         self.parameter_definitions = {
             'constant_value': ParameterDefinition(
                 object_type='SCHEDULE:CONSTANT',
@@ -32,11 +27,12 @@ class SchedulesModifier(BaseModifier):
             ),
             'upper_limit': ParameterDefinition(
                 object_type='SCHEDULETYPELIMITS',
-                field_name='Upper Limit Value',
+                field_name='Upper Limit Value', 
                 field_index=2,
                 data_type=float,
                 performance_impact='schedule_bounds'
-            )
+            ),
+            # For Schedule:Compact, we handle fields dynamically
         }
     
     def get_category_name(self) -> str:
@@ -60,24 +56,24 @@ class SchedulesModifier(BaseModifier):
         return ['schedules']
     
     def apply_modifications(self, 
-                          idf, 
+                          parsed_objects: Dict[str, List[Any]], 
                           modifiable_params: Dict[str, List[Dict[str, Any]]],
                           strategy: str = 'default') -> List:
         """Apply schedule-specific modifications"""
         
         if strategy == 'occupancy_optimization':
-            return self._apply_occupancy_optimization(idf, modifiable_params)
-        elif strategy == 'temperature_setback':
-            return self._apply_temperature_setback(idf, modifiable_params)
-        elif strategy == 'lighting_controls':
-            return self._apply_lighting_controls(idf, modifiable_params)
+            return self._apply_occupancy_optimization(parsed_objects, modifiable_params)
+        elif strategy == 'setback_setpoint':
+            return self._apply_setback_setpoint(parsed_objects, modifiable_params)
         elif strategy == 'equipment_scheduling':
-            return self._apply_equipment_scheduling(idf, modifiable_params)
+            return self._apply_equipment_scheduling(parsed_objects, modifiable_params)
+        elif strategy == 'extended_hours':
+            return self._apply_extended_hours(parsed_objects, modifiable_params)
         else:
-            return super().apply_modifications(idf, modifiable_params, strategy)
+            return super().apply_modifications(parsed_objects, modifiable_params, strategy)
     
-    def _apply_occupancy_optimization(self, idf, modifiable_params):
-        """Optimize occupancy schedules"""
+    def _apply_occupancy_optimization(self, parsed_objects, modifiable_params):
+        """Optimize schedules based on occupancy patterns"""
         modifications = []
         
         for obj_type, objects in modifiable_params.items():
@@ -86,19 +82,35 @@ class SchedulesModifier(BaseModifier):
                     obj = obj_info['object']
                     
                     # Check if this is an occupancy schedule
-                    if 'occup' in obj.Name.lower():
-                        modifications.extend(
-                            self._modify_compact_schedule_values(
-                                obj, 
-                                time_periods={'night': 0.0, 'early_morning': 0.05},
-                                rule='occupancy_optimization'
-                            )
-                        )
+                    if any(term in obj.name.upper() for term in ['OCCUPANCY', 'PEOPLE', 'OCC']):
+                        modifications.extend(self._modify_compact_schedule_values(
+                            obj, 'occupancy_optimization', reduction_factor=0.1
+                        ))
+            
+            elif obj_type == 'SCHEDULE:CONSTANT':
+                for obj_info in objects:
+                    obj = obj_info['object']
+                    
+                    # Reduce constant occupancy values
+                    if 'OCCUPANCY' in obj.name.upper():
+                        for param in obj.parameters:
+                            if param.field_name == 'Hourly Value' and param.numeric_value:
+                                old_value = param.numeric_value
+                                # Reduce by 10% for better match to actual occupancy
+                                new_value = old_value * 0.9
+                                
+                                param.value = str(new_value)
+                                param.numeric_value = new_value
+                                
+                                modifications.append(self._create_modification_result(
+                                    obj, 'constant_value', old_value, new_value, 'occupancy_optimization'
+                                ))
+                                break
         
         return modifications
     
-    def _apply_temperature_setback(self, idf, modifiable_params):
-        """Apply temperature setback strategies"""
+    def _apply_setback_setpoint(self, parsed_objects, modifiable_params):
+        """Apply temperature setback during unoccupied hours"""
         modifications = []
         
         for obj_type, objects in modifiable_params.items():
@@ -106,55 +118,22 @@ class SchedulesModifier(BaseModifier):
                 for obj_info in objects:
                     obj = obj_info['object']
                     
-                    # Check if this is a heating setpoint schedule
-                    if 'heat' in obj.Name.lower() and 'setpoint' in obj.Name.lower():
-                        # Reduce nighttime and weekend heating setpoints
-                        modifications.extend(
-                            self._modify_temperature_schedule(
-                                obj, 
-                                adjustment=-2.0,  # 2°C setback
-                                periods=['night', 'weekend'],
-                                rule='heating_setback'
-                            )
-                        )
-                    
-                    # Check if this is a cooling setpoint schedule
-                    elif 'cool' in obj.Name.lower() and 'setpoint' in obj.Name.lower():
-                        # Increase nighttime and weekend cooling setpoints
-                        modifications.extend(
-                            self._modify_temperature_schedule(
-                                obj, 
-                                adjustment=2.0,  # 2°C setup
-                                periods=['night', 'weekend'],
-                                rule='cooling_setup'
-                            )
-                        )
+                    # Check if this is a temperature setpoint schedule
+                    if any(term in obj.name.upper() for term in ['SETPOINT', 'HEATING', 'COOLING', 'TEMP']):
+                        if 'HEATING' in obj.name.upper():
+                            # Lower heating setpoints during unoccupied hours
+                            modifications.extend(self._modify_compact_schedule_values(
+                                obj, 'setback_heating', temperature_adjustment=-2.0
+                            ))
+                        elif 'COOLING' in obj.name.upper():
+                            # Raise cooling setpoints during unoccupied hours
+                            modifications.extend(self._modify_compact_schedule_values(
+                                obj, 'setback_cooling', temperature_adjustment=2.0
+                            ))
         
         return modifications
     
-    def _apply_lighting_controls(self, idf, modifiable_params):
-        """Apply advanced lighting control schedules"""
-        modifications = []
-        
-        for obj_type, objects in modifiable_params.items():
-            if obj_type == 'SCHEDULE:COMPACT':
-                for obj_info in objects:
-                    obj = obj_info['object']
-                    
-                    # Check if this is a lighting schedule
-                    if 'light' in obj.Name.lower():
-                        # Implement daylight dimming approximation
-                        modifications.extend(
-                            self._modify_compact_schedule_values(
-                                obj,
-                                multipliers={'day': 0.7, 'night': 0.1},
-                                rule='daylight_dimming'
-                            )
-                        )
-        
-        return modifications
-    
-    def _apply_equipment_scheduling(self, idf, modifiable_params):
+    def _apply_equipment_scheduling(self, parsed_objects, modifiable_params):
         """Optimize equipment operation schedules"""
         modifications = []
         
@@ -164,147 +143,91 @@ class SchedulesModifier(BaseModifier):
                     obj = obj_info['object']
                     
                     # Check if this is an equipment schedule
-                    if 'equip' in obj.Name.lower():
-                        # Reduce equipment operation during unoccupied hours
-                        modifications.extend(
-                            self._modify_compact_schedule_values(
-                                obj,
-                                multipliers={'night': 0.3, 'weekend': 0.5},
-                                rule='equipment_scheduling'
-                            )
-                        )
+                    if any(term in obj.name.upper() for term in ['EQUIPMENT', 'ELEC', 'PLUG']):
+                        # Reduce equipment operation during low occupancy
+                        modifications.extend(self._modify_compact_schedule_values(
+                            obj, 'equipment_scheduling', reduction_factor=0.2
+                        ))
         
         return modifications
     
-    def _modify_compact_schedule_values(self, schedule_obj, 
-                                      time_periods=None, 
-                                      multipliers=None,
-                                      rule='schedule_modification'):
-        """Modify values in a Schedule:Compact object"""
+    def _apply_extended_hours(self, parsed_objects, modifiable_params):
+        """Extend operational hours for certain schedules"""
         modifications = []
         
-        # Schedule:Compact has variable structure after field 2
-        # Need to parse through the fields to find and modify values
-        
-        current_time_period = None
-        
-        for i in range(2, len(schedule_obj.obj)):
-            field_value = str(schedule_obj.obj[i])
-            
-            # Check if this is a time period identifier
-            if any(keyword in field_value.lower() for keyword in 
-                   ['through:', 'for:', 'weekdays', 'weekends', 'alldays']):
-                # Track current period type
-                if 'weekend' in field_value.lower():
-                    current_time_period = 'weekend'
-                elif 'weekday' in field_value.lower():
-                    current_time_period = 'weekday'
+        for obj_type, objects in modifiable_params.items():
+            if obj_type == 'SCHEDULE:COMPACT':
+                for obj_info in objects:
+                    obj = obj_info['object']
                     
-            # Check if this is a time specification
-            elif 'until:' in field_value.lower():
-                # Extract hour
-                match = re.search(r'until:\s*(\d+):(\d+)', field_value.lower())
-                if match:
-                    hour = int(match.group(1))
-                    if hour < 6:
-                        current_time_period = 'night'
-                    elif hour < 8:
-                        current_time_period = 'early_morning'
-                    elif hour < 18:
-                        current_time_period = 'day'
-                    else:
-                        current_time_period = 'evening'
-                        
-            # Check if this is a numeric value
-            else:
-                try:
-                    value = float(field_value)
-                    
-                    # Determine if we should modify this value
-                    modify = False
-                    new_value = value
-                    
-                    if time_periods and current_time_period in time_periods:
-                        new_value = time_periods[current_time_period]
-                        modify = True
-                    elif multipliers and current_time_period in multipliers:
-                        new_value = value * multipliers[current_time_period]
-                        modify = True
-                    
-                    if modify and new_value != value:
-                        # Apply the modification
-                        schedule_obj.obj[i] = new_value
-                        
-                        # Track the modification
-                        from ..base_modifier import ModificationResult
-                        result = ModificationResult(
-                            success=True,
-                            object_type='SCHEDULE:COMPACT',
-                            object_name=schedule_obj.Name,
-                            parameter=f'value_field_{i}_{current_time_period}',
-                            original_value=value,
-                            new_value=new_value,
-                            change_type='absolute',
-                            rule_applied=rule,
-                            validation_status='valid'
-                        )
-                        modifications.append(result)
-                        
-                except ValueError:
-                    # Not a numeric value, skip
-                    pass
+                    # Check if this is an HVAC availability schedule
+                    if any(term in obj.name.upper() for term in ['AVAILABILITY', 'FAN', 'HVAC']):
+                        # Extend availability hours
+                        modifications.extend(self._modify_compact_schedule_values(
+                            obj, 'extended_hours', extend_operation=True
+                        ))
         
         return modifications
     
-    def _modify_temperature_schedule(self, schedule_obj, adjustment, periods, rule):
-        """Modify temperature values in a schedule"""
+    def _modify_compact_schedule_values(self, obj, rule, **kwargs):
+        """Helper to modify Schedule:Compact values"""
         modifications = []
+        import random
         
-        current_period = None
-        
-        for i in range(2, len(schedule_obj.obj)):
-            field_value = str(schedule_obj.obj[i])
+        # Schedule:Compact has variable fields after the first two
+        # We need to parse through the fields to find time/value pairs
+        for i, param in enumerate(obj.parameters):
+            if i < 2:  # Skip name and type limit fields
+                continue
             
-            # Determine current period
-            if 'weekend' in field_value.lower():
-                current_period = 'weekend'
-            elif 'weekday' in field_value.lower():
-                current_period = 'weekday'
-            elif 'until:' in field_value.lower():
-                match = re.search(r'until:\s*(\d+):', field_value.lower())
-                if match:
-                    hour = int(match.group(1))
-                    current_period = 'night' if hour < 6 or hour > 22 else 'day'
-            
-            # Check if this is a temperature value
-            try:
-                value = float(field_value)
-                
-                # Temperature values are typically between 10-35°C
-                if 10 <= value <= 35 and current_period in periods:
-                    new_value = value + adjustment
+            # Check if this is a numeric value (not a day type or time)
+            if param.numeric_value is not None:
+                # Check if previous parameter is a time specification
+                if i > 0 and self._is_time_field(obj.parameters[i-1].value):
+                    old_value = param.numeric_value
+                    new_value = old_value
                     
-                    # Apply limits
-                    new_value = max(10, min(35, new_value))
+                    if 'reduction_factor' in kwargs:
+                        new_value = old_value * (1 - kwargs['reduction_factor'])
+                    elif 'temperature_adjustment' in kwargs:
+                        # For temperature schedules
+                        time_str = obj.parameters[i-1].value
+                        if self._is_unoccupied_time(time_str):
+                            new_value = old_value + kwargs['temperature_adjustment']
+                    elif 'extend_operation' in kwargs:
+                        # For availability schedules (0 or 1)
+                        if old_value < 0.5:  # Currently off
+                            # Random chance to extend operation
+                            if random.random() < 0.3:
+                                new_value = 1.0
                     
-                    if new_value != value:
-                        schedule_obj.obj[i] = new_value
+                    if new_value != old_value:
+                        param.value = str(new_value)
+                        param.numeric_value = new_value
                         
-                        from ..base_modifier import ModificationResult
-                        result = ModificationResult(
-                            success=True,
-                            object_type='SCHEDULE:COMPACT',
-                            object_name=schedule_obj.Name,
-                            parameter=f'temperature_{current_period}',
-                            original_value=value,
-                            new_value=new_value,
-                            change_type='absolute',
-                            rule_applied=rule,
-                            validation_status='valid'
-                        )
-                        modifications.append(result)
-                        
-            except ValueError:
-                pass
+                        modifications.append(self._create_modification_result(
+                            obj, f'schedule_value_{i}', old_value, new_value, rule
+                        ))
         
         return modifications
+    
+    def _is_time_field(self, value: str) -> bool:
+        """Check if a field value represents a time"""
+        if not value:
+            return False
+        # Common time patterns in Schedule:Compact
+        time_patterns = [
+            r'^\d{1,2}:\d{2}$',  # HH:MM
+            r'^Until:\s*\d{1,2}:\d{2}$',  # Until: HH:MM
+            r'^\d{1,2}:\d{2}:\d{2}$',  # HH:MM:SS
+        ]
+        return any(re.match(pattern, value.strip()) for pattern in time_patterns)
+    
+    def _is_unoccupied_time(self, time_str: str) -> bool:
+        """Check if a time represents unoccupied hours"""
+        # Simple check - before 7am or after 6pm
+        match = re.search(r'(\d{1,2}):', time_str)
+        if match:
+            hour = int(match.group(1))
+            return hour < 7 or hour >= 18
+        return False
