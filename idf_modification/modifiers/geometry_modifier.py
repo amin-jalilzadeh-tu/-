@@ -64,7 +64,7 @@ class GeometryModifier(BaseModifier):
                 field_name='Multiplier',
                 field_index=9,
                 data_type=float,
-                min_value=0.1,
+                min_value=1.0,  # CHANGED: EnergyPlus requires >= 1.0
                 max_value=10.0,
                 performance_impact='solar_gains'
             )
@@ -121,10 +121,10 @@ class GeometryModifier(BaseModifier):
                         if param.field_name == 'Multiplier':
                             old_value = param.numeric_value or float(param.value or 1.0)
                             
-                            # Adjust window size based on orientation
-                            # This is simplified - real implementation would check orientation
-                            adjustment = random.uniform(0.7, 1.3)  # -30% to +30%
-                            new_value = old_value * adjustment
+                            # FIXED: Ensure multiplier stays >= 1.0
+                            # Only allow increases, not decreases
+                            adjustment = random.uniform(1.0, 1.3)  # 0% to +30%
+                            new_value = max(1.0, old_value * adjustment)  # Safety check
                             
                             param.value = str(new_value)
                             param.numeric_value = new_value

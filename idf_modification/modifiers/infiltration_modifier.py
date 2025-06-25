@@ -125,7 +125,13 @@ class InfiltrationModifier(BaseModifier):
                     obj = obj_info['object']
                     
                     # Reduce infiltration rates by 20-40%
+                    # Reduce infiltration rates by 20-40%
                     reduction = random.uniform(0.2, 0.4)
+
+                    # FIX: Ensure we don't reduce to zero or negative
+                    # Keep at least 10% of original value
+                    min_reduction = 0.9  # Maximum 90% reduction
+                    reduction = min(reduction, min_reduction)
                     
                     # Find calculation method (usually parameter index 3)
                     calc_method = None

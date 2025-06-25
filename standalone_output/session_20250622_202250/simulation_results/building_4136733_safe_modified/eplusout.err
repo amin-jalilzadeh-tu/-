@@ -1,0 +1,48 @@
+Program Version,EnergyPlus, Version 9.5.0-de239b2e5f, YMD=2025.06.22 20:22,
+   ************* Beginning Zone Sizing Calculations
+   ** Warning ** Site:GroundTemperature:BuildingSurface: Some values fall outside the range of 15-25C.
+   **   ~~~   ** These values may be inappropriate.  Please consult the Input Output Reference for more details.
+   ** Warning ** Weather file location will be used rather than entered (IDF) Location object.
+   **   ~~~   ** ..Location object=AMSTERDAM_NETHERLANDS
+   **   ~~~   ** ..Weather File Location=Lelystad.AP FL NLD SRC-TMYx WMO#=062690
+   **   ~~~   ** ..due to location differences, Latitude difference=[8.72E-002] degrees, Longitude difference=[0.63] degrees.
+   **   ~~~   ** ..Time Zone difference=[0.0] hour(s), Elevation difference=[101.44] percent, [274.24] meters.
+   ** Warning ** ProcessScheduleInput: Schedule:Compact="LIGHTSSCHEDULE" has missing day types in Through=12/31
+   **   ~~~   ** Last "For" field=FOR: SUNDAY
+   **   ~~~   ** Missing day types="Holiday","SummerDesignDay","WinterDesignDay","CustomDay1","CustomDay2"
+   **   ~~~   ** Missing day types will have 0.0 as Schedule Values
+   ** Warning ** ProcessScheduleInput: Schedule:Compact="EQUIPSCHEDULE" has missing day types in Through=12/31
+   **   ~~~   ** Last "For" field=FOR: SUNDAY
+   **   ~~~   ** Missing day types="Holiday","SummerDesignDay","WinterDesignDay","CustomDay1","CustomDay2"
+   **   ~~~   ** Missing day types will have 0.0 as Schedule Values
+   ** Warning ** ProcessScheduleInput: Schedule:Compact="HVAC_AVAIL_SCHED" has missing day types in Through=12/31
+   **   ~~~   ** Last "For" field=FOR: WINTERDESIGNDAY
+   **   ~~~   ** Missing day types="Holiday","CustomDay1","CustomDay2"
+   **   ~~~   ** Missing day types will have 0.0 as Schedule Values
+   ** Warning ** ProcessScheduleInput: Schedule:Compact="ZONE_HEATING_SETPOINTS" has missing day types in Through=12/31
+   **   ~~~   ** Last "For" field=FOR: WINTERDESIGNDAY
+   **   ~~~   ** Missing day types="CustomDay1","CustomDay2"
+   **   ~~~   ** Missing day types will have 0.0 as Schedule Values
+   ** Warning ** ProcessScheduleInput: Schedule:Compact="ZONE_COOLING_SETPOINTS" has missing day types in Through=12/31
+   **   ~~~   ** Last "For" field=FOR: WINTERDESIGNDAY
+   **   ~~~   ** Missing day types="CustomDay1","CustomDay2"
+   **   ~~~   ** Missing day types will have 0.0 as Schedule Values
+   ** Severe  ** GetSurfaceData: Zone has no surfaces, Zone=ZONE1_FRONTPERIMETER
+   ** Severe  ** GetSurfaceData: Zone has no surfaces, Zone=ZONE1_RIGHTPERIMETER
+   ** Severe  ** GetSurfaceData: Zone has no surfaces, Zone=ZONE1_REARPERIMETER
+   ** Severe  ** GetSurfaceData: Zone has no surfaces, Zone=ZONE1_LEFTPERIMETER
+   ** Severe  ** GetSurfaceData: Zone has no surfaces, Zone=ZONE1_CORE
+   ** Severe  ** GetSurfaceData: Zone has no surfaces, Zone=ZONE2_FRONTPERIMETER
+   ** Severe  ** GetSurfaceData: Zone has no surfaces, Zone=ZONE2_RIGHTPERIMETER
+   ** Severe  ** GetSurfaceData: Zone has no surfaces, Zone=ZONE2_REARPERIMETER
+   ** Severe  ** GetSurfaceData: Zone has no surfaces, Zone=ZONE2_LEFTPERIMETER
+   ** Severe  ** GetSurfaceData: Zone has no surfaces, Zone=ZONE2_CORE
+   **  Fatal  ** GetSurfaceData: Errors discovered, program terminates.
+   ...Summary of Errors that led to program termination:
+   ..... Reference severe error count=10
+   ..... Last severe error=GetSurfaceData: Zone has no surfaces, Zone=ZONE2_CORE
+   ************* Warning:  Node connection errors not checked - most system input has not been read (see previous warning).
+   ************* Fatal error -- final processing.  Program exited before simulations began.  See previous error messages.
+   ************* EnergyPlus Warmup Error Summary. During Warmup: 0 Warning; 0 Severe Errors.
+   ************* EnergyPlus Sizing Error Summary. During Sizing: 7 Warning; 10 Severe Errors.
+   ************* EnergyPlus Terminated--Fatal Error Detected. 7 Warning; 10 Severe Errors; Elapsed Time=00hr 00min  0.46sec

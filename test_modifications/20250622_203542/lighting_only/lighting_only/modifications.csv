@@ -1,0 +1,4 @@
+building_id,variant_id,category,object_type,object_name,parameter,original_value,new_value,change_type,rule_applied,success,validation_status,message
+4136733,lighting_only,lighting,LIGHTS,Lights_ALL_ZONES,fraction_radiant,0.1,0.2,absolute,led_retrofit,True,valid,
+4136733,lighting_only,lighting,LIGHTS,Lights_ALL_ZONES,fraction_visible,0.1,0.2,absolute,led_retrofit,True,valid,
+4136733,lighting_only,lighting,LIGHTS,Lights_ALL_ZONES,return_air_fraction,0.8,0.55,absolute,led_retrofit,True,valid,

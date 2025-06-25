@@ -1,0 +1,8 @@
+building_id,variant_id,category,object_type,object_name,parameter,original_value,new_value,change_type,rule_applied,success,validation_status,message
+4136733,envelope_upgrade,materials,MATERIAL,Concrete_200mm,conductivity,0.0781191888777523,0.05841081050037772,absolute,insulation_upgrade,True,valid,
+4136733,envelope_upgrade,materials,MATERIAL,Concrete_200mm,thickness,0.195298,0.2755263151011361,absolute,insulation_upgrade,True,valid,
+4136733,envelope_upgrade,materials,MATERIAL:NOMASS,Roof_R2.5,thermal_resistance,2.5,4.022316410088468,absolute,insulation_upgrade,True,valid,
+4136733,envelope_upgrade,materials,MATERIAL:NOMASS,InternalFloor_Generic_R1.0,thermal_resistance,1.0,1.8995199344057727,absolute,insulation_upgrade,True,valid,
+4136733,envelope_upgrade,materials,MATERIAL:NOMASS,InteriorWall_Generic_R0.5,thermal_resistance,0.5,0.909729423995304,absolute,insulation_upgrade,True,valid,
+4136733,envelope_upgrade,materials,MATERIAL:NOMASS,GroundFloor_R2.5,thermal_resistance,0.3448275862068966,0.5303226574530479,absolute,insulation_upgrade,True,valid,
+4136733,envelope_upgrade,materials,MATERIAL:NOMASS,Door_U3.4,thermal_resistance,0.29,0.43609640393639854,absolute,insulation_upgrade,True,valid,

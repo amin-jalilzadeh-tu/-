@@ -1,0 +1,18 @@
+{
+  "metadata": {
+    "timestamp": "2025-06-22T20:35:42.881899",
+    "scenario": "Baseline - No modifications",
+    "original_idf": "D:\\Documents\\daily\\E_Plus_2040_py\\output\\b0fb6596-3303-4494-bc5f-5741a4db5e11\\output_IDFs\\building_4136733.idf",
+    "modified_idf": "D:\\Documents\\daily\\E_Plus_2040_py\\test_modifications\\20250622_203542\\baseline\\baseline\\building_4136733_baseline.idf",
+    "total_modifications": 0
+  },
+  "summary": {
+    "by_category": {},
+    "by_success": {
+      "successful": 0,
+      "failed": 0
+    },
+    "by_change_type": {}
+  },
+  "modifications": []
+}

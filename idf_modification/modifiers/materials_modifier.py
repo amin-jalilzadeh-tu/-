@@ -249,7 +249,7 @@ class MaterialsModifier(BaseModifier):
                         if current_conductivity < 0.1:
                             # Improve insulation by reducing conductivity 20-40%
                             reduction = random.uniform(0.2, 0.4)
-                            new_conductivity = current_conductivity * (1 - reduction)
+                            new_conductivity = max(0.01, current_conductivity * (1 - reduction))  # FIX: Ensure minimum value
                             
                             conductivity_param.value = str(new_conductivity)
                             conductivity_param.numeric_value = new_conductivity

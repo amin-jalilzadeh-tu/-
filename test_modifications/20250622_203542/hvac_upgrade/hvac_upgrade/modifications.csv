@@ -1,0 +1,3 @@
+building_id,variant_id,category,object_type,object_name,parameter,original_value,new_value,change_type,rule_applied,success,validation_status,message
+4136733,hvac_upgrade,ventilation,DESIGNSPECIFICATION:OUTDOORAIR,DSOA_Global,outdoor_air_flow_per_person,0.00236,0.0025,absolute,demand_controlled,True,valid,
+4136733,hvac_upgrade,ventilation,DESIGNSPECIFICATION:OUTDOORAIR,DSOA_Global,outdoor_air_flow_per_zone_area,0.000305,0.0003,absolute,demand_controlled,True,valid,

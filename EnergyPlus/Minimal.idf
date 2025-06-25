@@ -129,27 +129,27 @@ OutputControl:Table:Style,
 Output:Variable,
     *,                        !- Key Value
     Site Diffuse Solar Radiation Rate per Area,    !- Variable Name
-    Daily;                 !- Reporting Frequency
+    Monthly;                 !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Boiler Heating Energy,    !- Variable Name 
-    Daily;                 !- Reporting Frequency
+    Monthly;                 !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Water Heater Heating Energy,  !- Variable Name 
-    Daily;                 !- Reporting Frequency
+    Monthly;                 !- Reporting Frequency
 
 
 ! --- Request Meters for Entire Facility ---
 Output:Meter,
   Heating:EnergyTransfer,
-  Hourly;
+  Monthly;
 
 Output:Meter,
   Cooling:EnergyTransfer,
-  Hourly;
+  Monthly;
 
 
 
@@ -158,29 +158,29 @@ Output:Meter,
 Output:Variable,
     *,                         !- Key Value: For all applicable zones
     Zone Air System Sensible Heating Energy, !- Variable Name
-    Hourly;                    !- Reporting Frequency (or Daily, Monthly, Timestep)
+    Monthly;                    !- Reporting Frequency (or Monthly, Monthly, Timestep)
 
 Output:Variable,
     *,                         !- Key Value: For all applicable zones
     Zone Air System Sensible Cooling Energy, !- Variable Name
-    Hourly;                    !- Reporting Frequency
+    Monthly;                    !- Reporting Frequency
 
 ! --- Optional: Add if interested in rates ---
 Output:Variable,
     *,                         !- Key Value: For all applicable zones
     Zone Air System Sensible Heating Rate, !- Variable Name
-    Hourly;                    !- Reporting Frequency
+    Monthly;                    !- Reporting Frequency
 
 Output:Variable,
     *,                         !- Key Value: For all applicable zones
     Zone Air System Sensible Cooling Rate, !- Variable Name
-    Hourly;                    !- Reporting Frequency
+    Monthly;                    !- Reporting Frequency
 
 ! --- Optional: Add for latent loads if needed ---
 Output:Variable,
     *,                         !- Key Value: For all applicable zones
     Zone Air System Latent Cooling Energy, !- Variable Name
-    Hourly;                    !- Reporting Frequency
+    Monthly;                    !- Reporting Frequency
 
 
 
@@ -202,53 +202,53 @@ Output:Variable,
 Output:Variable,
     *,                         !- Key Value: For all applicable zones
     Zone Infiltration Standard Density Volume Flow Rate, !- Variable Name: Infiltration flow rate [m3/s] at standard conditions
-    Hourly;                    !- Reporting Frequency
+    Monthly;                    !- Reporting Frequency
 
 Output:Variable,
     *,                         !- Key Value: For all applicable zones
     Zone Infiltration Sensible Heat Loss Energy, !- Variable Name: Energy impact [J]
-    Hourly;                    !- Reporting Frequency
+    Monthly;                    !- Reporting Frequency
 
 Output:Variable,
     *,                         !- Key Value: For all applicable zones
     Zone Infiltration Sensible Heat Gain Energy, !- Variable Name: Energy impact [J]
-    Hourly;                    !- Reporting Frequency
+    Monthly;                    !- Reporting Frequency
 
 Output:Variable,
     *,                         !- Key Value: For all applicable zones
     Zone Infiltration Latent Heat Loss Energy, !- Variable Name: Energy impact [J]
-    Hourly;                    !- Reporting Frequency
+    Monthly;                    !- Reporting Frequency
 
 Output:Variable,
     *,                         !- Key Value: For all applicable zones
     Zone Infiltration Latent Heat Gain Energy, !- Variable Name: Energy impact [J]
-    Hourly;                    !- Reporting Frequency
+    Monthly;                    !- Reporting Frequency
 
 ! --- Zone/Natural Ventilation (from ZoneVentilation:* objects) ---
 Output:Variable,
     *,                         !- Key Value: For all applicable zones
     Zone Ventilation Standard Density Volume Flow Rate, !- Variable Name: Ventilation flow rate [m3/s] at standard conditions
-    Hourly;                    !- Reporting Frequency
+    Monthly;                    !- Reporting Frequency
 
 Output:Variable,
     *,                         !- Key Value: For all applicable zones
     Zone Ventilation Sensible Heat Loss Energy, !- Variable Name: Energy impact [J]
-    Hourly;                    !- Reporting Frequency
+    Monthly;                    !- Reporting Frequency
 
 Output:Variable,
     *,                         !- Key Value: For all applicable zones
     Zone Ventilation Sensible Heat Gain Energy, !- Variable Name: Energy impact [J]
-    Hourly;                    !- Reporting Frequency
+    Monthly;                    !- Reporting Frequency
 
 Output:Variable,
     *,                         !- Key Value: For all applicable zones
     Zone Ventilation Latent Heat Loss Energy, !- Variable Name: Energy impact [J]
-    Hourly;                    !- Reporting Frequency
+    Monthly;                    !- Reporting Frequency
 
 Output:Variable,
     *,                         !- Key Value: For all applicable zones
     Zone Ventilation Latent Heat Gain Energy, !- Variable Name: Energy impact [J]
-    Hourly;                    !- Reporting Frequency
+    Monthly;                    !- Reporting Frequency
 
 ! --- Mechanical Ventilation (Outdoor Air from HVAC System) ---
 ! Note: Zone Mechanical Ventilation Standard Density Volume Flow Rate might not always be available.
@@ -256,47 +256,47 @@ Output:Variable,
 Output:Variable,
     *,                         !- Key Value: For all applicable zones
     Zone Mechanical Ventilation Mass Flow Rate, !- Variable Name: Outdoor air mass flow from HVAC [kg/s]
-    Hourly;                    !- Reporting Frequency
+    Monthly;                    !- Reporting Frequency
 
 ! --- Total Zone Outdoor Air ---
 Output:Variable,
     *,                         !- Key Value: For all applicable zones
     Zone Outdoor Air Volume Flow Rate, !- Variable Name: Total OA entering zone (infiltration + natural + mechanical) [m3/s] at current density
-    Hourly;                    !- Reporting Frequency
+    Monthly;                    !- Reporting Frequency
 
 ! --- Temperatures ---
 Output:Variable,
     *,                         !- Key Value: For all applicable zones
     Zone Mean Air Temperature,  !- Variable Name: Indoor air temperature [C]
-    Hourly;                    !- Reporting Frequency
+    Monthly;                    !- Reporting Frequency
 
 Output:Variable,
     Environment,               !- Key Value: Special key for site variables
     Site Outdoor Air Drybulb Temperature, !- Variable Name: Outdoor air temperature [C]
-    Hourly;                    !- Reporting Frequency
+    Monthly;                    !- Reporting Frequency
 
 Output:Variable,
     Environment,               !- Key Value: Special key for site variables
     Site Outdoor Air Relative Humidity, !- Variable Name: Outdoor relative humidity [%]
-    Hourly;                    !- Reporting Frequency
+    Monthly;                    !- Reporting Frequency
 
 ! --- Energy Meters (Building Level) ---
 ! Note: These report facility totals directly.
 Output:Meter,
     Infiltration:EnergyTransfer:Sensible, !- Meter Name: Sensible energy transfer due to infiltration [J]
-    Hourly;                    !- Reporting Frequency
+    Monthly;                    !- Reporting Frequency
 
 Output:Meter,
     Infiltration:EnergyTransfer:Latent, !- Meter Name: Latent energy transfer due to infiltration [J]
-    Hourly;                    !- Reporting Frequency
+    Monthly;                    !- Reporting Frequency
 
 Output:Meter,
     Ventilation:EnergyTransfer:Sensible, !- Meter Name: Sensible energy transfer due to ventilation (zone + mechanical) [J]
-    Hourly;                    !- Reporting Frequency
+    Monthly;                    !- Reporting Frequency
 
 Output:Meter,
     Ventilation:EnergyTransfer:Latent, !- Meter Name: Latent energy transfer due to ventilation (zone + mechanical) [J]
-    Hourly;                    !- Reporting Frequency
+    Monthly;                    !- Reporting Frequency
 
 
 
@@ -319,12 +319,12 @@ Output:Meter,
 Output:Variable,
     *,                        !- Key Value (For all zones)
     Zone Windows Total Transmitted Solar Radiation Rate,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Zone Windows Total Transmitted Solar Radiation Energy,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 ! --- Conduction Through Surfaces (Opaque: Walls, Roofs, Floors etc.) ---
 ! Note: For specific surfaces, replace '*' with the surface name.
@@ -332,90 +332,90 @@ Output:Variable,
 Output:Variable,
     *,                        !- Key Value (For all zones, all opaque surfaces)
     Surface Inside Face Conduction Heat Transfer Rate,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Surface Inside Face Conduction Heat Gain Energy,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Surface Inside Face Conduction Heat Loss Energy,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 ! --- Conduction Through Windows (Frame and Glass) ---
 ! Similar to opaque surfaces, '*' is for all windows.
 Output:Variable,
     *,                        !- Key Value (For all zones, all windows)
     Surface Window Heat Gain Rate,  !- Variable Name (Includes solar and conduction)
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Surface Window Heat Loss Rate,  !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Surface Window Heat Gain Energy,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Surface Window Heat Loss Energy,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 ! --- Internal Gains ---
 Output:Variable,
     *,                        !- Key Value (For all zones)
     Zone People Sensible Heating Rate,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Zone People Sensible Heating Energy,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Zone People Latent Heat Gain Rate,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Zone People Latent Heat Gain Energy,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Zone Lights Sensible Heating Rate,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Zone Lights Sensible Heating Energy,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Zone Electric Equipment Sensible Heating Rate,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Zone Electric Equipment Sensible Heating Energy,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Zone Electric Equipment Latent Heat Gain Rate,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Zone Electric Equipment Latent Heat Gain Energy,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 ! (Add similar for Gas Equipment, Hot Water Equipment, Steam Equipment if you have them in your model)
 
@@ -423,70 +423,70 @@ Output:Variable,
 Output:Variable,
     *,                        !- Key Value
     Zone Total Internal Sensible Heat Gain Rate,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Zone Total Internal Sensible Heat Gain Energy,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Zone Total Internal Latent Heat Gain Rate,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Zone Total Internal Latent Heat Gain Energy,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 ! --- Zone Air Heat Balance (provides a breakdown of where energy is going to/from the zone air) ---
 Output:Variable,
     *,                        !- Key Value
     Zone Air Heat Balance Surface Convection Rate,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Zone Air Heat Balance Interzone Air Transfer Rate,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Zone Air Heat Balance Outdoor Air Transfer Rate,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Zone Air Heat Balance System Air Transfer Rate,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Zone Air Heat Balance Internal Convective Heat Gain Rate,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value
     Zone Air Heat Balance Air Energy Storage Rate,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 ! --- Surface Temperatures (can be useful for diagnostics) ---
 Output:Variable,
     *,                        !- Key Value (For all zones, all surfaces)
     Surface Inside Face Temperature,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 Output:Variable,
     *,                        !- Key Value (For all zones, all surfaces)
     Surface Outside Face Temperature,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 ! --- Mean Radiant Temperature ---
 Output:Variable,
     *,                        !- Key Value
     Zone Mean Radiant Temperature,    !- Variable Name
-    Hourly;                   !- Reporting Frequency
+    Monthly;                   !- Reporting Frequency
 
 ! Add this to your existing Output:Table:Monthly list (or create a new section if you prefer)
 OUTPUT:TABLE:MONTHLY,
@@ -521,44 +521,44 @@ OUTPUT:TABLE:MONTHLY,
 Output:Variable,
     *,                                          !- Key Value
     Surface Shading Device Is On Time Fraction,  !- Variable Name
-    Hourly;                                     !- Reporting Frequency
+    Monthly;                                     !- Reporting Frequency
 
 Output:Variable,
     *,                                          !- Key Value
     Window Shading Control Status,               !- Variable Name
-    Hourly;                                     !- Reporting Frequency
+    Monthly;                                     !- Reporting Frequency
 
 Output:Variable,
     *,                                          !- Key Value
     Surface Window Blind Slat Angle,             !- Variable Name
-    Hourly;                                     !- Reporting Frequency
+    Monthly;                                     !- Reporting Frequency
 
 Output:Variable,
     *,                                          !- Key Value
     Surface Outside Face Incident Solar Radiation Rate per Area, !- Variable Name
-    Hourly;                                     !- Reporting Frequency
+    Monthly;                                     !- Reporting Frequency
 
 Output:Variable,
     *,                                          !- Key Value
     Surface Window Transmitted Solar Radiation Rate, !- Variable Name
-    Hourly;                                     !- Reporting Frequency
+    Monthly;                                     !- Reporting Frequency
 
 Output:Variable,
     *,                                          !- Key Value
     Surface Window Transmitted Beam Solar Radiation Rate, !- Variable Name
-    Hourly;                                     !- Reporting Frequency
+    Monthly;                                     !- Reporting Frequency
 
 Output:Variable,
     *,                                          !- Key Value
     Surface Window Transmitted Diffuse Solar Radiation Rate, !- Variable Name
-    Hourly;                                     !- Reporting Frequency
+    Monthly;                                     !- Reporting Frequency
 
 Output:Variable,
     *,                                          !- Key Value
     Surface Window Shading Device Transmitted Diffuse Solar Radiation Rate, !- Variable Name
-    Hourly;                                     !- Reporting Frequency
+    Monthly;                                     !- Reporting Frequency
 
 Output:Variable,
     *,                                          !- Key Value
     Surface Window Shading Device Absorbed Solar Radiation Rate, !- Variable Name
-    Hourly;                                     !- Reporting Frequency
+    Monthly;                                     !- Reporting Frequency

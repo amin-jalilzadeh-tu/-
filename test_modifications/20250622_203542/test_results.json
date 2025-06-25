@@ -1,0 +1,38 @@
+{
+  "baseline": {
+    "success": true,
+    "modified_idf": "D:\\Documents\\daily\\E_Plus_2040_py\\test_modifications\\20250622_203542\\baseline\\baseline\\building_4136733_baseline.idf",
+    "modification_count": 0,
+    "output_dir": "D:\\Documents\\daily\\E_Plus_2040_py\\test_modifications\\20250622_203542\\baseline"
+  },
+  "lighting_only": {
+    "success": true,
+    "modified_idf": "D:\\Documents\\daily\\E_Plus_2040_py\\test_modifications\\20250622_203542\\lighting_only\\lighting_only\\building_4136733_lighting_only.idf",
+    "modification_count": 3,
+    "output_dir": "D:\\Documents\\daily\\E_Plus_2040_py\\test_modifications\\20250622_203542\\lighting_only"
+  },
+  "envelope_upgrade": {
+    "success": true,
+    "modified_idf": "D:\\Documents\\daily\\E_Plus_2040_py\\test_modifications\\20250622_203542\\envelope_upgrade\\envelope_upgrade\\building_4136733_envelope_upgrade.idf",
+    "modification_count": 7,
+    "output_dir": "D:\\Documents\\daily\\E_Plus_2040_py\\test_modifications\\20250622_203542\\envelope_upgrade"
+  },
+  "hvac_upgrade": {
+    "success": true,
+    "modified_idf": "D:\\Documents\\daily\\E_Plus_2040_py\\test_modifications\\20250622_203542\\hvac_upgrade\\hvac_upgrade\\building_4136733_hvac_upgrade.idf",
+    "modification_count": 2,
+    "output_dir": "D:\\Documents\\daily\\E_Plus_2040_py\\test_modifications\\20250622_203542\\hvac_upgrade"
+  },
+  "comprehensive_retrofit": {
+    "success": true,
+    "modified_idf": "D:\\Documents\\daily\\E_Plus_2040_py\\test_modifications\\20250622_203542\\comprehensive_retrofit\\comprehensive_retrofit\\building_4136733_comprehensive_retrofit.idf",
+    "modification_count": 13,
+    "output_dir": "D:\\Documents\\daily\\E_Plus_2040_py\\test_modifications\\20250622_203542\\comprehensive_retrofit"
+  },
+  "custom_values": {
+    "success": true,
+    "modified_idf": "D:\\Documents\\daily\\E_Plus_2040_py\\test_modifications\\20250622_203542\\custom_values\\custom_values\\building_4136733_custom_values.idf",
+    "modification_count": 0,
+    "output_dir": "D:\\Documents\\daily\\E_Plus_2040_py\\test_modifications\\20250622_203542\\custom_values"
+  }
+}

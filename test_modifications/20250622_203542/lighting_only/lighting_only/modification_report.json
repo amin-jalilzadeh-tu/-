@@ -1,0 +1,68 @@
+{
+  "metadata": {
+    "timestamp": "2025-06-22T20:35:42.915131",
+    "scenario": "LED Retrofit Only",
+    "original_idf": "D:\\Documents\\daily\\E_Plus_2040_py\\output\\b0fb6596-3303-4494-bc5f-5741a4db5e11\\output_IDFs\\building_4136733.idf",
+    "modified_idf": "D:\\Documents\\daily\\E_Plus_2040_py\\test_modifications\\20250622_203542\\lighting_only\\lighting_only\\building_4136733_lighting_only.idf",
+    "total_modifications": 3
+  },
+  "summary": {
+    "by_category": {
+      "lighting": 3
+    },
+    "by_success": {
+      "successful": 3,
+      "failed": 0
+    },
+    "by_change_type": {
+      "absolute": 3
+    }
+  },
+  "modifications": [
+    {
+      "building_id": "4136733",
+      "variant_id": "lighting_only",
+      "category": "lighting",
+      "object_type": "LIGHTS",
+      "object_name": "Lights_ALL_ZONES",
+      "parameter": "fraction_radiant",
+      "original_value": 0.1,
+      "new_value": 0.2,
+      "change_type": "absolute",
+      "rule_applied": "led_retrofit",
+      "success": true,
+      "validation_status": "valid",
+      "message": null
+    },
+    {
+      "building_id": "4136733",
+      "variant_id": "lighting_only",
+      "category": "lighting",
+      "object_type": "LIGHTS",
+      "object_name": "Lights_ALL_ZONES",
+      "parameter": "fraction_visible",
+      "original_value": 0.1,
+      "new_value": 0.2,
+      "change_type": "absolute",
+      "rule_applied": "led_retrofit",
+      "success": true,
+      "validation_status": "valid",
+      "message": null
+    },
+    {
+      "building_id": "4136733",
+      "variant_id": "lighting_only",
+      "category": "lighting",
+      "object_type": "LIGHTS",
+      "object_name": "Lights_ALL_ZONES",
+      "parameter": "return_air_fraction",
+      "original_value": 0.8,
+      "new_value": 0.55,
+      "change_type": "absolute",
+      "rule_applied": "led_retrofit",
+      "success": true,
+      "validation_status": "valid",
+      "message": null
+    }
+  ]
+}

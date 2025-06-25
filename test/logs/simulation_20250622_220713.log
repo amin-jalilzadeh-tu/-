@@ -1,0 +1,16 @@
+2025-06-22 22:07:13,939 - StandaloneSimulator - INFO - IDD initialized: D:\Documents\daily\E_Plus_2040_py\EnergyPlus\Energy+.idd
+2025-06-22 22:07:13,941 - StandaloneSimulator - INFO - Simulating IDF: D:\Documents\daily\E_Plus_2040_py\output\b0fb6596-3303-4494-bc5f-5741a4db5e11\output_IDFs\building_4136733.idf
+2025-06-22 22:07:13,941 - StandaloneSimulator - INFO - Output directory: simulation_results\4136733_baseline
+2025-06-22 22:07:32,288 - StandaloneSimulator - INFO - Simulation successful: Success: D:\Documents\daily\E_Plus_2040_py\output\b0fb6596-3303-4494-bc5f-5741a4db5e11\output_IDFs\building_4136733.idf
+2025-06-22 22:07:32,377 - StandaloneSimulator - INFO - Simulating IDF: output\building_4136733_efficient_lighting.idf
+2025-06-22 22:07:32,378 - StandaloneSimulator - INFO - Output directory: simulation_results\4136733_efficient_lighting
+2025-06-22 22:07:51,953 - StandaloneSimulator - INFO - Simulation successful: Success: output\building_4136733_efficient_lighting.idf
+2025-06-22 22:07:52,005 - StandaloneSimulator - INFO - Simulating IDF: output\building_4136733_envelope_upgrade.idf
+2025-06-22 22:07:52,005 - StandaloneSimulator - INFO - Output directory: simulation_results\4136733_envelope_upgrade
+2025-06-22 22:08:10,934 - StandaloneSimulator - INFO - Simulation successful: Success: output\building_4136733_envelope_upgrade.idf
+2025-06-22 22:08:11,038 - StandaloneSimulator - INFO - Simulating IDF: output\building_4136733_comprehensive_retrofit.idf
+2025-06-22 22:08:11,038 - StandaloneSimulator - INFO - Output directory: simulation_results\4136733_comprehensive_retrofit
+2025-06-22 22:08:30,593 - StandaloneSimulator - INFO - Simulation successful: Success: output\building_4136733_comprehensive_retrofit.idf
+2025-06-22 22:08:30,595 - StandaloneSimulator - INFO - Comparing 3 baseline vs 3 modified CSV files
+2025-06-22 22:08:30,693 - StandaloneSimulator - INFO - Comparing 3 baseline vs 3 modified CSV files
+2025-06-22 22:08:30,718 - StandaloneSimulator - INFO - Comparing 3 baseline vs 3 modified CSV files

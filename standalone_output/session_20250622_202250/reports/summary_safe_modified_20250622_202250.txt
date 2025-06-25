@@ -1,0 +1,28 @@
+Comprehensive IDF Modification Report
+============================================================
+
+Original IDF: D:\Documents\daily\E_Plus_2040_py\output\8042f755-d9b1-4714-98e6-801c66f6cc0a\output_IDFs\building_4136733.idf
+Variant: safe_modified
+Timestamp: 2025-06-22T20:22:50.033395
+Overall Success: False
+
+MODIFICATION RESULTS:
+  Success: True
+  Total Modifications: 47
+  Output File: D:\Documents\daily\E_Plus_2040_py\standalone_output\session_20250622_202250\modified_idfs\building_4136733_safe_modified.idf
+
+VALIDATION RESULTS:
+  Valid: False
+  Issues: 1
+  Warnings: 30
+  Issues found:
+    - Sizing:Zone has too many fields: 53
+
+SIMULATION RESULTS:
+  Success: False
+  Runtime: 0.6 seconds
+  Errors: 11
+    - GetSurfaceData: Zone has no surfaces, Zone=ZONE1_FRONTPERIMETER
+    - GetSurfaceData: Zone has no surfaces, Zone=ZONE1_RIGHTPERIMETER
+    - GetSurfaceData: Zone has no surfaces, Zone=ZONE1_REARPERIMETER
+

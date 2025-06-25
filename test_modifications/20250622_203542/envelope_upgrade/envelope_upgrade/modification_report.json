@@ -1,0 +1,128 @@
+{
+  "metadata": {
+    "timestamp": "2025-06-22T20:35:42.960133",
+    "scenario": "Envelope Performance Upgrade",
+    "original_idf": "D:\\Documents\\daily\\E_Plus_2040_py\\output\\b0fb6596-3303-4494-bc5f-5741a4db5e11\\output_IDFs\\building_4136733.idf",
+    "modified_idf": "D:\\Documents\\daily\\E_Plus_2040_py\\test_modifications\\20250622_203542\\envelope_upgrade\\envelope_upgrade\\building_4136733_envelope_upgrade.idf",
+    "total_modifications": 7
+  },
+  "summary": {
+    "by_category": {
+      "materials": 7
+    },
+    "by_success": {
+      "successful": 7,
+      "failed": 0
+    },
+    "by_change_type": {
+      "absolute": 7
+    }
+  },
+  "modifications": [
+    {
+      "building_id": "4136733",
+      "variant_id": "envelope_upgrade",
+      "category": "materials",
+      "object_type": "MATERIAL",
+      "object_name": "Concrete_200mm",
+      "parameter": "conductivity",
+      "original_value": 0.0781191888777523,
+      "new_value": 0.05841081050037772,
+      "change_type": "absolute",
+      "rule_applied": "insulation_upgrade",
+      "success": true,
+      "validation_status": "valid",
+      "message": null
+    },
+    {
+      "building_id": "4136733",
+      "variant_id": "envelope_upgrade",
+      "category": "materials",
+      "object_type": "MATERIAL",
+      "object_name": "Concrete_200mm",
+      "parameter": "thickness",
+      "original_value": 0.195298,
+      "new_value": 0.2755263151011361,
+      "change_type": "absolute",
+      "rule_applied": "insulation_upgrade",
+      "success": true,
+      "validation_status": "valid",
+      "message": null
+    },
+    {
+      "building_id": "4136733",
+      "variant_id": "envelope_upgrade",
+      "category": "materials",
+      "object_type": "MATERIAL:NOMASS",
+      "object_name": "Roof_R2.5",
+      "parameter": "thermal_resistance",
+      "original_value": 2.5,
+      "new_value": 4.022316410088468,
+      "change_type": "absolute",
+      "rule_applied": "insulation_upgrade",
+      "success": true,
+      "validation_status": "valid",
+      "message": null
+    },
+    {
+      "building_id": "4136733",
+      "variant_id": "envelope_upgrade",
+      "category": "materials",
+      "object_type": "MATERIAL:NOMASS",
+      "object_name": "InternalFloor_Generic_R1.0",
+      "parameter": "thermal_resistance",
+      "original_value": 1.0,
+      "new_value": 1.8995199344057727,
+      "change_type": "absolute",
+      "rule_applied": "insulation_upgrade",
+      "success": true,
+      "validation_status": "valid",
+      "message": null
+    },
+    {
+      "building_id": "4136733",
+      "variant_id": "envelope_upgrade",
+      "category": "materials",
+      "object_type": "MATERIAL:NOMASS",
+      "object_name": "InteriorWall_Generic_R0.5",
+      "parameter": "thermal_resistance",
+      "original_value": 0.5,
+      "new_value": 0.909729423995304,
+      "change_type": "absolute",
+      "rule_applied": "insulation_upgrade",
+      "success": true,
+      "validation_status": "valid",
+      "message": null
+    },
+    {
+      "building_id": "4136733",
+      "variant_id": "envelope_upgrade",
+      "category": "materials",
+      "object_type": "MATERIAL:NOMASS",
+      "object_name": "GroundFloor_R2.5",
+      "parameter": "thermal_resistance",
+      "original_value": 0.3448275862068966,
+      "new_value": 0.5303226574530479,
+      "change_type": "absolute",
+      "rule_applied": "insulation_upgrade",
+      "success": true,
+      "validation_status": "valid",
+      "message": null
+    },
+    {
+      "building_id": "4136733",
+      "variant_id": "envelope_upgrade",
+      "category": "materials",
+      "object_type": "MATERIAL:NOMASS",
+      "object_name": "Door_U3.4",
+      "parameter": "thermal_resistance",
+      "original_value": 0.29,
+      "new_value": 0.43609640393639854,
+      "change_type": "absolute",
+      "rule_applied": "insulation_upgrade",
+      "success": true,
+      "validation_status": "valid",
+      "message": null
+    }
+  ]
+}

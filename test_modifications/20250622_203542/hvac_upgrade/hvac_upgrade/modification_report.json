@@ -1,0 +1,53 @@
+{
+  "metadata": {
+    "timestamp": "2025-06-22T20:35:43.012313",
+    "scenario": "HVAC System Upgrade",
+    "original_idf": "D:\\Documents\\daily\\E_Plus_2040_py\\output\\b0fb6596-3303-4494-bc5f-5741a4db5e11\\output_IDFs\\building_4136733.idf",
+    "modified_idf": "D:\\Documents\\daily\\E_Plus_2040_py\\test_modifications\\20250622_203542\\hvac_upgrade\\hvac_upgrade\\building_4136733_hvac_upgrade.idf",
+    "total_modifications": 2
+  },
+  "summary": {
+    "by_category": {
+      "ventilation": 2
+    },
+    "by_success": {
+      "successful": 2,
+      "failed": 0
+    },
+    "by_change_type": {
+      "absolute": 2
+    }
+  },
+  "modifications": [
+    {
+      "building_id": "4136733",
+      "variant_id": "hvac_upgrade",
+      "category": "ventilation",
+      "object_type": "DESIGNSPECIFICATION:OUTDOORAIR",
+      "object_name": "DSOA_Global",
+      "parameter": "outdoor_air_flow_per_person",
+      "original_value": 0.00236,
+      "new_value": 0.0025,
+      "change_type": "absolute",
+      "rule_applied": "demand_controlled",
+      "success": true,
+      "validation_status": "valid",
+      "message": null
+    },
+    {
+      "building_id": "4136733",
+      "variant_id": "hvac_upgrade",
+      "category": "ventilation",
+      "object_type": "DESIGNSPECIFICATION:OUTDOORAIR",
+      "object_name": "DSOA_Global",
+      "parameter": "outdoor_air_flow_per_zone_area",
+      "original_value": 0.000305,
+      "new_value": 0.0003,
+      "change_type": "absolute",
+      "rule_applied": "demand_controlled",
+      "success": true,
+      "validation_status": "valid",
+      "message": null
+    }
+  ]
+}

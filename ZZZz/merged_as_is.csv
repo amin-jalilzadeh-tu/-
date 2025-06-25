@@ -1,7 +1,0 @@
-BuildingID	VariableName	01/01 00:00:00	01/01  01:00:00	01/01  02:00:00	01/01  03:00:00
-0	Cooling:EnergyTransfer [J](Hourly)	561331.88	0.0	0.0	100.0
-0	Electricity:Facility [J](Daily)	41096160.0			
-0	Heating:EnergyTransfer [J](Hourly)	4020766.82	5237179.24	5250528.34	5300000.0
-1	Cooling:EnergyTransfer [J](Hourly)	700000.0	50.0	60.0	120.0
-1	Environment:Site Outdoor Air Drybulb Temperature [C](Hourly)	0.5	3.0	4.0	5.0
-0	Environment:Site Outdoor Air Drybulb Temperature [C](Hourly)	0.2	3.825	4.1375	4.5

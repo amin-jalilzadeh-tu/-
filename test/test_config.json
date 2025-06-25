@@ -1,0 +1,190 @@
+{
+  "test_name": "Standalone Modification Test",
+  "description": "Test configuration for standalone IDF modification and simulation",
+  
+  "paths": {
+    "idd_file": "D:/Documents/daily/E_Plus_2040_py/EnergyPlus/Energy+.idd",
+    "epw_file": "D:/Documents/daily/E_Plus_2040_py/data/weather/2020.epw",
+    "test_idf": "D:/Documents/daily/E_Plus_2040_py/output/b0fb6596-3303-4494-bc5f-5741a4db5e11/output_IDFs/building_4136733.idf",
+    "output_dir": "./test_output"
+  },
+  
+  "test_scenarios": [
+    {
+      "name": "baseline",
+      "description": "Baseline - no modifications",
+      "modifications": {}
+    },
+    {
+      "name": "efficient_hvac",
+      "description": "High efficiency HVAC upgrade",
+      "modifications": {
+        "hvac": {
+          "enabled": true,
+          "strategy": "high_efficiency",
+          "parameters": {
+            "cooling_cop": {
+              "method": "percentage",
+              "change": 40,
+              "comment": "Increase cooling COP by 40%"
+            },
+            "heating_efficiency": {
+              "method": "absolute",
+              "value": 0.98,
+              "comment": "Set heating efficiency to 98%"
+            },
+            "fan_efficiency": {
+              "method": "absolute",
+              "value": 0.9,
+              "comment": "High efficiency fans"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "efficient_lighting",
+      "description": "LED lighting retrofit",
+      "modifications": {
+        "lighting": {
+          "enabled": true,
+          "strategy": "led_retrofit",
+          "parameters": {
+            "watts_per_area": {
+              "method": "percentage",
+              "change": -60,
+              "comment": "LED retrofit reduces power by 60%"
+            },
+            "fraction_radiant": {
+              "method": "absolute",
+              "value": 0.2,
+              "comment": "LEDs have lower radiant fraction"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "envelope_upgrade",
+      "description": "Envelope improvements",
+      "modifications": {
+        "materials": {
+          "enabled": true,
+          "strategy": "insulation_upgrade",
+          "parameters": {
+            "conductivity": {
+              "method": "percentage",
+              "change": -40,
+              "comment": "Reduce conductivity by 40% for better insulation"
+            },
+            "u_factor": {
+              "method": "absolute",
+              "value": 1.0,
+              "comment": "High-performance windows"
+            }
+          }
+        },
+        "infiltration": {
+          "enabled": true,
+          "strategy": "air_sealing",
+          "parameters": {
+            "air_changes_per_hour": {
+              "method": "percentage",
+              "change": -50,
+              "comment": "Reduce infiltration by 50%"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "comprehensive_retrofit",
+      "description": "All efficiency measures combined",
+      "modifications": {
+        "hvac": {
+          "enabled": true,
+          "strategy": "high_efficiency",
+          "parameters": {
+            "cooling_cop": {
+              "method": "percentage",
+              "change": 40
+            },
+            "heating_efficiency": {
+              "method": "absolute",
+              "value": 0.98
+            }
+          }
+        },
+        "lighting": {
+          "enabled": true,
+          "strategy": "led_retrofit",
+          "parameters": {
+            "watts_per_area": {
+              "method": "percentage",
+              "change": -60
+            }
+          }
+        },
+        "materials": {
+          "enabled": true,
+          "strategy": "insulation_upgrade",
+          "parameters": {
+            "conductivity": {
+              "method": "percentage",
+              "change": -40
+            }
+          }
+        },
+        "infiltration": {
+          "enabled": true,
+          "strategy": "air_sealing",
+          "parameters": {
+            "air_changes_per_hour": {
+              "method": "percentage",
+              "change": -50
+            }
+          }
+        },
+        "equipment": {
+          "enabled": true,
+          "strategy": "energy_star",
+          "parameters": {
+            "watts_per_area": {
+              "method": "percentage",
+              "change": -25
+            }
+          }
+        }
+      }
+    }
+  ],
+  
+  "simulation_options": {
+    "run_baseline": true,
+    "run_modified": true,
+    "compare_results": true,
+    "parallel": false,
+    "num_workers": 1
+  },
+  
+  "output_options": {
+    "save_modified_idfs": true,
+    "generate_reports": true,
+    "create_comparison_plots": true,
+    "report_formats": ["json", "html", "csv"]
+  },
+  
+  "modification": {
+    "base_idf_selection": {
+      "method": "specific",
+      "building_ids": ["4136733"]
+    },
+    "output_options": {
+      "save_modified_idfs": true,
+      "generate_report": true,
+      "save_report": true,
+      "report_formats": ["json", "html", "csv"]
+    },
+    "categories_to_modify": {}
+  }
+}

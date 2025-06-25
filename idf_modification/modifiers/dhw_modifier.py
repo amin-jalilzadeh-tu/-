@@ -54,7 +54,7 @@ class DHWModifier(BaseModifier):
                 data_type=float,
                 units='',
                 min_value=0.5,
-                max_value=1.0,
+                max_value=0.99,
                 performance_impact='dhw_efficiency'
             ),
             'off_cycle_loss_coefficient': ParameterDefinition(

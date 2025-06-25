@@ -1,0 +1,22 @@
+2025-06-22 21:50:35,520 - StandaloneSimulator - INFO - IDD initialized: D:\Documents\daily\E_Plus_2040_py\EnergyPlus\Energy+.idd
+2025-06-22 21:50:35,521 - StandaloneSimulator - INFO - Simulating IDF: D:\Documents\daily\E_Plus_2040_py\output\b0fb6596-3303-4494-bc5f-5741a4db5e11\output_IDFs\building_4136733.idf
+2025-06-22 21:50:35,521 - StandaloneSimulator - INFO - Output directory: simulation_results\4136733_baseline
+2025-06-22 21:50:55,387 - StandaloneSimulator - INFO - Simulation successful: Success: D:\Documents\daily\E_Plus_2040_py\output\b0fb6596-3303-4494-bc5f-5741a4db5e11\output_IDFs\building_4136733.idf
+2025-06-22 21:50:55,477 - StandaloneSimulator - INFO - Simulating IDF: output\building_4136733_efficient_lighting.idf
+2025-06-22 21:50:55,478 - StandaloneSimulator - INFO - Output directory: simulation_results\4136733_efficient_lighting
+2025-06-22 21:51:12,774 - StandaloneSimulator - INFO - Simulation successful: Success: output\building_4136733_efficient_lighting.idf
+2025-06-22 21:51:12,824 - StandaloneSimulator - INFO - Simulating IDF: output\building_4136733_envelope_upgrade.idf
+2025-06-22 21:51:12,824 - StandaloneSimulator - INFO - Output directory: simulation_results\4136733_envelope_upgrade
+2025-06-22 21:51:30,019 - StandaloneSimulator - INFO - Simulation successful: Success: output\building_4136733_envelope_upgrade.idf
+2025-06-22 21:51:30,070 - StandaloneSimulator - INFO - Simulating IDF: output\building_4136733_comprehensive_retrofit.idf
+2025-06-22 21:51:30,071 - StandaloneSimulator - INFO - Output directory: simulation_results\4136733_comprehensive_retrofit
+2025-06-22 21:51:47,291 - StandaloneSimulator - INFO - Simulation successful: Success: output\building_4136733_comprehensive_retrofit.idf
+2025-06-22 21:51:47,294 - StandaloneSimulator - INFO - Comparing 3 baseline vs 3 modified CSV files
+2025-06-22 21:51:47,303 - StandaloneSimulator - ERROR - Error comparing files: Error tokenizing data. C error: Expected 3 fields in line 25, saw 4
+
+2025-06-22 21:51:47,305 - StandaloneSimulator - INFO - Comparing 3 baseline vs 3 modified CSV files
+2025-06-22 21:51:47,308 - StandaloneSimulator - ERROR - Error comparing files: Error tokenizing data. C error: Expected 3 fields in line 25, saw 4
+
+2025-06-22 21:51:47,308 - StandaloneSimulator - INFO - Comparing 3 baseline vs 3 modified CSV files
+2025-06-22 21:51:47,312 - StandaloneSimulator - ERROR - Error comparing files: Error tokenizing data. C error: Expected 3 fields in line 25, saw 4
+

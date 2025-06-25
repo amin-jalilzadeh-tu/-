@@ -133,65 +133,103 @@ class LightingModifier(BaseModifier):
                     if len(obj.parameters) > 3:
                         calc_method = obj.parameters[3].value
                     
+                    # Power reduction code
                     if calc_method == 'LightingLevel':
-                        # Modify Lighting Level
                         for param in obj.parameters:
                             if param.field_name == 'Lighting Level' and param.numeric_value:
                                 old_value = param.numeric_value
                                 new_value = old_value * (1 - reduction)
-                                
                                 param.value = str(new_value)
                                 param.numeric_value = new_value
-                                
                                 modifications.append(self._create_modification_result(
                                     obj, 'lighting_level', old_value, new_value, 'led_retrofit'
                                 ))
                                 break
                     
                     elif calc_method == 'Watts/Area':
-                        # Modify Watts per Zone Floor Area
                         for param in obj.parameters:
                             if param.field_name == 'Watts per Zone Floor Area' and param.numeric_value:
                                 old_value = param.numeric_value
                                 new_value = old_value * (1 - reduction)
-                                
                                 param.value = str(new_value)
                                 param.numeric_value = new_value
-                                
                                 modifications.append(self._create_modification_result(
                                     obj, 'watts_per_area', old_value, new_value, 'led_retrofit'
                                 ))
                                 break
                     
                     elif calc_method == 'Watts/Person':
-                        # Modify Watts per Person
                         for param in obj.parameters:
                             if param.field_name == 'Watts per Person' and param.numeric_value:
                                 old_value = param.numeric_value
                                 new_value = old_value * (1 - reduction)
-                                
                                 param.value = str(new_value)
                                 param.numeric_value = new_value
-                                
                                 modifications.append(self._create_modification_result(
                                     obj, 'watts_per_person', old_value, new_value, 'led_retrofit'
                                 ))
                                 break
                     
-                    # LEDs also have different heat characteristics
+                    # Update heat fractions for LED characteristics
+                    # Get current fractions first
+                    current_fractions = {}
+                    fraction_params = {}
+                    
                     for param in obj.parameters:
                         if param.field_name == 'Fraction Radiant':
-                            old_value = param.numeric_value or float(param.value)
-                            # LEDs have lower radiant fraction (0.2-0.3)
-                            new_value = random.uniform(0.2, 0.3)
-                            
-                            param.value = str(new_value)
-                            param.numeric_value = new_value
-                            
-                            modifications.append(self._create_modification_result(
-                                obj, 'fraction_radiant', old_value, new_value, 'led_retrofit'
-                            ))
-                            break
+                            current_fractions['radiant'] = param.numeric_value or float(param.value or 0.37)
+                            fraction_params['radiant'] = param
+                        elif param.field_name == 'Fraction Visible':
+                            current_fractions['visible'] = param.numeric_value or float(param.value or 0.18)
+                            fraction_params['visible'] = param
+                        elif param.field_name == 'Return Air Fraction':
+                            current_fractions['return_air'] = param.numeric_value or float(param.value or 0.45)
+                            fraction_params['return_air'] = param
+                    
+                    # LED typical values - these MUST sum to less than or equal to 1.0
+                    # The remainder (1.0 - sum) is implicitly "Fraction Lost"
+                    new_fractions = {
+                        'radiant': 0.20,     # LEDs produce less radiant heat
+                        'visible': 0.20,     # Similar visible light output
+                        'return_air': 0.55   # More heat removed by return air
+                    }
+                    # Implicit fraction lost = 1.0 - 0.20 - 0.20 - 0.55 = 0.05
+                    
+                    # Verify the sum is valid
+                    fraction_sum = sum(new_fractions.values())
+                    if fraction_sum > 1.0:
+                        # Scale down to ensure sum <= 1.0
+                        scale = 0.95 / fraction_sum  # Leave 5% for lost
+                        for key in new_fractions:
+                            new_fractions[key] *= scale
+                    
+                    # Apply the new fractions
+                    if 'radiant' in fraction_params:
+                        param = fraction_params['radiant']
+                        old_value = current_fractions['radiant']
+                        param.value = str(new_fractions['radiant'])
+                        param.numeric_value = new_fractions['radiant']
+                        modifications.append(self._create_modification_result(
+                            obj, 'fraction_radiant', old_value, new_fractions['radiant'], 'led_retrofit'
+                        ))
+                    
+                    if 'visible' in fraction_params:
+                        param = fraction_params['visible']
+                        old_value = current_fractions['visible']
+                        param.value = str(new_fractions['visible'])
+                        param.numeric_value = new_fractions['visible']
+                        modifications.append(self._create_modification_result(
+                            obj, 'fraction_visible', old_value, new_fractions['visible'], 'led_retrofit'
+                        ))
+                    
+                    if 'return_air' in fraction_params:
+                        param = fraction_params['return_air']
+                        old_value = current_fractions['return_air']
+                        param.value = str(new_fractions['return_air'])
+                        param.numeric_value = new_fractions['return_air']
+                        modifications.append(self._create_modification_result(
+                            obj, 'return_air_fraction', old_value, new_fractions['return_air'], 'led_retrofit'
+                        ))
         
         return modifications
     

@@ -1,0 +1,45 @@
+Program Version,EnergyPlus, Version 9.5.0-de239b2e5f, YMD=2025.06.22 20:44,
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone1_Core_MinimalFloor". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone1_Core_MinimalCeiling". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone1_Core_MinimalWall". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone1_RearPerimeter_MinimalFloor". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone1_RearPerimeter_MinimalCeiling". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone1_RearPerimeter_MinimalWall". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone2_LeftPerimeter_MinimalFloor". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone2_LeftPerimeter_MinimalCeiling". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone2_LeftPerimeter_MinimalWall". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone2_Core_MinimalFloor". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone2_Core_MinimalCeiling". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone2_Core_MinimalWall". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone2_RightPerimeter_MinimalFloor". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone2_RightPerimeter_MinimalCeiling". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone2_RightPerimeter_MinimalWall". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone1_RightPerimeter_MinimalFloor". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone1_RightPerimeter_MinimalCeiling". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone1_RightPerimeter_MinimalWall". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone2_RearPerimeter_MinimalFloor". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone2_RearPerimeter_MinimalCeiling". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone2_RearPerimeter_MinimalWall". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone1_FrontPerimeter_MinimalFloor". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone1_FrontPerimeter_MinimalCeiling". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone1_FrontPerimeter_MinimalWall". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone2_FrontPerimeter_MinimalFloor". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone2_FrontPerimeter_MinimalCeiling". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone2_FrontPerimeter_MinimalWall". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone1_LeftPerimeter_MinimalFloor". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone1_LeftPerimeter_MinimalCeiling". Overwriting existing object.
+   ** Severe  ** Duplicate name found for object of type "BuildingSurface:Detailed" named "Zone1_LeftPerimeter_MinimalWall". Overwriting existing object.
+   ** Severe  ** Line: 1781 Index: 0 - Object contains more field values than maximum number of IDD fields and is not extensible.
+   ** Severe  ** Line: 1781 Index: 0 - Error parsing "ZoneHVAC:IdealLoadsAirSystem". Error in following line.
+   ** Severe  ** ~~~     Zone1_RightPerimeter_INLETS,  !- Field_3, Zone Air Inlet Node or NodeList Name
+   ** Severe  ** Line: 1781 Index: 31 - "Zone1_RightPerimeter_INLETS" is not a valid Object Type.
+   ** Severe  ** <root>[ZoneControl:Thermostat][Zone1_FrontPerimeter_CONTROLS][control_2_object_type] - "Zone1_RightPerimeter_INLETS" - Failed to match against any enum values.
+   **  Fatal  ** Errors occurred on processing input file. Preceding condition(s) cause termination.
+   ...Summary of Errors that led to program termination:
+   ..... Reference severe error count=35
+   ..... Last severe error=<root>[ZoneControl:Thermostat][Zone1_FrontPerimeter_CONTROLS][control_2_object_type] - "Zone1_RightPerimeter_INLETS" - Failed to match against any enum values.
+   ************* Warning:  Node connection errors not checked - most system input has not been read (see previous warning).
+   ************* Fatal error -- final processing.  Program exited before simulations began.  See previous error messages.
+   ************* EnergyPlus Warmup Error Summary. During Warmup: 0 Warning; 0 Severe Errors.
+   ************* EnergyPlus Sizing Error Summary. During Sizing: 0 Warning; 0 Severe Errors.
+   ************* EnergyPlus Terminated--Fatal Error Detected. 0 Warning; 35 Severe Errors; Elapsed Time=00hr 00min  0.14sec

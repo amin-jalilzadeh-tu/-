@@ -184,6 +184,14 @@ class BaseModifier(ABC):
                             param_config
                         )
                         
+                        if obj_type == 'LIGHTS':
+                            valid, error_msg = self._validate_lighting_fractions(obj)
+                            if not valid:
+                                self.logger.error(f"Validation failed: {error_msg}")
+
+
+
+
                         modifications.append(result)
                         self.modifications.append(result)
         
@@ -254,16 +262,94 @@ class BaseModifier(ABC):
     
     def _apply_constraints(self, value: Any, param_def: ParameterDefinition) -> Any:
         """Apply min/max constraints to value"""
+        # FIX: Add EnergyPlus-specific constraints first
+        if param_def.object_type == 'FENESTRATIONSURFACE:DETAILED' and param_def.field_name == 'Multiplier':
+            value = max(1.0, float(value))  # Ensure window multiplier >= 1.0
+        
+        # Apply general constraints
         if param_def.min_value is not None and value < param_def.min_value:
             value = param_def.min_value
         if param_def.max_value is not None and value > param_def.max_value:
             value = param_def.max_value
+
         if param_def.allowed_values is not None and value not in param_def.allowed_values:
             # Find closest allowed value
             if isinstance(value, (int, float)):
                 value = min(param_def.allowed_values, key=lambda x: abs(x - value))
         return value
     
+
+
+    def _validate_energyplus_constraints(self, param_def: ParameterDefinition, value: Any) -> Tuple[bool, str]:
+        """Validate value against EnergyPlus-specific constraints"""
+        
+        # Window multiplier constraint
+        if param_def.field_name == 'Multiplier' and param_def.object_type == 'FENESTRATIONSURFACE:DETAILED':
+            if float(value) < 1.0:
+                return False, f"Window multiplier must be >= 1.0, got {value}"
+        
+        # Material conductivity constraint
+        if param_def.field_name == 'Conductivity' and param_def.object_type == 'MATERIAL':
+            if float(value) < 0.01:
+                return False, f"Material conductivity too low: {value}"
+        
+        # COP constraints
+        if 'COP' in param_def.field_name.upper():
+            if float(value) > 10.0:
+                return False, f"COP unrealistically high: {value}"
+        
+        return True, ""
+
+
+
+    def _validate_energyplus_constraints(self, param_def: ParameterDefinition, value: Any) -> Tuple[bool, str]:
+        """Validate value against EnergyPlus-specific constraints"""
+        
+        # Window multiplier constraint
+        if param_def.field_name == 'Multiplier' and param_def.object_type == 'FENESTRATIONSURFACE:DETAILED':
+            if float(value) < 1.0:
+                return False, f"Window multiplier must be >= 1.0, got {value}"
+        
+        # Material conductivity constraint
+        if param_def.field_name == 'Conductivity' and param_def.object_type == 'MATERIAL':
+            if float(value) < 0.01:
+                return False, f"Material conductivity too low: {value}"
+        
+        # COP constraints
+        if 'COP' in param_def.field_name.upper():
+            if float(value) > 10.0:
+                return False, f"COP unrealistically high: {value}"
+        
+        return True, ""
+
+    def _validate_lighting_fractions(self, obj) -> Tuple[bool, str]:
+        """Validate that lighting fractions sum to 1.0"""
+        if obj.object_type != 'LIGHTS':
+            return True, ""
+        
+        fractions = {'radiant': 0, 'visible': 0, 'return_air': 0}
+        
+        for param in obj.parameters:
+            if param.field_name == 'Fraction Radiant':
+                fractions['radiant'] = param.numeric_value or float(param.value or 0)
+            elif param.field_name == 'Fraction Visible':
+                fractions['visible'] = param.numeric_value or float(param.value or 0)
+            elif param.field_name == 'Return Air Fraction':
+                fractions['return_air'] = param.numeric_value or float(param.value or 0)
+        
+        total = sum(fractions.values())
+        # Total should be <= 1.0 (the remainder is Fraction Lost)
+        if total > 1.001:  # Allow small tolerance for floating point
+            return False, f"Lighting fractions sum to {total:.3f}, exceeds 1.0 for {obj.name}"
+        
+        return True, ""
+
+
+
+
+
+
+
     def _apply_parameter_modification_to_parsed(self,
                                     obj: Any,
                                     param_def: ParameterDefinition,
@@ -405,6 +491,16 @@ class BaseModifier(ABC):
             self.logger.error(f"Value {modification.new_value} not in allowed values: {param_def.allowed_values}")
             return False
         
+
+        # Validate EnergyPlus constraints
+        valid, error_msg = self._validate_energyplus_constraints(param_def, modification.new_value)
+        if not valid:
+            self.logger.error(f"EnergyPlus constraint violation: {error_msg}")
+            return False
+
+
+
+
         return True
     
     def _validate_dependency(self, parsed_objects: Dict[str, List[Any]], 

@@ -1,0 +1,83 @@
+{
+  "sensitivity": {
+    "enabled": true,
+    "analysis_type": "modification_based",
+    "output_base_dir": "sensitivity_analysis",
+    
+    "methods": {
+      "enabled_methods": ["correlation", "regression", "mutual_info"],
+      "confidence_level": 0.95,
+      "bootstrap_iterations": 100
+    },
+    
+    "advanced_analysis": {
+      "enabled": true,
+      
+      "uncertainty_propagation": true,
+      "uncertainty_samples": 1000,
+      "confidence_level": 0.95,
+      "bootstrap_iterations": 100,
+      "parameter_distributions": {
+        "HVAC*ChillerElectricEIR*COP": {
+          "type": "normal",
+          "mean": 5.5,
+          "std": 0.5
+        },
+        "Materials*WindowMaterial*U-Factor": {
+          "type": "uniform",
+          "min": 1.0,
+          "max": 3.0
+        }
+      },
+      
+      "threshold_analysis": true,
+      "min_segment_size": 10,
+      "max_breakpoints": 3,
+      "threshold_detection_method": "tree",
+      "threshold_significance": 0.05,
+      
+      "regional_sensitivity": true,
+      "n_regions": 5,
+      "region_method": "clustering",
+      "region_overlap": 0.1,
+      "min_region_samples": 20,
+      
+      "sobol_analysis": true,
+      "sobol_samples": 1024,
+      "sobol_second_order": true,
+      "sobol_sampling": "saltelli",
+      "sobol_confidence": 0.95,
+      
+      "temporal_patterns": true,
+      "time_column": "DateTime",
+      "frequency_analysis": true,
+      "lag_analysis": true,
+      "max_lag": 24,
+      "window_size": 168,
+      "detect_seasonality": true,
+      "decomposition_method": "stl",
+      "pattern_detection": true
+    },
+    
+    "time_slicing": {
+      "enabled": false,
+      "slice_type": "custom",
+      "compare_time_slices": false
+    },
+    
+    "multi_level_analysis": {
+      "enabled": true,
+      "analyze_building_level": true,
+      "analyze_zone_level": true,
+      "analyze_equipment_level": true,
+      "analyze_cross_level": true
+    },
+    
+    "output_options": {
+      "save_raw_results": true,
+      "generate_report": true,
+      "create_visualizations": true,
+      "export_format": "parquet"
+    }
+  }
+}
