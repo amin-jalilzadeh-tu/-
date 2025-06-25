@@ -1,0 +1,42 @@
+{
+  "timestamp": "2025-06-25T23:15:53.217625",
+  "base_path": "D:\\Documents\\daily\\E_Plus_2040_py\\output\\6f912613-913d-40ea-ba14-eff7e6dc097f",
+  "validations": {
+    "parameter_stats": {
+      "building": {
+        "count": 3,
+        "unique": 3,
+        "min": 4136733.0,
+        "max": 4136738.0,
+        "mean": 4136736.0,
+        "std": 2.160246899469287
+      }
+    },
+    "simulation_outputs": {
+      "total_files": 0,
+      "validated": 0,
+      "valid": 0,
+      "issues": {}
+    },
+    "model_surrogate_columns": {
+      "type": "list",
+      "features": "unknown",
+      "file_size": 0.006548881530761719
+    },
+    "model_surrogate_model": {
+      "type": "ndarray",
+      "features": "unknown",
+      "file_size": 0.19988536834716797
+    }
+  },
+  "data_integrity": {},
+  "cross_stage_validation": {
+    "missing_results": [
+      "building_4136737",
+      "building_4136738",
+      "building_4136733"
+    ]
+  },
+  "anomalies": [],
+  "metrics": {}
+}

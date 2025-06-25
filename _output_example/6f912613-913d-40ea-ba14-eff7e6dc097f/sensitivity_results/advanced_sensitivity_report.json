@@ -1,0 +1,99 @@
+{
+  "metadata": {
+    "timestamp": "2025-06-25T17:39:29.953358",
+    "analysis_type": "advanced_sensitivity",
+    "methods_performed": [
+      "uncertainty"
+    ]
+  },
+  "summary": {
+    "uncertainty": {
+      "n_results": 162,
+      "columns": [
+        "parameter",
+        "output_variable",
+        "sensitivity_score",
+        "method",
+        "uncertainty_lower",
+        "uncertainty_upper",
+        "uncertainty_std",
+        "confidence_level",
+        "n_uncertainty_samples",
+        "level",
+        "category",
+        "p_value",
+        "ci_lower",
+        "ci_upper",
+        "n_samples",
+        "elasticity",
+        "param_change",
+        "output_change",
+        "building_id",
+        "object_type",
+        "object_name",
+        "field_name",
+        "zone_name",
+        "interaction_type",
+        "avg_zone_param_change",
+        "avg_output_change",
+        "significance",
+        "time_slice"
+      ],
+      "avg_confidence_interval_width": 0.0
+    }
+  },
+  "detailed_results": {
+    "uncertainty_top_parameters": [
+      {
+        "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_FrontPerimeter_Wall_0_window*shading_setpoint",
+        "output_variable": "Zone Air System Sensible Heating Energy",
+        "sensitivity_score": 10.0
+      },
+      {
+        "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_LeftPerimeter_Wall_0_window*shading_setpoint",
+        "output_variable": "Zone Air System Sensible Heating Energy",
+        "sensitivity_score": 10.0
+      },
+      {
+        "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_RearPerimeter_Wall_0_window*shading_setpoint",
+        "output_variable": "Zone Air System Sensible Heating Energy",
+        "sensitivity_score": 10.0
+      },
+      {
+        "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_Wall_2_window*shading_setpoint",
+        "output_variable": "Zone Air System Sensible Heating Energy",
+        "sensitivity_score": 10.0
+      },
+      {
+        "parameter": "ventilation*DESIGNSPECIFICATION:OUTDOORAIR*DSOA_Global*outdoor_air_flow_per_zone_area",
+        "output_variable": "Zone Air System Sensible Heating Energy",
+        "sensitivity_score": 10.0
+      },
+      {
+        "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_Wall_3_window*shading_setpoint",
+        "output_variable": "Zone Air System Sensible Heating Energy",
+        "sensitivity_score": 9.79815845510204
+      },
+      {
+        "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone2_RearPerimeter_Wall_0_window*shading_setpoint",
+        "output_variable": "Zone Air System Sensible Heating Energy",
+        "sensitivity_score": 9.17646813180826
+      },
+      {
+        "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone2_LeftPerimeter_Wall_0_window*shading_setpoint",
+        "output_variable": "Zone Air System Sensible Heating Energy",
+        "sensitivity_score": 8.437041197380161
+      },
+      {
+        "parameter": "ventilation*DESIGNSPECIFICATION:OUTDOORAIR*DSOA_Global*outdoor_air_flow_per_person",
+        "output_variable": "Zone Air System Sensible Heating Energy",
+        "sensitivity_score": 7.82430682856843
+      },
+      {
+        "parameter": "dhw*WATERHEATER:MIXED*MyDHW_2_WaterHeater*heater_efficiency",
+        "output_variable": "Zone Air System Sensible Heating Energy",
+        "sensitivity_score": 7.583305068058911
+      }
+    ]
+  }
+}

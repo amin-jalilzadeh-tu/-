@@ -1,0 +1,16 @@
+ ReadVarsESO
+ processing:/usr/src/app/output/6f912613-913d-40ea-ba14-eff7e6dc097f/modified_idfs/building_4136738_variant_11_a9b149.rvi
+ input file:/usr/src/app/output/6f912613-913d-40ea-ba14-eff7e6dc097f/Modified_Sim_Results/2020/simulation_bldg49_4136738.eso
+ output file:/usr/src/app/output/6f912613-913d-40ea-ba14-eff7e6dc097f/Modified_Sim_Results/2020/simulation_bldg49_4136738.csv
+ getting all vars from:/usr/src/app/output/6f912613-913d-40ea-ba14-eff7e6dc097f/Modified_Sim_Results/2020/simulation_bldg49_4136738.eso
+  number variables requested for output=          79
+ ReadVars Run Time=00hr 00min  0.02sec
+ ReadVarsESO program completed successfully.
+ ReadVarsESO
+ processing:/usr/src/app/output/6f912613-913d-40ea-ba14-eff7e6dc097f/modified_idfs/building_4136738_variant_11_a9b149.mvi
+ input file:/usr/src/app/output/6f912613-913d-40ea-ba14-eff7e6dc097f/Modified_Sim_Results/2020/simulation_bldg49_4136738.mtr
+ output file:/usr/src/app/output/6f912613-913d-40ea-ba14-eff7e6dc097f/Modified_Sim_Results/2020/simulation_bldg49_4136738Meter.csv
+ getting all vars from:/usr/src/app/output/6f912613-913d-40ea-ba14-eff7e6dc097f/Modified_Sim_Results/2020/simulation_bldg49_4136738.mtr
+  number variables requested for output=           3
+ ReadVars Run Time=00hr 00min  0.01sec
+ ReadVarsESO program completed successfully.

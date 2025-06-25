@@ -1,0 +1,89 @@
+{
+  "timestamp": "2025-06-25T23:14:47.811414",
+  "base_path": "D:\\Documents\\daily\\E_Plus_2040_py\\output\\6f912613-913d-40ea-ba14-eff7e6dc097f",
+  "stages": {
+    "original_idfs": {
+      "path": "D:\\Documents\\daily\\E_Plus_2040_py\\output\\6f912613-913d-40ea-ba14-eff7e6dc097f\\output_IDFs",
+      "exists": true,
+      "files": [
+        {
+          "name": "building_4136733.idf",
+          "size": 190399,
+          "modified": "2025-06-25T19:33:20.629282",
+          "hash": "49cb350dd796e8abb12b757871e7cd3f",
+          "path": "D:\\Documents\\daily\\E_Plus_2040_py\\output\\6f912613-913d-40ea-ba14-eff7e6dc097f\\output_IDFs\\building_4136733.idf"
+        },
+        {
+          "name": "building_4136737.idf",
+          "size": 119241,
+          "modified": "2025-06-25T19:33:21.127065",
+          "hash": "5047f56c2712b9b691e125ad6f1d63ae",
+          "path": "D:\\Documents\\daily\\E_Plus_2040_py\\output\\6f912613-913d-40ea-ba14-eff7e6dc097f\\output_IDFs\\building_4136737.idf"
+        },
+        {
+          "name": "building_4136738.idf",
+          "size": 62725,
+          "modified": "2025-06-25T19:33:21.544013",
+          "hash": "e6107e2be133a08ea81ed0b299a2c739",
+          "path": "D:\\Documents\\daily\\E_Plus_2040_py\\output\\6f912613-913d-40ea-ba14-eff7e6dc097f\\output_IDFs\\building_4136738.idf"
+        }
+      ],
+      "parameters": [
+        "building"
+      ]
+    },
+    "modified_idfs": {
+      "path": "D:\\Documents\\daily\\E_Plus_2040_py\\output\\6f912613-913d-40ea-ba14-eff7e6dc097f\\modified_idfs",
+      "exists": true,
+      "files": []
+    },
+    "sim_results": {
+      "path": "D:\\Documents\\daily\\E_Plus_2040_py\\output\\6f912613-913d-40ea-ba14-eff7e6dc097f\\Sim_Results",
+      "exists": true,
+      "files": []
+    },
+    "modified_sim_results": {
+      "path": "D:\\Documents\\daily\\E_Plus_2040_py\\output\\6f912613-913d-40ea-ba14-eff7e6dc097f\\Modified_Sim_Results",
+      "exists": true,
+      "files": []
+    },
+    "parsed_data": {
+      "path": "D:\\Documents\\daily\\E_Plus_2040_py\\output\\6f912613-913d-40ea-ba14-eff7e6dc097f\\parsed_data",
+      "exists": true,
+      "files": []
+    },
+    "parsed_modified_results": {
+      "path": "D:\\Documents\\daily\\E_Plus_2040_py\\output\\6f912613-913d-40ea-ba14-eff7e6dc097f\\parsed_modified_results",
+      "exists": true,
+      "files": []
+    },
+    "sensitivity_results": {
+      "path": "D:\\Documents\\daily\\E_Plus_2040_py\\output\\6f912613-913d-40ea-ba14-eff7e6dc097f\\sensitivity_results",
+      "exists": true,
+      "files": []
+    },
+    "surrogate_models": {
+      "path": "D:\\Documents\\daily\\E_Plus_2040_py\\output\\6f912613-913d-40ea-ba14-eff7e6dc097f\\surrogate_models",
+      "exists": true,
+      "files": []
+    },
+    "validation_results": {
+      "path": "D:\\Documents\\daily\\E_Plus_2040_py\\output\\6f912613-913d-40ea-ba14-eff7e6dc097f\\validation_results",
+      "exists": true,
+      "files": []
+    }
+  },
+  "integrity_checks": {},
+  "data_flow": [
+    {
+      "stage": "IDF \u2192 Results",
+      "total_input": 3,
+      "total_output": 0,
+      "matched": 0
+    }
+  ],
+  "issues": [
+    "File count mismatch: 3 original vs 57 modified",
+    "Missing simulation results for 3 IDF files"
+  ]
+}

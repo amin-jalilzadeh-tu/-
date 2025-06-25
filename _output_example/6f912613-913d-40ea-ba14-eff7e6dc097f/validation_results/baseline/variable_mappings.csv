@@ -1,0 +1,4 @@
+real_variable,sim_variable,confidence,match_type
+Zone Mean Air Temperature,Zone Mean Air Temperature,1.0,exact
+Zone Air System Sensible Heating Energy,Zone Air System Sensible Heating Energy,1.0,exact
+Zone Air System Sensible Cooling Energy,Zone Air System Sensible Cooling Energy,1.0,exact

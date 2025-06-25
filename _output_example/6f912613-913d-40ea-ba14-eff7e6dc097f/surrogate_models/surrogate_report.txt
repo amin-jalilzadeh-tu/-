@@ -1,0 +1,63 @@
+SURROGATE MODEL SUMMARY
+==================================================
+Created: 2025-06-25T17:41:40.600338
+Model Type: random_forest
+
+DATA SUMMARY:
+- Total Samples: 57
+- Features: 93
+- Targets: 8
+
+TARGET VARIABLES:
+- Zone_Air_System_Sensible_Heating_Energy_total
+- Zone_Air_System_Sensible_Heating_Energy_mean
+- Zone_Air_System_Sensible_Heating_Energy_peak
+- Zone_Air_System_Sensible_Heating_Energy_percent_change
+- Zone_Air_System_Sensible_Cooling_Energy_total
+- Zone_Air_System_Sensible_Cooling_Energy_mean
+- Zone_Air_System_Sensible_Cooling_Energy_peak
+- Zone_Air_System_Sensible_Cooling_Energy_percent_change
+
+VALIDATION RESULTS:
+- Overall R²: 1.000
+- Overall RMSE: 2.30e+06
+
+Zone_Air_System_Sensible_Heating_Energy_total:
+  - R²: 1.000
+  - RMSE: 1.04e+07
+  - MAE: 3.01e+06
+
+Zone_Air_System_Sensible_Heating_Energy_mean:
+  - R²: 1.000
+  - RMSE: 8.42e+04
+  - MAE: 2.43e+04
+
+Zone_Air_System_Sensible_Heating_Energy_peak:
+  - R²: 1.000
+  - RMSE: 4.62e+06
+  - MAE: 1.33e+06
+
+Zone_Air_System_Sensible_Heating_Energy_percent_change:
+  - R²: 1.000
+  - RMSE: 2.79e-02
+  - MAE: 8.06e-03
+
+Zone_Air_System_Sensible_Cooling_Energy_total:
+  - R²: 1.000
+  - RMSE: 6.03e+05
+  - MAE: 1.74e+05
+
+Zone_Air_System_Sensible_Cooling_Energy_mean:
+  - R²: 1.000
+  - RMSE: 3.03e+04
+  - MAE: 8.74e+03
+
+Zone_Air_System_Sensible_Cooling_Energy_peak:
+  - R²: 1.000
+  - RMSE: 2.64e+06
+  - MAE: 7.61e+05
+
+Zone_Air_System_Sensible_Cooling_Energy_percent_change:
+  - R²: 1.000
+  - RMSE: 4.77e-01
+  - MAE: 1.38e-01

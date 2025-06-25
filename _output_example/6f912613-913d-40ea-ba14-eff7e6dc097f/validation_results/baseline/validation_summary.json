@@ -1,0 +1,508 @@
+{
+  "discovery": {
+    "timeseries": {
+      "hvac_2013": {
+        "file": "/usr/src/app/output/6f912613-913d-40ea-ba14-eff7e6dc097f/parsed_data/sql_results/timeseries/hourly/hvac_2013.parquet",
+        "buildings": [
+          "4136733",
+          "4136737",
+          "4136738"
+        ],
+        "variables": [
+          "Water Heater Heating Energy",
+          "Zone Air System Sensible Cooling Energy",
+          "Zone Air System Sensible Cooling Rate",
+          "Zone Air System Sensible Heating Energy",
+          "Zone Air System Sensible Heating Rate",
+          "Zone Mean Air Temperature"
+        ],
+        "zones": [
+          "MYDHW_0_WATERHEATER",
+          "ZONE1_FRONTPERIMETER",
+          "ZONE1_RIGHTPERIMETER",
+          "ZONE1_REARPERIMETER",
+          "ZONE1_LEFTPERIMETER",
+          "ZONE1_CORE",
+          "ZONE2_FRONTPERIMETER",
+          "ZONE2_RIGHTPERIMETER",
+          "ZONE2_REARPERIMETER",
+          "ZONE2_LEFTPERIMETER",
+          "ZONE2_CORE",
+          "MYDHW_1_WATERHEATER",
+          "MYDHW_2_WATERHEATER",
+          "ZONE1"
+        ],
+        "date_range": [
+          "2013-02-01 00:00:00",
+          "2014-01-01 00:00:00"
+        ],
+        "frequency": "hourly",
+        "records": 996,
+        "has_units": true
+      },
+      "ventilation_2013": {
+        "file": "/usr/src/app/output/6f912613-913d-40ea-ba14-eff7e6dc097f/parsed_data/sql_results/timeseries/hourly/ventilation_2013.parquet",
+        "buildings": [
+          "4136733",
+          "4136737",
+          "4136738"
+        ],
+        "variables": [
+          "Zone Mechanical Ventilation Mass Flow Rate",
+          "Zone Infiltration Latent Heat Gain Energy",
+          "Zone Infiltration Latent Heat Loss Energy",
+          "Zone Infiltration Sensible Heat Gain Energy",
+          "Zone Infiltration Sensible Heat Loss Energy",
+          "Zone Infiltration Standard Density Volume Flow Rate",
+          "Zone Ventilation Latent Heat Gain Energy",
+          "Zone Ventilation Latent Heat Loss Energy",
+          "Zone Ventilation Sensible Heat Gain Energy",
+          "Zone Ventilation Sensible Heat Loss Energy",
+          "Zone Ventilation Standard Density Volume Flow Rate"
+        ],
+        "zones": [
+          "ZONE1_FRONTPERIMETER",
+          "ZONE1_RIGHTPERIMETER",
+          "ZONE1_REARPERIMETER",
+          "ZONE1_LEFTPERIMETER",
+          "ZONE1_CORE",
+          "ZONE2_FRONTPERIMETER",
+          "ZONE2_RIGHTPERIMETER",
+          "ZONE2_REARPERIMETER",
+          "ZONE2_LEFTPERIMETER",
+          "ZONE2_CORE",
+          "ZONE1"
+        ],
+        "date_range": [
+          "2013-02-01 00:00:00",
+          "2014-01-01 00:00:00"
+        ],
+        "frequency": "hourly",
+        "records": 1512,
+        "has_units": true
+      },
+      "zones_2013": {
+        "file": "/usr/src/app/output/6f912613-913d-40ea-ba14-eff7e6dc097f/parsed_data/sql_results/timeseries/hourly/zones_2013.parquet",
+        "buildings": [
+          "4136733",
+          "4136737",
+          "4136738"
+        ],
+        "variables": [
+          "Zone Mean Air Temperature",
+          "Surface Inside Face Conduction Heat Transfer Rate",
+          "Surface Inside Face Temperature",
+          "Surface Outside Face Temperature",
+          "Surface Outside Face Incident Solar Radiation Rate per Area",
+          "Surface Shading Device Is On Time Fraction",
+          "Surface Window Blind Slat Angle",
+          "Surface Window Shading Device Absorbed Solar Radiation Rate",
+          "Surface Window Transmitted Solar Radiation Rate",
+          "Zone Windows Total Transmitted Solar Radiation Energy",
+          "Zone Windows Total Transmitted Solar Radiation Rate"
+        ],
+        "zones": [
+          "ZONE1_FRONTPERIMETER",
+          "ZONE1_RIGHTPERIMETER",
+          "ZONE1_REARPERIMETER",
+          "ZONE1_LEFTPERIMETER",
+          "ZONE1_CORE",
+          "ZONE2_FRONTPERIMETER",
+          "ZONE2_RIGHTPERIMETER",
+          "ZONE2_REARPERIMETER",
+          "ZONE2_LEFTPERIMETER",
+          "ZONE2_CORE",
+          "ZONE1_FRONTPERIMETER_WALL_0",
+          "ZONE1_FRONTPERIMETER_WALL_1",
+          "ZONE1_FRONTPERIMETER_WALL_2",
+          "ZONE1_FRONTPERIMETER_WALL_3",
+          "ZONE1_FRONTPERIMETER_FLOOR",
+          "ZONE1_FRONTPERIMETER_CEILING",
+          "ZONE1_RIGHTPERIMETER_WALL_0",
+          "ZONE1_RIGHTPERIMETER_WALL_1",
+          "ZONE1_RIGHTPERIMETER_WALL_2",
+          "ZONE1_RIGHTPERIMETER_WALL_3",
+          "ZONE1_RIGHTPERIMETER_FLOOR",
+          "ZONE1_RIGHTPERIMETER_CEILING",
+          "ZONE1_REARPERIMETER_WALL_0",
+          "ZONE1_REARPERIMETER_WALL_1",
+          "ZONE1_REARPERIMETER_WALL_2",
+          "ZONE1_REARPERIMETER_WALL_3",
+          "ZONE1_REARPERIMETER_FLOOR",
+          "ZONE1_REARPERIMETER_CEILING",
+          "ZONE1_LEFTPERIMETER_WALL_0",
+          "ZONE1_LEFTPERIMETER_WALL_1",
+          "ZONE1_LEFTPERIMETER_WALL_2",
+          "ZONE1_LEFTPERIMETER_WALL_3",
+          "ZONE1_LEFTPERIMETER_FLOOR",
+          "ZONE1_LEFTPERIMETER_CEILING",
+          "ZONE1_CORE_WALL_0",
+          "ZONE1_CORE_WALL_1",
+          "ZONE1_CORE_WALL_2",
+          "ZONE1_CORE_WALL_3",
+          "ZONE1_CORE_FLOOR",
+          "ZONE1_CORE_CEILING",
+          "ZONE2_FRONTPERIMETER_WALL_0",
+          "ZONE2_FRONTPERIMETER_WALL_1",
+          "ZONE2_FRONTPERIMETER_WALL_2",
+          "ZONE2_FRONTPERIMETER_WALL_3",
+          "ZONE2_FRONTPERIMETER_FLOOR",
+          "ZONE2_FRONTPERIMETER_ROOF",
+          "ZONE2_RIGHTPERIMETER_WALL_0",
+          "ZONE2_RIGHTPERIMETER_WALL_1",
+          "ZONE2_RIGHTPERIMETER_WALL_2",
+          "ZONE2_RIGHTPERIMETER_WALL_3",
+          "ZONE2_RIGHTPERIMETER_FLOOR",
+          "ZONE2_RIGHTPERIMETER_ROOF",
+          "ZONE2_REARPERIMETER_WALL_0",
+          "ZONE2_REARPERIMETER_WALL_1",
+          "ZONE2_REARPERIMETER_WALL_2",
+          "ZONE2_REARPERIMETER_WALL_3",
+          "ZONE2_REARPERIMETER_FLOOR",
+          "ZONE2_REARPERIMETER_ROOF",
+          "ZONE2_LEFTPERIMETER_WALL_0",
+          "ZONE2_LEFTPERIMETER_WALL_1",
+          "ZONE2_LEFTPERIMETER_WALL_2",
+          "ZONE2_LEFTPERIMETER_WALL_3",
+          "ZONE2_LEFTPERIMETER_FLOOR",
+          "ZONE2_LEFTPERIMETER_ROOF",
+          "ZONE2_CORE_WALL_0",
+          "ZONE2_CORE_WALL_1",
+          "ZONE2_CORE_WALL_2",
+          "ZONE2_CORE_WALL_3",
+          "ZONE2_CORE_FLOOR",
+          "ZONE2_CORE_ROOF",
+          "ZONE1_FRONTPERIMETER_WALL_0 WINDOW",
+          "ZONE1_REARPERIMETER_WALL_0 WINDOW",
+          "ZONE1_LEFTPERIMETER_WALL_0 WINDOW",
+          "ZONE2_FRONTPERIMETER_WALL_0 WINDOW",
+          "ZONE2_REARPERIMETER_WALL_0 WINDOW",
+          "ZONE2_LEFTPERIMETER_WALL_0 WINDOW",
+          "ZONE1_FRONTPERIMETER_ROOF",
+          "ZONE1_RIGHTPERIMETER_ROOF",
+          "ZONE1_REARPERIMETER_ROOF",
+          "ZONE1_LEFTPERIMETER_ROOF",
+          "ZONE1_CORE_ROOF",
+          "ZONE1",
+          "ZONE1_WALL_0",
+          "ZONE1_WALL_1",
+          "ZONE1_WALL_2",
+          "ZONE1_WALL_3",
+          "ZONE1_FLOOR",
+          "ZONE1_ROOF",
+          "ZONE1_WALL_2 WINDOW",
+          "ZONE1_WALL_3 WINDOW"
+        ],
+        "date_range": [
+          "2013-02-01 00:00:00",
+          "2014-01-01 00:00:00"
+        ],
+        "frequency": "hourly",
+        "records": 5124,
+        "has_units": true
+      },
+      "hvac_daily_daily": {
+        "file": "/usr/src/app/output/6f912613-913d-40ea-ba14-eff7e6dc097f/parsed_data/sql_results/timeseries/aggregated/daily/hvac_daily.parquet",
+        "buildings": [
+          "4136733",
+          "4136737",
+          "4136738"
+        ],
+        "variables": [
+          "Water Heater Heating Energy",
+          "Zone Air System Sensible Cooling Energy",
+          "Zone Air System Sensible Heating Energy",
+          "Zone Air System Sensible Cooling Rate",
+          "Zone Air System Sensible Heating Rate",
+          "Zone Mean Air Temperature"
+        ],
+        "zones": [
+          "MYDHW_0_WATERHEATER",
+          "ZONE1_CORE",
+          "ZONE1_FRONTPERIMETER",
+          "ZONE1_LEFTPERIMETER",
+          "ZONE1_REARPERIMETER",
+          "ZONE1_RIGHTPERIMETER",
+          "ZONE2_CORE",
+          "ZONE2_FRONTPERIMETER",
+          "ZONE2_LEFTPERIMETER",
+          "ZONE2_REARPERIMETER",
+          "ZONE2_RIGHTPERIMETER",
+          "MYDHW_1_WATERHEATER",
+          "MYDHW_2_WATERHEATER",
+          "ZONE1"
+        ],
+        "date_range": [
+          "2013-02-01 00:00:00",
+          "2014-01-01 00:00:00"
+        ],
+        "frequency": "daily",
+        "records": 27805,
+        "has_units": false
+      },
+      "ventilation_daily_daily": {
+        "file": "/usr/src/app/output/6f912613-913d-40ea-ba14-eff7e6dc097f/parsed_data/sql_results/timeseries/aggregated/daily/ventilation_daily.parquet",
+        "buildings": [
+          "4136733",
+          "4136737",
+          "4136738"
+        ],
+        "variables": [
+          "Zone Mechanical Ventilation Mass Flow Rate",
+          "Zone Infiltration Latent Heat Gain Energy",
+          "Zone Infiltration Latent Heat Loss Energy",
+          "Zone Infiltration Sensible Heat Gain Energy",
+          "Zone Infiltration Sensible Heat Loss Energy",
+          "Zone Infiltration Standard Density Volume Flow Rate",
+          "Zone Ventilation Latent Heat Gain Energy",
+          "Zone Ventilation Latent Heat Loss Energy",
+          "Zone Ventilation Sensible Heat Gain Energy",
+          "Zone Ventilation Sensible Heat Loss Energy",
+          "Zone Ventilation Standard Density Volume Flow Rate"
+        ],
+        "zones": [
+          "ZONE1_CORE",
+          "ZONE1_FRONTPERIMETER",
+          "ZONE1_LEFTPERIMETER",
+          "ZONE1_REARPERIMETER",
+          "ZONE1_RIGHTPERIMETER",
+          "ZONE2_CORE",
+          "ZONE2_FRONTPERIMETER",
+          "ZONE2_LEFTPERIMETER",
+          "ZONE2_REARPERIMETER",
+          "ZONE2_RIGHTPERIMETER",
+          "ZONE1"
+        ],
+        "date_range": [
+          "2013-02-01 00:00:00",
+          "2014-01-01 00:00:00"
+        ],
+        "frequency": "daily",
+        "records": 42210,
+        "has_units": false
+      },
+      "zones_daily_daily": {
+        "file": "/usr/src/app/output/6f912613-913d-40ea-ba14-eff7e6dc097f/parsed_data/sql_results/timeseries/aggregated/daily/zones_daily.parquet",
+        "buildings": [
+          "4136733",
+          "4136737",
+          "4136738"
+        ],
+        "variables": [
+          "Zone Mean Air Temperature",
+          "Surface Inside Face Conduction Heat Transfer Rate",
+          "Surface Inside Face Temperature",
+          "Surface Outside Face Temperature",
+          "Zone Windows Total Transmitted Solar Radiation Energy",
+          "Zone Windows Total Transmitted Solar Radiation Rate",
+          "Surface Outside Face Incident Solar Radiation Rate per Area",
+          "Surface Shading Device Is On Time Fraction",
+          "Surface Window Blind Slat Angle",
+          "Surface Window Shading Device Absorbed Solar Radiation Rate",
+          "Surface Window Transmitted Solar Radiation Rate"
+        ],
+        "zones": [
+          "ZONE1_CORE",
+          "ZONE1_FRONTPERIMETER",
+          "ZONE1_LEFTPERIMETER",
+          "ZONE1_REARPERIMETER",
+          "ZONE1_RIGHTPERIMETER",
+          "ZONE2_CORE",
+          "ZONE2_FRONTPERIMETER",
+          "ZONE2_LEFTPERIMETER",
+          "ZONE2_REARPERIMETER",
+          "ZONE2_RIGHTPERIMETER",
+          "ZONE1_CORE_CEILING",
+          "ZONE1_CORE_FLOOR",
+          "ZONE1_CORE_WALL_0",
+          "ZONE1_CORE_WALL_1",
+          "ZONE1_CORE_WALL_2",
+          "ZONE1_CORE_WALL_3",
+          "ZONE1_FRONTPERIMETER_CEILING",
+          "ZONE1_FRONTPERIMETER_FLOOR",
+          "ZONE1_FRONTPERIMETER_WALL_0",
+          "ZONE1_FRONTPERIMETER_WALL_0 WINDOW",
+          "ZONE1_FRONTPERIMETER_WALL_1",
+          "ZONE1_FRONTPERIMETER_WALL_2",
+          "ZONE1_FRONTPERIMETER_WALL_3",
+          "ZONE1_LEFTPERIMETER_CEILING",
+          "ZONE1_LEFTPERIMETER_FLOOR",
+          "ZONE1_LEFTPERIMETER_WALL_0",
+          "ZONE1_LEFTPERIMETER_WALL_0 WINDOW",
+          "ZONE1_LEFTPERIMETER_WALL_1",
+          "ZONE1_LEFTPERIMETER_WALL_2",
+          "ZONE1_LEFTPERIMETER_WALL_3",
+          "ZONE1_REARPERIMETER_CEILING",
+          "ZONE1_REARPERIMETER_FLOOR",
+          "ZONE1_REARPERIMETER_WALL_0",
+          "ZONE1_REARPERIMETER_WALL_0 WINDOW",
+          "ZONE1_REARPERIMETER_WALL_1",
+          "ZONE1_REARPERIMETER_WALL_2",
+          "ZONE1_REARPERIMETER_WALL_3",
+          "ZONE1_RIGHTPERIMETER_CEILING",
+          "ZONE1_RIGHTPERIMETER_FLOOR",
+          "ZONE1_RIGHTPERIMETER_WALL_0",
+          "ZONE1_RIGHTPERIMETER_WALL_1",
+          "ZONE1_RIGHTPERIMETER_WALL_2",
+          "ZONE1_RIGHTPERIMETER_WALL_3",
+          "ZONE2_CORE_FLOOR",
+          "ZONE2_CORE_ROOF",
+          "ZONE2_CORE_WALL_0",
+          "ZONE2_CORE_WALL_1",
+          "ZONE2_CORE_WALL_2",
+          "ZONE2_CORE_WALL_3",
+          "ZONE2_FRONTPERIMETER_FLOOR",
+          "ZONE2_FRONTPERIMETER_ROOF",
+          "ZONE2_FRONTPERIMETER_WALL_0",
+          "ZONE2_FRONTPERIMETER_WALL_0 WINDOW",
+          "ZONE2_FRONTPERIMETER_WALL_1",
+          "ZONE2_FRONTPERIMETER_WALL_2",
+          "ZONE2_FRONTPERIMETER_WALL_3",
+          "ZONE2_LEFTPERIMETER_FLOOR",
+          "ZONE2_LEFTPERIMETER_ROOF",
+          "ZONE2_LEFTPERIMETER_WALL_0",
+          "ZONE2_LEFTPERIMETER_WALL_0 WINDOW",
+          "ZONE2_LEFTPERIMETER_WALL_1",
+          "ZONE2_LEFTPERIMETER_WALL_2",
+          "ZONE2_LEFTPERIMETER_WALL_3",
+          "ZONE2_REARPERIMETER_FLOOR",
+          "ZONE2_REARPERIMETER_ROOF",
+          "ZONE2_REARPERIMETER_WALL_0",
+          "ZONE2_REARPERIMETER_WALL_0 WINDOW",
+          "ZONE2_REARPERIMETER_WALL_1",
+          "ZONE2_REARPERIMETER_WALL_2",
+          "ZONE2_REARPERIMETER_WALL_3",
+          "ZONE2_RIGHTPERIMETER_FLOOR",
+          "ZONE2_RIGHTPERIMETER_ROOF",
+          "ZONE2_RIGHTPERIMETER_WALL_0",
+          "ZONE2_RIGHTPERIMETER_WALL_1",
+          "ZONE2_RIGHTPERIMETER_WALL_2",
+          "ZONE2_RIGHTPERIMETER_WALL_3",
+          "ZONE1_CORE_ROOF",
+          "ZONE1_FRONTPERIMETER_ROOF",
+          "ZONE1_LEFTPERIMETER_ROOF",
+          "ZONE1_REARPERIMETER_ROOF",
+          "ZONE1_RIGHTPERIMETER_ROOF",
+          "ZONE1",
+          "ZONE1_FLOOR",
+          "ZONE1_ROOF",
+          "ZONE1_WALL_0",
+          "ZONE1_WALL_1",
+          "ZONE1_WALL_2",
+          "ZONE1_WALL_2 WINDOW",
+          "ZONE1_WALL_3",
+          "ZONE1_WALL_3 WINDOW"
+        ],
+        "date_range": [
+          "2013-02-01 00:00:00",
+          "2014-01-01 00:00:00"
+        ],
+        "frequency": "daily",
+        "records": 143045,
+        "has_units": false
+      }
+    },
+    "outputs_defined": {},
+    "zones": {
+      "4136733": [
+        "ZONE1_FRONTPERIMETER",
+        "ZONE1_RIGHTPERIMETER",
+        "ZONE1_REARPERIMETER",
+        "ZONE1_LEFTPERIMETER",
+        "ZONE1_CORE",
+        "ZONE2_FRONTPERIMETER",
+        "ZONE2_RIGHTPERIMETER",
+        "ZONE2_REARPERIMETER",
+        "ZONE2_LEFTPERIMETER",
+        "ZONE2_CORE",
+        "Environment"
+      ],
+      "4136737": [
+        "ZONE1_FRONTPERIMETER",
+        "ZONE1_RIGHTPERIMETER",
+        "ZONE1_REARPERIMETER",
+        "ZONE1_LEFTPERIMETER",
+        "ZONE1_CORE",
+        "Environment"
+      ],
+      "4136738": [
+        "ZONE1",
+        "Environment"
+      ]
+    },
+    "aggregation_needed": {
+      "4136733": true,
+      "4136737": true,
+      "4136738": true
+    },
+    "available_variables": "{'Zone Infiltration Latent Heat Gain Energy', 'Zone Mean Air Temperature', 'Surface Outside Face Incident Solar Radiation Rate per Area', 'Zone Ventilation Latent Heat Loss Energy', 'Zone Infiltration Sensible Heat Loss Energy', 'Water Heater Heating Energy', 'Zone Infiltration Latent Heat Loss Energy', 'Zone Mechanical Ventilation Mass Flow Rate', 'Zone Ventilation Sensible Heat Gain Energy', 'Zone Air System Sensible Heating Energy', 'Zone Infiltration Sensible Heat Gain Energy', 'Zone Ventilation Standard Density Volume Flow Rate', 'Zone Air System Sensible Cooling Rate', 'Zone Windows Total Transmitted Solar Radiation Rate', 'Surface Inside Face Temperature', 'Zone Ventilation Latent Heat Gain Energy', 'Zone Air System Sensible Cooling Energy', 'Surface Window Transmitted Solar Radiation Rate', 'Surface Shading Device Is On Time Fraction', 'Zone Windows Total Transmitted Solar Radiation Energy', 'Surface Outside Face Temperature', 'Zone Air System Sensible Heating Rate', 'Surface Window Blind Slat Angle', 'Surface Inside Face Conduction Heat Transfer Rate', 'Surface Window Shading Device Absorbed Solar Radiation Rate', 'Zone Infiltration Standard Density Volume Flow Rate', 'Zone Ventilation Sensible Heat Loss Energy'}"
+  },
+  "mappings": [
+    {
+      "real_variable": "Zone Mean Air Temperature",
+      "sim_variable": "Zone Mean Air Temperature",
+      "confidence": 1.0,
+      "match_type": "exact"
+    },
+    {
+      "real_variable": "Zone Air System Sensible Heating Energy",
+      "sim_variable": "Zone Air System Sensible Heating Energy",
+      "confidence": 1.0,
+      "match_type": "exact"
+    },
+    {
+      "real_variable": "Zone Air System Sensible Cooling Energy",
+      "sim_variable": "Zone Air System Sensible Cooling Energy",
+      "confidence": 1.0,
+      "match_type": "exact"
+    }
+  ],
+  "validation_results": [],
+  "alignment_details": [
+    {
+      "mapping": "ValidationMapping(real_var='Zone Mean Air Temperature', sim_var='Zone Mean Air Temperature', confidence=1.0, match_type='exact', aggregation_info=None)",
+      "real_count": 62,
+      "sim_count": 10720,
+      "aligned_count": 0,
+      "unit_conversion": null,
+      "zone_aggregation": "Aggregated 5 zones",
+      "issues": [
+        "No overlapping dates for building 4136737",
+        "No overlapping dates for building 4136738",
+        "No data could be aligned"
+      ]
+    },
+    {
+      "mapping": "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+      "real_count": 62,
+      "sim_count": 5360,
+      "aligned_count": 0,
+      "unit_conversion": null,
+      "zone_aggregation": "Aggregated 5 zones",
+      "issues": [
+        "No overlapping dates for building 4136737",
+        "No overlapping dates for building 4136738",
+        "No data could be aligned"
+      ]
+    },
+    {
+      "mapping": "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+      "real_count": 62,
+      "sim_count": 5360,
+      "aligned_count": 0,
+      "unit_conversion": null,
+      "zone_aggregation": "Aggregated 5 zones",
+      "issues": [
+        "No overlapping dates for building 4136737",
+        "No overlapping dates for building 4136738",
+        "No data could be aligned"
+      ]
+    }
+  ],
+  "summary": {
+    "status": "No validation results"
+  },
+  "recommendations": [
+    "Could not find these requested variables: Electricity"
+  ]
+}

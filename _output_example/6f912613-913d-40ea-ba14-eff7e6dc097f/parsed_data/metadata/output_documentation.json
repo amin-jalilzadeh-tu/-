@@ -1,0 +1,191 @@
+{
+  "project": "/usr/src/app/output/6f912613-913d-40ea-ba14-eff7e6dc097f/parsed_data",
+  "timestamp": "2025-06-25T17:33:45.507659",
+  "buildings": {
+    "4136733": {
+      "variables": 65,
+      "meters": 7,
+      "frequencies": [
+        "Monthly",
+        "Daily"
+      ]
+    },
+    "4136737": {
+      "variables": 65,
+      "meters": 7,
+      "frequencies": [
+        "Monthly",
+        "Daily"
+      ]
+    },
+    "4136738": {
+      "variables": 65,
+      "meters": 7,
+      "frequencies": [
+        "Monthly",
+        "Daily"
+      ]
+    }
+  },
+  "summary": {
+    "total_buildings": 3,
+    "unique_variables": [
+      "Boiler Heating Energy",
+      "Facility Total Electric Demand Power",
+      "Site Diffuse Solar Radiation Rate per Area",
+      "Site Outdoor Air Drybulb Temperature",
+      "Site Outdoor Air Relative Humidity",
+      "Surface Inside Face Conduction Heat Gain Energy",
+      "Surface Inside Face Conduction Heat Loss Energy",
+      "Surface Inside Face Conduction Heat Transfer Rate",
+      "Surface Inside Face Temperature",
+      "Surface Outside Face Incident Solar Radiation Rate per Area",
+      "Surface Outside Face Temperature",
+      "Surface Shading Device Is On Time Fraction",
+      "Surface Window Blind Slat Angle",
+      "Surface Window Heat Gain Energy",
+      "Surface Window Heat Gain Rate",
+      "Surface Window Heat Loss Energy",
+      "Surface Window Heat Loss Rate",
+      "Surface Window Shading Device Absorbed Solar Radiation Rate",
+      "Surface Window Shading Device Transmitted Diffuse Solar Radiation Rate",
+      "Surface Window Transmitted Beam Solar Radiation Rate",
+      "Surface Window Transmitted Diffuse Solar Radiation Rate",
+      "Surface Window Transmitted Solar Radiation Rate",
+      "Water Heater Heating Energy",
+      "Window Shading Control Status",
+      "Zone Air Heat Balance Air Energy Storage Rate",
+      "Zone Air Heat Balance Internal Convective Heat Gain Rate",
+      "Zone Air Heat Balance Interzone Air Transfer Rate",
+      "Zone Air Heat Balance Outdoor Air Transfer Rate",
+      "Zone Air Heat Balance Surface Convection Rate",
+      "Zone Air Heat Balance System Air Transfer Rate",
+      "Zone Air System Latent Cooling Energy",
+      "Zone Air System Sensible Cooling Energy",
+      "Zone Air System Sensible Cooling Rate",
+      "Zone Air System Sensible Heating Energy",
+      "Zone Air System Sensible Heating Rate",
+      "Zone Electric Equipment Latent Heat Gain Energy",
+      "Zone Electric Equipment Latent Heat Gain Rate",
+      "Zone Electric Equipment Sensible Heating Energy",
+      "Zone Electric Equipment Sensible Heating Rate",
+      "Zone Infiltration Latent Heat Gain Energy",
+      "Zone Infiltration Latent Heat Loss Energy",
+      "Zone Infiltration Sensible Heat Gain Energy",
+      "Zone Infiltration Sensible Heat Loss Energy",
+      "Zone Infiltration Standard Density Volume Flow Rate",
+      "Zone Lights Sensible Heating Energy",
+      "Zone Lights Sensible Heating Rate",
+      "Zone Mean Air Temperature",
+      "Zone Mean Radiant Temperature",
+      "Zone Mechanical Ventilation Mass Flow Rate",
+      "Zone Outdoor Air Volume Flow Rate",
+      "Zone People Latent Heat Gain Energy",
+      "Zone People Latent Heat Gain Rate",
+      "Zone People Sensible Heating Energy",
+      "Zone People Sensible Heating Rate",
+      "Zone Total Internal Latent Heat Gain Energy",
+      "Zone Total Internal Latent Heat Gain Rate",
+      "Zone Total Internal Sensible Heat Gain Energy",
+      "Zone Total Internal Sensible Heat Gain Rate",
+      "Zone Ventilation Latent Heat Gain Energy",
+      "Zone Ventilation Latent Heat Loss Energy",
+      "Zone Ventilation Sensible Heat Gain Energy",
+      "Zone Ventilation Sensible Heat Loss Energy",
+      "Zone Ventilation Standard Density Volume Flow Rate",
+      "Zone Windows Total Transmitted Solar Radiation Energy",
+      "Zone Windows Total Transmitted Solar Radiation Rate"
+    ],
+    "unique_meters": [
+      "Cooling:EnergyTransfer",
+      "Electricity:Facility",
+      "Heating:EnergyTransfer",
+      "Infiltration:EnergyTransfer:Latent",
+      "Infiltration:EnergyTransfer:Sensible",
+      "Ventilation:EnergyTransfer:Latent",
+      "Ventilation:EnergyTransfer:Sensible"
+    ],
+    "reporting_frequencies": [
+      "Daily",
+      "Monthly"
+    ]
+  },
+  "output_categories": {
+    "energy": [
+      "Boiler Heating Energy",
+      "Site Diffuse Solar Radiation Rate per Area",
+      "Surface Inside Face Conduction Heat Gain Energy",
+      "Surface Inside Face Conduction Heat Loss Energy",
+      "Surface Inside Face Conduction Heat Transfer Rate",
+      "Surface Outside Face Incident Solar Radiation Rate per Area",
+      "Surface Window Heat Gain Energy",
+      "Surface Window Heat Gain Rate",
+      "Surface Window Heat Loss Energy",
+      "Surface Window Heat Loss Rate",
+      "Surface Window Shading Device Absorbed Solar Radiation Rate",
+      "Surface Window Shading Device Transmitted Diffuse Solar Radiation Rate",
+      "Surface Window Transmitted Beam Solar Radiation Rate",
+      "Surface Window Transmitted Diffuse Solar Radiation Rate",
+      "Surface Window Transmitted Solar Radiation Rate",
+      "Water Heater Heating Energy",
+      "Zone Air Heat Balance Air Energy Storage Rate",
+      "Zone Air Heat Balance Internal Convective Heat Gain Rate",
+      "Zone Air Heat Balance Interzone Air Transfer Rate",
+      "Zone Air Heat Balance Outdoor Air Transfer Rate",
+      "Zone Air Heat Balance Surface Convection Rate",
+      "Zone Air Heat Balance System Air Transfer Rate",
+      "Zone Air System Latent Cooling Energy",
+      "Zone Air System Sensible Cooling Energy",
+      "Zone Air System Sensible Cooling Rate",
+      "Zone Air System Sensible Heating Energy",
+      "Zone Air System Sensible Heating Rate",
+      "Zone Electric Equipment Latent Heat Gain Energy",
+      "Zone Electric Equipment Latent Heat Gain Rate",
+      "Zone Electric Equipment Sensible Heating Energy",
+      "Zone Electric Equipment Sensible Heating Rate",
+      "Zone Infiltration Latent Heat Gain Energy",
+      "Zone Infiltration Latent Heat Loss Energy",
+      "Zone Infiltration Sensible Heat Gain Energy",
+      "Zone Infiltration Sensible Heat Loss Energy",
+      "Zone Infiltration Standard Density Volume Flow Rate",
+      "Zone Lights Sensible Heating Energy",
+      "Zone Lights Sensible Heating Rate",
+      "Zone Mechanical Ventilation Mass Flow Rate",
+      "Zone Outdoor Air Volume Flow Rate",
+      "Zone People Latent Heat Gain Energy",
+      "Zone People Latent Heat Gain Rate",
+      "Zone People Sensible Heating Energy",
+      "Zone People Sensible Heating Rate",
+      "Zone Total Internal Latent Heat Gain Energy",
+      "Zone Total Internal Latent Heat Gain Rate",
+      "Zone Total Internal Sensible Heat Gain Energy",
+      "Zone Total Internal Sensible Heat Gain Rate",
+      "Zone Ventilation Latent Heat Gain Energy",
+      "Zone Ventilation Latent Heat Loss Energy",
+      "Zone Ventilation Sensible Heat Gain Energy",
+      "Zone Ventilation Sensible Heat Loss Energy",
+      "Zone Ventilation Standard Density Volume Flow Rate",
+      "Zone Windows Total Transmitted Solar Radiation Energy",
+      "Zone Windows Total Transmitted Solar Radiation Rate"
+    ],
+    "comfort": [
+      "Site Outdoor Air Drybulb Temperature",
+      "Surface Inside Face Temperature",
+      "Surface Outside Face Temperature",
+      "Zone Mean Air Temperature",
+      "Zone Mean Radiant Temperature"
+    ],
+    "hvac": [],
+    "envelope": [
+      "Surface Shading Device Is On Time Fraction",
+      "Surface Window Blind Slat Angle",
+      "Window Shading Control Status"
+    ],
+    "environmental": [
+      "Site Outdoor Air Relative Humidity"
+    ],
+    "other": [
+      "Facility Total Electric Demand Power"
+    ]
+  }
+}

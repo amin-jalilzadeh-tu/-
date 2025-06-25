@@ -1,0 +1,86 @@
+{
+  "job_id": "6f912613-913d-40ea-ba14-eff7e6dc097f",
+  "type": "modified_results",
+  "files_parsed": 57,
+  "parser_output_dir": "/usr/src/app/output/6f912613-913d-40ea-ba14-eff7e6dc097f/parsed_modified_results",
+  "timestamp": "2025-06-25T17:38:54.786726",
+  "parsed_data_info": {
+    "parsed_data_dir": "/usr/src/app/output/6f912613-913d-40ea-ba14-eff7e6dc097f/parsed_modified_results",
+    "categories": {
+      "dhw": {
+        "rows": 3,
+        "buildings": 3
+      },
+      "equipment": {
+        "rows": 6,
+        "buildings": 3
+      },
+      "geometry_surfaces": {
+        "rows": 109,
+        "buildings": 3
+      },
+      "geometry_zones": {
+        "rows": 19,
+        "buildings": 3
+      },
+      "hvac_equipment": {
+        "rows": 48,
+        "buildings": 3
+      },
+      "hvac_systems": {
+        "rows": 19,
+        "buildings": 3
+      },
+      "hvac_thermostats": {
+        "rows": 32,
+        "buildings": 3
+      },
+      "infiltration": {
+        "rows": 16,
+        "buildings": 3
+      },
+      "lighting": {
+        "rows": 3,
+        "buildings": 3
+      },
+      "materials_constructions": {
+        "rows": 45,
+        "buildings": 3
+      },
+      "materials_materials": {
+        "rows": 18,
+        "buildings": 3
+      },
+      "materials_windowmaterials": {
+        "rows": 13,
+        "buildings": 3
+      },
+      "outputs_all": {
+        "rows": 51,
+        "buildings": 3
+      },
+      "schedules": {
+        "rows": 48,
+        "buildings": 3
+      },
+      "shading": {
+        "rows": 10,
+        "buildings": 3
+      },
+      "simulation_control": {
+        "rows": 15,
+        "buildings": 3
+      },
+      "site_location": {
+        "rows": 12,
+        "buildings": 3
+      },
+      "ventilation": {
+        "rows": 12,
+        "buildings": 3
+      }
+    },
+    "total_buildings": 3,
+    "total_files": 18
+  }
+}

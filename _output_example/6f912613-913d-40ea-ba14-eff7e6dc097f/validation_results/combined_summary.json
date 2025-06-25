@@ -1,0 +1,29 @@
+{
+  "timestamp": "2025-06-25T17:38:55.327147",
+  "job_id": "6f912613-913d-40ea-ba14-eff7e6dc097f",
+  "stages_completed": [
+    "baseline",
+    "modified"
+  ],
+  "stage_summaries": {
+    "baseline": {
+      "status": "No validation results"
+    },
+    "modified": {
+      "status": "No validation results"
+    }
+  },
+  "overall_metrics": {
+    "total_validations": 0,
+    "total_passed": 0,
+    "buildings_validated": 0,
+    "variables_validated": 0,
+    "average_pass_rate": 0.0
+  },
+  "improvement_metrics": {},
+  "recommendations": [
+    "Overall validation pass rate is low (0.0%). Consider comprehensive calibration.",
+    "[baseline] Could not find these requested variables: Electricity",
+    "[modified] Could not find these requested variables: Electricity"
+  ]
+}

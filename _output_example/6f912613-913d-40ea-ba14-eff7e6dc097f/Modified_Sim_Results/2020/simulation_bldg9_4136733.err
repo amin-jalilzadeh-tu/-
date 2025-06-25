@@ -1,0 +1,141 @@
+Program Version,EnergyPlus, Version 22.2.0-c249759bad, YMD=2025.06.25 17:34,
+   ************* Beginning Zone Sizing Calculations
+   ** Warning ** Site:GroundTemperature:BuildingSurface: Some values fall outside the range of 15-25C.
+   **   ~~~   ** These values may be inappropriate.  Please consult the Input Output Reference for more details.
+   ** Warning ** Weather file location will be used rather than entered (IDF) Location object.
+   **   ~~~   ** ..Location object=AMSTERDAM_NETHERLANDS
+   **   ~~~   ** ..Weather File Location=Lelystad.AP FL NLD SRC-TMYx WMO#=062690
+   **   ~~~   ** ..due to location differences, Latitude difference=[8.72E-002] degrees, Longitude difference=[0.63] degrees.
+   **   ~~~   ** ..Time Zone difference=[0.0] hour(s), Elevation difference=[390.00] percent, [3.90] meters.
+   ** Warning ** ProcessScheduleInput: Schedule:Compact="LIGHTSSCHEDULE" has missing day types in Through=12/31
+   **   ~~~   ** Last "For" field=FOR: SUNDAY
+   **   ~~~   ** Missing day types="Holiday","SummerDesignDay","WinterDesignDay","CustomDay1","CustomDay2"
+   **   ~~~   ** Missing day types will have 0.0 as Schedule Values
+   ** Warning ** ProcessScheduleInput: Schedule:Compact="EQUIPSCHEDULE" has missing day types in Through=12/31
+   **   ~~~   ** Last "For" field=FOR: SUNDAY
+   **   ~~~   ** Missing day types="Holiday","SummerDesignDay","WinterDesignDay","CustomDay1","CustomDay2"
+   **   ~~~   ** Missing day types will have 0.0 as Schedule Values
+   ** Warning ** ProcessScheduleInput: Schedule:Compact="HVAC_AVAIL_SCHED" has missing day types in Through=12/31
+   **   ~~~   ** Last "For" field=FOR: WINTERDESIGNDAY
+   **   ~~~   ** Missing day types="Holiday","CustomDay1","CustomDay2"
+   **   ~~~   ** Missing day types will have 0.0 as Schedule Values
+   ** Warning ** ProcessScheduleInput: Schedule:Compact="ZONE_HEATING_SETPOINTS" has missing day types in Through=12/31
+   **   ~~~   ** Last "For" field=FOR: WINTERDESIGNDAY
+   **   ~~~   ** Missing day types="CustomDay1","CustomDay2"
+   **   ~~~   ** Missing day types will have 0.0 as Schedule Values
+   ** Warning ** ProcessScheduleInput: Schedule:Compact="ZONE_COOLING_SETPOINTS" has missing day types in Through=12/31
+   **   ~~~   ** Last "For" field=FOR: WINTERDESIGNDAY
+   **   ~~~   ** Missing day types="CustomDay1","CustomDay2"
+   **   ~~~   ** Missing day types will have 0.0 as Schedule Values
+   ** Warning ** CheckUsedConstructions: There are 9 nominally unused constructions in input.
+   **   ~~~   ** For explicit details on each unused construction, use Output:Diagnostics,DisplayExtraWarnings;
+   ** Warning ** GetSimpleAirModelInputs: ZoneInfiltration:DesignFlowRate="INFIL_RESI_D_ZONE1_FRONTPERIMETER", Design Flow Rate Calculation Method specifies Flow Rate per Floor Area, but that field is blank.  0 Infiltration will result.
+   ** Warning ** GetSimpleAirModelInputs: ZoneInfiltration:DesignFlowRate="INFIL_RESI_D_ZONE1_RIGHTPERIMETER", Design Flow Rate Calculation Method specifies Flow Rate per Floor Area, but that field is blank.  0 Infiltration will result.
+   ** Warning ** GetSimpleAirModelInputs: ZoneInfiltration:DesignFlowRate="INFIL_RESI_D_ZONE1_REARPERIMETER", Design Flow Rate Calculation Method specifies Flow Rate per Floor Area, but that field is blank.  0 Infiltration will result.
+   ** Warning ** GetSimpleAirModelInputs: ZoneInfiltration:DesignFlowRate="INFIL_RESI_D_ZONE1_LEFTPERIMETER", Design Flow Rate Calculation Method specifies Flow Rate per Floor Area, but that field is blank.  0 Infiltration will result.
+   ** Warning ** GetSimpleAirModelInputs: ZoneInfiltration:DesignFlowRate="INFIL_RESI_D_ZONE1_CORE", Design Flow Rate Calculation Method specifies Flow Rate per Floor Area, but that field is blank.  0 Infiltration will result.
+   ** Warning ** GetSimpleAirModelInputs: ZoneInfiltration:DesignFlowRate="INFIL_RESI_D_ZONE2_FRONTPERIMETER", Design Flow Rate Calculation Method specifies Flow Rate per Floor Area, but that field is blank.  0 Infiltration will result.
+   ** Warning ** GetSimpleAirModelInputs: ZoneInfiltration:DesignFlowRate="INFIL_RESI_D_ZONE2_RIGHTPERIMETER", Design Flow Rate Calculation Method specifies Flow Rate per Floor Area, but that field is blank.  0 Infiltration will result.
+   ** Warning ** GetSimpleAirModelInputs: ZoneInfiltration:DesignFlowRate="INFIL_RESI_D_ZONE2_REARPERIMETER", Design Flow Rate Calculation Method specifies Flow Rate per Floor Area, but that field is blank.  0 Infiltration will result.
+   ** Warning ** GetSimpleAirModelInputs: ZoneInfiltration:DesignFlowRate="INFIL_RESI_D_ZONE2_LEFTPERIMETER", Design Flow Rate Calculation Method specifies Flow Rate per Floor Area, but that field is blank.  0 Infiltration will result.
+   ** Warning ** GetSimpleAirModelInputs: ZoneInfiltration:DesignFlowRate="INFIL_RESI_D_ZONE2_CORE", Design Flow Rate Calculation Method specifies Flow Rate per Floor Area, but that field is blank.  0 Infiltration will result.
+   ** Warning ** Calculated design cooling load for zone=ZONE1_RIGHTPERIMETER is zero.
+   **   ~~~   ** Check Sizing:Zone and ZoneControl:Thermostat inputs.
+   ** Warning ** Calculated design cooling load for zone=ZONE1_CORE is zero.
+   **   ~~~   ** Check Sizing:Zone and ZoneControl:Thermostat inputs.
+   ** Warning ** ZoneHVAC:IdealLoadsAirSystem "ZONE1_FRONTPERIMETER_IDEAL_LOADS" Requested outdoor air flow rate = 2.56116E-003 [m3/s] exceeds limit.
+   **   ~~~   **  Will be reduced to the Maximum Heating Air Flow Rate = -99998.99999 [m3/s]
+   **   ~~~   **  During Sizing, Environment=NETHERLANDS ANN CLG 1% CONDNS DB=>MWB, at Simulation time=07/21 24:00 - 24:10
+   ** Warning ** ZoneHVAC:IdealLoadsAirSystem "ZONE1_RIGHTPERIMETER_IDEAL_LOADS" Requested outdoor air flow rate = 1.86524E-003 [m3/s] exceeds limit.
+   **   ~~~   **  Will be reduced to the Maximum Heating Air Flow Rate = -99998.99999 [m3/s]
+   **   ~~~   **  During Sizing, Environment=NETHERLANDS ANN CLG 1% CONDNS DB=>MWB, at Simulation time=07/21 24:00 - 24:10
+   ** Warning ** ZoneHVAC:IdealLoadsAirSystem "ZONE1_REARPERIMETER_IDEAL_LOADS" Requested outdoor air flow rate = 2.56116E-003 [m3/s] exceeds limit.
+   **   ~~~   **  Will be reduced to the Maximum Heating Air Flow Rate = -99998.99999 [m3/s]
+   **   ~~~   **  During Sizing, Environment=NETHERLANDS ANN CLG 1% CONDNS DB=>MWB, at Simulation time=07/21 24:00 - 24:10
+   ** Warning ** ZoneHVAC:IdealLoadsAirSystem "ZONE1_LEFTPERIMETER_IDEAL_LOADS" Requested outdoor air flow rate = 1.86524E-003 [m3/s] exceeds limit.
+   **   ~~~   **  Will be reduced to the Maximum Heating Air Flow Rate = -99998.99999 [m3/s]
+   **   ~~~   **  During Sizing, Environment=NETHERLANDS ANN CLG 1% CONDNS DB=>MWB, at Simulation time=07/21 24:00 - 24:10
+   ** Warning ** ZoneHVAC:IdealLoadsAirSystem "ZONE1_CORE_IDEAL_LOADS" Requested outdoor air flow rate = 1.47175E-004 [m3/s] exceeds limit.
+   **   ~~~   **  Will be reduced to the Maximum Heating Air Flow Rate = -99998.99999 [m3/s]
+   **   ~~~   **  During Sizing, Environment=NETHERLANDS ANN CLG 1% CONDNS DB=>MWB, at Simulation time=07/21 24:00 - 24:10
+   ** Warning ** ZoneHVAC:IdealLoadsAirSystem "ZONE2_FRONTPERIMETER_IDEAL_LOADS" Requested outdoor air flow rate = 2.56116E-003 [m3/s] exceeds limit.
+   **   ~~~   **  Will be reduced to the Maximum Heating Air Flow Rate = -99998.99999 [m3/s]
+   **   ~~~   **  During Sizing, Environment=NETHERLANDS ANN CLG 1% CONDNS DB=>MWB, at Simulation time=07/21 24:00 - 24:10
+   ** Warning ** ZoneHVAC:IdealLoadsAirSystem "ZONE2_RIGHTPERIMETER_IDEAL_LOADS" Requested outdoor air flow rate = 1.86524E-003 [m3/s] exceeds limit.
+   **   ~~~   **  Will be reduced to the Maximum Heating Air Flow Rate = -99998.99999 [m3/s]
+   **   ~~~   **  During Sizing, Environment=NETHERLANDS ANN CLG 1% CONDNS DB=>MWB, at Simulation time=07/21 24:00 - 24:10
+   ** Warning ** ZoneHVAC:IdealLoadsAirSystem "ZONE2_REARPERIMETER_IDEAL_LOADS" Requested outdoor air flow rate = 2.56116E-003 [m3/s] exceeds limit.
+   **   ~~~   **  Will be reduced to the Maximum Heating Air Flow Rate = -99998.99999 [m3/s]
+   **   ~~~   **  During Sizing, Environment=NETHERLANDS ANN CLG 1% CONDNS DB=>MWB, at Simulation time=07/21 24:00 - 24:10
+   ** Warning ** ZoneHVAC:IdealLoadsAirSystem "ZONE2_LEFTPERIMETER_IDEAL_LOADS" Requested outdoor air flow rate = 1.86524E-003 [m3/s] exceeds limit.
+   **   ~~~   **  Will be reduced to the Maximum Heating Air Flow Rate = -99998.99999 [m3/s]
+   **   ~~~   **  During Sizing, Environment=NETHERLANDS ANN CLG 1% CONDNS DB=>MWB, at Simulation time=07/21 24:00 - 24:10
+   ** Warning ** ZoneHVAC:IdealLoadsAirSystem "ZONE2_CORE_IDEAL_LOADS" Requested outdoor air flow rate = 1.47175E-004 [m3/s] exceeds limit.
+   **   ~~~   **  Will be reduced to the Maximum Heating Air Flow Rate = -99998.99999 [m3/s]
+   **   ~~~   **  During Sizing, Environment=NETHERLANDS ANN CLG 1% CONDNS DB=>MWB, at Simulation time=07/21 24:00 - 24:10
+   ** Warning ** ManageSizing: For a plant sizing run, there must be at least 1 Sizing:Plant object input. SimulationControl Plant Sizing option ignored.
+   ** Warning ** Output:Meter: invalid Key Name="INFILTRATION:ENERGYTRANSFER:SENSIBLE" - not found.
+   ** Warning ** Output:Meter: invalid Key Name="INFILTRATION:ENERGYTRANSFER:LATENT" - not found.
+   ** Warning ** Output:Meter: invalid Key Name="VENTILATION:ENERGYTRANSFER:SENSIBLE" - not found.
+   ** Warning ** Output:Meter: invalid Key Name="VENTILATION:ENERGYTRANSFER:LATENT" - not found.
+   ************* Testing Individual Branch Integrity
+   ************* All Branches passed integrity testing
+   ************* Testing Individual Supply Air Path Integrity
+   ************* All Supply Air Paths passed integrity testing
+   ************* Testing Individual Return Air Path Integrity
+   ************* All Return Air Paths passed integrity testing
+   ************* No node connection errors were found.
+   ************* Beginning Simulation
+   ** Warning ** In Output:Table:Monthly 'ZONECOMPONENTLOADSUMMARY' invalid Variable or Meter Name 'ZONE SENSIBLE HEATING ENERGY'
+   ** Warning ** In Output:Table:Monthly 'ZONECOMPONENTLOADSUMMARY' invalid Variable or Meter Name 'ZONE SENSIBLE COOLING ENERGY'
+   ** Warning ** In Output:Table:Monthly 'ZONECOMPONENTLOADSUMMARY' invalid Variable or Meter Name 'ZONE LATENT HEATING ENERGY'
+   ** Warning ** In Output:Table:Monthly 'ZONECOMPONENTLOADSUMMARY' invalid Variable or Meter Name 'ZONE LATENT COOLING ENERGY'
+   ** Warning ** In Output:Table:Monthly 'ZONECOMPONENTLOADSUMMARY' invalid Variable or Meter Name 'ZONE TOTAL INTERNAL SENSIBLE HEAT GAIN ENERGY'
+   ** Warning ** Processing Monthly Tabular Reports: Variable names not valid for this simulation
+   **   ~~~   ** ...use Output:Diagnostics,DisplayExtraWarnings; to show more details on individual variables.
+   ************* Simulation Error Summary *************
+   ** Warning ** The following Report Variables were requested but not generated -- check.rdd file
+   **   ~~~   ** Either the IDF did not contain these elements, the variable name is misspelled,
+   **   ~~~   ** or the requested variable is an advanced output which requires Output : Diagnostics, DisplayAdvancedReportVariables;
+   ************* Key=*, VarName=BOILER HEATING ENERGY, Frequency=Monthly
+   ************* Key=*, VarName=ZONE AIR SYSTEM LATENT COOLING ENERGY, Frequency=Monthly
+   ************* Key=*, VarName=ZONE VENTILATION STANDARD DENSITY VOLUME FLOW RATE, Frequency=Monthly
+   ************* Key=*, VarName=ZONE VENTILATION SENSIBLE HEAT LOSS ENERGY, Frequency=Monthly
+   ************* Key=*, VarName=ZONE VENTILATION SENSIBLE HEAT GAIN ENERGY, Frequency=Monthly
+   ************* Key=*, VarName=ZONE VENTILATION LATENT HEAT LOSS ENERGY, Frequency=Monthly
+   ************* Key=*, VarName=ZONE VENTILATION LATENT HEAT GAIN ENERGY, Frequency=Monthly
+   ************* Key=*, VarName=ZONE OUTDOOR AIR VOLUME FLOW RATE, Frequency=Monthly
+   ************* Key=*, VarName=SURFACE INSIDE FACE CONDUCTION HEAT GAIN ENERGY, Frequency=Monthly
+   ************* Key=*, VarName=SURFACE INSIDE FACE CONDUCTION HEAT LOSS ENERGY, Frequency=Monthly
+   ************* Key=*, VarName=ZONE PEOPLE SENSIBLE HEATING RATE, Frequency=Monthly
+   ************* Key=*, VarName=ZONE PEOPLE SENSIBLE HEATING ENERGY, Frequency=Monthly
+   ************* Key=*, VarName=ZONE PEOPLE LATENT HEAT GAIN RATE, Frequency=Monthly
+   ************* Key=*, VarName=ZONE PEOPLE LATENT HEAT GAIN ENERGY, Frequency=Monthly
+   ************* Key=*, VarName=ZONE LIGHTS SENSIBLE HEATING RATE, Frequency=Monthly
+   ************* Key=*, VarName=ZONE LIGHTS SENSIBLE HEATING ENERGY, Frequency=Monthly
+   ************* Key=*, VarName=ZONE ELECTRIC EQUIPMENT SENSIBLE HEATING RATE, Frequency=Monthly
+   ************* Key=*, VarName=ZONE ELECTRIC EQUIPMENT SENSIBLE HEATING ENERGY, Frequency=Monthly
+   ************* Key=*, VarName=ZONE ELECTRIC EQUIPMENT LATENT HEAT GAIN RATE, Frequency=Monthly
+   ************* Key=*, VarName=ZONE ELECTRIC EQUIPMENT LATENT HEAT GAIN ENERGY, Frequency=Monthly
+   ************* Key=*, VarName=ZONE TOTAL INTERNAL SENSIBLE HEAT GAIN RATE, Frequency=Monthly
+   ************* Key=*, VarName=ZONE TOTAL INTERNAL SENSIBLE HEAT GAIN ENERGY, Frequency=Monthly
+   ************* Key=*, VarName=ZONE TOTAL INTERNAL LATENT HEAT GAIN RATE, Frequency=Monthly
+   ************* Key=*, VarName=ZONE TOTAL INTERNAL LATENT HEAT GAIN ENERGY, Frequency=Monthly
+   ************* Key=*, VarName=WINDOW SHADING CONTROL STATUS, Frequency=Monthly
+   ************* Key=*, VarName=SURFACE WINDOW SHADING DEVICE TRANSMITTED DIFFUSE SOLAR RADIATION RATE, Frequency=Monthly
+   ************* Key=*, VarName=FACILITY TOTAL ELECTRIC DEMAND POWER, Frequency=Daily
+   ************* There are 2 unused schedules in input.
+   ************* There are 1 unused week schedules in input.
+   ************* There are 1 unused day schedules in input.
+   ************* Use Output:Diagnostics,DisplayUnusedSchedules; to see them.
+   *************
+   ************* ===== Final Error Summary =====
+   ************* The following error categories occurred.  Consider correcting or noting.
+   ************* Nominally Unused Constructions
+   ************* ..The nominally unused constructions warning is provided to alert you to potential conditions that can cause
+   ************* ..extra time during simulation. Each construction is calculated by the algorithm indicated in the HeatBalanceAlgorithm
+   ************* ..object. You may remove the constructions indicated (when you use the DisplayExtraWarnings option).
+   *************
+   ************* EnergyPlus Warmup Error Summary. During Warmup: 0 Warning; 0 Severe Errors.
+   ************* EnergyPlus Sizing Error Summary. During Sizing: 31 Warning; 0 Severe Errors.
+   ************* EnergyPlus Completed Successfully-- 42 Warning; 0 Severe Errors; Elapsed Time=00hr 00min 11.49sec

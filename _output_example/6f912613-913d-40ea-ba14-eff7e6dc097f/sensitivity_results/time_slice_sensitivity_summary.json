@@ -1,0 +1,222 @@
+{
+  "analysis_timestamp": "2025-06-25T17:39:31.453327",
+  "time_slices_analyzed": {
+    "modification": {
+      "config": {
+        "// Enable time-based filtering of simulation data": "",
+        "enabled": true,
+        "// Slice type: 'peak_months', 'time_of_day', 'day_of_week', 'custom', 'combined', or 'none'": "",
+        "slice_type": "peak_months",
+        "// Season for peak months analysis: 'cooling', 'heating', or 'both'": "",
+        "season": "cooling",
+        "// Custom peak month definitions (defaults will be used if not specified)": "",
+        "peak_cooling_months": [
+          6,
+          7,
+          8
+        ],
+        "peak_heating_months": [
+          12,
+          1,
+          2
+        ],
+        "// Peak hours for time of day analysis (24-hour format)": "",
+        "peak_hours": [
+          14,
+          15,
+          16,
+          17
+        ],
+        "// Or use range format for continuous hours": "",
+        "peak_hours_range": {
+          "start": 14,
+          "end": 17
+        },
+        "// Day of week analysis options": "",
+        "analyze_weekends": true,
+        "// Custom date range (YYYY-MM-DD format)": "",
+        "start_date": null,
+        "end_date": null,
+        "// Combined filtering (all conditions must be met)": "",
+        "combined_filters": {
+          "months": [
+            6,
+            7,
+            8
+          ],
+          "hours": [
+            14,
+            15,
+            16,
+            17
+          ],
+          "day_of_week": "weekdays"
+        },
+        "// Comparative analysis across multiple time slices": "",
+        "compare_time_slices": false,
+        "// Define time slices for comparison": "",
+        "time_slice_comparisons": [
+          {
+            "name": "full_year",
+            "enabled": false,
+            "description": "Full year baseline without filtering"
+          },
+          {
+            "name": "peak_cooling",
+            "enabled": true,
+            "slice_type": "peak_months",
+            "season": "cooling",
+            "peak_cooling_months": [
+              6,
+              7,
+              8
+            ],
+            "description": "Summer peak cooling months"
+          },
+          {
+            "name": "peak_heating",
+            "enabled": true,
+            "slice_type": "peak_months",
+            "season": "heating",
+            "peak_heating_months": [
+              12,
+              1,
+              2
+            ],
+            "description": "Winter peak heating months"
+          },
+          {
+            "name": "peak_hours_summer",
+            "enabled": true,
+            "slice_type": "combined",
+            "combined_filters": {
+              "months": [
+                6,
+                7,
+                8
+              ],
+              "hours": [
+                14,
+                15,
+                16,
+                17
+              ]
+            },
+            "description": "Peak afternoon hours during summer"
+          },
+          {
+            "name": "business_hours",
+            "enabled": true,
+            "slice_type": "combined",
+            "combined_filters": {
+              "hours": [
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                17
+              ],
+              "day_of_week": "weekdays"
+            },
+            "description": "Business hours on weekdays"
+          },
+          {
+            "name": "weekday_peaks",
+            "enabled": true,
+            "slice_type": "combined",
+            "combined_filters": {
+              "hours": [
+                14,
+                15,
+                16,
+                17
+              ],
+              "day_of_week": "weekdays"
+            },
+            "description": "Peak hours on weekdays only"
+          },
+          {
+            "name": "weekend_usage",
+            "enabled": true,
+            "slice_type": "day_of_week",
+            "analyze_weekends": true,
+            "description": "Weekend usage patterns"
+          }
+        ],
+        "// Analysis options for time-sliced data": "",
+        "aggregation_method": "sum",
+        "minimum_data_points": 24,
+        "handle_missing_data": "skip",
+        "// Reporting options": "",
+        "generate_time_slice_report": true,
+        "include_temporal_patterns": true,
+        "export_sliced_data": false
+      },
+      "n_results": 1468,
+      "n_unique_parameters": 81,
+      "avg_sensitivity": 3.293494245235645,
+      "max_sensitivity": 10.0,
+      "std_sensitivity": 3.2168667081120947,
+      "top_10_parameters": [
+        {
+          "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_FrontPerimeter_Wall_0_window*shading_setpoint",
+          "sensitivity_score": 10.0,
+          "output_variable": "Zone Air System Sensible Heating Energy"
+        },
+        {
+          "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_LeftPerimeter_Wall_0_window*shading_setpoint",
+          "sensitivity_score": 10.0,
+          "output_variable": "Zone Air System Sensible Heating Energy"
+        },
+        {
+          "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_LeftPerimeter_Wall_0_window*shading_setpoint",
+          "sensitivity_score": 10.0,
+          "output_variable": "Zone Air System Sensible Heating Energy"
+        },
+        {
+          "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_RearPerimeter_Wall_0_window*shading_setpoint",
+          "sensitivity_score": 10.0,
+          "output_variable": "Zone Air System Sensible Heating Energy"
+        },
+        {
+          "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_RearPerimeter_Wall_0_window*shading_setpoint",
+          "sensitivity_score": 10.0,
+          "output_variable": "Zone Air System Sensible Heating Energy"
+        },
+        {
+          "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone2_FrontPerimeter_Wall_0_window*shading_setpoint",
+          "sensitivity_score": 10.0,
+          "output_variable": "Zone Air System Sensible Heating Energy"
+        },
+        {
+          "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone2_LeftPerimeter_Wall_0_window*shading_setpoint",
+          "sensitivity_score": 10.0,
+          "output_variable": "Zone Air System Sensible Heating Energy"
+        },
+        {
+          "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone2_RearPerimeter_Wall_0_window*shading_setpoint",
+          "sensitivity_score": 10.0,
+          "output_variable": "Zone Air System Sensible Heating Energy"
+        },
+        {
+          "parameter": "ventilation*DESIGNSPECIFICATION:OUTDOORAIR*DSOA_Global*outdoor_air_flow_per_person",
+          "sensitivity_score": 10.0,
+          "output_variable": "Zone Air System Sensible Heating Energy"
+        },
+        {
+          "parameter": "ventilation*DESIGNSPECIFICATION:OUTDOORAIR*DSOA_Global*outdoor_air_flow_per_person",
+          "sensitivity_score": 10.0,
+          "output_variable": "Zone Air System Sensible Heating Energy"
+        }
+      ]
+    }
+  },
+  "parameter_stability_across_slices": {},
+  "recommendations": [],
+  "temporal_patterns": {}
+}

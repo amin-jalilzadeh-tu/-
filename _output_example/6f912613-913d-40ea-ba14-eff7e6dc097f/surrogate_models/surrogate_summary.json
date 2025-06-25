@@ -1,0 +1,168 @@
+{
+  "timestamp": "2025-06-25T17:41:40.600338",
+  "model_type": "random_forest",
+  "preprocessing": {
+    "n_features": 93,
+    "n_targets": 8,
+    "n_samples": 57
+  },
+  "data_extraction": {
+    "extraction_timestamp": "2025-06-25T17:39:33.629809",
+    "data_sources": {
+      "modifications": {
+        "rows": 2299,
+        "columns": 12,
+        "memory_usage_mb": 1.8827447891235352,
+        "unique_parameters": 88,
+        "categories": [
+          "lighting",
+          "materials",
+          "ventilation",
+          "equipment",
+          "dhw",
+          "geometry",
+          "shading",
+          "simulation_control",
+          "site_location"
+        ]
+      },
+      "base_parameters": {
+        "rows": 135,
+        "columns": 205,
+        "memory_usage_mb": 0.6841621398925781
+      },
+      "modified_parameters": {
+        "rows": 135,
+        "columns": 207,
+        "memory_usage_mb": 0.6925268173217773
+      },
+      "base_outputs": {
+        "rows": 213060,
+        "columns": 7,
+        "memory_usage_mb": 66.34352493286133
+      },
+      "modified_outputs": {
+        "rows": 4048140,
+        "columns": 9,
+        "memory_usage_mb": 1764.2324142456055
+      },
+      "sensitivity": {
+        "rows": 81,
+        "columns": 6,
+        "memory_usage_mb": 0.01765727996826172,
+        "high_sensitivity_params": 20
+      },
+      "zone_mappings": {
+        "rows": 54,
+        "columns": 7,
+        "memory_usage_mb": 0.017189979553222656
+      },
+      "building_registry": {
+        "rows": 60,
+        "columns": 10,
+        "memory_usage_mb": 0.035400390625
+      }
+    }
+  },
+  "features": {
+    "count": 93,
+    "names": [
+      "dhw_WATERHEATER_MIXED_MyDHW_0_WaterHeater_heater_efficiency",
+      "dhw_WATERHEATER_MIXED_MyDHW_0_WaterHeater_off_cycle_loss_coefficient",
+      "dhw_WATERHEATER_MIXED_MyDHW_1_WaterHeater_heater_efficiency",
+      "dhw_WATERHEATER_MIXED_MyDHW_1_WaterHeater_off_cycle_loss_coefficient",
+      "dhw_WATERHEATER_MIXED_MyDHW_2_WaterHeater_heater_efficiency",
+      "dhw_WATERHEATER_MIXED_MyDHW_2_WaterHeater_off_cycle_loss_coefficient",
+      "equipment_ELECTRICEQUIPMENT_Equip_ALL_ZONES_watts_per_area",
+      "equipment_ELECTRICEQUIPMENT_Parasitic_ALL_ZONES_watts_per_area",
+      "geometry_FENESTRATIONSURFACE_DETAILED_Zone1_FrontPerimeter_Wall_0_window_window_multiplier",
+      "geometry_FENESTRATIONSURFACE_DETAILED_Zone1_LeftPerimeter_Wall_0_window_window_multiplier",
+      "geometry_FENESTRATIONSURFACE_DETAILED_Zone1_RearPerimeter_Wall_0_window_window_multiplier",
+      "geometry_FENESTRATIONSURFACE_DETAILED_Zone1_Wall_2_window_window_multiplier",
+      "geometry_FENESTRATIONSURFACE_DETAILED_Zone1_Wall_3_window_window_multiplier",
+      "geometry_FENESTRATIONSURFACE_DETAILED_Zone2_FrontPerimeter_Wall_0_window_window_multiplier",
+      "geometry_FENESTRATIONSURFACE_DETAILED_Zone2_LeftPerimeter_Wall_0_window_window_multiplier",
+      "geometry_FENESTRATIONSURFACE_DETAILED_Zone2_RearPerimeter_Wall_0_window_window_multiplier",
+      "lighting_LIGHTS_Lights_ALL_ZONES_fraction_radiant",
+      "lighting_LIGHTS_Lights_ALL_ZONES_fraction_visible",
+      "lighting_LIGHTS_Lights_ALL_ZONES_return_air_fraction",
+      "lighting_LIGHTS_Lights_ALL_ZONES_watts_per_area"
+    ]
+  },
+  "targets": [
+    "Zone_Air_System_Sensible_Heating_Energy_total",
+    "Zone_Air_System_Sensible_Heating_Energy_mean",
+    "Zone_Air_System_Sensible_Heating_Energy_peak",
+    "Zone_Air_System_Sensible_Heating_Energy_percent_change",
+    "Zone_Air_System_Sensible_Cooling_Energy_total",
+    "Zone_Air_System_Sensible_Cooling_Energy_mean",
+    "Zone_Air_System_Sensible_Cooling_Energy_peak",
+    "Zone_Air_System_Sensible_Cooling_Energy_percent_change"
+  ],
+  "validation": {
+    "overall_metrics": {
+      "mean_r2": 0.9999242598323392,
+      "min_r2": 0.9998546185695687,
+      "mean_mae": 664097.2470346771,
+      "mean_rmse": 2300500.3460545847
+    },
+    "target_metrics": {
+      "Zone_Air_System_Sensible_Heating_Energy_total": {
+        "r2": 0.9999966642476393,
+        "mae": 3012361.549156904,
+        "rmse": 10435126.507772004,
+        "mape": 0.045918336574275756,
+        "bias": 3012361.549140056
+      },
+      "Zone_Air_System_Sensible_Heating_Energy_mean": {
+        "r2": 0.9998546185695687,
+        "mae": 24312.05653506525,
+        "rmse": 84219.4343103773,
+        "mape": 0.12414966601868822,
+        "bias": -24312.056535053922
+      },
+      "Zone_Air_System_Sensible_Heating_Energy_peak": {
+        "r2": 0.9998632097388827,
+        "mae": 1332613.1731648743,
+        "rmse": 4616307.445510745,
+        "mape": 0.0793870932579568,
+        "bias": -1332613.1731633048
+      },
+      "Zone_Air_System_Sensible_Heating_Energy_percent_change": {
+        "r2": 0.9999925954609665,
+        "mae": 0.008062729528250046,
+        "rmse": 0.027930114381131393,
+        "mape": 0.01420868462940755,
+        "bias": 0.008062729528231097
+      },
+      "Zone_Air_System_Sensible_Cooling_Energy_total": {
+        "r2": 0.9999981015181546,
+        "mae": 173937.10292144617,
+        "rmse": 602535.7991544422,
+        "mape": 0.007827961244839714,
+        "bias": 173937.1029198567
+      },
+      "Zone_Air_System_Sensible_Cooling_Energy_mean": {
+        "r2": 0.9998755387441798,
+        "mae": 8739.928085553305,
+        "rmse": 30275.998997336625,
+        "mape": 0.13176774108451403,
+        "bias": -8739.92808554469
+      },
+      "Zone_Air_System_Sensible_Cooling_Energy_peak": {
+        "r2": 0.9998985077591186,
+        "mae": 760814.0205685099,
+        "rmse": 2635537.077469654,
+        "mape": 0.101424137173002,
+        "bias": -760814.020568192
+      },
+      "Zone_Air_System_Sensible_Cooling_Energy_percent_change": {
+        "r2": 0.999914842620204,
+        "mae": 0.13778233383109276,
+        "rmse": 0.4772920051610157,
+        "mape": 0.03793894306903644,
+        "bias": -0.13778233383093172
+      }
+    }
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "analysis_completed": true,
+  "methods_used": [
+    "modification"
+  ],
+  "total_parameters_analyzed": 81,
+  "total_outputs_analyzed": 2,
+  "top_5_parameters": [
+    {
+      "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_FrontPerimeter_Wall_0_window*shading_setpoint",
+      "score": 10.0,
+      "category": "shading",
+      "object_type": "WINDOWSHADINGCONTROL",
+      "object_name": "ShadingCtrl_Zone1_FrontPerimeter_Wall_0_window",
+      "field_name": "shading_setpoint"
+    },
+    {
+      "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_LeftPerimeter_Wall_0_window*shading_setpoint",
+      "score": 10.0,
+      "category": "shading",
+      "object_type": "WINDOWSHADINGCONTROL",
+      "object_name": "ShadingCtrl_Zone1_LeftPerimeter_Wall_0_window",
+      "field_name": "shading_setpoint"
+    },
+    {
+      "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_LeftPerimeter_Wall_0_window*shading_setpoint",
+      "score": 10.0,
+      "category": "shading",
+      "object_type": "WINDOWSHADINGCONTROL",
+      "object_name": "ShadingCtrl_Zone1_LeftPerimeter_Wall_0_window",
+      "field_name": "shading_setpoint"
+    },
+    {
+      "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_RearPerimeter_Wall_0_window*shading_setpoint",
+      "score": 10.0,
+      "category": "shading",
+      "object_type": "WINDOWSHADINGCONTROL",
+      "object_name": "ShadingCtrl_Zone1_RearPerimeter_Wall_0_window",
+      "field_name": "shading_setpoint"
+    },
+    {
+      "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_RearPerimeter_Wall_0_window*shading_setpoint",
+      "score": 10.0,
+      "category": "shading",
+      "object_type": "WINDOWSHADINGCONTROL",
+      "object_name": "ShadingCtrl_Zone1_RearPerimeter_Wall_0_window",
+      "field_name": "shading_setpoint"
+    }
+  ],
+  "parameter_breakdown": {
+    "dhw": 6,
+    "equipment": 2,
+    "geometry": 8,
+    "lighting": 4,
+    "materials": 12,
+    "shading": 8,
+    "simulation_control": 1,
+    "site_location": 37,
+    "ventilation": 2,
+    "zone": 1
+  },
+  "statistics_by_method": {
+    "modification": {
+      "n_results": 1468,
+      "n_parameters": 81,
+      "n_outputs": 2,
+      "score_range": [
+        0.00433982678676443,
+        10.0
+      ],
+      "score_mean": 3.293494245235645,
+      "score_std": 3.2168667081120947
+    }
+  },
+  "parameter_categories": [
+    "zone",
+    "materials",
+    "geometry",
+    "site_location",
+    "shading",
+    "ventilation",
+    "lighting",
+    "simulation_control",
+    "equipment",
+    "dhw"
+  ]
+}

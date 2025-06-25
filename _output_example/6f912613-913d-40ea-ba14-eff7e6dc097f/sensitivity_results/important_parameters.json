@@ -1,0 +1,485 @@
+{
+  "important_parameters": [
+    "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_FrontPerimeter_Wall_0_window*shading_setpoint",
+    "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_LeftPerimeter_Wall_0_window*shading_setpoint",
+    "ventilation*DESIGNSPECIFICATION:OUTDOORAIR*DSOA_Global*outdoor_air_flow_per_zone_area",
+    "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone2_RearPerimeter_Wall_0_window*shading_setpoint",
+    "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_RearPerimeter_Wall_0_window*shading_setpoint",
+    "ventilation*DESIGNSPECIFICATION:OUTDOORAIR*DSOA_Global*outdoor_air_flow_per_person",
+    "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone2_LeftPerimeter_Wall_0_window*shading_setpoint",
+    "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone2_FrontPerimeter_Wall_0_window*shading_setpoint",
+    "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_Wall_3_window*shading_setpoint",
+    "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_Wall_2_window*shading_setpoint"
+  ],
+  "n_parameters": 10,
+  "export_config": {
+    "perform_sensitivity": true,
+    "// Analysis type - 'traditional', 'modification_based', or 'hybrid'": "",
+    "analysis_type": "modification_based",
+    "// Traditional analysis configuration": "",
+    "method": "correlation",
+    "target_variable": [
+      "Heating:EnergyTransfer [J](Hourly)",
+      "Cooling:EnergyTransfer [J](Hourly)",
+      "Electricity:Facility [J](Hourly)"
+    ],
+    "categories": [
+      "hvac",
+      "materials",
+      "lighting"
+    ],
+    "scenario_folder": "/usr/src/app/output/6f912613-913d-40ea-ba14-eff7e6dc097f/scenarios",
+    "// Time slicing configuration for analyzing specific time periods": "",
+    "time_slicing": {
+      "// Enable time-based filtering of simulation data": "",
+      "enabled": true,
+      "// Slice type: 'peak_months', 'time_of_day', 'day_of_week', 'custom', 'combined', or 'none'": "",
+      "slice_type": "peak_months",
+      "// Season for peak months analysis: 'cooling', 'heating', or 'both'": "",
+      "season": "cooling",
+      "// Custom peak month definitions (defaults will be used if not specified)": "",
+      "peak_cooling_months": [
+        6,
+        7,
+        8
+      ],
+      "peak_heating_months": [
+        12,
+        1,
+        2
+      ],
+      "// Peak hours for time of day analysis (24-hour format)": "",
+      "peak_hours": [
+        14,
+        15,
+        16,
+        17
+      ],
+      "// Or use range format for continuous hours": "",
+      "peak_hours_range": {
+        "start": 14,
+        "end": 17
+      },
+      "// Day of week analysis options": "",
+      "analyze_weekends": true,
+      "// Custom date range (YYYY-MM-DD format)": "",
+      "start_date": null,
+      "end_date": null,
+      "// Combined filtering (all conditions must be met)": "",
+      "combined_filters": {
+        "months": [
+          6,
+          7,
+          8
+        ],
+        "hours": [
+          14,
+          15,
+          16,
+          17
+        ],
+        "day_of_week": "weekdays"
+      },
+      "// Comparative analysis across multiple time slices": "",
+      "compare_time_slices": false,
+      "// Define time slices for comparison": "",
+      "time_slice_comparisons": [
+        {
+          "name": "full_year",
+          "enabled": false,
+          "description": "Full year baseline without filtering"
+        },
+        {
+          "name": "peak_cooling",
+          "enabled": true,
+          "slice_type": "peak_months",
+          "season": "cooling",
+          "peak_cooling_months": [
+            6,
+            7,
+            8
+          ],
+          "description": "Summer peak cooling months"
+        },
+        {
+          "name": "peak_heating",
+          "enabled": true,
+          "slice_type": "peak_months",
+          "season": "heating",
+          "peak_heating_months": [
+            12,
+            1,
+            2
+          ],
+          "description": "Winter peak heating months"
+        },
+        {
+          "name": "peak_hours_summer",
+          "enabled": true,
+          "slice_type": "combined",
+          "combined_filters": {
+            "months": [
+              6,
+              7,
+              8
+            ],
+            "hours": [
+              14,
+              15,
+              16,
+              17
+            ]
+          },
+          "description": "Peak afternoon hours during summer"
+        },
+        {
+          "name": "business_hours",
+          "enabled": true,
+          "slice_type": "combined",
+          "combined_filters": {
+            "hours": [
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17
+            ],
+            "day_of_week": "weekdays"
+          },
+          "description": "Business hours on weekdays"
+        },
+        {
+          "name": "weekday_peaks",
+          "enabled": true,
+          "slice_type": "combined",
+          "combined_filters": {
+            "hours": [
+              14,
+              15,
+              16,
+              17
+            ],
+            "day_of_week": "weekdays"
+          },
+          "description": "Peak hours on weekdays only"
+        },
+        {
+          "name": "weekend_usage",
+          "enabled": true,
+          "slice_type": "day_of_week",
+          "analyze_weekends": true,
+          "description": "Weekend usage patterns"
+        }
+      ],
+      "// Analysis options for time-sliced data": "",
+      "aggregation_method": "sum",
+      "minimum_data_points": 24,
+      "handle_missing_data": "skip",
+      "// Reporting options": "",
+      "generate_time_slice_report": true,
+      "include_temporal_patterns": true,
+      "export_sliced_data": false
+    },
+    "// Modification-based analysis configuration": "",
+    "modification_analysis": {
+      "// Enable multi-level analysis (zone, equipment, building)": "",
+      "multi_level_analysis": true,
+      "// Aggregation options for zone-level data": "",
+      "aggregation_levels": {
+        "analyze_by_zone": true,
+        "analyze_by_building": true,
+        "cross_level_analysis": true
+      },
+      "// Zone data handling": "",
+      "zone_options": {
+        "use_zone_mappings": true,
+        "aggregate_zones_for_building": true,
+        "weight_method": "equal"
+      },
+      "// Output variables to analyze": "",
+      "output_variables": [
+        "Heating:EnergyTransfer [J](Hourly)",
+        "Cooling:EnergyTransfer [J](Hourly)",
+        "Electricity:Facility [J](Hourly)",
+        "Zone Air Temperature [C](Hourly)",
+        "Zone Air System Sensible Heating Energy [J](Hourly)",
+        "Zone Air System Sensible Cooling Energy [J](Hourly)"
+      ],
+      "// Statistical method for sensitivity calculation": "",
+      "method": "elasticity",
+      "// Aggregation method for outputs": "",
+      "output_aggregation": "sum",
+      "aggregation": "daily",
+      "// Parameter groups with new format (category*object_type*object_name*field_name)": "",
+      "parameter_groups": {
+        "hvac": [
+          "hvac*ZONEHVAC:IDEALLOADSAIRSYSTEM*",
+          "hvac*SIZING:ZONE*",
+          "hvac*THERMOSTATSETPOINT:DUALSETPOINT*"
+        ],
+        "lighting": [
+          "lighting*LIGHTS*"
+        ],
+        "materials": [
+          "materials*MATERIAL*",
+          "materials*MATERIAL:NOMASS*",
+          "materials*WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM*",
+          "materials*CONSTRUCTION*"
+        ],
+        "infiltration": [
+          "infiltration*ZONEINFILTRATION:DESIGNFLOWRATE*"
+        ],
+        "ventilation": [
+          "ventilation*DESIGNSPECIFICATION:OUTDOORAIR*",
+          "ventilation*ZONEVENTILATION:DESIGNFLOWRATE*"
+        ],
+        "equipment": [
+          "equipment*ELECTRICEQUIPMENT*"
+        ],
+        "dhw": [
+          "dhw*WATERHEATER:MIXED*",
+          "dhw*WATEREQUIPMENT*"
+        ],
+        "geometry": [
+          "geometry*ZONE*",
+          "geometry*BUILDINGSURFACE:DETAILED*"
+        ],
+        "shading": [
+          "shading*WINDOWSHADINGCONTROL*",
+          "shading*WINDOWMATERIAL:BLIND*"
+        ],
+        "simulation_control": [
+          "simulation_control*TIMESTEP*",
+          "simulation_control*SHADOWCALCULATION*",
+          "simulation_control*SIMULATIONCONTROL*"
+        ],
+        "site_location": [
+          "site_location*SITE:LOCATION*",
+          "site_location*SITE:GROUNDTEMPERATURE:BUILDINGSURFACE*"
+        ]
+      },
+      "// Specific parameter filters (optional - to analyze only certain objects/fields)": "",
+      "parameter_filters": {
+        "include_objects": [],
+        "exclude_objects": [],
+        "include_fields": [],
+        "exclude_fields": [
+          "name",
+          "zone_name",
+          "schedule_name"
+        ]
+      },
+      "// Analysis options": "",
+      "analysis_options": {
+        "weight_by_validation_accuracy": true,
+        "test_significance": true,
+        "calculate_interactions": true,
+        "min_samples_for_analysis": 1,
+        "confidence_level": 0.95
+      },
+      "// Sensitivity thresholds": "",
+      "sensitivity_thresholds": {
+        "high": 0.7,
+        "medium": 0.3,
+        "low": 0.1
+      }
+    },
+    "advanced_analysis": {
+      "// Enable advanced analysis methods": "",
+      "enabled": true,
+      "// ---- UNCERTAINTY QUANTIFICATION ----": "",
+      "// Quantify uncertainty in sensitivity indices": "",
+      "uncertainty_propagation": true,
+      "uncertainty_samples": 1000,
+      "confidence_level": 0.95,
+      "bootstrap_iterations": 100,
+      "// Parameter distributions for uncertainty analysis": "",
+      "// These can be auto-generated from modification ranges if not specified": "",
+      "parameter_distributions": {
+        "// Example: Define distributions for specific parameter groups": "",
+        "hvac*ZONEHVAC:IDEALLOADSAIRSYSTEM*": {
+          "type": "normal",
+          "mean": 1.0,
+          "std": 0.15
+        },
+        "materials*MATERIAL*Conductivity": {
+          "type": "uniform",
+          "min": 0.8,
+          "max": 1.2
+        },
+        "lighting*LIGHTS*Watts_per_Zone_Floor_Area": {
+          "type": "triangular",
+          "min": 0.7,
+          "mode": 1.0,
+          "max": 1.3
+        }
+      },
+      "// ---- THRESHOLD/BREAKPOINT ANALYSIS ----": "",
+      "// Identify critical parameter values where behavior changes": "",
+      "threshold_analysis": true,
+      "min_segment_size": 20,
+      "max_breakpoints": 3,
+      "threshold_detection_method": "tree",
+      "threshold_significance": 0.05,
+      "// ---- REGIONAL SENSITIVITY ANALYSIS ----": "",
+      "// Analyze how sensitivity varies across parameter ranges": "",
+      "regional_sensitivity": true,
+      "n_regions": 5,
+      "region_method": "clustering",
+      "region_overlap": 0.1,
+      "min_region_samples": 30,
+      "// ---- TEMPORAL PATTERN ANALYSIS ----": "",
+      "// Analyze time-varying sensitivity patterns": "",
+      "temporal_patterns": true,
+      "time_column": "DateTime",
+      "frequency_analysis": true,
+      "lag_analysis": true,
+      "max_lag": 24,
+      "window_size": 168,
+      "detect_seasonality": true,
+      "decomposition_method": "stl",
+      "pattern_detection": true,
+      "// ---- SOBOL VARIANCE DECOMPOSITION ----": "",
+      "// Variance-based sensitivity (computationally intensive)": "",
+      "sobol_analysis": false,
+      "sobol_samples": 512,
+      "sobol_second_order": false,
+      "sobol_sampling": "saltelli",
+      "sobol_confidence": 0.95,
+      "// ---- SCENARIO ANALYSIS ----": "",
+      "// Analyze sensitivity under different scenarios": "",
+      "scenario_analysis": {
+        "enabled": true,
+        "scenarios": {
+          "baseline": {
+            "description": "Current building operation",
+            "weight": 0.4
+          },
+          "high_occupancy": {
+            "description": "Increased occupancy scenario",
+            "weight": 0.3,
+            "parameter_modifiers": {
+              "equipment*ELECTRICEQUIPMENT*": 1.5,
+              "ventilation*DESIGNSPECIFICATION:OUTDOORAIR*": 1.3
+            }
+          },
+          "energy_efficient": {
+            "description": "Energy efficiency improvements",
+            "weight": 0.3,
+            "parameter_modifiers": {
+              "lighting*LIGHTS*": 0.7,
+              "hvac*ZONEHVAC:IDEALLOADSAIRSYSTEM*": 0.85
+            }
+          }
+        }
+      },
+      "// ---- ANALYSIS INTEGRATION OPTIONS ----": "",
+      "// How to integrate advanced results with base sensitivity": "",
+      "integration_options": {
+        "combine_with_base_results": true,
+        "weight_by_uncertainty": true,
+        "filter_by_significance": true,
+        "significance_threshold": 0.05
+      },
+      "// ---- COMPUTATIONAL OPTIONS ----": "",
+      "// Control computational intensity": "",
+      "computational_options": {
+        "parallel_processing": true,
+        "n_jobs": -1,
+        "chunk_size": 1000,
+        "memory_efficient_mode": false
+      }
+    },
+    "// Output configuration": "",
+    "output_base_dir": "/usr/src/app/output/6f912613-913d-40ea-ba14-eff7e6dc097f/sensitivity_results",
+    "// Export options for downstream tools": "",
+    "export_for_surrogate": true,
+    "export_for_calibration": true,
+    "export_top_n_parameters": 30,
+    "// Legacy export path (for backward compatibility)": "",
+    "sensitivity_results_path": "/usr/src/app/output/6f912613-913d-40ea-ba14-eff7e6dc097f/enhanced_sensitivity.csv",
+    "// Visualization options": "",
+    "generate_visualizations": true,
+    "visualization_types": [
+      "sensitivity_by_level",
+      "zone_sensitivity_heatmap",
+      "cross_level_sensitivity",
+      "top_parameters_by_level",
+      "parameter_comparison",
+      "category_breakdown",
+      "time_slice_comparison",
+      "parameter_stability",
+      "uncertainty_bounds",
+      "threshold_detection_plots",
+      "regional_sensitivity_maps",
+      "temporal_sensitivity_evolution",
+      "frequency_spectrum",
+      "scenario_comparison"
+    ],
+    "// Reporting options": "",
+    "report_formats": [
+      "json",
+      "html",
+      "parquet"
+    ],
+    "include_detailed_results": true,
+    "save_intermediate_data": true,
+    "// Advanced reporting options": "",
+    "advanced_reporting": {
+      "include_uncertainty_intervals": true,
+      "show_breakpoint_analysis": true,
+      "generate_regional_reports": true,
+      "create_temporal_summary": true,
+      "export_for_machine_learning": true
+    },
+    "// Advanced settings for parameter analysis": "",
+    "parameter_analysis": {
+      "// Group similar parameters": "",
+      "group_by_object": true,
+      "group_by_field": true,
+      "// Aggregate sensitivity scores for grouped parameters": "",
+      "aggregation_method": "mean",
+      "// Show individual parameter contributions": "",
+      "show_individual_contributions": true,
+      "// New advanced options": "",
+      "detect_parameter_interactions": true,
+      "identify_redundant_parameters": true,
+      "suggest_parameter_groupings": true
+    },
+    "// Output file options for advanced features": "",
+    "output_options": {
+      "save_raw_results": true,
+      "generate_report": true,
+      "create_visualizations": true,
+      "export_format": "parquet",
+      "include_metadata": true,
+      "// Advanced output files": "",
+      "advanced_outputs": {
+        "uncertainty_results": "uncertainty_analysis_results.parquet",
+        "threshold_results": "threshold_analysis_results.parquet",
+        "regional_results": "regional_sensitivity_results.parquet",
+        "temporal_results": "temporal_pattern_results.parquet",
+        "sobol_results": "sobol_analysis_results.parquet",
+        "advanced_summary": "advanced_sensitivity_report.json"
+      }
+    },
+    "// Debugging options": "",
+    "debug_mode": false,
+    "log_zone_mappings": true,
+    "export_modification_hierarchy": true,
+    "log_parameter_matching": true,
+    "// Advanced debugging": "",
+    "advanced_debug": {
+      "log_uncertainty_sampling": false,
+      "export_threshold_details": false,
+      "save_regional_assignments": false,
+      "trace_temporal_calculations": false
+    },
+    "modification_tracking_dir": "/usr/src/app/output/6f912613-913d-40ea-ba14-eff7e6dc097f/modified_idfs"
+  }
+}

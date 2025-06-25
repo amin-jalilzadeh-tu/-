@@ -1,0 +1,280 @@
+{
+  "parameters": [
+    "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_FrontPerimeter_Wall_0_window*shading_setpoint",
+    "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_LeftPerimeter_Wall_0_window*shading_setpoint",
+    "ventilation*DESIGNSPECIFICATION:OUTDOORAIR*DSOA_Global*outdoor_air_flow_per_zone_area",
+    "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone2_RearPerimeter_Wall_0_window*shading_setpoint",
+    "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_RearPerimeter_Wall_0_window*shading_setpoint",
+    "ventilation*DESIGNSPECIFICATION:OUTDOORAIR*DSOA_Global*outdoor_air_flow_per_person",
+    "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone2_LeftPerimeter_Wall_0_window*shading_setpoint",
+    "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone2_FrontPerimeter_Wall_0_window*shading_setpoint",
+    "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_Wall_3_window*shading_setpoint",
+    "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_Wall_2_window*shading_setpoint"
+  ],
+  "details": [
+    {
+      "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_FrontPerimeter_Wall_0_window*shading_setpoint",
+      "sensitivity_score": 10.0,
+      "analysis_method": "modification",
+      "category": "shading",
+      "p_value": 0.05,
+      "time_slice": "peak_months",
+      "object_name": "ShadingCtrl_Zone1_FrontPerimeter_Wall_0_window",
+      "field_name": "shading_setpoint"
+    },
+    {
+      "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_LeftPerimeter_Wall_0_window*shading_setpoint",
+      "sensitivity_score": 10.0,
+      "analysis_method": "modification",
+      "category": "shading",
+      "p_value": 0.05,
+      "time_slice": "peak_months",
+      "object_name": "ShadingCtrl_Zone1_LeftPerimeter_Wall_0_window",
+      "field_name": "shading_setpoint"
+    },
+    {
+      "parameter": "ventilation*DESIGNSPECIFICATION:OUTDOORAIR*DSOA_Global*outdoor_air_flow_per_zone_area",
+      "sensitivity_score": 10.0,
+      "analysis_method": "modification",
+      "category": "ventilation",
+      "p_value": 0.05,
+      "time_slice": "peak_months",
+      "object_name": "DSOA_Global",
+      "field_name": "outdoor_air_flow_per_zone_area"
+    },
+    {
+      "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone2_RearPerimeter_Wall_0_window*shading_setpoint",
+      "sensitivity_score": 10.0,
+      "analysis_method": "modification",
+      "category": "shading",
+      "p_value": 0.05,
+      "time_slice": "peak_months",
+      "object_name": "ShadingCtrl_Zone2_RearPerimeter_Wall_0_window",
+      "field_name": "shading_setpoint"
+    },
+    {
+      "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_RearPerimeter_Wall_0_window*shading_setpoint",
+      "sensitivity_score": 10.0,
+      "analysis_method": "modification",
+      "category": "shading",
+      "p_value": 0.05,
+      "time_slice": "peak_months",
+      "object_name": "ShadingCtrl_Zone1_RearPerimeter_Wall_0_window",
+      "field_name": "shading_setpoint"
+    },
+    {
+      "parameter": "ventilation*DESIGNSPECIFICATION:OUTDOORAIR*DSOA_Global*outdoor_air_flow_per_person",
+      "sensitivity_score": 10.0,
+      "analysis_method": "modification",
+      "category": "ventilation",
+      "p_value": 0.05,
+      "time_slice": "peak_months",
+      "object_name": "DSOA_Global",
+      "field_name": "outdoor_air_flow_per_person"
+    },
+    {
+      "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone2_LeftPerimeter_Wall_0_window*shading_setpoint",
+      "sensitivity_score": 10.0,
+      "analysis_method": "modification",
+      "category": "shading",
+      "p_value": 0.05,
+      "time_slice": "peak_months",
+      "object_name": "ShadingCtrl_Zone2_LeftPerimeter_Wall_0_window",
+      "field_name": "shading_setpoint"
+    },
+    {
+      "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone2_FrontPerimeter_Wall_0_window*shading_setpoint",
+      "sensitivity_score": 10.0,
+      "analysis_method": "modification",
+      "category": "shading",
+      "p_value": 0.05,
+      "time_slice": "peak_months",
+      "object_name": "ShadingCtrl_Zone2_FrontPerimeter_Wall_0_window",
+      "field_name": "shading_setpoint"
+    },
+    {
+      "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_Wall_3_window*shading_setpoint",
+      "sensitivity_score": 10.0,
+      "analysis_method": "modification",
+      "category": "shading",
+      "p_value": 0.05,
+      "time_slice": "peak_months",
+      "object_name": "ShadingCtrl_Zone1_Wall_3_window",
+      "field_name": "shading_setpoint"
+    },
+    {
+      "parameter": "shading*WINDOWSHADINGCONTROL*ShadingCtrl_Zone1_Wall_2_window*shading_setpoint",
+      "sensitivity_score": 10.0,
+      "analysis_method": "modification",
+      "category": "shading",
+      "p_value": 0.05,
+      "time_slice": "peak_months",
+      "object_name": "ShadingCtrl_Zone1_Wall_2_window",
+      "field_name": "shading_setpoint"
+    }
+  ],
+  "selection_method": "sensitivity_analysis",
+  "top_n_per_method": 30,
+  "total_selected": 10,
+  "analysis_types": [
+    "modification"
+  ],
+  "time_slice_config": {
+    "// Enable time-based filtering of simulation data": "",
+    "enabled": true,
+    "// Slice type: 'peak_months', 'time_of_day', 'day_of_week', 'custom', 'combined', or 'none'": "",
+    "slice_type": "peak_months",
+    "// Season for peak months analysis: 'cooling', 'heating', or 'both'": "",
+    "season": "cooling",
+    "// Custom peak month definitions (defaults will be used if not specified)": "",
+    "peak_cooling_months": [
+      6,
+      7,
+      8
+    ],
+    "peak_heating_months": [
+      12,
+      1,
+      2
+    ],
+    "// Peak hours for time of day analysis (24-hour format)": "",
+    "peak_hours": [
+      14,
+      15,
+      16,
+      17
+    ],
+    "// Or use range format for continuous hours": "",
+    "peak_hours_range": {
+      "start": 14,
+      "end": 17
+    },
+    "// Day of week analysis options": "",
+    "analyze_weekends": true,
+    "// Custom date range (YYYY-MM-DD format)": "",
+    "start_date": null,
+    "end_date": null,
+    "// Combined filtering (all conditions must be met)": "",
+    "combined_filters": {
+      "months": [
+        6,
+        7,
+        8
+      ],
+      "hours": [
+        14,
+        15,
+        16,
+        17
+      ],
+      "day_of_week": "weekdays"
+    },
+    "// Comparative analysis across multiple time slices": "",
+    "compare_time_slices": false,
+    "// Define time slices for comparison": "",
+    "time_slice_comparisons": [
+      {
+        "name": "full_year",
+        "enabled": false,
+        "description": "Full year baseline without filtering"
+      },
+      {
+        "name": "peak_cooling",
+        "enabled": true,
+        "slice_type": "peak_months",
+        "season": "cooling",
+        "peak_cooling_months": [
+          6,
+          7,
+          8
+        ],
+        "description": "Summer peak cooling months"
+      },
+      {
+        "name": "peak_heating",
+        "enabled": true,
+        "slice_type": "peak_months",
+        "season": "heating",
+        "peak_heating_months": [
+          12,
+          1,
+          2
+        ],
+        "description": "Winter peak heating months"
+      },
+      {
+        "name": "peak_hours_summer",
+        "enabled": true,
+        "slice_type": "combined",
+        "combined_filters": {
+          "months": [
+            6,
+            7,
+            8
+          ],
+          "hours": [
+            14,
+            15,
+            16,
+            17
+          ]
+        },
+        "description": "Peak afternoon hours during summer"
+      },
+      {
+        "name": "business_hours",
+        "enabled": true,
+        "slice_type": "combined",
+        "combined_filters": {
+          "hours": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ],
+          "day_of_week": "weekdays"
+        },
+        "description": "Business hours on weekdays"
+      },
+      {
+        "name": "weekday_peaks",
+        "enabled": true,
+        "slice_type": "combined",
+        "combined_filters": {
+          "hours": [
+            14,
+            15,
+            16,
+            17
+          ],
+          "day_of_week": "weekdays"
+        },
+        "description": "Peak hours on weekdays only"
+      },
+      {
+        "name": "weekend_usage",
+        "enabled": true,
+        "slice_type": "day_of_week",
+        "analyze_weekends": true,
+        "description": "Weekend usage patterns"
+      }
+    ],
+    "// Analysis options for time-sliced data": "",
+    "aggregation_method": "sum",
+    "minimum_data_points": 24,
+    "handle_missing_data": "skip",
+    "// Reporting options": "",
+    "generate_time_slice_report": true,
+    "include_temporal_patterns": true,
+    "export_sliced_data": false
+  },
+  "time_slices_analyzed": [
+    "peak_months"
+  ]
+}

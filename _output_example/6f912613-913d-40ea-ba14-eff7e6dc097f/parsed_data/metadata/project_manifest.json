@@ -1,0 +1,32 @@
+{
+  "project_id": "parsed_data",
+  "created": "2025-06-25T17:33:44.989876",
+  "total_buildings": 3,
+  "categories_tracked": [
+    "simulation_control",
+    "outputs",
+    "schedules",
+    "geometry",
+    "materials",
+    "dhw",
+    "equipment",
+    "lighting",
+    "hvac",
+    "ventilation",
+    "infiltration",
+    "shading"
+  ],
+  "last_updated": "2025-06-25T17:33:44.989889",
+  "data_version": "3.1",
+  "file_structure": {
+    "idf_data": {
+      "by_category": "Consolidated category files across all buildings",
+      "by_building": "Complete parameter snapshots per building"
+    },
+    "sql_results": {
+      "timeseries": "Time series data by category and frequency",
+      "summary_metrics": "Aggregated metrics",
+      "output_validation": "Output completeness validation results"
+    }
+  }
+}
