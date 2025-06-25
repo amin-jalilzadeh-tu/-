@@ -404,7 +404,7 @@
     },
     "modification_strategy": {
       "type": "scenarios",
-      "num_variants": 5,
+      "num_variants": 19,
       "seed": 42,
       "sampling_method": "latin_hypercube"
     },
