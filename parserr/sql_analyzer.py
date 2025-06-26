@@ -452,6 +452,189 @@ class EnhancedSQLAnalyzer:
         print(f"  Data points: {extraction_stats['data_points_extracted']:,}")
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    def extract_and_save_all(self, zone_mapping: Dict[str, str], 
+                            variables_by_category: Dict[str, List[str]],
+                            start_date: Optional[str] = None,
+                            end_date: Optional[str] = None,
+                            variant_id: str = 'default'):
+        """
+        Extract all SQL data and save to data manager with variant tracking
+        
+        Args:
+            zone_mapping: Mapping of IDF zone names to SQL zone names
+            variables_by_category: Dictionary of category -> list of variables
+            start_date: Start date for extraction (YYYY-MM-DD)
+            end_date: End date for extraction (YYYY-MM-DD)
+            variant_id: Variant identifier for this simulation
+        """
+        if not self.data_manager:
+            print("Warning: No data manager configured. Data will not be saved.")
+            return
+        
+        # Store variant_id as instance attribute for other methods to use
+        self.variant_id = variant_id
+        
+        # Track extraction statistics
+        extraction_stats = {
+            'categories_processed': 0,
+            'variables_extracted': 0,
+            'data_points_extracted': 0,
+            'missing_variables': []
+        }
+        
+        # Extract time series data by category
+        for category, variables in variables_by_category.items():
+            if not variables:
+                continue
+                
+            print(f"\n  Extracting {category} variables...")
+            
+            # Check available variables
+            available_vars = self.get_available_variables(variables)
+            if available_vars.empty:
+                print(f"    No {category} variables found in SQL")
+                extraction_stats['missing_variables'].extend([
+                    {'category': category, 'variable': var} for var in variables
+                ])
+                continue
+            
+            # Extract time series
+            try:
+                timeseries_df = self.extract_timeseries(
+                    variables, 
+                    zone_mapping,
+                    start_date=start_date,
+                    end_date=end_date
+                )
+                
+                if not timeseries_df.empty:
+                    # Add building_id and variant_id
+                    timeseries_df['building_id'] = self.building_id
+                    timeseries_df['variant_id'] = variant_id
+                    
+                    # Map to output category names
+                    output_category = self._map_output_category(category)
+                    
+                    # Save hourly data
+                    year = timeseries_df['DateTime'].dt.year.mode()[0] if not timeseries_df.empty else datetime.now().year
+                    self.data_manager.save_timeseries_data(timeseries_df, 'hourly', output_category, year)
+                    
+                    # Create and save aggregations
+                    self._create_and_save_aggregations(timeseries_df, output_category)
+                    
+                    # Update stats
+                    extraction_stats['categories_processed'] += 1
+                    extraction_stats['variables_extracted'] += len(available_vars)
+                    extraction_stats['data_points_extracted'] += len(timeseries_df)
+                    
+                    print(f"    Extracted {len(timeseries_df):,} data points for {len(available_vars)} variables")
+                else:
+                    print(f"    No data extracted for {category}")
+                    
+            except Exception as e:
+                print(f"    Error extracting {category}: {e}")
+                import traceback
+                traceback.print_exc()
+        
+        # Extract and save schedules
+        print("\n  Extracting schedules...")
+        try:
+            schedules = self._extract_all_schedules()
+            if not schedules.empty:
+                schedules['building_id'] = self.building_id
+                schedules['variant_id'] = variant_id
+                self.data_manager.save_schedules(schedules)
+                print(f"    Extracted {len(schedules)} schedules")
+        except Exception as e:
+            print(f"    Error extracting schedules: {e}")
+        
+        # Create and save summary metrics with variant
+        print("\n  Creating summary metrics...")
+        try:
+            self._create_and_save_summary_metrics(zone_mapping)
+            print("    Summary metrics created")
+        except Exception as e:
+            print(f"    Error creating summary metrics: {e}")
+        
+        # Save extraction statistics
+        if extraction_stats['categories_processed'] > 0 or extraction_stats['missing_variables']:
+            self._save_extraction_stats(extraction_stats)
+        
+        print(f"\n  Extraction complete:")
+        print(f"    Categories: {extraction_stats['categories_processed']}")
+        print(f"    Variables: {extraction_stats['variables_extracted']}")
+        print(f"    Data points: {extraction_stats['data_points_extracted']:,}")
+        if extraction_stats['missing_variables']:
+            print(f"    Missing variables: {len(extraction_stats['missing_variables'])}")
+
+
+    def _create_and_save_aggregations(self, hourly_data: pd.DataFrame, output_category: str):
+        """Create and save daily/monthly aggregations with variant tracking"""
+        if hourly_data.empty or not self.data_manager:
+            return
+        
+        # Get year from data
+        year = hourly_data['DateTime'].dt.year.mode()[0]
+        
+        # Create daily aggregation
+        print("    Creating daily aggregation...")
+        daily_df = self._create_daily_aggregations(hourly_data)
+        if not daily_df.empty:
+            # Ensure variant_id is preserved
+            if 'variant_id' not in daily_df.columns and 'variant_id' in hourly_data.columns:
+                daily_df['variant_id'] = hourly_data['variant_id'].iloc[0]
+            self.data_manager.save_timeseries_data(daily_df, 'daily', output_category, year)
+        
+        # Create monthly aggregation
+        print("    Creating monthly aggregation...")
+        monthly_df = self._create_monthly_aggregations(hourly_data)
+        if not monthly_df.empty:
+            # Ensure variant_id is preserved
+            if 'variant_id' not in monthly_df.columns and 'variant_id' in hourly_data.columns:
+                monthly_df['variant_id'] = hourly_data['variant_id'].iloc[0]
+            self.data_manager.save_timeseries_data(monthly_df, 'monthly', output_category, year)
+
+
+    def _match_pattern(self, text: str, pattern: str) -> bool:
+        """Match text against a pattern (supports * wildcard)"""
+        # Convert pattern to regex
+        regex_pattern = pattern.replace('*', '.*')
+        return bool(re.match(regex_pattern, text, re.IGNORECASE))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     def _filter_variables(self, variables: List[str], content_config: Dict[str, Any]) -> List[str]:
         """Filter variables based on configuration"""
         variables_config = content_config.get('variables', {})
