@@ -322,7 +322,7 @@
       "parse_mode": "all",
       "parse_types": {
         "idf": true,
-        "sql": false
+        "sql": true
       },
       "categories": null,
       "validate_outputs": true,
@@ -347,46 +347,6 @@
 
 
 
-    "structuring": {
-      "perform_structuring": true,
-      "dhw": {
-        "csv_in": "assigned/assigned_dhw_params.csv",
-        "csv_out": "assigned/structured_dhw_params.csv"
-      },
-      "fenestration": {
-        "csv_in": "assigned/assigned_fenez_params.csv",
-        "csv_out": "assigned/structured_fenez_params.csv"
-      },
-      "hvac": {
-        "csv_in": "assigned/assigned_hvac_params.csv",
-        "build_out": "assigned/assigned_hvac_building.csv",
-        "zone_out": "assigned/assigned_hvac_zones.csv"
-      },
-      "vent": {
-        "csv_in": "assigned/assigned_ventilation.csv",
-        "build_out": "assigned/assigned_vent_building.csv",
-        "zone_out": "assigned/assigned_vent_zones.csv"
-      },
-      "shading": {
-        "csv_in": "assigned/assigned_shading_params.csv",
-        "csv_out": "assigned/structured_shading_params.csv"
-      },
-      "equipment": {
-        "csv_in": "assigned/assigned_equipment.csv",
-        "csv_out": "assigned/structured_equipment.csv"
-      },
-      "zone_sizing": {
-        "csv_in": "assigned/assigned_zone_sizing_outdoor_air.csv",
-        "csv_out": "assigned/structured_zone_sizing.csv"
-      }
-    },
-
-
-
-
-
-
-
 
 
 
@@ -398,9 +358,9 @@
   "modification": {
     "perform_modification": true,
     "base_idf_selection": {
-      "method": "all",
-      "building_ids": ["1"],
-      "num_buildings": 1
+      "method": "specific",
+      "building_ids": ["4136733"],
+      "use_output_idfs": true
     },
     "modification_strategy": {
       "type": "scenarios",
@@ -1298,7 +1258,7 @@
   "// Export options for downstream tools": "",
   "export_for_surrogate": true,
   "export_for_calibration": true,
-  "export_top_n_parameters": 30,
+  "export_top_n_parameters": 10,
   
   "// Legacy export path (for backward compatibility)": "",
   "sensitivity_results_path": "enhanced_sensitivity.csv",

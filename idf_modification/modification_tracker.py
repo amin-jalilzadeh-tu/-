@@ -324,6 +324,45 @@ class ModificationTracker:
             with open(log_file, 'w') as f:
                 json.dump(self.get_summary(), f, indent=2, default=str)
     
+
+
+    def save_variant_mapping(self, output_dir: Path, simulation_mappings: Dict[str, Dict[str, str]]):
+        """
+        Save variant to SQL mapping for use during parsing
+        
+        Args:
+            output_dir: Directory to save mapping file
+            simulation_mappings: Dict of {variant_id: {building_id, idf_path, expected_sql_path}}
+        """
+        mapping_data = []
+        
+        for variant_id, variant_info in self.variants.items():
+            if variant_id in simulation_mappings:
+                sim_info = simulation_mappings[variant_id]
+                mapping_data.append({
+                    'variant_id': variant_id,
+                    'building_id': variant_info['building_id'],
+                    'modified_idf_path': variant_info['path'],
+                    'expected_sql_name': sim_info.get('sql_name', ''),
+                    'expected_sql_path': sim_info.get('sql_path', ''),
+                    'modification_count': variant_info['total_modifications'],
+                    'modification_timestamp': variant_info['start_time'],
+                    'status': variant_info['status']
+                })
+        
+        if mapping_data:
+            df = pd.DataFrame(mapping_data)
+            output_file = output_dir / 'variant_sql_mapping.csv'
+            df.to_csv(output_file, index=False)
+            self.logger.info(f"Saved variant mapping to {output_file}")
+            return output_file
+        return None
+
+
+
+
+
+
     def reset(self):
         """Reset the tracker"""
         self.modifications = []

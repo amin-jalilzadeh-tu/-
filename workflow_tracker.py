@@ -10,7 +10,7 @@ import json
 import logging
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Tuple, Optional, Set
+from typing import Dict, List, Tuple, Optional, Set, Any
 import pandas as pd
 import glob
 
@@ -49,7 +49,7 @@ class WorkflowTracker:
             level=logging.INFO,
             format='%(asctime)s - %(levelname)s - %(message)s',
             handlers=[
-                logging.FileHandler(log_file),
+                logging.FileHandler(log_file, encoding='utf-8'),
                 logging.StreamHandler()
             ]
         )
@@ -309,7 +309,7 @@ class WorkflowTracker:
         # Check configuration file
         config_files = list(self.job_output_dir.glob("combined*.json"))
         if config_files:
-            with open(config_files[0], 'r') as f:
+            with open(config_files[0], 'r', encoding='utf-8') as f:
                 config = json.load(f)
                 main_config = config.get("main_config", {})
         else:
@@ -618,21 +618,21 @@ Calibration ←─────────┘
         
         # Save analysis as JSON
         analysis_file = self.job_output_dir / "workflow_analysis.json"
-        with open(analysis_file, 'w') as f:
+        with open(analysis_file, 'w', encoding='utf-8') as f:
             json.dump(analysis, f, indent=2)
         self.logger.info(f"\nSaved analysis to: {analysis_file}")
         
         # Generate HTML report
         html_report = self.generate_workflow_report(analysis)
         report_file = self.job_output_dir / "workflow_analysis_report.html"
-        with open(report_file, 'w') as f:
+        with open(report_file, 'w', encoding='utf-8') as f:
             f.write(html_report)
         self.logger.info(f"Generated HTML report: {report_file}")
         
         # Run data quality checks
         quality_report = self.validate_data_quality()
         quality_file = self.job_output_dir / "data_quality_report.json"
-        with open(quality_file, 'w') as f:
+        with open(quality_file, 'w', encoding='utf-8') as f:
             json.dump(quality_report, f, indent=2)
         self.logger.info(f"Generated data quality report: {quality_file}")
         

@@ -9,9 +9,9 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional, List
 from collections import defaultdict
 import pandas as pd  # ADD THIS LINE
+from typing import Dict, Any, Optional, List, Tuple  # Fixed: Added Tuple import
 
 from idf_modification.modification_engine import ModificationEngine
 from idf_modification.modification_config import ModificationConfig
@@ -129,6 +129,8 @@ def run_modification(
     }
 
 
+# Fix for orchestrator/modification_step.py
+
 def select_idfs_to_modify(
     base_idf_selection: dict, 
     job_idf_dir: str,
@@ -136,6 +138,11 @@ def select_idfs_to_modify(
 ) -> List[tuple]:
     """
     Select IDF files to modify based on configuration.
+    
+    Args:
+        base_idf_selection: Selection configuration
+        job_idf_dir: Directory containing IDF files
+        logger: Logger instance
     
     Returns:
         List of tuples (idf_path, building_id)
@@ -154,10 +161,38 @@ def select_idfs_to_modify(
         
         elif selection_method == "specific":
             building_ids = base_idf_selection.get("building_ids", [])
+            # Convert to strings for consistent comparison
+            building_ids = [str(bid) for bid in building_ids]
+            
             for building_id in building_ids:
-                idf_files = list(Path(job_idf_dir).glob(f"*{building_id}*.idf"))
-                if idf_files:
-                    idf_files_to_modify.append((idf_files[0], str(building_id)))
+                # Look for exact matches first
+                exact_match_found = False
+                
+                # Try exact filename match first
+                exact_patterns = [
+                    f"building_{building_id}.idf",
+                    f"building_{building_id}_*.idf"
+                ]
+                
+                for pattern in exact_patterns:
+                    idf_files = list(Path(job_idf_dir).glob(pattern))
+                    if idf_files:
+                        # Extract the building ID from the filename
+                        for idf_file in idf_files:
+                            # Extract building ID more carefully
+                            filename = idf_file.stem
+                            if filename.startswith(f"building_{building_id}"):
+                                # Verify it's an exact match, not a partial match
+                                extracted_id = filename.replace("building_", "").split("_")[0]
+                                if extracted_id == building_id:
+                                    idf_files_to_modify.append((idf_file, building_id))
+                                    exact_match_found = True
+                                    break
+                    if exact_match_found:
+                        break
+                
+                if not exact_match_found:
+                    logger.warning(f"No IDF file found for building ID: {building_id}")
         
         else:  # representative
             num_buildings = base_idf_selection.get("num_buildings", 5)
@@ -166,7 +201,105 @@ def select_idfs_to_modify(
                 building_id = idf_file.stem.replace("building_", "").split("_")[0]
                 idf_files_to_modify.append((idf_file, building_id))
     
+    logger.info(f"Selected {len(idf_files_to_modify)} IDF files for modification")
+    if selection_method == "specific" and idf_files_to_modify:
+        logger.info(f"Selected building IDs: {[bid for _, bid in idf_files_to_modify]}")
+    
     return idf_files_to_modify
+
+
+# Also update the modification engine's _select_buildings method
+# In idf_modification/modification_engine.py
+
+def _select_buildings(self, building_ids: Optional[List[str]] = None) -> List[Tuple[str, Path]]:
+    """Select buildings to modify based on configuration"""
+    buildings = []
+    
+    # Get IDF directory
+    idf_dir = self.project_dir / "output_IDFs"
+    if not idf_dir.exists():
+        idf_dir = self.project_dir
+    
+    # Get selection method from config
+    selection = self.config.get('base_idf_selection', {})
+    method = selection.get('method', 'all')
+    
+    if building_ids:
+        # Use provided building IDs - ensure they're strings
+        building_ids = [str(bid) for bid in building_ids]
+        
+        for bid in building_ids:
+            # Look for exact matches only
+            exact_patterns = [
+                f"building_{bid}.idf",
+                f"building_{bid}_*.idf"
+            ]
+            
+            found = False
+            for pattern in exact_patterns:
+                files = list(idf_dir.glob(pattern))
+                for file in files:
+                    # Verify exact match
+                    filename = file.stem
+                    if filename.startswith(f"building_{bid}"):
+                        extracted_id = filename.replace("building_", "").split("_")[0]
+                        if extracted_id == bid:
+                            buildings.append((bid, file))
+                            found = True
+                            break
+                if found:
+                    break
+            
+            if not found:
+                self.logger.warning(f"No IDF file found for building ID: {bid}")
+    
+    elif method == 'specific':
+        # Use specific building IDs from config
+        config_building_ids = [str(bid) for bid in selection.get('building_ids', [])]
+        
+        for bid in config_building_ids:
+            # Same exact matching logic as above
+            exact_patterns = [
+                f"building_{bid}.idf",
+                f"building_{bid}_*.idf"
+            ]
+            
+            found = False
+            for pattern in exact_patterns:
+                files = list(idf_dir.glob(pattern))
+                for file in files:
+                    filename = file.stem
+                    if filename.startswith(f"building_{bid}"):
+                        extracted_id = filename.replace("building_", "").split("_")[0]
+                        if extracted_id == bid:
+                            buildings.append((bid, file))
+                            found = True
+                            break
+                if found:
+                    break
+            
+            if not found:
+                self.logger.warning(f"No IDF file found for building ID: {bid}")
+    
+    elif method == 'representative':
+        # Select representative buildings
+        num_buildings = selection.get('num_buildings', 5)
+        all_idfs = list(idf_dir.glob("*.idf"))[:num_buildings]
+        for idf_file in all_idfs:
+            bid = idf_file.stem.replace("building_", "").split("_")[0]
+            buildings.append((bid, idf_file))
+    
+    else:  # method == 'all'
+        # Select all buildings
+        for idf_file in idf_dir.glob("*.idf"):
+            bid = idf_file.stem.replace("building_", "").split("_")[0]
+            buildings.append((bid, idf_file))
+    
+    self.logger.info(f"Selected {len(buildings)} buildings for modification")
+    if method == 'specific' and buildings:
+        self.logger.info(f"Selected building IDs: {[bid for bid, _ in buildings]}")
+    
+    return buildings
 
 
 def generate_modification_reports(
