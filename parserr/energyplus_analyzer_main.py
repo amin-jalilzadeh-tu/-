@@ -527,14 +527,17 @@ class EnergyPlusAnalyzer:
                     start_date: Optional[str] = None,
                     end_date: Optional[str] = None,
                     validate_outputs: bool = True,
-                    building_id_map: Optional[Dict[str, str]] = None):  # New parameter
-        """Analyze multiple IDF/SQL file pairs with output validation"""
+                    building_id_map: Optional[Dict[str, str]] = None):  # Existing parameter
+        """Analyze multiple IDF/SQL file pairs with output validation and variant tracking"""
         
         if categories is None:
             categories = list(self.category_mappings.keys())
         
         print(f"\nAnalyzing {len(idf_sql_pairs)} buildings")
         print(f"Categories: {', '.join(categories)}")
+        
+        # Check if variant_id_map was set as attribute
+        variant_id_map = getattr(self, 'variant_id_map', {})
         
         # Process each building
         building_registry = []
@@ -557,6 +560,11 @@ class EnergyPlusAnalyzer:
                     building_data.building_id = building_id_map[str(idf_path)]
                     print(f"Using mapped building ID: {building_data.building_id}")
                 
+                # Add variant_id to metadata if available
+                variant_id = variant_id_map.get(str(idf_path), 'default')
+                building_data.metadata['variant_id'] = variant_id
+                print(f"Using variant ID: {variant_id}")
+                
                 # Extract output definitions
                 output_config = self._extract_output_definitions(building_data)
                 self.output_definitions[building_data.building_id] = output_config
@@ -566,6 +574,9 @@ class EnergyPlusAnalyzer:
                 sql_analyzer = EnhancedSQLAnalyzer(Path(sql_path), self.data_manager)
                 self.sql_analyzers[building_data.building_id] = sql_analyzer
                 
+                # Store variant_id in SQL analyzer metadata
+                sql_analyzer.variant_id = variant_id
+                
                 # Build zone mapping
                 print("\nBuilding zone name mapping...")
                 zone_mapping = sql_analyzer.build_zone_mapping(list(building_data.zones.keys()))
@@ -574,6 +585,7 @@ class EnergyPlusAnalyzer:
                 if validate_outputs:
                     print("\nValidating output completeness...")
                     validation_result = self._validate_outputs(building_data.building_id, sql_analyzer, output_config)
+                    validation_result['variant_id'] = variant_id  # Add variant to validation
                     output_validation_results.append(validation_result)
                     
                     # Show validation summary
@@ -592,75 +604,84 @@ class EnergyPlusAnalyzer:
                 
                 print("\nExtracting SQL time series data...")
                 try:
+                    # Pass variant_id to the extraction method
                     sql_analyzer.extract_and_save_all(
                         zone_mapping, 
                         variables_by_category,
-                        start_date,
-                        end_date
+                        start_date=start_date,
+                        end_date=end_date,
+                        variant_id=variant_id  # NEW: Pass variant_id
                     )
                 except Exception as e:
-                    print(f"Warning: Error during SQL data extraction: {str(e)}")
-                    print("Continuing with partial data...")
+                    print(f"[ERROR] SQL extraction failed: {e}")
+                    import traceback
+                    traceback.print_exc()
                 
-                # Add to registry
+                # Register building with variant info
                 building_registry.append({
                     'building_id': building_data.building_id,
-                    'ogc_fid': building_data.building_id,
+                    'variant_id': variant_id,
                     'idf_path': str(idf_path),
                     'sql_path': str(sql_path),
-                    'zone_count': len(building_data.zones),
-                    'output_variables': len(output_config['variables']),
-                    'output_meters': len(output_config['meters']),
-                    'status': 'completed',
-                    'last_modified': pd.Timestamp.now()
+                    'zones': len(building_data.zones),
+                    'surfaces': len(building_data.surfaces),
+                    'has_sql': True
                 })
                 
+                print(f"\n✓ Building {building_data.building_id} (variant: {variant_id}) completed")
+                
             except Exception as e:
-                print(f"\nError processing building {idx+1}: {str(e)}")
+                print(f"\n[ERROR] Failed to process building: {e}")
                 import traceback
                 traceback.print_exc()
                 
-                # Add failed building to registry
+                # Still register the building as failed
                 building_registry.append({
-                    'building_id': f'building_{idx}',
-                    'ogc_fid': f'building_{idx}',
+                    'building_id': Path(idf_path).stem,
+                    'variant_id': variant_id_map.get(str(idf_path), 'unknown'),
                     'idf_path': str(idf_path),
                     'sql_path': str(sql_path),
-                    'zone_count': 0,
-                    'output_variables': 0,
-                    'output_meters': 0,
-                    'status': 'failed',
-                    'last_modified': pd.Timestamp.now()
+                    'error': str(e),
+                    'has_sql': False
                 })
         
-        # Update project metadata
-        print("\nUpdating project metadata...")
-        self.data_manager.update_building_registry(pd.DataFrame(building_registry))
-        self.data_manager.update_project_manifest(len(building_registry), categories)
-        self.data_manager.update_category_schemas()
+        # Save building registry with variant info
+        registry_df = pd.DataFrame(building_registry)
+        registry_path = self.project_path / 'metadata' / 'building_registry.parquet'
+        registry_df.to_parquet(registry_path)
         
-        # Save output validation results
+        # Save output validation results with variant info
         if output_validation_results:
-            self._save_output_validation_results(output_validation_results)
+            validation_df = pd.DataFrame(output_validation_results)
+            validation_path = self.project_path / 'metadata' / 'output_validation.parquet'
+            validation_df.to_parquet(validation_path)
         
-        # Create parameter matrix
-        print("\nCreating parameter matrix...")
-        try:
-            parameter_matrix = create_parameter_matrix(self.data_manager)
-            print(f"Parameter matrix created with shape: {parameter_matrix.shape}")
-        except Exception as e:
-            print(f"Warning: Could not create parameter matrix: {e}")
+        # Flush any remaining buffered data
+        print("\n" + "="*60)
+        print("FINALIZING DATA STORAGE")
+        print("="*60)
         
-        # Generate output documentation
-        print("\nGenerating output documentation...")
-        self._generate_output_documentation()
+        # Flush all buffers and create schemas
+        if hasattr(self.data_manager, 'flush_all_buffers'):
+            self.data_manager.flush_all_buffers()
         
-        print(f"\nAnalysis complete!")
+        # Create category schemas
+        if hasattr(self.data_manager, 'create_category_schemas'):
+            self.data_manager.create_category_schemas()
+        
+        # Update project manifest
+        if hasattr(self.data_manager, 'update_project_manifest'):
+            self.data_manager.update_project_manifest(
+                total_buildings=len(building_registry),
+                categories=categories
+            )
+        
+        print(f"\n✓ Analysis complete!")
         print(f"Data stored in: {self.project_path}")
         
         # Show summary
         self.show_data_summary()
-    
+        
 
 
 

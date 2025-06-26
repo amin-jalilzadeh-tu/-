@@ -1033,7 +1033,7 @@
       "// Export options for downstream tools": "",
       "export_for_surrogate": true,
       "export_for_calibration": true,
-      "export_top_n_parameters": 30,
+      "export_top_n_parameters": 10,
       "// Legacy export path (for backward compatibility)": "",
       "sensitivity_results_path": "enhanced_sensitivity.csv",
       "// Visualization options": "",

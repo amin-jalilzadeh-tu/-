@@ -143,7 +143,7 @@ def run_parsing_modified_results(
     logger: logging.Logger
 ) -> None:
     """
-    Parse modified simulation results.
+    Parse modified simulation results with variant tracking.
     """
     logger.info("[INFO] Parsing modified simulation results...")
     
@@ -157,6 +157,7 @@ def run_parsing_modified_results(
     # Manually prepare IDF-SQL pairs for modified results
     idf_sql_pairs = []
     building_id_map = {}
+    variant_id_map = {}  # NEW: Track variant IDs
     
     # Load original building mapping
     if os.path.exists(idf_map_csv):
@@ -199,13 +200,29 @@ def run_parsing_modified_results(
                 # Use the first matching IDF
                 idf_file = matching_idfs[0]
                 
+                # Extract variant ID from IDF filename
+                # Expected format: building_4136733_scenario1_variant_0_20250112_110420.idf
+                idf_parts = idf_file.stem.split('_')
+                variant_id = 'default'
+                
+                if 'variant' in idf_parts:
+                    variant_idx = idf_parts.index('variant')
+                    if variant_idx + 1 < len(idf_parts):
+                        variant_id = f"variant_{idf_parts[variant_idx + 1]}"
+                elif 'scenario' in idf_parts:
+                    # Alternative: use scenario as variant
+                    scenario_idx = idf_parts.index('scenario')
+                    scenario_name = idf_parts[scenario_idx] if scenario_idx < len(idf_parts) else 'default'
+                    variant_id = scenario_name
+                
                 # Add to pairs
                 idf_sql_pairs.append((str(idf_file), str(sql_file)))
                 
-                # Map to building ID
+                # Map to building ID and variant ID
                 building_id_map[str(idf_file)] = potential_building_id
+                variant_id_map[str(idf_file)] = variant_id  # NEW: Store variant ID
                 
-                logger.debug(f"  Matched: {idf_file.name} -> {sql_file.name}")
+                logger.debug(f"  Matched: {idf_file.name} -> {sql_file.name} (variant: {variant_id})")
     
     if not idf_sql_pairs:
         logger.warning("[WARN] No valid IDF-SQL pairs found for modified results")
@@ -216,8 +233,12 @@ def run_parsing_modified_results(
     # Get parse categories
     parse_categories = parse_cfg.get("categories", None)
     
-    # Run analysis with the correct method
+    # Run analysis with the correct method - need to pass variant info
     try:
+        # Since analyze_project doesn't accept variant_id_map directly,
+        # we need to extend the analyzer or use a workaround
+        analyzer.variant_id_map = variant_id_map  # Store as attribute
+        
         analyzer.analyze_project(
             idf_sql_pairs=idf_sql_pairs,
             categories=parse_categories,
@@ -235,14 +256,15 @@ def run_parsing_modified_results(
     # Get parsing summary
     parsed_info = get_parsed_data_info(parser_output_dir)
     
-    # Save parsing summary
+    # Save parsing summary with variant info
     parsing_summary = {
         'job_id': job_output_dir.split('/')[-1],  # Extract job_id from path
         'type': 'modified_results',
         'files_parsed': len(idf_sql_pairs),
         'parser_output_dir': parser_output_dir,
         'timestamp': datetime.now().isoformat(),
-        'parsed_data_info': parsed_info
+        'parsed_data_info': parsed_info,
+        'variant_mapping': variant_id_map  # NEW: Include variant mapping
     }
     
     summary_path = os.path.join(parser_output_dir, 'parsing_summary.json')

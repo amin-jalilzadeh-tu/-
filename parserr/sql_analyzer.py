@@ -1295,3 +1295,294 @@ class EnhancedSQLAnalyzer:
     def close(self):
         """Close database connection"""
         self.sql_conn.close()
+
+
+
+
+
+
+
+    # Add this method to your EnhancedSQLAnalyzer class
+
+
+    # Alternative approach: Update metadata in all saved parquet files
+    def add_variant_to_parsed_data(parsed_dir: str, variant_mapping: dict):
+        """
+        Add variant_id to already parsed data files
+        
+        Args:
+            parsed_dir: Directory containing parsed parquet files
+            variant_mapping: Dictionary mapping building_id to variant_id
+        """
+        import pandas as pd
+        from pathlib import Path
+        
+        parsed_path = Path(parsed_dir)
+        
+        # Update category files
+        category_dir = parsed_path / 'sql_data' / 'by_category'
+        if category_dir.exists():
+            for parquet_file in category_dir.glob('*.parquet'):
+                try:
+                    # Read existing data
+                    df = pd.read_parquet(parquet_file)
+                    
+                    # Add variant_id column if not exists
+                    if 'variant_id' not in df.columns:
+                        # Map building_id to variant_id
+                        df['variant_id'] = df['building_id'].map(variant_mapping).fillna('default')
+                        
+                        # Save updated file
+                        df.to_parquet(parquet_file)
+                        print(f"Updated {parquet_file.name} with variant_id")
+                        
+                except Exception as e:
+                    print(f"Error updating {parquet_file.name}: {e}")
+        
+        # Update building-specific files
+        building_dir = parsed_path / 'sql_data' / 'by_building'
+        if building_dir.exists():
+            for building_subdir in building_dir.iterdir():
+                if building_subdir.is_dir():
+                    building_id = building_subdir.name
+                    variant_id = variant_mapping.get(building_id, 'default')
+                    
+                    # Update all parquet files in this building's directory
+                    for parquet_file in building_subdir.glob('*.parquet'):
+                        try:
+                            df = pd.read_parquet(parquet_file)
+                            if 'variant_id' not in df.columns:
+                                df['variant_id'] = variant_id
+                                df.to_parquet(parquet_file)
+                                print(f"Updated {building_id}/{parquet_file.name} with variant_id: {variant_id}")
+                        except Exception as e:
+                            print(f"Error updating {building_id}/{parquet_file.name}: {e}")
+
+
+    # Helper function to create variant mapping from modified IDF directory
+    def create_variant_mapping_from_idfs(modified_idfs_dir: str) -> dict:
+        """
+        Create a mapping of building_id to variant_id from modified IDF filenames
+        
+        Args:
+            modified_idfs_dir: Directory containing modified IDF files
+            
+        Returns:
+            Dictionary mapping building_id to variant_id
+        """
+        from pathlib import Path
+        
+        variant_mapping = {}
+        
+        for idf_file in Path(modified_idfs_dir).glob('**/*.idf'):
+            # Extract building ID and variant from filename
+            # Expected format: building_4136733_scenario1_variant_0_20250112_110420.idf
+            parts = idf_file.stem.split('_')
+            
+            if len(parts) >= 2 and parts[0] == 'building':
+                building_id = parts[1]
+                
+                # Find variant ID
+                variant_id = 'default'
+                if 'variant' in parts:
+                    variant_idx = parts.index('variant')
+                    if variant_idx + 1 < len(parts):
+                        variant_id = f"variant_{parts[variant_idx + 1]}"
+                elif 'scenario' in parts:
+                    scenario_idx = parts.index('scenario')
+                    if scenario_idx < len(parts):
+                        variant_id = parts[scenario_idx]
+                
+                variant_mapping[building_id] = variant_id
+        
+        return variant_mapping
+    
+
+
+
+    # Add this updated method to your EnhancedSQLAnalyzer class in parserr/sql_analyzer.py
+
+    def extract_and_save_all(self, zone_mapping: Dict[str, str], 
+                            variables_by_category: Dict[str, List[str]],
+                            start_date: Optional[str] = None,
+                            end_date: Optional[str] = None,
+                            variant_id: str = 'default'):  # NEW PARAMETER
+        """Extract all data and save to hierarchical structure with variant tracking"""
+        if not self.data_manager:
+            print("Warning: No data manager configured. Data will not be saved.")
+            return
+        
+        # Store variant_id as instance attribute for use in other methods
+        self.variant_id = variant_id
+        
+        print(f"\nStarting data extraction for building {self.building_id} (variant: {variant_id})")
+        
+        # Get date range if not specified
+        if not start_date or not end_date:
+            start_date, end_date = self._get_date_range()
+            print(f"Using date range: {start_date} to {end_date}")
+        
+        # Track extraction statistics
+        extraction_stats = {
+            'categories_processed': 0,
+            'variables_extracted': 0,
+            'data_points_extracted': 0,
+            'missing_variables': []
+        }
+        
+        # Process each category
+        for category, variables in variables_by_category.items():
+            print(f"\nExtracting {category} variables...")
+            extraction_stats['categories_processed'] += 1
+            
+            # Output categories are a special case
+            output_category = self._get_output_category(category)
+            
+            for variable in variables:
+                try:
+                    hourly_data = self._extract_time_series_data(
+                        zone_mapping, 
+                        variable, 
+                        start_date, 
+                        end_date,
+                        output_category
+                    )
+                    
+                    if not hourly_data.empty:
+                        # ADD VARIANT_ID TO THE DATA
+                        hourly_data['variant_id'] = variant_id
+                        
+                        extraction_stats['variables_extracted'] += 1
+                        extraction_stats['data_points_extracted'] += len(hourly_data)
+                        
+                        # Save hourly data
+                        self.data_manager.save_timeseries_data(hourly_data, 'hourly', output_category)
+                        
+                        # Create aggregations
+                        daily_data = self._create_daily_aggregation(hourly_data)
+                        if not daily_data.empty:
+                            daily_data['variant_id'] = variant_id  # ADD TO AGGREGATIONS
+                            self.data_manager.save_timeseries_data(daily_data, 'daily', output_category)
+                        
+                        monthly_data = self._create_monthly_aggregation(hourly_data)
+                        if not monthly_data.empty:
+                            monthly_data['variant_id'] = variant_id  # ADD TO AGGREGATIONS
+                            self.data_manager.save_timeseries_data(monthly_data, 'monthly', output_category)
+                    else:
+                        extraction_stats['missing_variables'].append({
+                            'category': category,
+                            'variable': variable,
+                            'reason': 'No data found'
+                        })
+                        
+                except Exception as e:
+                    print(f"  Error extracting {variable}: {e}")
+                    extraction_stats['missing_variables'].append({
+                        'category': category,
+                        'variable': variable,
+                        'reason': str(e)
+                    })
+        
+        # Extract and save schedules with variant_id
+        print("\nExtracting schedules...")
+        schedules = self._extract_all_schedules()
+        if not schedules.empty:
+            schedules['building_id'] = self.building_id
+            schedules['variant_id'] = variant_id  # ADD VARIANT_ID
+            self.data_manager.save_schedules(schedules)
+        
+        # Create and save summary metrics with variant_id
+        print("\nCreating summary metrics...")
+        self._create_and_save_summary_metrics_with_variant(zone_mapping, variant_id)
+        
+        # Save extraction statistics
+        self._save_extraction_stats_with_variant(extraction_stats, variant_id)
+        
+        # Report extraction summary
+        print(f"\nExtraction Summary (variant: {variant_id}):")
+        print(f"  Categories processed: {extraction_stats['categories_processed']}")
+        print(f"  Variables extracted: {extraction_stats['variables_extracted']}")
+        print(f"  Data points: {extraction_stats['data_points_extracted']:,}")
+        if extraction_stats['missing_variables']:
+            print(f"  Missing variables: {len(extraction_stats['missing_variables'])}")
+
+
+    # Add this helper method for summary metrics with variant support
+    def _create_and_save_summary_metrics_with_variant(self, zone_mapping: Dict[str, str], variant_id: str):
+        """Create and save enhanced summary metrics with variant tracking"""
+        if not self.data_manager:
+            return
+        
+        # Building-level metrics
+        building_metrics = {
+            'building_id': self.building_id,
+            'variant_id': variant_id,  # ADD VARIANT_ID
+            'sql_file': str(self.sql_path.name)
+        }
+        
+        # Get basic metrics from SQL
+        try:
+            # Total site energy
+            energy_query = """
+                SELECT Value 
+                FROM TabularDataWithStrings 
+                WHERE TableName = 'Site and Source Energy' 
+                AND ColumnName = 'Total Energy' 
+                AND RowName = 'Total Site Energy'
+            """
+            result = pd.read_sql_query(energy_query, self.sql_conn)
+            if not result.empty:
+                building_metrics['total_site_energy_GJ'] = float(result.iloc[0]['Value'])
+        except:
+            pass
+        
+        # Zone-level metrics with variant
+        zone_metrics = []
+        for idf_zone, sql_zone in zone_mapping.items():
+            if idf_zone == 'ALL_ZONES':
+                continue
+                
+            zone_metric = {
+                'building_id': self.building_id,
+                'variant_id': variant_id,  # ADD VARIANT_ID
+                'zone_name': idf_zone,
+                'sql_zone_name': sql_zone
+            }
+            
+            # Add zone-specific metrics here
+            zone_metrics.append(zone_metric)
+        
+        # Save metrics
+        if building_metrics:
+            building_df = pd.DataFrame([building_metrics])
+            self.data_manager.save_analysis_ready_data(building_df, 'building_metrics')
+        
+        if zone_metrics:
+            zone_df = pd.DataFrame(zone_metrics)
+            self.data_manager.save_analysis_ready_data(zone_df, 'zone_metrics')
+
+
+    # Add this helper method for extraction stats with variant support
+    def _save_extraction_stats_with_variant(self, stats: Dict[str, Any], variant_id: str):
+        """Save extraction statistics with variant tracking"""
+        if not self.data_manager:
+            return
+        
+        stats_df = pd.DataFrame([{
+            'building_id': self.building_id,
+            'variant_id': variant_id,  # ADD VARIANT_ID
+            'extraction_date': datetime.now().isoformat(),
+            'categories_processed': stats['categories_processed'],
+            'variables_extracted': stats['variables_extracted'],
+            'data_points_extracted': stats['data_points_extracted'],
+            'missing_variables_count': len(stats['missing_variables'])
+        }])
+        
+        self.data_manager.save_analysis_ready_data(stats_df, 'extraction_statistics')
+        
+        # Save missing variables detail with variant
+        if stats['missing_variables']:
+            missing_df = pd.DataFrame(stats['missing_variables'])
+            missing_df['building_id'] = self.building_id
+            missing_df['variant_id'] = variant_id  # ADD VARIANT_ID
+            self.data_manager.save_analysis_ready_data(missing_df, 'missing_variables_detail')
