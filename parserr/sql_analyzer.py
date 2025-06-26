@@ -337,101 +337,6 @@ class EnhancedSQLAnalyzer:
         
         return zone_mapping
     
-    def extract_and_save_all(self, zone_mapping: Dict[str, str], 
-                            variables_by_category: Dict[str, List[str]],
-                            start_date: Optional[str] = None,
-                            end_date: Optional[str] = None):
-        """Extract all data and save to hierarchical structure"""
-        if not self.data_manager:
-            print("Warning: No data manager configured. Data will not be saved.")
-            return
-        
-        # Get date range if not specified
-        if not start_date or not end_date:
-            start_date, end_date = self._get_date_range()
-        
-        # Get available outputs for validation
-        available_outputs = self.get_available_outputs()
-        
-        # Track extraction statistics
-        extraction_stats = {
-            'categories_processed': 0,
-            'variables_extracted': 0,
-            'data_points_extracted': 0,
-            'missing_variables': []
-        }
-        
-        # Extract time series by category
-        for category, variables in variables_by_category.items():
-            print(f"\nExtracting {category} variables...")
-            
-            # Filter to only available variables
-            available_vars = []
-            for var in variables:
-                if var in available_outputs['VariableName'].values:
-                    available_vars.append(var)
-                else:
-                    extraction_stats['missing_variables'].append({
-                        'category': category,
-                        'variable': var
-                    })
-            
-            if not available_vars:
-                print(f"  No available variables for {category}")
-                continue
-                
-            ts_data = self.extract_timeseries(available_vars, zone_mapping, start_date, end_date)
-            
-            if not ts_data.empty:
-                extraction_stats['categories_processed'] += 1
-                extraction_stats['variables_extracted'] += len(available_vars)
-                extraction_stats['data_points_extracted'] += len(ts_data)
-                
-                # Add building_id column
-                ts_data['building_id'] = self.building_id
-                
-                # Map to output category names
-                output_category = self._map_output_category(category)
-                
-                # Save hourly data
-                year = ts_data['DateTime'].dt.year.mode()[0] if not ts_data.empty else datetime.now().year
-                self.data_manager.save_timeseries_data(ts_data, 'hourly', output_category, year)
-                
-                # Create and save daily aggregations
-                print(f"  Creating daily aggregations for {output_category}...")
-                daily_data = self._create_daily_aggregations(ts_data)
-                if not daily_data.empty:
-                    self.data_manager.save_timeseries_data(daily_data, 'daily', output_category)
-                
-                # Create and save monthly aggregations
-                print(f"  Creating monthly aggregations for {output_category}...")
-                monthly_data = self._create_monthly_aggregations(ts_data)
-                if not monthly_data.empty:
-                    self.data_manager.save_timeseries_data(monthly_data, 'monthly', output_category)
-        
-        # Extract and save schedules
-        print("\nExtracting schedules...")
-        schedules = self._extract_all_schedules()
-        if not schedules.empty:
-            schedules['building_id'] = self.building_id
-            self.data_manager.save_schedules(schedules)
-        
-        # Create and save summary metrics
-        print("\nCreating summary metrics...")
-        self._create_and_save_summary_metrics(zone_mapping)
-        
-        # Save extraction statistics
-        self._save_extraction_stats(extraction_stats)
-        
-        # Report extraction summary
-        print(f"\nExtraction Summary:")
-        print(f"  Categories processed: {extraction_stats['categories_processed']}")
-        print(f"  Variables extracted: {extraction_stats['variables_extracted']}")
-        print(f"  Data points: {extraction_stats['data_points_extracted']:,}")
-        if extraction_stats['missing_variables']:
-            print(f"  Missing variables: {len(extraction_stats['missing_variables'])}")
-    
-
 
 
 
@@ -1402,6 +1307,8 @@ class EnhancedSQLAnalyzer:
 
     # Add this updated method to your EnhancedSQLAnalyzer class in parserr/sql_analyzer.py
 
+    # Add this updated method to your EnhancedSQLAnalyzer class in parserr/sql_analyzer.py
+
     def extract_and_save_all(self, zone_mapping: Dict[str, str], 
                             variables_by_category: Dict[str, List[str]],
                             start_date: Optional[str] = None,
@@ -1586,3 +1493,66 @@ class EnhancedSQLAnalyzer:
             missing_df['building_id'] = self.building_id
             missing_df['variant_id'] = variant_id  # ADD VARIANT_ID
             self.data_manager.save_analysis_ready_data(missing_df, 'missing_variables_detail')
+            """Save extraction statistics with variant tracking"""
+            if not self.data_manager:
+                return
+            
+            stats_df = pd.DataFrame([{
+                'building_id': self.building_id,
+                'variant_id': variant_id,  # ADD VARIANT_ID
+                'extraction_date': datetime.now().isoformat(),
+                'categories_processed': stats['categories_processed'],
+                'variables_extracted': stats['variables_extracted'],
+                'data_points_extracted': stats['data_points_extracted'],
+                'missing_variables_count': len(stats['missing_variables'])
+            }])
+            
+            self.data_manager.save_analysis_ready_data(stats_df, 'extraction_statistics')
+            
+            # Save missing variables detail with variant
+            if stats['missing_variables']:
+                missing_df = pd.DataFrame(stats['missing_variables'])
+                missing_df['building_id'] = self.building_id
+                missing_df['variant_id'] = variant_id  # ADD VARIANT_ID
+                self.data_manager.save_analysis_ready_data(missing_df, 'missing_variables_detail')
+
+
+
+
+
+    
+    def _get_output_category(self, category: str) -> str:
+        """
+        Map category names to output category names for data storage
+        
+        Args:
+            category: Category name from category mappings
+            
+        Returns:
+            Output category name for file storage
+        """
+        # Map category names to output subdirectories
+        category_mapping = {
+            'geometry': 'geometry',
+            'materials_constructions': 'envelope',
+            'loads': 'loads',
+            'hvac_equipment': 'hvac',
+            'hvac_thermostats': 'hvac',
+            'hvac_controls': 'hvac',
+            'ventilation': 'ventilation',
+            'infiltration': 'infiltration',
+            'lighting': 'lighting',
+            'equipment': 'equipment',
+            'dhw': 'dhw',
+            'renewables': 'renewables',
+            'comfort': 'comfort',
+            'energy': 'energy',
+            'emissions': 'emissions',
+            'economics': 'economics',
+            'resilience': 'resilience',
+            'outputs': 'outputs',
+            'schedules': 'schedules',
+            'shading': 'shading'
+        }
+        
+        return category_mapping.get(category, category)

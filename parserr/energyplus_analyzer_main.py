@@ -624,7 +624,8 @@ class EnergyPlusAnalyzer:
                     'idf_path': str(idf_path),
                     'sql_path': str(sql_path),
                     'zones': len(building_data.zones),
-                    'surfaces': len(building_data.surfaces),
+                    'surfaces': len(building_data.objects.get('BUILDINGSURFACE:DETAILED', [])),  # Fixed: count surface objects
+                    'windows': len(building_data.objects.get('FENESTRATIONSURFACE:DETAILED', [])),  # Added for completeness
                     'has_sql': True
                 })
                 
@@ -681,12 +682,29 @@ class EnergyPlusAnalyzer:
         
         # Show summary
         self.show_data_summary()
+
+
+
+
+    # Also add this helper method to retrieve surface count if needed elsewhere
+    def get_surface_count(self, building_data):
+        """Get the count of surfaces in the building"""
+        surface_types = [
+            'BUILDINGSURFACE:DETAILED',
+            'BUILDINGSURFACE:SIMPLE',
+            'WALL:DETAILED',
+            'WALL:EXTERIOR',
+            'WALL:INTERIOR',
+            'ROOF',
+            'FLOOR:DETAILED',
+            'FLOOR:EXTERIOR',
+            'FLOOR:INTERIOR'
+        ]
         
-
-
-
-
-
+        total_surfaces = 0
+        for surface_type in surface_types:
+            total_surfaces += len(building_data.objects.get(surface_type, []))
+        
 
 
 
