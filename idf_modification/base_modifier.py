@@ -23,6 +23,7 @@ class ModificationResult:
     rule_applied: Optional[str] = None
     validation_status: str = 'valid'
     message: Optional[str] = None
+    zone_name: Optional[str] = None  # ADD THIS
 
 @dataclass
 class ParameterDefinition:
@@ -533,18 +534,140 @@ class BaseModifier(ABC):
         
         return output_file
     
-    def _create_modification_result(self, obj: Any, param_name: str, 
-                                  old_value: Any, new_value: Any, 
-                                  rule: str) -> ModificationResult:
-        """Helper to create modification result"""
+    def _create_modification_result(self, obj: Any, parameter_key: str, 
+                                original_value: Any, new_value: Any, 
+                                rule_applied: str) -> ModificationResult:
+        """
+        Create a ModificationResult with zone_name extraction
+        """
+        # Extract zone name based on object type
+        zone_name = self._extract_zone_name_from_object(obj)
+        
+        # Get parameter definition if available
+        param_def = self.parameter_definitions.get(parameter_key, None)
+        field_name = param_def.field_name if param_def else parameter_key
+        
+        # FIX: Handle objects without proper names
+        object_name = obj.name
+        
+        # Special handling for objects that don't have meaningful names
+        if obj.object_type.upper() in ['SITE:GROUNDTEMPERATURE:BUILDINGSURFACE', 
+                                        'TIMESTEP', 'SHADOWCALCULATION', 
+                                        'SIMULATIONCONTROL', 'RUNPERIOD']:
+            object_name = obj.object_type  # Use type as name
+        elif not object_name or (isinstance(object_name, (int, float)) and 
+                                not isinstance(object_name, str)):
+            # If name is numeric or missing, use object type
+            object_name = obj.object_type
+        
         return ModificationResult(
             success=True,
             object_type=obj.object_type,
-            object_name=obj.name,
-            parameter=param_name,
-            original_value=old_value,
+            object_name=object_name,  # Use fixed name
+            parameter=field_name,
+            original_value=original_value,
             new_value=new_value,
             change_type='absolute',
-            rule_applied=rule,
-            validation_status='valid'
+            rule_applied=rule_applied,
+            validation_status='valid',
+            zone_name=zone_name
         )
+
+    def _extract_zone_name_from_object(self, obj: Any) -> str:
+        """
+        Extract zone name from an IDF object - Enhanced version
+        """
+        object_type = obj.object_type.upper()
+        
+        # Building-level objects
+        building_level = {
+            'TIMESTEP', 'SIMULATIONCONTROL', 'BUILDING', 'SHADOWCALCULATION',
+            'HEATBALANCEALGORITHM', 'SURFACECONVECTIONALGORITHM:INSIDE',
+            'SURFACECONVECTIONALGORITHM:OUTSIDE', 'SITE:LOCATION',
+            'SITE:GROUNDTEMPERATURE:BUILDINGSURFACE', 'RUNPERIOD',
+            'RUNPERIODCONTROL:SPECIALDAYS', 'RUNPERIODCONTROL:DAYLIGHTSAVINGTIME',
+            'GLOBALGEOMETRYRULES', 'OUTPUT:VARIABLE', 'OUTPUT:METER',
+            'OUTPUT:TABLE:SUMMARYREPORTS', 'OUTPUT:SQLITE', 'OUTPUTCONTROL:TABLE:STYLE',
+            'MATERIAL', 'MATERIAL:NOMASS', 'WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM',
+            'CONSTRUCTION', 'VERSION'
+        }
+        
+        if object_type in building_level:
+            return 'BUILDING'
+        
+        # For ZONE objects, the zone name is the object name itself
+        if object_type == 'ZONE':
+            return obj.name
+        
+        # For objects with explicit zone fields
+        zone_field_objects = {
+            'LIGHTS': 'Zone or ZoneList Name',
+            'ELECTRICEQUIPMENT': 'Zone or ZoneList Name',
+            'PEOPLE': 'Zone or ZoneList Name',
+            'ZONEINFILTRATION:DESIGNFLOWRATE': 'Zone or ZoneList Name',
+            'ZONEVENTILATION:DESIGNFLOWRATE': 'Zone or ZoneList Name',
+            'BUILDINGSURFACE:DETAILED': 'Zone Name',
+            'INTERNALMASS': 'Zone Name',
+            'ZONEHVAC:IDEALLOADSAIRSYSTEM': 'Zone Name',
+            'ZONEHVAC:EQUIPMENTCONNECTIONS': 'Zone Name',
+            'THERMOSTATSETPOINT:DUALSETPOINT': 'Zone or ZoneList Name',
+            'ZONECONTROL:THERMOSTAT': 'Zone or ZoneList Name',
+            'SIZING:ZONE': 'Zone or ZoneList Name'
+        }
+        
+        if object_type in zone_field_objects:
+            field_name = zone_field_objects[object_type]
+            # Look for the zone parameter
+            for param in obj.parameters:
+                if param.field_name == field_name:
+                    zone_value = param.value
+                    if zone_value:
+                        # Check for special values
+                        if zone_value.upper() in ['ALL_ZONES', '*', 'ALL ZONES', 'ALLZONES']:
+                            return 'ALL_ZONES'
+                        else:
+                            return zone_value.upper()
+                    break
+        
+        # For fenestration surfaces, extract from parent surface
+        if object_type == 'FENESTRATIONSURFACE:DETAILED':
+            # First try object name pattern
+            import re
+            
+            # Common window naming patterns
+            window_patterns = [
+                r'^(Zone\d+)',                    # Zone1_Window
+                r'^(\w+_ZN)',                     # CORE_ZN_Window
+                r'^(\w+?)_\w+_Wall',             # Zone1_Front_Wall_Window
+                r'^(\w+?)_.*window',             # Zone1_anything_window
+            ]
+            
+            for pattern in window_patterns:
+                match = re.search(pattern, obj.name, re.IGNORECASE)
+                if match:
+                    return match.group(1).upper()
+            
+            # Then try to get from Building Surface Name parameter
+            for param in obj.parameters:
+                if param.field_name == 'Building Surface Name':
+                    parent_name = param.value
+                    if parent_name:
+                        # Extract zone from parent surface name
+                        for pattern in window_patterns[:-1]:  # Skip the last pattern
+                            match = re.search(pattern, parent_name, re.IGNORECASE)
+                            if match:
+                                return match.group(1).upper()
+                    break
+        
+        # For objects that might have zone in their name
+        if obj.name and isinstance(obj.name, str):
+            import re
+            # Generic zone extraction from object name
+            match = re.search(r'(Zone\d+|CORE_ZN|\w+_ZN)', obj.name, re.IGNORECASE)
+            if match:
+                return match.group(1).upper()
+        
+        # Default for unknown zone association
+        return 'UNKNOWN'
+        
+    

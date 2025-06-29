@@ -12,7 +12,8 @@ from pathlib import Path
 from collections import defaultdict
 import pandas as pd  # ADD THIS LINE
 from typing import Dict, Any, Optional, List, Tuple  # Fixed: Added Tuple import
-
+from typing import Dict, Any, Optional, List, Tuple
+from idf_modification.utils.reporting import export_modifications_to_parquet  # ADD THIS LINE
 from idf_modification.modification_engine import ModificationEngine
 from idf_modification.modification_config import ModificationConfig
 
@@ -341,30 +342,35 @@ def generate_modification_reports(
         logger.info(f"[INFO] JSON report saved to: {report_path}")
     
     # 2. Parquet reports
+    # 2. Parquet reports
     if "parquet" in report_formats:
         try:
-            # Create modifications DataFrame
-            modifications_data = []
-            for mod in all_modifications:
-                modifications_data.append({
-                    'building_id': mod.get('building_id', ''),
-                    'variant_id': mod.get('variant_id', ''),
-                    'category': mod.get('category', ''),
-                    'object_type': mod.get('object_type', ''),
-                    'object_name': mod.get('object_name', ''),
-                    'field_name': mod.get('parameter', ''), 
-                    'original_value': str(mod.get('original_value', '')),
-                    'new_value': str(mod.get('new_value', '')),
-                    'change_type': mod.get('change_type', ''),
-                    'timestamp': mod.get('timestamp', datetime.now().isoformat())
-                })
+            # Import the export function from reporting module
+            #from idf_modification.reporting import export_modifications_to_parquet
             
-            if modifications_data:
-                modifications_df = pd.DataFrame(modifications_data)
-                modifications_parquet = modified_idfs_dir / f"modifications_detail_{timestamp}.parquet"
-                modifications_df.to_parquet(modifications_parquet, index=False)
-                logger.info(f"[INFO] Modifications parquet saved to: {modifications_parquet}")
-            
+            # Generate both wide and long format parquet files
+            if all_modifications:
+                # Wide format (new default)
+                modifications_wide_parquet = modified_idfs_dir / f"modifications_detail_wide_{timestamp}.parquet"
+                success = export_modifications_to_parquet(
+                    all_modifications, 
+                    modifications_wide_parquet,
+                    format='wide'
+                )
+                if success:
+                    logger.info(f"[INFO] Wide format modifications parquet saved to: {modifications_wide_parquet}")
+                
+                # Long format (for compatibility)
+                modifications_long_parquet = modified_idfs_dir / f"modifications_detail_long_{timestamp}.parquet"
+                success = export_modifications_to_parquet(
+                    all_modifications,
+                    modifications_long_parquet,
+                    format='long'
+                )
+                if success:
+                    logger.info(f"[INFO] Long format modifications parquet saved to: {modifications_long_parquet}")
+
+
             # Create summary DataFrame
             summary_data = []
             for result in modification_results:

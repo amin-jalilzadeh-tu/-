@@ -28,6 +28,7 @@ from .sensitivity_step import run_sensitivity_analysis
 from .surrogate_step import run_surrogate_modeling
 from .calibration_step import run_calibration
 from .post_processing import run_post_processing, cleanup_old_results_safe
+from .timeseries_aggregation_step import run_timeseries_aggregation  # ADD THIS
 from .utils import WorkflowCanceled, check_canceled, step_timer
 from .validation_step import run_validation, run_validation_stages  # Update this line
 
@@ -77,10 +78,20 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
     modification_cfg = main_config.get("modification", {})
     validation_cfg   = main_config.get("validation", {})
     sens_cfg         = main_config.get("sensitivity", {})
-    sur_cfg          = main_config.get("surrogate", {})
+    sur_cfg = main_config.get("surrogate", {})
+    
     cal_cfg          = main_config.get("calibration", {})
     parsing_cfg      = main_config.get("parsing", {})
     idf_cfg          = main_config.get("idf_creation", {})
+    aggregation_cfg  = main_config.get("timeseries_aggregation", {})  # ADD THIS
+
+# Ensure compatibility with new data structure
+    if "preprocessing" not in sur_cfg:
+        sur_cfg["preprocessing"] = {}
+    sur_cfg["preprocessing"]["use_sensitivity_filter"] = sur_cfg["preprocessing"].get(
+        "use_sensitivity_filter", 
+        False  # Default to False since sensitivity might be missing
+    )
 
     # Log which steps will run
     steps_to_run = []
@@ -92,6 +103,8 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
         steps_to_run.append("structuring")
     if parsing_cfg.get("perform_parsing", False):
         steps_to_run.append("parsing to parquet")
+    if aggregation_cfg.get("perform_aggregation", False):  # ADD THIS
+        steps_to_run.append("timeseries aggregation")
     if modification_cfg.get("perform_modification", False):
         steps_to_run.append("modification")
     if validation_cfg.get("perform_validation", False):
@@ -198,7 +211,33 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
 
 
     # -------------------------------------------------------------------------
-    # 8a) Validation after initial parsing (if configured)
+    # 8a) Time Series Aggregation (after base parsing)
+    # -------------------------------------------------------------------------
+    check_canceled_func()
+    if aggregation_cfg.get("perform_aggregation", False) and parsing_cfg.get("perform_parsing", False):
+        parsed_data_dir = os.path.join(job_output_dir, "parsed_data")
+        
+        if not os.path.exists(parsed_data_dir):
+            logger.warning("[WARN] No parsed data found. Skipping time series aggregation.")
+        else:
+            with step_timer(logger, "time series aggregation"):
+                aggregation_results = run_timeseries_aggregation(
+                    aggregation_cfg=aggregation_cfg,
+                    job_output_dir=job_output_dir,
+                    parsed_data_dir=parsed_data_dir,
+                    logger=logger
+                )
+                
+                if aggregation_results and aggregation_results.get('success', False):
+                    logger.info(f"[INFO] Time series aggregation completed:")
+                    logger.info(f"  - Variables processed: {aggregation_results.get('variables_processed', 0)}")
+                    logger.info(f"  - Frequencies created: {aggregation_results.get('frequencies_created', [])}")
+                    logger.info(f"  - Output directory: {aggregation_results.get('output_dir', 'N/A')}")
+                    logger.info(f"  - Base data: {'✓' if aggregation_results.get('base_data_processed') else '✗'}")
+
+
+    # -------------------------------------------------------------------------
+    # 8b) Validation after initial parsing (if configured)
     # -------------------------------------------------------------------------
     check_canceled_func()
     if validation_cfg.get("perform_validation", False):
@@ -270,6 +309,43 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
                                 logger.info(f"[INFO] Completed validation for modified results")
                         elif not sim_success:
                             logger.warning("[WARN] Skipping modified results parsing due to simulation failures")
+
+
+
+    # -------------------------------------------------------------------------
+    # 8a) Time Series Aggregation (after )
+    # -------------------------------------------------------------------------
+
+    # In the modification section, after parsing modified results:
+    if sim_success and post_mod_cfg.get("parse_results"):
+        with step_timer(logger, "parsing modified results"):
+            run_parsing_modified_results(
+                parse_cfg=post_mod_cfg.get("parse_results", {}),
+                job_output_dir=job_output_dir,
+                modified_sim_output=os.path.join(job_output_dir, "Modified_Sim_Results"),
+                modified_idfs_dir=modified_results["modified_idfs_dir"],
+                idf_map_csv=os.path.join(job_output_dir, "extracted_idf_buildings.csv"),
+                logger=logger
+            )
+        
+        # Add time series aggregation for modified results
+        # In main.py, after modification parsing section (around line 374):
+
+        # Add time series aggregation for modified results
+        if aggregation_cfg.get("perform_aggregation", False):
+            with step_timer(logger, "time series aggregation (modified)"):
+                # Run aggregation on the modified results directory as well
+                aggregation_results_modified = run_timeseries_aggregation(
+                    aggregation_cfg=aggregation_cfg,
+                    job_output_dir=job_output_dir,
+                    parsed_data_dir=os.path.join(job_output_dir, "parsed_modified_results"),
+                    logger=logger
+                )
+                
+                if aggregation_results_modified and aggregation_results_modified.get('success', False):
+                    logger.info(f"[INFO] Modified data aggregation completed:")
+                    logger.info(f"  - Files created: {aggregation_results_modified.get('files_created', 0)}")
+
 
 
     # -------------------------------------------------------------------------

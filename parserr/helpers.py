@@ -295,6 +295,7 @@ def extract_building_id_from_path(file_path: str) -> str:
     
     # Try different patterns
     patterns = [
+        r'building_(\d+)_variant_\d+',  # NEW: Handle variant pattern
         r'building_(\d+)',
         r'simulation_bldg\d+_(\d+)',
         r'(\d{6,})'
@@ -307,3 +308,53 @@ def extract_building_id_from_path(file_path: str) -> str:
     
     # Fallback to filename without extension
     return os.path.splitext(filename)[0]
+
+
+def find_sql_for_modified_idf(idf_path: str, sim_output_dir: str, 
+                              variant_num: str = None) -> Optional[str]:
+    """
+    Find the SQL file corresponding to a modified IDF file.
+    
+    Args:
+        idf_path: Path to the IDF file
+        sim_output_dir: Directory containing simulation results
+        variant_num: Variant number if known
+        
+    Returns:
+        Path to SQL file if found, None otherwise
+    """
+    from pathlib import Path
+    
+    sim_path = Path(sim_output_dir)
+    idf_name = Path(idf_path).stem
+    
+    # Extract info from IDF name
+    parts = idf_name.split('_')
+    building_id = None
+    
+    if len(parts) >= 2 and parts[0] == 'building':
+        building_id = parts[1]
+    
+    # Try different SQL naming patterns
+    patterns = []
+    
+    if variant_num:
+        patterns.extend([
+            f"*variant_{variant_num}*.sql",
+            f"*_{variant_num}.sql",
+            f"simulation_{variant_num}.sql"
+        ])
+    
+    if building_id:
+        patterns.extend([
+            f"*{building_id}*.sql",
+            f"simulation_*{building_id}.sql"
+        ])
+    
+    # Search for SQL files
+    for pattern in patterns:
+        sql_files = list(sim_path.glob(f"**/{pattern}"))
+        if sql_files:
+            return str(sql_files[0])
+    
+    return None

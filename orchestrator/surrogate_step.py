@@ -68,6 +68,14 @@ def run_integrated_surrogate(
     try:
         # Import integrated modules
         from c_surrogate.unified_surrogate import build_surrogate_from_job
+        from c_surrogate.surrogate_pipeline_tracker import SurrogatePipelineTracker
+        
+        # Initialize tracker if enabled
+        tracker = None
+        if sur_cfg.get('tracking', {}).get('enabled', True):
+            logger.info("[INFO] Initializing pipeline tracker")
+            tracker = SurrogatePipelineTracker(job_output_dir)
+            tracker.export_configuration(sur_cfg)
         
         # Prepare output directory for surrogate artifacts
         surrogate_output_dir = os.path.join(job_output_dir, "surrogate_models")
@@ -136,11 +144,13 @@ def run_integrated_surrogate(
             )
             
             # Build surrogate using integrated pipeline
+            # Build surrogate using integrated pipeline
             logger.info("[INFO] Building surrogate model with integrated pipeline...")
             result = build_surrogate_from_job(
                 job_output_dir=job_output_dir,
                 sur_cfg=sur_cfg_integrated,
-                output_dir=surrogate_output_dir
+                output_dir=surrogate_output_dir,
+                tracker=tracker
             )
         
         if result:
@@ -159,6 +169,18 @@ def run_integrated_surrogate(
             
             # Save summary report
             save_surrogate_summary(result, surrogate_output_dir, logger)
+            
+            # Finalize tracking
+            if tracker:
+                # Track final outputs
+                if result.get('output_manager'):
+                    output_manager = result['output_manager']
+                    if hasattr(output_manager, 'tracker'):
+                        output_manager.tracker = tracker
+                
+                # Create final pipeline summary
+                tracker.create_pipeline_summary()
+                logger.info(f"[INFO] Pipeline tracking report saved to: {tracker.export_dir}")
             
             # Return model for compatibility
             return result['model']
@@ -394,13 +416,9 @@ def check_surrogate_prerequisites(
     sur_cfg: dict,
     logger: logging.Logger
 ) -> tuple[bool, str]:
-    """
-    Check if all prerequisites for surrogate modeling are met.
-    
-    Returns:
-        (can_proceed, message)
-    """
+    """Check if all prerequisites for surrogate modeling are met."""
     issues = []
+    warnings = []
     
     # Check for integrated pipeline data
     if sur_cfg.get("use_integrated_pipeline", True):
@@ -412,7 +430,9 @@ def check_surrogate_prerequisites(
         if sur_cfg.get("preprocessing", {}).get("use_sensitivity_filter", True):
             sensitivity_path = Path(job_output_dir) / "sensitivity_results"
             if not sensitivity_path.exists():
-                issues.append("No sensitivity results found (required for feature filtering)")
+                warnings.append("No sensitivity results found - will skip feature filtering")
+                # Automatically disable sensitivity filtering
+                sur_cfg.setdefault("preprocessing", {})["use_sensitivity_filter"] = False
         
         # Check for modifications if required
         if sur_cfg.get("require_modifications", True):

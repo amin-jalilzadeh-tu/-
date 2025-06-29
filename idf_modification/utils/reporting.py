@@ -12,10 +12,11 @@ This module provides functions to generate:
 import json
 import csv
 import datetime
-from typing import Dict, List, Any, Optional, Union
-from pathlib import Path
+from typing import Dict, List, Any, Optional, Union, Tuple  # ADD Tuple herefrom pathlib import Path
 import pandas as pd
 import logging
+from pathlib import Path  # ADD THIS LINE
+
 
 logger = logging.getLogger(__name__)
 
@@ -541,31 +542,42 @@ def create_modification_summary(modifications: List[Dict[str, Any]]) -> Dict[str
 
 def export_modifications_to_parquet(modifications: List[Dict[str, Any]], 
                                   output_path: Path,
-                                  include_metadata: bool = True) -> bool:
+                                  include_metadata: bool = True,
+                                  format: str = 'wide') -> bool:
     """
-    Export modifications to Parquet file
+    Export modifications to Parquet file in wide format
     
     Args:
         modifications: List of modification dictionaries
         output_path: Path for the Parquet file
         include_metadata: Whether to include metadata in file metadata
+        format: 'wide' (new default) or 'long' (legacy)
         
     Returns:
         True if successful, False otherwise
     """
     try:
-        # Prepare data for Parquet
+        # First create long format as before
         rows = []
         for mod in modifications:
+            # Add parameter_scope classification
+            object_type = mod.get('object_type', '').upper()
+            parameter_scope = _classify_parameter_scope(object_type)
+            
+            # Extract zone_name
+            zone_name = _extract_zone_name(mod, parameter_scope)
+            
             row = {
                 'timestamp': mod.get('timestamp', datetime.datetime.now().isoformat()),
                 'building_id': mod.get('building_id', ''),
                 'variant_id': mod.get('variant_id', ''),
+                'parameter_scope': parameter_scope,  # NEW FIELD
+                'zone_name': zone_name,              # NEW FIELD
                 'category': mod.get('category', ''),
                 'object_type': mod.get('object_type', ''),
                 'object_name': mod.get('object_name', ''),
                 'parameter': mod.get('parameter', ''),
-                'field': mod.get('field', ''),
+                'field': mod.get('parameter', mod.get('field', '')),  # <-- USE 'parameter' if 'field' is empty
                 'original_value': str(mod.get('original_value', '')),
                 'new_value': str(mod.get('new_value', mod.get('value', ''))),
                 'original_value_numeric': None,
@@ -591,10 +603,17 @@ def export_modifications_to_parquet(modifications: List[Dict[str, Any]],
             except (ValueError, TypeError):
                 pass
             
+            
             rows.append(row)
         
-        # Create DataFrame
-        df = pd.DataFrame(rows)
+        # Create long format DataFrame
+        df_long = pd.DataFrame(rows)
+        
+        if format == 'wide':
+            # Convert to wide format
+            df = _convert_to_wide_format(df_long)
+        else:
+            df = df_long
         
         # Define optimal dtypes for Parquet
         dtype_mapping = {
@@ -670,6 +689,116 @@ def export_modifications_to_parquet(modifications: List[Dict[str, Any]],
         import traceback
         traceback.print_exc()
         return False
+
+
+
+
+def _classify_parameter_scope(object_type: str) -> str:
+    """
+    Classify the parameter scope based on object type
+    
+    Returns: 'building', 'zone', or 'surface'
+    """
+    object_type = object_type.upper()
+    
+    # Building-level objects
+    building_level = {
+        'TIMESTEP', 'SIMULATIONCONTROL', 'BUILDING', 'SHADOWCALCULATION',
+        'HEATBALANCEALGORITHM', 'SURFACECONVECTIONALGORITHM:INSIDE',
+        'SURFACECONVECTIONALGORITHM:OUTSIDE', 'SITE:LOCATION', 
+        'SITE:GROUNDTEMPERATURE:BUILDINGSURFACE', 'RUNPERIOD',
+        'RUNPERIODCONTROL:SPECIALDAYS', 'RUNPERIODCONTROL:DAYLIGHTSAVINGTIME',
+        'GLOBALGEOMETRYRULES', 'OUTPUT:VARIABLE', 'OUTPUT:METER',
+        'OUTPUT:TABLE:SUMMARYREPORTS', 'OUTPUT:SQLITE', 'OUTPUTCONTROL:TABLE:STYLE',
+        'MATERIAL', 'MATERIAL:NOMASS', 'WINDOWMATERIAL:SIMPLEGLAZINGSYSTEM',
+        'CONSTRUCTION', 'VERSION'
+    }
+    
+    # Surface-level objects
+    surface_level = {
+        'BUILDINGSURFACE:DETAILED', 'FENESTRATIONSURFACE:DETAILED',
+        'FLOOR:DETAILED', 'WALL:DETAILED', 'ROOFCEILING:DETAILED',
+        'WINDOW', 'DOOR', 'GLAZEDDOOR', 'SHADING:SITE', 'SHADING:BUILDING',
+        'SHADING:ZONE', 'SHADING:SITE:DETAILED', 'SHADING:BUILDING:DETAILED',
+        'SHADING:ZONE:DETAILED'
+    }
+    
+    # Check classification
+    if object_type in building_level:
+        return 'building'
+    elif object_type in surface_level:
+        return 'surface'
+    else:
+        # Default to zone for everything else
+        return 'zone'
+
+
+def _extract_zone_name(mod: Dict[str, Any], parameter_scope: str) -> str:
+    """
+    Extract the appropriate zone name based on parameter scope
+    """
+    if parameter_scope == 'building':
+        return 'BUILDING'
+    
+    # For zone and surface objects, check if zone_name is in the modification
+    # This would need to be passed from the modifier
+    zone_name = mod.get('zone_name', '')
+    
+    if zone_name == 'ALL_ZONES' or zone_name == '*':
+        return 'ALL_ZONES'
+    elif zone_name:
+        return zone_name
+    else:
+        # Try to extract from object_name if it contains zone info
+        # This is a fallback - ideally zone_name should be passed in mod
+        return 'UNKNOWN'
+
+
+def _convert_to_wide_format(df_long: pd.DataFrame) -> pd.DataFrame:
+    """
+    Convert long format modifications to wide format
+    """
+    # Group by all identifier columns
+    group_cols = ['building_id', 'parameter_scope', 'zone_name', 
+                  'category', 'object_type', 'object_name', 'field']
+    
+    # Get unique variant IDs
+    variants = sorted(df_long['variant_id'].unique())
+    
+    # Create a pivot table
+    # First, get original values AND change_type (from the first variant or base)
+    original_df = df_long[df_long['variant_id'] == variants[0]][
+        group_cols + ['original_value', 'change_type']  # ADD change_type here
+    ].drop_duplicates()
+    
+    # Rename original_value to 'original'
+    original_df = original_df.rename(columns={'original_value': 'original'})
+    
+    # Now pivot the new values for each variant
+    pivot_df = df_long.pivot_table(
+        index=group_cols,
+        columns='variant_id',
+        values='new_value',
+        aggfunc='first'
+    ).reset_index()
+    
+    # Rename variant columns
+    variant_mapping = {v: f'variant_{i}' for i, v in enumerate(variants)}
+    pivot_df = pivot_df.rename(columns=variant_mapping)
+    
+    # Merge with original values AND change_type
+    wide_df = pd.merge(original_df, pivot_df, on=group_cols, how='outer')
+    
+    # Reorder columns - INCLUDE change_type after field
+    col_order = group_cols + ['change_type', 'original'] + [f'variant_{i}' for i in range(len(variants))]
+    wide_df = wide_df[col_order]
+    
+    return wide_df
+
+
+
+
+
 
 
 def export_summary_statistics_to_parquet(modifications: List[Dict[str, Any]], 
@@ -843,8 +972,13 @@ def create_modification_database(job_output_dir: Path,
         
         # 2. Export modifications to Parquet
         if all_modifications:
-            mods_parquet = db_dir / 'modifications.parquet'
-            export_modifications_to_parquet(all_modifications, mods_parquet)
+            # Export in wide format by default
+            mods_parquet = db_dir / 'modifications_detail_wide.parquet'
+            export_modifications_to_parquet(all_modifications, mods_parquet, format='wide')
+            
+            # Optionally also export in long format for compatibility
+            mods_long_parquet = db_dir / 'modifications_detail_long.parquet'
+            export_modifications_to_parquet(all_modifications, mods_long_parquet, format='long')
             
             # Export summary statistics
             summary_parquet = db_dir / 'modification_summary.parquet'

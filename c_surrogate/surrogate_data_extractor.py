@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union, Any
 from datetime import datetime
 import glob
+import json  
 
 logger = logging.getLogger(__name__)
 
@@ -24,16 +25,18 @@ class SurrogateDataExtractor:
     Extracts and consolidates data from multiple sources for surrogate modeling.
     """
     
-    def __init__(self, job_output_dir: str, config: Dict[str, Any] = None):
+    def __init__(self, job_output_dir: str, config: Dict[str, Any] = None, tracker: Optional['SurrogatePipelineTracker'] = None):
         """
         Initialize the data extractor.
         
         Args:
             job_output_dir: Base output directory from the job
             config: Configuration dictionary for extraction options
+            tracker: Optional pipeline tracker for monitoring
         """
         self.job_output_dir = Path(job_output_dir)
         self.config = config or {}
+        self.tracker = tracker
         
         # Define default paths
         self.paths = {
@@ -65,6 +68,10 @@ class SurrogateDataExtractor:
         """
         logger.info("[Extractor] Starting comprehensive data extraction")
         
+        # Track extraction start
+        if self.tracker:
+            self.tracker.log_step("data_extraction", "started")
+        
         # Extract modification details
         self.extract_modification_parameters()
         
@@ -84,6 +91,23 @@ class SurrogateDataExtractor:
         self.extract_building_registry()
         
         logger.info("[Extractor] Data extraction completed")
+    
+        # Track extraction results
+        if self.tracker:
+            # Get summary statistics
+            summary = self.get_summary_statistics()
+            
+            # Export extracted data
+            self.tracker.track_extraction(summary, self.data)
+            
+            # Export data quality reports
+            for name, df in self.data.items():
+                if df is not None and not df.empty:
+                    quality_report = self.tracker.generate_data_quality_report(df, name)
+                    quality_path = self.tracker.dirs["extraction"] / f"quality_{name}.json"
+                    with open(quality_path, "w") as f:
+                        json.dump(quality_report, f, indent=2)
+        
         return self.data
     
     def extract_modification_parameters(self) -> pd.DataFrame:
@@ -101,20 +125,35 @@ class SurrogateDataExtractor:
             return pd.DataFrame()
         
         # Load and concatenate all modification files
+        # Load and concatenate all modification files
         dfs = []
         for file in mod_files:
             df = pd.read_parquet(file)
+            # Reset index to avoid conflicts
+            df = df.reset_index(drop=True)
             dfs.append(df)
-        
+
         modifications = pd.concat(dfs, ignore_index=True)
         
         # Create a unique parameter identifier
-        modifications['param_id'] = (
-            modifications['category'] + '*' +
-            modifications['object_type'] + '*' +
-            modifications['object_name'] + '*' +
-            modifications['field_name']
-        )
+        # Create a unique parameter identifier - handle missing columns
+        param_id_parts = []
+        if 'category' in modifications.columns:
+            param_id_parts.append(modifications['category'])
+        if 'object_type' in modifications.columns:
+            param_id_parts.append(modifications['object_type'])
+        if 'object_name' in modifications.columns:
+            param_id_parts.append(modifications['object_name'])
+        if 'field_name' in modifications.columns:
+            param_id_parts.append(modifications['field_name'])
+
+        if param_id_parts:
+            modifications['param_id'] = param_id_parts[0]
+            for part in param_id_parts[1:]:
+                modifications['param_id'] = modifications['param_id'] + '*' + part
+        else:
+            # Fallback if structure is different
+            modifications['param_id'] = modifications.index.astype(str)
         
         # Calculate relative changes
         modifications['relative_change'] = np.where(
@@ -150,27 +189,95 @@ class SurrogateDataExtractor:
             # Base parameters
             base_path = self.paths['parsed_data'] / 'idf_data' / 'by_category' / f'{category}.parquet'
             if base_path.exists():
-                base_df = pd.read_parquet(base_path)
-                base_params[category] = base_df
-                logger.debug(f"[Extractor] Loaded {len(base_df)} base {category} parameters")
+                try:
+                    base_df = pd.read_parquet(base_path)
+                    # Map columns
+                    base_df = self._map_column_names(base_df, category)
+                    # Add category column to help identify source
+                    base_df['parameter_category'] = category
+                    base_params[category] = base_df
+                    logger.debug(f"[Extractor] Loaded {len(base_df)} base {category} parameters")
+                    logger.debug(f"[Extractor] Columns: {list(base_df.columns)}")
+                except Exception as e:
+                    logger.warning(f"[Extractor] Failed to load base {category}: {e}")
             
             # Modified parameters
             mod_path = self.paths['parsed_modified'] / 'idf_data' / 'by_category' / f'{category}.parquet'
             if mod_path.exists():
-                mod_df = pd.read_parquet(mod_path)
-                modified_params[category] = mod_df
-                logger.debug(f"[Extractor] Loaded {len(mod_df)} modified {category} parameters")
+                try:
+                    mod_df = pd.read_parquet(mod_path)
+                    # Add category column
+                    mod_df['parameter_category'] = category
+                    modified_params[category] = mod_df
+                    logger.debug(f"[Extractor] Loaded {len(mod_df)} modified {category} parameters")
+                except Exception as e:
+                    logger.warning(f"[Extractor] Failed to load modified {category}: {e}")
         
-        # Combine into single DataFrames
+        # Combine into single DataFrames with better handling
         if base_params:
-            base_combined = pd.concat(base_params.values(), ignore_index=True, sort=False)
-            self.data['base_parameters'] = base_combined
+            # Method 1: Add category prefix to avoid column conflicts
+            combined_dfs = []
+            for cat, df in base_params.items():
+                # Reset index
+                df = df.reset_index(drop=True)
+                
+                # For columns that might conflict, add category prefix
+                # but keep common columns like building_id unchanged
+                common_cols = ['building_id', 'parameter_category', 'ogc_fid', 'zone_name']
+                rename_dict = {}
+                
+                for col in df.columns:
+                    if col not in common_cols and col != 'parameter_category':
+                        # Add category prefix to avoid conflicts
+                        rename_dict[col] = f"{cat}_{col}"
+                
+                if rename_dict:
+                    df = df.rename(columns=rename_dict)
+                
+                combined_dfs.append(df)
+            
+            # Now concat - should work without conflicts
+            try:
+                base_combined = pd.concat(combined_dfs, ignore_index=True, sort=False)
+                self.data['base_parameters'] = base_combined
+                logger.info(f"[Extractor] Combined base parameters: {base_combined.shape}")
+            except Exception as e:
+                logger.error(f"[Extractor] Failed to combine base parameters: {e}")
+                # Fallback: just store them separately
+                self.data['base_parameters'] = pd.DataFrame()
         
         if modified_params:
-            modified_combined = pd.concat(modified_params.values(), ignore_index=True, sort=False)
-            self.data['modified_parameters'] = modified_combined
+            # Same for modified
+            combined_dfs = []
+            for cat, df in modified_params.items():
+                df = df.reset_index(drop=True)
+                
+                common_cols = ['building_id', 'parameter_category', 'ogc_fid', 'zone_name', 'variant_id']
+                rename_dict = {}
+                
+                for col in df.columns:
+                    if col not in common_cols and col != 'parameter_category':
+                        rename_dict[col] = f"{cat}_{col}"
+                
+                if rename_dict:
+                    df = df.rename(columns=rename_dict)
+                
+                combined_dfs.append(df)
+            
+            try:
+                modified_combined = pd.concat(combined_dfs, ignore_index=True, sort=False)
+                self.data['modified_parameters'] = modified_combined
+                logger.info(f"[Extractor] Combined modified parameters: {modified_combined.shape}")
+            except Exception as e:
+                logger.error(f"[Extractor] Failed to combine modified parameters: {e}")
+                self.data['modified_parameters'] = pd.DataFrame()
         
         return self.data.get('base_parameters'), self.data.get('modified_parameters')
+    
+
+
+
+
     
     def extract_simulation_outputs(self, 
                                 temporal_resolution: str = 'daily',
@@ -209,10 +316,18 @@ class SurrogateDataExtractor:
                 
                 # NEW FIX: Handle the case where building_id doesn't contain variant info
                 # Check if building_id contains variant pattern
-                if mod_df['building_id'].str.contains('variant_', na=False).any():
-                    # Original logic - extract from building_id string
-                    mod_df['original_building_id'] = mod_df['building_id'].str.extract(r'(\d+)')[0]
-                    mod_df['variant_id'] = mod_df['building_id'].str.extract(r'(variant_\d+)')[0]
+                # Check if building_id contains variant pattern
+                if 'variant_id' not in mod_df.columns:
+                    if mod_df['building_id'].str.contains('_variant_', na=False).any():
+                        # Extract from building_id string (e.g., "4136733_variant_0")
+                        mod_df['original_building_id'] = mod_df['building_id'].str.extract(r'^(\d+)')[0]
+                        mod_df['variant_id'] = mod_df['building_id'].str.extract(r'(variant_\d+)')[0]
+                    else:
+                        # Simple case - building_id is just the base ID
+                        mod_df['original_building_id'] = mod_df['building_id'].astype(str)
+                        # Look for variant_id in the data or default to variant_0
+                        if 'variant_id' not in mod_df.columns:
+                            mod_df['variant_id'] = 'variant_0'
                 else:
                     # NEW: Simple case - building_id is just the base ID
                     # We need to infer variant from context
@@ -257,15 +372,13 @@ class SurrogateDataExtractor:
         return {'base': base_outputs, 'modified': modified_outputs}
     
     def extract_sensitivity_rankings(self) -> pd.DataFrame:
-        """
-        Extract sensitivity analysis results for parameter importance.
-        """
+        """Extract sensitivity analysis results for parameter importance."""
         logger.info("[Extractor] Extracting sensitivity rankings")
         
         sensitivity_files = [
             'sensitivity_for_surrogate.parquet',
-            'modification_sensitivity_results_peak_months_cooling.parquet',
-            'uncertainty_analysis_results.parquet'
+            'modification_sensitivity_results.parquet',  # Try alternative names
+            'sensitivity_results.parquet',
         ]
         
         sensitivity_data = []
@@ -322,16 +435,28 @@ class SurrogateDataExtractor:
                 zone_mappings.append(df)
         
         if zone_mappings:
-            relationships['zone_mappings'] = pd.concat(zone_mappings, ignore_index=True)
+            zone_mappings_reset = [df.reset_index(drop=True) for df in zone_mappings]
+            relationships['zone_mappings'] = pd.concat(zone_mappings_reset, ignore_index=True)
             logger.debug(f"[Extractor] Loaded {len(relationships['zone_mappings'])} zone mappings")
-        
+
         # Equipment assignments
         equip_paths = [
             self.paths['parsed_data'] / 'relationships' / 'equipment_assignments.parquet',
             self.paths['parsed_modified'] / 'relationships' / 'equipment_assignments.parquet'
         ]
-        
+
         equipment_assignments = []
+        for path in equip_paths:
+            if path.exists():
+                df = pd.read_parquet(path)
+                df['source'] = 'base' if 'parsed_data' in str(path) else 'modified'
+                equipment_assignments.append(df)
+
+        if equipment_assignments:
+            equipment_assignments_reset = [df.reset_index(drop=True) for df in equipment_assignments]
+            relationships['equipment_assignments'] = pd.concat(equipment_assignments_reset, ignore_index=True)
+            logger.debug(f"[Extractor] Loaded {len(relationships['equipment_assignments'])} equipment assignments")
+
         for path in equip_paths:
             if path.exists():
                 df = pd.read_parquet(path)
@@ -364,7 +489,8 @@ class SurrogateDataExtractor:
                 registries.append(df)
         
         if registries:
-            combined_registry = pd.concat(registries, ignore_index=True)
+            registries_reset = [df.reset_index(drop=True) for df in registries]
+            combined_registry = pd.concat(registries_reset, ignore_index=True)
             self.data['building_registry'] = combined_registry
             logger.info(f"[Extractor] Extracted registry for {len(combined_registry)} building configurations")
         else:
@@ -445,17 +571,57 @@ class SurrogateDataExtractor:
                 logger.info(f"[Extractor] Saved {key} to {file_path}")
 
 
-# Utility functions
-def extract_for_surrogate(job_output_dir: str, config: Dict[str, Any] = None) -> Dict[str, pd.DataFrame]:
-    """
-    Convenience function to extract all data needed for surrogate modeling.
-    
-    Args:
-        job_output_dir: Job output directory
-        config: Extraction configuration
+
+    def _map_column_names(self, df: pd.DataFrame, category: str) -> pd.DataFrame:
+        """Map actual column names to expected names."""
+        column_mappings = {
+            'lighting': {
+                'watts_per_zone_floor_area': 'LightingLevel',
+                'fraction_radiant': 'FractionRadiant',
+                'fraction_visible': 'FractionVisible',
+                'schedule_name': 'ScheduleName'
+            },
+            'hvac_equipment': {
+                'maximum_heating_supply_air_temperature': 'MaximumHeatingSupplyAirTemperature',
+                'minimum_cooling_supply_air_temperature': 'MinimumCoolingSupplyAirTemperature'
+            },
+            'materials_materials': {
+                'thickness': 'Thickness',
+                'conductivity': 'Conductivity',
+                'density': 'Density',
+                'specific_heat': 'SpecificHeat',
+                'name': 'material_name',
+                'object_name': 'material_object_name'
+            },
+            'infiltration': {
+                'design_flow_rate': 'DesignFlowRate',
+                'design_flow_rate_calculation_method': 'DesignFlowRateCalculationMethod'
+            },
+            'ventilation': {
+                'outdoor_air_method': 'OutdoorAirMethod',
+                'outdoor_air_flow_per_person': 'OutdoorAirFlowperPerson'
+            }
+        }
         
-    Returns:
-        Dictionary of extracted DataFrames
-    """
-    extractor = SurrogateDataExtractor(job_output_dir, config)
-    return extractor.extract_all()
+        if category in column_mappings:
+            return df.rename(columns=column_mappings[category])
+        return df
+
+
+
+
+
+    # Utility functions
+    def extract_for_surrogate(job_output_dir: str, config: Dict[str, Any] = None) -> Dict[str, pd.DataFrame]:
+        """
+        Convenience function to extract all data needed for surrogate modeling.
+        
+        Args:
+            job_output_dir: Job output directory
+            config: Extraction configuration
+            
+        Returns:
+            Dictionary of extracted DataFrames
+        """
+        extractor = SurrogateDataExtractor(job_output_dir, config)
+        return extractor.extract_all()

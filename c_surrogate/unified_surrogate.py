@@ -58,10 +58,17 @@ logger = logging.getLogger(__name__)
 def build_surrogate_from_job(
     job_output_dir: str,
     sur_cfg: Dict[str, Any],
-    output_dir: str = None
+    output_dir: str = None,
+    tracker: Optional['SurrogatePipelineTracker'] = None
 ) -> Dict[str, Any]:
     """
     Build surrogate model using the new integrated pipeline.
+    
+    Args:
+        job_output_dir: Job output directory containing all parquet files
+        sur_cfg: Surrogate configuration from main config
+        output_dir: Directory to save surrogate outputs
+        tracker: Optional pipeline tracker for monitoring
     
     This is the main entry point when using the new data extraction/preprocessing.
     
@@ -79,7 +86,7 @@ def build_surrogate_from_job(
     logger.info("[Surrogate] Step 1: Extracting data from job outputs")
     extraction_config = sur_cfg.get('data_extraction', {})
     
-    extractor = SurrogateDataExtractor(job_output_dir, extraction_config)
+    extractor = SurrogateDataExtractor(job_output_dir, extraction_config, tracker)
     extracted_data = extractor.extract_all()
     
     # Log extraction summary
@@ -91,13 +98,22 @@ def build_surrogate_from_job(
     preprocessing_config = sur_cfg.get('preprocessing', {})
     
     # Override target variables from main config
+    # Override target variables from main config
+    # Override target variables from main config
     if 'target_variable' in sur_cfg:
         target_vars = sur_cfg['target_variable']
         if isinstance(target_vars, str):
             target_vars = [target_vars]
         preprocessing_config['target_variables'] = target_vars
+    else:
+        # Use default target variables that match actual column names
+        preprocessing_config['target_variables'] = [
+            'Heating:EnergyTransfer [J](Hourly)',
+            'Cooling:EnergyTransfer [J](Hourly)', 
+            'Electricity:Facility [J](Hourly)'
+        ]
     
-    preprocessor = SurrogateDataPreprocessor(extracted_data, preprocessing_config)
+    preprocessor = SurrogateDataPreprocessor(extracted_data, preprocessing_config, tracker)
     processed_data = preprocessor.preprocess_all()
     
     # Step 3: Build surrogate model
@@ -131,7 +147,9 @@ def build_surrogate_from_job(
         use_automl=sur_cfg.get('use_automl', False),
         automl_framework=sur_cfg.get('automl_framework'),
         automl_time_limit=sur_cfg.get('automl_time_limit', 300),
-        automl_config=sur_cfg.get('automl_config', {})
+        automl_config=sur_cfg.get('automl_config', {}),
+        tracker=tracker  # ADD THIS
+
     )
     
     # Step 4: Create output manager
@@ -158,7 +176,7 @@ def build_surrogate_from_job(
         }
     
     # Create output manager
-    output_manager = SurrogateOutputManager(model_artifacts, output_config)
+    output_manager = SurrogateOutputManager(model_artifacts, output_config, tracker)  # ADD tracker parameter
     
     # Save artifacts and create reports
     if output_dir:
@@ -286,6 +304,31 @@ def build_and_save_surrogate_from_preprocessed(
                 multi_output, random_state
             )
             model_info = {'model_type': 'random_forest'}
+    
+    # Print summary
+    # Track model training if tracker provided
+    if 'tracker' in kwargs and kwargs['tracker']:
+        tracker = kwargs['tracker']
+        
+        # Get feature importance if available
+        feature_importance = None
+        if hasattr(model, 'feature_importances_'):
+            feature_importance = pd.DataFrame({
+                'feature': feature_cols,
+                'importance': model.feature_importances_
+            }).sort_values('importance', ascending=False)
+        
+        # Get model comparison if available
+        model_comparison = None
+        if 'all_results' in model_info:
+            model_comparison = model_info['all_results']
+        
+        tracker.track_model_training(
+            model_info,
+            metrics,
+            feature_importance,
+            model_comparison
+        )
     
     # Print summary
     logger.info("\n[Surrogate Training Summary]")

@@ -413,30 +413,32 @@ class SensitivityManager:
                 # Method-specific summaries
                 if method == 'uncertainty':
                     if 'uncertainty_lower' in results.columns and 'uncertainty_upper' in results.columns:
-                        summary['avg_confidence_interval_width'] = (
-                            results['uncertainty_upper'] - results['uncertainty_lower']
-                        ).mean()
+                        summary['avg_confidence_interval_width'] = float(
+                            (results['uncertainty_upper'] - results['uncertainty_lower']).mean()
+                        )
                 
                 elif method == 'threshold':
                     if 'breakpoint_value' in results.columns:
-                        summary['n_breakpoints'] = results['breakpoint_value'].notna().sum()
-                        summary['parameters_with_breakpoints'] = results[
+                        summary['n_breakpoints'] = int(results['breakpoint_value'].notna().sum())
+                        summary['parameters_with_breakpoints'] = int(results[
                             results['breakpoint_value'].notna()
-                        ]['parameter'].nunique()
+                        ]['parameter'].nunique())
                 
                 elif method == 'regional':
                     if 'parameter_region' in results.columns:
-                        summary['n_regions_analyzed'] = results['parameter_region'].nunique()
+                        summary['n_regions_analyzed'] = int(results['parameter_region'].nunique())
                 
                 elif method == 'sobol':
                     if 'sobol_first_order' in results.columns:
-                        summary['total_variance_explained'] = results.groupby('output_variable')[
-                            'sobol_first_order'
-                        ].sum().to_dict()
+                        summary['total_variance_explained'] = {
+                            k: float(v) for k, v in results.groupby('output_variable')['sobol_first_order'].sum().to_dict().items()
+                        }
                 
                 elif method == 'temporal':
                     if 'pattern_type' in results.columns:
-                        summary['patterns_found'] = results['pattern_type'].value_counts().to_dict()
+                        summary['patterns_found'] = {
+                            k: int(v) for k, v in results['pattern_type'].value_counts().to_dict().items()
+                        }
                 
                 report['summary'][method] = summary
                 
@@ -448,9 +450,14 @@ class SensitivityManager:
                     report['detailed_results'][f'{method}_top_parameters'] = top_results
         
         # Save report
+        # Convert numpy types before saving
+        # Convert numpy types before saving
+        report_converted = self._convert_numpy_types(report)
+
+        # Save report
         report_path = output_dir / "advanced_sensitivity_report.json"
         with open(report_path, 'w') as f:
-            json.dump(report, f, indent=2)
+            json.dump(report_converted, f, indent=2)
         
         self.logger.info(f"Advanced analysis report saved: {report_path}")
     
@@ -1151,14 +1158,36 @@ class SensitivityManager:
         return comparison
 
 
-# Backward compatibility function
-def run_enhanced_sensitivity_analysis(
-    manager: SensitivityDataManager,
-    config: Dict[str, Any],
-    logger: logging.Logger
-) -> Optional[str]:
-    """
-    Backward compatibility wrapper for the old function name
-    """
-    sensitivity_manager = SensitivityManager(manager.project_root, logger)
-    return sensitivity_manager.run_analysis(config)
+    # Backward compatibility function
+    def run_enhanced_sensitivity_analysis(
+        manager: SensitivityDataManager,
+        config: Dict[str, Any],
+        logger: logging.Logger
+    ) -> Optional[str]:
+        """
+        Backward compatibility wrapper for the old function name
+        """
+        sensitivity_manager = SensitivityManager(manager.project_root, logger)
+        return sensitivity_manager.run_analysis(config)
+    
+    def _convert_numpy_types(self, obj):
+        """Convert numpy types to Python native types for JSON serialization"""
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, pd.Series):
+            return obj.to_list()
+        elif isinstance(obj, pd.DataFrame):
+            return obj.to_dict()
+        elif isinstance(obj, dict):
+            return {key: self._convert_numpy_types(value) for key, value in obj.items()}
+        elif isinstance(obj, list):
+            return [self._convert_numpy_types(item) for item in obj]
+        elif isinstance(obj, tuple):
+            return tuple(self._convert_numpy_types(item) for item in obj)
+        elif hasattr(obj, 'to_dict'):  # Handle pandas objects
+            return obj.to_dict()
+        return obj

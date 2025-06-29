@@ -134,6 +134,21 @@ class RegionalSensitivityAnalyzer:
         # Use only numeric columns
         X_numeric = X.select_dtypes(include=[np.number])
         
+        # Handle NaN values - drop columns with too many NaNs, fill others
+        nan_threshold = 0.5  # Drop columns with >50% NaN
+        nan_counts = X_numeric.isna().sum() / len(X_numeric)
+        X_numeric = X_numeric.drop(columns=nan_counts[nan_counts > nan_threshold].index)
+        
+        # Fill remaining NaN values with median
+        X_numeric = X_numeric.fillna(X_numeric.median())
+        
+        # Drop any remaining rows with NaN (shouldn't be many)
+        X_numeric = X_numeric.dropna()
+        
+        if len(X_numeric) < n_regions:
+            self.logger.warning(f"Not enough samples ({len(X_numeric)}) for {n_regions} regions after NaN removal")
+            n_regions = min(n_regions, max(2, len(X_numeric) // 10))
+        
         # Scale data
         X_scaled = self.scaler.fit_transform(X_numeric)
         

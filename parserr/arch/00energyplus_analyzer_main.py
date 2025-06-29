@@ -523,11 +523,11 @@ class EnergyPlusAnalyzer:
         print(f"Project path: {self.project_path}")
     
     def analyze_project(self, idf_sql_pairs: List[Tuple[str, str]],
-                    categories: List[str] = None,
-                    start_date: Optional[str] = None,
-                    end_date: Optional[str] = None,
-                    validate_outputs: bool = True,
-                    building_id_map: Optional[Dict[str, str]] = None):  # Existing parameter
+                        categories: List[str] = None,
+                        start_date: Optional[str] = None,
+                        end_date: Optional[str] = None,
+                        validate_outputs: bool = True,
+                        building_id_map: Optional[Dict[str, str]] = None):
         """Analyze multiple IDF/SQL file pairs with output validation and variant tracking"""
         
         if categories is None:
@@ -540,8 +540,11 @@ class EnergyPlusAnalyzer:
         variant_id_map = getattr(self, 'variant_id_map', {})
         
         # Process each building
+        # Process each building
         building_registry = []
         output_validation_results = []
+        missing_outputs_all = []  # Collect all missing outputs
+        existing_outputs_all = []  # Collect all existing outputs
         
         for idx, (idf_path, sql_path) in enumerate(idf_sql_pairs):
             print(f"\n{'='*60}")
@@ -561,8 +564,9 @@ class EnergyPlusAnalyzer:
                     print(f"Using mapped building ID: {building_data.building_id}")
                 
                 # Add variant_id to metadata if available
-                variant_id = variant_id_map.get(str(idf_path), 'default')
+                variant_id = variant_id_map.get(str(idf_path), 'base')
                 building_data.metadata['variant_id'] = variant_id
+                building_data.variant_id = variant_id  # Add to BuildingData object
                 print(f"Using variant ID: {variant_id}")
                 
                 # Extract output definitions
@@ -588,6 +592,16 @@ class EnergyPlusAnalyzer:
                     validation_result['variant_id'] = variant_id  # Add variant to validation
                     output_validation_results.append(validation_result)
                     
+                    # Collect missing outputs for detailed tracking
+                    for missing in validation_result.get('missing', []):
+                        missing['building_id'] = building_data.building_id
+                        missing['variant_id'] = variant_id
+                        missing_outputs_all.append(missing)
+                    # Collect existing outputs for detailed tracking
+                    for existing in validation_result.get('existing', []):
+                        existing['building_id'] = building_data.building_id
+                        existing['variant_id'] = variant_id
+                        existing_outputs_all.append(existing)
                     # Show validation summary
                     print(f"  Output coverage: {validation_result['coverage']:.1f}%")
                     if validation_result['missing']:
@@ -601,7 +615,13 @@ class EnergyPlusAnalyzer:
                     for cat in categories
                     if self.category_mappings[cat]['sql_variables']
                 }
-                
+                # Also include the new SQL category mappings if using enhanced parser
+                if hasattr(sql_analyzer, 'SQL_CATEGORY_MAPPINGS'):
+                    # Use the new detailed mappings
+                    from parserr.sql_analyzer import SQL_CATEGORY_MAPPINGS
+                    variables_by_category = SQL_CATEGORY_MAPPINGS
+
+                    
                 print("\nExtracting SQL time series data...")
                 try:
                     # Pass variant_id to the extraction method
@@ -610,7 +630,7 @@ class EnergyPlusAnalyzer:
                         variables_by_category,
                         start_date=start_date,
                         end_date=end_date,
-                        variant_id=variant_id  # NEW: Pass variant_id
+                        variant_id=variant_id
                     )
                 except Exception as e:
                     print(f"[ERROR] SQL extraction failed: {e}")
@@ -618,16 +638,22 @@ class EnergyPlusAnalyzer:
                     traceback.print_exc()
                 
                 # Register building with variant info
-                building_registry.append({
+                registry_entry = {
                     'building_id': building_data.building_id,
                     'variant_id': variant_id,
                     'idf_path': str(idf_path),
                     'sql_path': str(sql_path),
                     'zones': len(building_data.zones),
-                    'surfaces': len(building_data.objects.get('BUILDINGSURFACE:DETAILED', [])),  # Fixed: count surface objects
-                    'windows': len(building_data.objects.get('FENESTRATIONSURFACE:DETAILED', [])),  # Added for completeness
-                    'has_sql': True
-                })
+                    'surfaces': len(building_data.objects.get('BUILDINGSURFACE:DETAILED', [])),
+                    'windows': len(building_data.objects.get('FENESTRATIONSURFACE:DETAILED', [])),
+                    'output_variables': len(output_config.get('variables', [])),
+                    'output_meters': len(output_config.get('meters', [])),
+                    'has_sql': True,
+                    'status': 'completed',
+                    'last_modified': datetime.now()
+                }
+                
+                building_registry.append(registry_entry)
                 
                 print(f"\n✓ Building {building_data.building_id} (variant: {variant_id}) completed")
                 
@@ -643,46 +669,86 @@ class EnergyPlusAnalyzer:
                     'idf_path': str(idf_path),
                     'sql_path': str(sql_path),
                     'error': str(e),
-                    'has_sql': False
+                    'has_sql': False,
+                    'status': 'failed',
+                    'last_modified': datetime.now()
                 })
         
-        # Save building registry with variant info
-        registry_df = pd.DataFrame(building_registry)
-        registry_path = self.project_path / 'metadata' / 'building_registry.parquet'
-        registry_df.to_parquet(registry_path)
-        
-        # Save output validation results with variant info
-        if output_validation_results:
-            validation_df = pd.DataFrame(output_validation_results)
-            validation_path = self.project_path / 'metadata' / 'output_validation.parquet'
-            validation_df.to_parquet(validation_path)
-        
-        # Flush any remaining buffered data
+        # Save building registry with enhanced metadata
         print("\n" + "="*60)
-        print("FINALIZING DATA STORAGE")
+        print("SAVING PROJECT METADATA")
         print("="*60)
         
-        # Flush all buffers and create schemas
-        if hasattr(self.data_manager, 'flush_all_buffers'):
-            self.data_manager.flush_all_buffers()
+        # Update building registry with output counts
+        registry_df = pd.DataFrame(building_registry)
+        self.data_manager.update_building_registry(registry_df)
         
-        # Create category schemas
-        if hasattr(self.data_manager, 'create_category_schemas'):
-            self.data_manager.create_category_schemas()
+        # Save output validation results using data manager
+        if output_validation_results:
+            print("\nSaving output validation results...")
+            validation_df = pd.DataFrame(output_validation_results)
+            self.data_manager.save_output_validation_results(validation_df)
+            
+            # Save missing outputs detail
+            if missing_outputs_all:
+                missing_df = pd.DataFrame(missing_outputs_all)
+                self.data_manager.save_missing_outputs(missing_df)
+                print(f"  Saved {len(missing_outputs_all)} missing output records")
+            
+            # Save existing outputs detail
+            if existing_outputs_all:
+                existing_df = pd.DataFrame(existing_outputs_all)
+                self.data_manager.save_existing_outputs(existing_df)  # Need to add this method
+                print(f"  Saved {len(existing_outputs_all)} existing output records")
+
+            # Also save all available outputs from SQL
+            all_available_outputs = []
+            for building_id, sql_analyzer in self.sql_analyzers.items():
+                available = sql_analyzer.get_available_outputs()
+                if not available.empty:
+                    available['building_id'] = building_id
+                    available['variant_id'] = getattr(sql_analyzer, 'variant_id', 'base')
+                    all_available_outputs.append(available)
+
+            if all_available_outputs:
+                available_df = pd.concat(all_available_outputs, ignore_index=True)
+                self.data_manager.save_available_outputs(available_df)  # Need to add this method
+                print(f"  Saved {len(available_df)} available output records")
+
+
+
+
+
+
+            # Generate output coverage summary
+            coverage_summary = self.data_manager.get_output_coverage_summary()
+            self.data_manager.save_output_analysis('coverage_summary', coverage_summary)
+            print(f"  Average output coverage: {coverage_summary.get('average_coverage', 0):.1f}%")
+        
+        # Flush any remaining buffered data
+        print("\nFlushing buffered data...")
+        self.data_manager.flush_category_buffers()
+        
+        # Update category schemas
+        print("Updating category schemas...")
+        self.data_manager.update_category_schemas()
         
         # Update project manifest
-        if hasattr(self.data_manager, 'update_project_manifest'):
-            self.data_manager.update_project_manifest(
-                total_buildings=len(building_registry),
-                categories=categories
-            )
+        print("Updating project manifest...")
+        self.data_manager.update_project_manifest(
+            total_buildings=len(building_registry),
+            categories=categories
+        )
+        
+        # Generate output documentation
+        print("Generating output documentation...")
+        self._generate_output_documentation()
         
         print(f"\n✓ Analysis complete!")
         print(f"Data stored in: {self.project_path}")
         
         # Show summary
         self.show_data_summary()
-
 
 
 
@@ -1128,13 +1194,14 @@ class EnergyPlusAnalyzer:
         return output_config
     
     def _validate_outputs(self, building_id: str, sql_analyzer: EnhancedSQLAnalyzer, 
-                     output_config: Dict[str, Any]) -> Dict[str, Any]:
+                        output_config: Dict[str, Any]) -> Dict[str, Any]:
         """Validate that SQL contains requested outputs"""
         validation_result = {
             'building_id': building_id,
             'total_requested': len(output_config['variables']),
             'found': 0,
             'missing': [],
+            'existing': [],  # ADD THIS LINE
             'partial': [],
             'coverage': 0.0
         }
@@ -1172,6 +1239,21 @@ class EnergyPlusAnalyzer:
                 
                 if found:
                     validation_result['found'] += 1
+                    # ADD THIS BLOCK - Track existing outputs with details
+                    validation_result['existing'].append({
+                        'variable': var_name,
+                        'key': key,
+                        'frequency': freq,
+                        'found_in_sql': True,
+                        'has_data': not partial
+                    })
+                    if partial:
+                        validation_result['partial'].append({
+                            'variable': var_name,
+                            'key': key,
+                            'frequency': freq,
+                            'reason': 'No data points found'
+                        })
                 else:
                     validation_result['missing'].append({
                         'variable': var_name,

@@ -341,3 +341,35 @@ class LightingModifier(BaseModifier):
             if param_def.field_name == field_name:
                 return key
         return field_name.lower().replace(' ', '_')
+    
+
+    def _extract_zone_name_from_object(self, obj: Any) -> str:
+        """
+        Override to handle LIGHTS-specific zone extraction
+        """
+        # First try the base implementation
+        zone_name = super()._extract_zone_name_from_object(obj)
+        
+        # If we got UNKNOWN and this is a LIGHTS object, try harder
+        if zone_name == 'UNKNOWN' and obj.object_type.upper() == 'LIGHTS':
+            # Check if zone is embedded in the object name
+            # E.g., "CORE_ZN_LIGHTS" or "Zone1_Lights"
+            import re
+            
+            # Common patterns for zone names in LIGHTS objects
+            patterns = [
+                r'(\w+)_LIGHTS',
+                r'(\w+)_ZN_LIGHTS',
+                r'LIGHTS_(\w+)',
+                r'(\w+_ZN)',
+            ]
+            
+            for pattern in patterns:
+                match = re.search(pattern, obj.name.upper())
+                if match:
+                    potential_zone = match.group(1)
+                    # Validate this is likely a zone name
+                    if 'CORE' in potential_zone or 'ZONE' in potential_zone or 'ZN' in potential_zone:
+                        return potential_zone
+        
+        return zone_name

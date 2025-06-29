@@ -24,16 +24,18 @@ class SurrogateDataPreprocessor:
     and various data transformations.
     """
     
-    def __init__(self, extracted_data: Dict[str, pd.DataFrame], config: Dict[str, Any] = None):
+    def __init__(self, extracted_data: Dict[str, pd.DataFrame], config: Dict[str, Any] = None, tracker: Optional['SurrogatePipelineTracker'] = None):
         """
         Initialize the preprocessor with extracted data.
         
         Args:
             extracted_data: Dictionary of DataFrames from SurrogateDataExtractor
             config: Configuration for preprocessing options
+            tracker: Optional pipeline tracker for monitoring
         """
         self.data = extracted_data
         self.config = config or {}
+        self.tracker = tracker
         
         # Processed data storage
         self.processed = {
@@ -130,7 +132,15 @@ class SurrogateDataPreprocessor:
             aligned_data = self.filter_by_sensitivity(aligned_data)
         
         # Step 3: Create parameter matrix
+        # Step 3: Create parameter matrix
         param_matrix = self.create_parameter_matrix(aligned_data)
+        
+        # Track intermediate data
+        if self.tracker:
+            self.tracker.export_input_data({
+                "aligned_data": aligned_data,
+                "parameter_matrix": param_matrix
+            }, "preprocessing")
         
         # Step 4: Aggregate outputs
         output_matrix = self.aggregate_outputs(aligned_data)
@@ -148,12 +158,33 @@ class SurrogateDataPreprocessor:
         features, targets = self.prepare_final_datasets(features, output_matrix)
         
         # Store results
+        # Store results
         self.processed['features'] = features
         self.processed['targets'] = targets
         
         logger.info("[Preprocessor] Preprocessing completed")
         logger.info(f"[Preprocessor] Features shape: {features.shape}")
         logger.info(f"[Preprocessor] Targets shape: {targets.shape}")
+        
+        # Track preprocessing results
+        if self.tracker:
+            processing_steps = [
+                "align_parameters_with_outputs",
+                "filter_by_sensitivity" if self.config['use_sensitivity_filter'] else None,
+                "create_parameter_matrix",
+                "aggregate_outputs",
+                "handle_multi_level_data" if self.config['aggregation_level'] == 'zone' else None,
+                "engineer_features",
+                "prepare_final_datasets"
+            ]
+            processing_steps = [s for s in processing_steps if s]
+            
+            self.tracker.track_preprocessing(
+                self.processed['metadata'],
+                features,
+                targets,
+                processing_steps
+            )
         
         return self.processed
     
@@ -184,16 +215,25 @@ class SurrogateDataPreprocessor:
         grouped_mods = modifications.groupby(['building_id', 'variant_id'])
         
         for (building_id, variant_id), mod_group in grouped_mods:
-            # Find corresponding outputs
-            # First check if we have original_building_id column (from the fix)
+            # Find corresponding outputs - handle both string and numeric building_id
+            building_id_str = str(building_id)
+            
             if 'original_building_id' in modified_outputs.columns:
                 mod_output_mask = (
-                    (modified_outputs['original_building_id'] == str(building_id)) &
+                    (modified_outputs['original_building_id'] == building_id_str) &
+                    (modified_outputs['variant_id'] == variant_id)
+                )
+            elif 'building_id' in modified_outputs.columns and 'variant_id' in modified_outputs.columns:
+                # Direct match on both columns
+                mod_output_mask = (
+                    (modified_outputs['building_id'] == building_id_str) &
                     (modified_outputs['variant_id'] == variant_id)
                 )
             else:
-                # Fallback to just building_id
-                mod_output_mask = (modified_outputs['building_id'] == str(building_id))
+                # Fallback - try to match on building_id containing both IDs
+                mod_output_mask = (modified_outputs['building_id'].str.contains(f"{building_id_str}.*{variant_id}"))
+
+
             
             if mod_output_mask.any():
                 # Get the modified outputs for this building/variant

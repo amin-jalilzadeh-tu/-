@@ -450,6 +450,27 @@ class EnhancedValidator:
         else:
             return 'other'
     
+
+    def _map_output_category(self, category: str) -> str:
+        """Map internal category names to output category names"""
+        # This maps the category names from SQL_CATEGORY_MAPPINGS to simpler output names
+        category_output_map = {
+            'energy_meters': 'energy',
+            'site_weather': 'weather',
+            'geometry': 'zones',  # Using 'zones' as you had in original
+            'materials': 'surfaces',
+            'dhw': 'dhw',
+            'equipment': 'equipment', 
+            'lighting': 'lighting',
+            'hvac': 'hvac',
+            'ventilation': 'ventilation',
+            'infiltration': 'infiltration',
+            'shading': 'shading',
+            'other': 'other'
+        }
+        return category_output_map.get(category, category)
+
+
     def _save_results(self) -> Dict[str, pd.DataFrame]:
         """Save all results to Parquet files"""
         output_dir = self.job_output_dir / "validation_results"

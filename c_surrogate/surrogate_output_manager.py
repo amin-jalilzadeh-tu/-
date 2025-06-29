@@ -28,16 +28,18 @@ class SurrogateOutputManager:
     Manages surrogate model artifacts, predictions, and outputs.
     """
     
-    def __init__(self, model_artifacts: Dict[str, Any], config: Dict[str, Any] = None):
+    def __init__(self, model_artifacts: Dict[str, Any], config: Dict[str, Any] = None, tracker: Optional['SurrogatePipelineTracker'] = None):
         """
         Initialize the output manager.
         
         Args:
             model_artifacts: Dictionary containing model, metadata, etc. from training
             config: Configuration for output management
+            tracker: Optional pipeline tracker for monitoring
         """
         self.model_artifacts = model_artifacts
         self.config = config or {}
+        self.tracker = tracker
         
         # Extract key components
         self.model = model_artifacts.get('model')
@@ -387,11 +389,28 @@ class SurrogateOutputManager:
         }
         
         # Save report if output directory provided
+        # Save report if output directory provided
         if output_dir:
             report_path = Path(output_dir) / 'validation_report.json'
             with open(report_path, 'w') as f:
                 json.dump(summary, f, indent=2)
             logger.info(f"[OutputManager] Saved validation report to {report_path}")
+        
+        # Track validation results
+        if self.tracker:
+            # Generate prediction examples
+            example_params = {}
+            for i, col in enumerate(self.feature_columns[:5]):
+                example_params[col] = 0.1  # Small change
+            
+            pred_func = self.generate_prediction_interface('function')
+            example_prediction = pred_func(example_params, return_all_outputs=True)
+            
+            self.tracker.track_output_generation(
+                validation_results=summary,
+                prediction_examples={"example_input": example_params, "example_output": example_prediction},
+                artifacts_saved=[str(report_path)]
+            )
         
         return summary
     

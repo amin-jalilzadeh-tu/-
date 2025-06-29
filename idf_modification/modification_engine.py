@@ -214,7 +214,8 @@ class ModificationEngine:
                         'rule_applied': mod.rule_applied,
                         'success': mod.success,
                         'validation_status': mod.validation_status,
-                        'message': mod.message
+                        'message': mod.message,
+                        'zone_name': getattr(mod, 'zone_name', '')  # ADD THIS
                     }
                     all_modifications.append(mod_dict)
                 

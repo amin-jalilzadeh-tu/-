@@ -130,6 +130,72 @@
         "save_by_building": true
       }
     },
+    "timeseries_aggregation": {
+      "perform_aggregation": true,
+      "variable_selection": {
+        "mode": "all",
+        "variables": [
+          "Zone Air Temperature [C](Hourly)",
+          "Electricity:Facility"
+        ],
+        "patterns": [
+          "*Energy*",
+          "*Temperature*"
+        ]
+      },
+      "aggregation_rules": {
+        "default_method": "mean",
+        "by_pattern": [
+          {
+            "pattern": [
+              "*Energy*",
+              "*Consumption*",
+              "Electricity:*"
+            ],
+            "method": "sum"
+          },
+          {
+            "pattern": [
+              "*Temperature*",
+              "*Setpoint*"
+            ],
+            "method": "mean"
+          },
+          {
+            "pattern": [
+              "*Rate*",
+              "*Power*"
+            ],
+            "method": "mean"
+          }
+        ],
+        "by_variable": {
+          "Electricity:Facility": "sum",
+          "Zone Air Temperature [C](Hourly)": "mean"
+        }
+      },
+      "default_settings": {
+        "target_frequencies": [
+          "daily",
+          "monthly",
+          "yearly"
+        ],
+        "skip_existing": true
+      },
+      "variable_overrides": [
+        {
+          "variable": "Electricity:Facility",
+          "aggregation_methods": {
+            "hourly_to_daily": "sum",
+            "daily_to_monthly": "sum"
+          }
+        }
+      ],
+      "input_options": {
+        "use_base_data": true,
+        "use_variant_data": true
+      }
+    },
     "modification": {
       "perform_modification": true,
       "base_idf_selection": {
@@ -1128,12 +1194,12 @@
           "ventilation"
         ],
         "use_modification_tracking": true,
-        "use_sensitivity_filtering": true
+        "use_sensitivity_filtering": false
       },
       "// Preprocessing Configuration": "How to prepare data for ML",
       "preprocessing": {
         "aggregation_level": "building",
-        "use_sensitivity_filter": true,
+        "use_sensitivity_filter": false,
         "sensitivity_threshold": 0.1,
         "normalize_features": true,
         "create_interactions": false,

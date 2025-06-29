@@ -1,0 +1,42 @@
+Name,Units,Type,IndexGroup,IsMeter
+Cooling:EnergyTransfer,J,Sum,Facility:EnergyTransfer:Cooling,1
+Electricity:Facility,J,Sum,Facility:Electricity,1
+Heating:EnergyTransfer,J,Sum,Facility:EnergyTransfer:Heating,1
+Site Diffuse Solar Radiation Rate per Area,W/m2,Avg,Zone,0
+Site Outdoor Air Drybulb Temperature,C,Avg,Zone,0
+Site Outdoor Air Relative Humidity,%,Avg,Zone,0
+Surface Inside Face Conduction Heat Transfer Rate,W,Avg,Zone,0
+Surface Inside Face Temperature,C,Avg,Zone,0
+Surface Outside Face Incident Solar Radiation Rate per Area,W/m2,Avg,Zone,0
+Surface Outside Face Temperature,C,Avg,Zone,0
+Surface Shading Device Is On Time Fraction,,Avg,Zone,0
+Surface Window Blind Slat Angle,deg,Avg,Zone,0
+Surface Window Heat Gain Energy,J,Sum,Zone,0
+Surface Window Heat Gain Rate,W,Avg,Zone,0
+Surface Window Heat Loss Energy,J,Sum,Zone,0
+Surface Window Heat Loss Rate,W,Avg,Zone,0
+Surface Window Shading Device Absorbed Solar Radiation Rate,W,Avg,Zone,0
+Surface Window Transmitted Beam Solar Radiation Rate,W,Avg,Zone,0
+Surface Window Transmitted Diffuse Solar Radiation Rate,W,Avg,Zone,0
+Surface Window Transmitted Solar Radiation Rate,W,Avg,Zone,0
+Water Heater Heating Energy,J,Sum,System,0
+Zone Air Heat Balance Air Energy Storage Rate,W,Avg,System,0
+Zone Air Heat Balance Internal Convective Heat Gain Rate,W,Avg,System,0
+Zone Air Heat Balance Interzone Air Transfer Rate,W,Avg,System,0
+Zone Air Heat Balance Outdoor Air Transfer Rate,W,Avg,System,0
+Zone Air Heat Balance Surface Convection Rate,W,Avg,System,0
+Zone Air Heat Balance System Air Transfer Rate,W,Avg,System,0
+Zone Air System Sensible Cooling Energy,J,Sum,System,0
+Zone Air System Sensible Cooling Rate,W,Avg,System,0
+Zone Air System Sensible Heating Energy,J,Sum,System,0
+Zone Air System Sensible Heating Rate,W,Avg,System,0
+Zone Infiltration Latent Heat Gain Energy,J,Sum,System,0
+Zone Infiltration Latent Heat Loss Energy,J,Sum,System,0
+Zone Infiltration Sensible Heat Gain Energy,J,Sum,System,0
+Zone Infiltration Sensible Heat Loss Energy,J,Sum,System,0
+Zone Infiltration Standard Density Volume Flow Rate,m3/s,Avg,System,0
+Zone Mean Air Temperature,C,Avg,Zone,0
+Zone Mean Radiant Temperature,C,Avg,Zone,0
+Zone Mechanical Ventilation Mass Flow Rate,kg/s,Avg,HVAC,0
+Zone Windows Total Transmitted Solar Radiation Energy,J,Sum,Zone,0
+Zone Windows Total Transmitted Solar Radiation Rate,W,Avg,Zone,0

@@ -10,8 +10,8 @@ from dataclasses import dataclass, field
 import pandas as pd
 import numpy as np
 import json
-from .data_manager import EnhancedHierarchicalDataManager
 
+from .idf_data_manager import IDFDataManager
 # ============================================================================
 # DATA STRUCTURES
 # ============================================================================
@@ -50,6 +50,7 @@ class BuildingData:
     parse_errors: List[str] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
     output_definitions: Dict[str, List] = field(default_factory=dict)  # Still used internally
+    variant_id: Optional[str] = None  # Add this field
 
 # ============================================================================
 # ENHANCED FILE MAPPING CONFIGURATION
@@ -159,7 +160,7 @@ class EnhancedIDFParser:
     """Enhanced IDF Parser with consolidated output support"""
     
     def __init__(self, category_mappings: Optional[Dict] = None, 
-                 data_manager: Optional[EnhancedHierarchicalDataManager] = None):
+                 data_manager: Optional[IDFDataManager] = None):  # Changed here
         self.field_names = self._initialize_comprehensive_field_names()
         self.category_mappings = category_mappings or {}
         self.category_map = self._build_category_map()
@@ -598,20 +599,29 @@ class EnhancedIDFParser:
         """Parse single IDF file with enhanced error handling"""
         file_path = Path(file_path)
         
-        # Extract building ID from filename - Updated patterns
-        patterns = [
-            r'building_(\d+)\.idf',
-            r'building_(\d+)_[a-f0-9]+\.idf',  # Handle hash suffixes
-            r'bldg_(\d+)\.idf',
-            r'(\d{6,})\.idf'  # Direct ID as filename
-        ]
-        
+        # Extract building ID and variant from filename
         building_id = None
-        for pattern in patterns:
-            match = re.search(pattern, file_path.name)
-            if match:
-                building_id = match.group(1)
-                break
+        variant_id = None
+        
+        # Check for variant pattern first
+        variant_match = re.search(r'building_(\d+)_variant_(\d+)\.idf', file_path.name)
+        if variant_match:
+            building_id = variant_match.group(1)
+            variant_id = f"variant_{variant_match.group(2)}"
+        else:
+            # Try other patterns for base building ID
+            patterns = [
+                r'building_(\d+)\.idf',
+                r'building_(\d+)_[a-f0-9]+\.idf',
+                r'bldg_(\d+)\.idf',
+                r'(\d{6,})\.idf'
+            ]
+            
+            for pattern in patterns:
+                match = re.search(pattern, file_path.name)
+                if match:
+                    building_id = match.group(1)
+                    break
         
         if not building_id:
             building_id = file_path.stem
@@ -620,6 +630,10 @@ class EnhancedIDFParser:
             building_id=building_id,
             file_path=file_path
         )
+        
+        # Add variant_id to metadata
+        if variant_id:
+            building_data.metadata['variant_id'] = variant_id
         
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
@@ -798,6 +812,10 @@ class EnhancedIDFParser:
                     'object_type': obj.object_type,
                     'object_name': obj.name
                 }
+                
+                # Add variant_id if present
+                if building_data.variant_id:
+                    row_data['variant_id'] = building_data.variant_id
                 
                 # Add zone name for zone-specific objects
                 if obj.zone_name and self._is_zone_specific_object(obj.object_type):
