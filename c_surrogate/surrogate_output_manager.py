@@ -16,8 +16,13 @@ import joblib
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union, Any, Callable
 from datetime import datetime
-import matplotlib.pyplot as plt
-import seaborn as sns
+try:
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    HAS_PLOTTING = True
+except ImportError:
+    HAS_PLOTTING = False
+    
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 
 logger = logging.getLogger(__name__)
@@ -657,6 +662,10 @@ if __name__ == "__main__":
     
     def _create_validation_plots(self, output_dir: str):
         """Create validation visualization plots."""
+        if not HAS_PLOTTING:
+            logger.warning("[OutputManager] Matplotlib not available, skipping validation plots")
+            return
+            
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
         

@@ -1,0 +1,140 @@
+
+  1. Test Files (41+ files)
+
+  - Everything in /test/ directory
+  - All test_*.py files in root directory
+
+  2. Fix/Patch Scripts (11 files)
+
+  apply_orchestrator_fix.py
+  apply_surrogate_fix.py
+  docker_apply_fix.sh
+  fix_all_surrogate_issues.py
+  fix_and_test_aggregation.py
+  fix_baseline_validation.py
+  fix_electricity_aggregation.py
+  fix_validation_issues.py
+  minimal_surrogate_fix.py
+  surrogate_fix.patch
+  parserr/fix_directories.py
+
+  3. Duplicate/Copy Files (9+ files)
+
+  combined copy.json
+  orchestrator copy.py
+  orchestrator copy 2.py
+  orchestrator.py.backup_20250622_123026
+  orchestrator.py.backup_20250622_124351
+  idf_objects/ventilation/schedules copy.py
+  data/df_buildings - Copy.csv
+  EnergyPlus/Minimal copy.idf
+  EnergyPlus/Minimal copy 2.idf
+
+  4. Archived Directories
+
+  validation/Archieve 2/
+  validation/archieve/
+  parserr/arch/
+  idf_modification/Archieve test/
+  __pycache__/arc/
+
+  5. Standalone/Debug Scripts (20+ files)
+
+  check_aggregation_output.py
+  check_parquet_structure.py
+  consolidate_sensitivity_outputs.py
+  create_2020_measured_data.py
+  create_hourly_measured_data.py
+  debug_analyzer.py
+  diagnose_variables.py
+  examine_parquet.py
+  inspect_parquet_formats.py
+  inspect_parquet_structure.py
+  investigate_validation_issues.py
+  run_aggregation_standalone.py
+  run_surrogate_updated.py
+  run_validation_test.py
+  surrogate_data_explorer.py
+  update_building_ids.py
+  update_parsed_format_building_id.py
+  verify_aggregation.py
+  verify_aggregation_complete.py
+  workflow_analyzer.py
+  workflow_deep_inspector.py
+
+  6. Documentation Files (Non-Essential)
+
+  BASELINE_VALIDATION_FINAL_FIX_SUMMARY.md
+  BASELINE_VALIDATION_ISSUES_SUMMARY.md
+  COMPLETE_DETAILED_PROCESS_FLOW.md
+  DATA_TRANSFORMATION_FLOW.md
+  DETAILED_PROCESS_FLOW.md
+  E_PLUS_2040_COMPLETE_PROCESS_FLOW.md
+  PROCESS_FLOW_DIAGRAM.md
+  SENSITIVITY_ANALYSIS_FULL_REPORT.md
+  SENSITIVITY_CONSOLIDATION_SUMMARY.md
+  SENSITIVITY_OUTPUT_ANALYSIS.md
+  SENSITIVITY_OUTPUT_GUIDE.md
+  SURROGATE_MODEL_IMPROVEMENTS.md
+  VALIDATION_PARQUET_FIX_SUMMARY.md
+  YEAR_AGNOSTIC_VALIDATION_GUIDE.md
+  validation_system_update_with_examples.md
+  time_series_data_structure_prompt.md
+  fix_geomz.md
+  md.md
+  rep.md
+
+  7. Duplicate Lookup Files
+
+  idf_objects/fenez/materials_lookup0.py
+  idf_objects/HVAC/hvac_lookup2.py
+  idf_objects/HVAC/hvac_lookup3.py
+
+  8. Obsolete Main Files
+
+  main_modifi.py
+  orchestrator/main.py (if using orchestrator.py)
+  parserr/arch/00energyplus_analyzer_main.py
+  parserr/arch/00data_manager.py
+
+  9. Temporary/Example Files
+
+  c_sensitivity/advanced_config_example.json
+  c_surrogate/0 enhanced_config_examples_Surrogate.json
+  c_surrogate/0 ml_vs_automl_comparison.md
+  c_surrogate/0 surrogate_quick_reference.md
+  cal/enhanced_config_examples_Calibration.json
+  cal/implementation_calibration_summary.md
+  cal/implementation_summary_Sensitivity_Analysis.md
+
+  10. Old User Configs
+
+  user_configs/025d76e7-cfdd-4c55-91fb-8a1dc14a9ef0/
+  user_configs/a8f044f9-0fc2-4e56-99ff-f83fefdbb9b6/
+  user_configs/b139a061-d967-47a5-b850-ff8bd3d351ae/
+
+  11. Nested Duplicate Directory
+
+  Documents/daily/E_Plus_2040_py/
+
+  12. UI Files (if not used)
+
+  Stef_UI_L1.md
+  Stef_UI_L2.md
+
+  13. Miscellaneous
+
+  splitter.py
+  job_manager.py (if running via orchestrator directly)
+  database_handler.py (if not used)
+  cleanup_old_jobs.py
+  run_job.sh
+  cal/main cal.py (note the space in filename)
+  validation/generate-mock-real-data.py
+  data/test_validation_data/recreate_full_year_data.py
+
+  Total: ~150+ files can be deleted
+
+  These files appear to be test scripts, temporary fixes, documentation, duplicates, or experimental code that is not
+  part of the main production workflow. The core process runs through the orchestrator package and its step modules, with
+   the main entry being orchestrator.py or app.py.

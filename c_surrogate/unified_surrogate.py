@@ -47,6 +47,7 @@ from c_surrogate.ml_pipeline_utils import (
 from c_surrogate.surrogate_data_extractor import SurrogateDataExtractor
 from c_surrogate.surrogate_data_preprocessor import SurrogateDataPreprocessor
 from c_surrogate.surrogate_output_manager import SurrogateOutputManager
+# from c_surrogate.surrogate_data_consolidator import SurrogateDataConsolidator
 
 logger = logging.getLogger(__name__)
 
@@ -93,25 +94,25 @@ def build_surrogate_from_job(
     summary = extractor.get_summary_statistics()
     logger.info(f"[Surrogate] Extracted data summary: {summary['data_sources'].keys()}")
     
+    # Skip consolidation step - preprocessor will handle data alignment directly
+    
     # Step 2: Preprocess data
     logger.info("[Surrogate] Step 2: Preprocessing data")
     preprocessing_config = sur_cfg.get('preprocessing', {})
     
-    # Override target variables from main config
-    # Override target variables from main config
     # Override target variables from main config
     if 'target_variable' in sur_cfg:
         target_vars = sur_cfg['target_variable']
         if isinstance(target_vars, str):
             target_vars = [target_vars]
         preprocessing_config['target_variables'] = target_vars
-    else:
-        # Use default target variables that match actual column names
-        preprocessing_config['target_variables'] = [
-            'Heating:EnergyTransfer [J](Hourly)',
-            'Cooling:EnergyTransfer [J](Hourly)', 
-            'Electricity:Facility [J](Hourly)'
-        ]
+    # else:
+    #     # Use default target variables that match actual column names
+    #     preprocessing_config['target_variables'] = [
+    #         'electricity_facility_na_yearly_from_monthly',
+    #         'heating_energytransfer_na_yearly_from_monthly',
+    #         'cooling_energytransfer_na_yearly_from_monthly'
+    #     ]
     
     preprocessor = SurrogateDataPreprocessor(extracted_data, preprocessing_config, tracker)
     processed_data = preprocessor.preprocess_all()

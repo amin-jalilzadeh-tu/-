@@ -117,6 +117,9 @@ def run_sensitivity_analysis(
                 if "html" in sens_cfg["report_formats"]:
                     generate_html_report(sensitivity_manager, output_dir, logger)
             
+            # Consolidate outputs at the end
+            consolidate_sensitivity_outputs(output_dir, logger)
+            
         else:
             logger.error("[ERROR] Sensitivity analysis failed - no report generated")
             
@@ -721,6 +724,26 @@ def generate_html_report(
         
     except Exception as e:
         logger.warning(f"[WARN] Failed to generate HTML report: {e}")
+
+
+def consolidate_sensitivity_outputs(output_dir: Path, logger: logging.Logger) -> None:
+    """
+    Consolidate sensitivity outputs into minimal set
+    """
+    logger.info("[INFO] Consolidating sensitivity outputs...")
+    
+    try:
+        # Import the consolidation function
+        import sys
+        sys.path.insert(0, str(Path(__file__).parent.parent))
+        from consolidate_sensitivity_outputs import consolidate_sensitivity_outputs as consolidate
+        
+        # Run consolidation
+        consolidate(output_dir)
+        logger.info("[INFO] Successfully consolidated sensitivity outputs")
+        
+    except Exception as e:
+        logger.warning(f"[WARN] Failed to consolidate outputs: {e}")
 
 
 def _parse_parameter_string(param_str: str) -> Dict[str, str]:

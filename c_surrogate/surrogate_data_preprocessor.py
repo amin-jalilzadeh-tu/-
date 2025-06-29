@@ -193,20 +193,51 @@ class SurrogateDataPreprocessor:
     def align_parameters_with_outputs(self) -> pd.DataFrame:
         """
         Align modification parameters with simulation outputs.
+        Handles both old and new data structures.
         """
         logger.info("[Preprocessor] Aligning parameters with outputs")
         
-        # Get modifications
+        # Check if we have pre-consolidated data
+        if 'consolidated_features' in self.data and 'consolidated_targets' in self.data:
+            logger.info("[Preprocessor] Using pre-consolidated feature-target data")
+            features = self.data['consolidated_features']
+            targets = self.data['consolidated_targets']
+            
+            # Merge features and targets for alignment
+            aligned = features.merge(
+                targets[['building_id', 'variant_id']],
+                on=['building_id', 'variant_id'],
+                how='inner'
+            )
+            
+            # Add metadata
+            aligned['has_outputs'] = True
+            
+            logger.info(f"[Preprocessor] Aligned {len(aligned)} records from consolidated data")
+            return aligned
+        
+        # Get modifications - prefer wide format
+        modifications_wide = self.data.get('modifications_wide', pd.DataFrame())
         modifications = self.data.get('modifications', pd.DataFrame())
-        if modifications.empty:
+        
+        if modifications_wide.empty and modifications.empty:
             raise ValueError("No modification data found")
         
-        # Get outputs
+        # Get outputs - check for new comparison structure first
+        comparison_outputs = self.data.get('comparison_outputs', {})
+        aggregated_outputs = self.data.get('aggregated_outputs', pd.DataFrame())
+        
+        # Fallback to old structure
         base_outputs = self.data.get('base_outputs', pd.DataFrame())
         modified_outputs = self.data.get('modified_outputs', pd.DataFrame())
         
-        if modified_outputs.empty:
-            raise ValueError("No modified output data found")
+        # Use new structure if available
+        if comparison_outputs or not aggregated_outputs.empty:
+            logger.info("[Preprocessor] Using new comparison output structure")
+            return self._align_with_comparison_outputs()
+        elif not modified_outputs.empty:
+            logger.info("[Preprocessor] Using legacy output structure")
+            # Continue with existing logic
         
         # Create alignment based on building_id and variant_id
         aligned_records = []
@@ -283,6 +314,68 @@ class SurrogateDataPreprocessor:
         
         return aligned_df
     
+    def _align_with_comparison_outputs(self) -> pd.DataFrame:
+        """
+        Align parameters with new comparison output structure.
+        """
+        logger.info("[Preprocessor] Aligning with comparison outputs")
+        
+        # Get modifications
+        modifications_wide = self.data.get('modifications_wide', pd.DataFrame())
+        modifications = self.data.get('modifications', pd.DataFrame())
+        aggregated_outputs = self.data.get('aggregated_outputs', pd.DataFrame())
+        
+        # If we have wide format modifications, use them directly
+        if not modifications_wide.empty:
+            # Wide format already has parameters as rows and variants as columns
+            aligned_df = modifications_wide.copy()
+            
+            # Add metadata
+            aligned_df['has_outputs'] = True
+            
+            logger.info(f"[Preprocessor] Using wide format: {aligned_df.shape}")
+            return aligned_df
+        
+        # Otherwise, work with long format
+        if modifications.empty:
+            raise ValueError("No modification data available")
+        
+        # Create alignment records
+        aligned_records = []
+        
+        # Get unique parameter-variant combinations
+        param_variants = modifications.groupby(['parameter', 'variant_id'])
+        
+        for (parameter, variant_id), group in param_variants:
+            # Check if we have outputs for this variant
+            has_output = False
+            if not aggregated_outputs.empty:
+                variant_outputs = aggregated_outputs[
+                    aggregated_outputs.get('variant_id', '') == variant_id
+                ]
+                has_output = not variant_outputs.empty
+            
+            record = {
+                'parameter': parameter,
+                'variant_id': variant_id,
+                'category': group['category'].iloc[0] if 'category' in group else None,
+                'original_value': group['original_value'].iloc[0] if 'original_value' in group else None,
+                'new_value': group['new_value'].iloc[0] if 'new_value' in group else None,
+                'relative_change': group['relative_change'].iloc[0] if 'relative_change' in group else None,
+                'has_output': has_output
+            }
+            
+            # Add building_id if available
+            if 'building_id' in group:
+                record['building_id'] = group['building_id'].iloc[0]
+            
+            aligned_records.append(record)
+        
+        aligned_df = pd.DataFrame(aligned_records)
+        logger.info(f"[Preprocessor] Aligned {len(aligned_df)} parameter-variant combinations")
+        
+        return aligned_df
+    
     def filter_by_sensitivity(self, aligned_data: pd.DataFrame) -> pd.DataFrame:
         """
         Filter parameters based on sensitivity analysis results.
@@ -294,22 +387,50 @@ class SurrogateDataPreprocessor:
             logger.warning("[Preprocessor] No sensitivity data available, skipping filter")
             return aligned_data
         
-        # Get threshold
-        threshold = self.config['sensitivity_threshold']
-        
-        # Filter sensitivity data
-        if 'sensitivity_score' in sensitivity.columns:
-            important_params = sensitivity[
-                sensitivity['sensitivity_score'] >= threshold
-            ]['parameter'].tolist()
+        # Check for surrogate_include flag in new structure
+        if 'surrogate_include' in sensitivity.columns:
+            # Use explicit surrogate inclusion flag
+            important_params = sensitivity[sensitivity['surrogate_include'] == True]['parameter'].tolist()
+            logger.info(f"[Preprocessor] Using {len(important_params)} parameters marked for surrogate modeling")
         else:
-            # Use elasticity if sensitivity_score not available
-            important_params = sensitivity[
-                abs(sensitivity['elasticity']) >= threshold
-            ]['parameter'].tolist()
+            # Use threshold-based filtering
+            threshold = self.config.get('sensitivity_threshold', 0.1)
+            
+            # Filter sensitivity data
+            if 'sensitivity_score' in sensitivity.columns:
+                important_params = sensitivity[
+                    sensitivity['sensitivity_score'] >= threshold
+                ]['parameter'].tolist()
+            else:
+                # Use elasticity if sensitivity_score not available
+                important_params = sensitivity[
+                    abs(sensitivity['elasticity']) >= threshold
+                ]['parameter'].tolist()
+        
+        # Handle both parameter column names
+        param_col = 'parameter' if 'parameter' in aligned_data.columns else 'param_id'
         
         # Filter aligned data
-        filtered = aligned_data[aligned_data['parameter'].isin(important_params)]
+        if param_col in aligned_data.columns:
+            filtered = aligned_data[aligned_data[param_col].isin(important_params)]
+        else:
+            # If using wide format, keep metadata columns and filter parameter columns
+            # Metadata columns are everything except the variant_X columns
+            variant_cols = [col for col in aligned_data.columns if col.startswith('variant_')]
+            metadata_cols = [col for col in aligned_data.columns if not col.startswith('variant_')]
+            
+            # For wide format, we keep all rows but potentially filter parameters
+            # The parameters are in the 'field' or 'parameter' column
+            if 'field' in aligned_data.columns:
+                # Create a parameter identifier from the field components
+                aligned_data['param_id'] = aligned_data.apply(
+                    lambda row: f"{row['category']}*{row['object_type']}*{row['object_name']}*{row['field']}", 
+                    axis=1
+                )
+                filtered = aligned_data[aligned_data['param_id'].isin(important_params)]
+            else:
+                # Keep all data if we can't identify parameters
+                filtered = aligned_data
         
         logger.info(f"[Preprocessor] Filtered from {len(aligned_data)} to {len(filtered)} parameters")
         logger.info(f"[Preprocessor] Using {len(important_params)} important parameters")
@@ -322,39 +443,122 @@ class SurrogateDataPreprocessor:
         """
         logger.info("[Preprocessor] Creating parameter matrix")
         
-        # Pivot the data to create wide format
-        param_matrix = aligned_data.pivot_table(
-            index=['building_id', 'variant_id'],
-            columns='parameter',
-            values='relative_change',
-            aggfunc='first'
-        ).reset_index()
+        # Check if data is already in wide format (variant_0, variant_1, etc. columns)
+        variant_cols = [col for col in aligned_data.columns if col.startswith('variant_')]
+        
+        if variant_cols:
+            # Data is already in wide format - need to reshape it
+            logger.info("[Preprocessor] Data is in wide format, reshaping...")
+            
+            # Melt the variant columns to create long format
+            id_vars = [col for col in aligned_data.columns if not col.startswith('variant_')]
+            
+            melted_data = []
+            for variant_col in variant_cols:
+                variant_id = variant_col  # Keep as variant_0, variant_1, etc.
+                
+                # Create records for each variant
+                variant_data = aligned_data[id_vars + [variant_col]].copy()
+                variant_data['variant_id'] = variant_id
+                variant_data['value'] = variant_data[variant_col]
+                variant_data = variant_data.drop(columns=[variant_col])
+                
+                # Convert to numeric values
+                variant_data['value'] = pd.to_numeric(variant_data['value'], errors='coerce')
+                if 'original' in variant_data.columns:
+                    variant_data['original'] = pd.to_numeric(variant_data['original'], errors='coerce')
+                
+                # Calculate relative change if we have original values
+                if 'original' in variant_data.columns:
+                    # Handle cases where original is 0 or NaN
+                    variant_data['relative_change'] = 0.0
+                    mask = (variant_data['original'].notna()) & (variant_data['value'].notna()) & (variant_data['original'] != 0)
+                    variant_data.loc[mask, 'relative_change'] = (
+                        (variant_data.loc[mask, 'value'] - variant_data.loc[mask, 'original']) / 
+                        variant_data.loc[mask, 'original']
+                    )
+                else:
+                    variant_data['relative_change'] = variant_data['value']
+                
+                melted_data.append(variant_data)
+            
+            # Combine all variants
+            long_data = pd.concat(melted_data, ignore_index=True)
+            
+            # Create parameter identifier
+            if 'param_id' not in long_data.columns:
+                long_data['parameter'] = long_data.apply(
+                    lambda row: f"{row['category']}*{row['object_type']}*{row['object_name']}*{row['field']}", 
+                    axis=1
+                )
+            else:
+                long_data['parameter'] = long_data['param_id']
+            
+            # Now pivot to final format
+            param_matrix = long_data.pivot_table(
+                index=['building_id', 'variant_id'],
+                columns='parameter',
+                values='relative_change',
+                aggfunc='first'
+            ).reset_index()
+        else:
+            # Data is already in long format - use existing logic
+            param_matrix = aligned_data.pivot_table(
+                index=['building_id', 'variant_id'],
+                columns='parameter',
+                values='relative_change',
+                aggfunc='first'
+            ).reset_index()
         
         # Fill NaN with 0 (no change)
         param_cols = [col for col in param_matrix.columns if col not in ['building_id', 'variant_id']]
         param_matrix[param_cols] = param_matrix[param_cols].fillna(0)
         
-        # Add category-level aggregations
-        category_changes = aligned_data.groupby(
-            ['building_id', 'variant_id', 'category']
-        )['relative_change'].mean().reset_index()
-        
-        category_pivot = category_changes.pivot_table(
-            index=['building_id', 'variant_id'],
-            columns='category',
-            values='relative_change'
-        ).reset_index()
-        
-        # Rename category columns
-        category_cols = [col for col in category_pivot.columns if col not in ['building_id', 'variant_id']]
-        category_pivot.columns = ['building_id', 'variant_id'] + [f'category_{col}_mean_change' for col in category_cols]
-        
-        # Merge with parameter matrix
-        param_matrix = param_matrix.merge(
-            category_pivot,
-            on=['building_id', 'variant_id'],
-            how='left'
-        )
+        # Add category-level aggregations if we have the required data
+        if variant_cols and 'category' in aligned_data.columns:
+            # For wide format, calculate category aggregations from long_data
+            category_changes = long_data.groupby(
+                ['building_id', 'variant_id', 'category']
+            )['relative_change'].mean().reset_index()
+            
+            category_pivot = category_changes.pivot_table(
+                index=['building_id', 'variant_id'],
+                columns='category',
+                values='relative_change'
+            ).reset_index()
+            
+            # Rename category columns
+            category_cols = [col for col in category_pivot.columns if col not in ['building_id', 'variant_id']]
+            category_pivot.columns = ['building_id', 'variant_id'] + [f'category_{col}_mean_change' for col in category_cols]
+            
+            # Merge with parameter matrix
+            param_matrix = param_matrix.merge(
+                category_pivot,
+                on=['building_id', 'variant_id'],
+                how='left'
+            )
+        elif 'category' in aligned_data.columns and 'relative_change' in aligned_data.columns:
+            # Original logic for long format
+            category_changes = aligned_data.groupby(
+                ['building_id', 'variant_id', 'category']
+            )['relative_change'].mean().reset_index()
+            
+            category_pivot = category_changes.pivot_table(
+                index=['building_id', 'variant_id'],
+                columns='category',
+                values='relative_change'
+            ).reset_index()
+            
+            # Rename category columns
+            category_cols = [col for col in category_pivot.columns if col not in ['building_id', 'variant_id']]
+            category_pivot.columns = ['building_id', 'variant_id'] + [f'category_{col}_mean_change' for col in category_cols]
+            
+            # Merge with parameter matrix
+            param_matrix = param_matrix.merge(
+                category_pivot,
+                on=['building_id', 'variant_id'],
+                how='left'
+            )
         
         logger.info(f"[Preprocessor] Created parameter matrix: {param_matrix.shape}")
         
@@ -363,9 +567,34 @@ class SurrogateDataPreprocessor:
     def aggregate_outputs(self, aligned_data: pd.DataFrame) -> pd.DataFrame:
         """
         Aggregate simulation outputs to match parameter matrix.
+        Handles both old and new output structures.
         """
         logger.info("[Preprocessor] Aggregating outputs")
         
+        # Check if we have pre-consolidated targets
+        if 'consolidated_targets' in self.data:
+            logger.info("[Preprocessor] Using pre-consolidated target data")
+            targets = self.data['consolidated_targets']
+            
+            # Ensure we only include aligned building/variant pairs
+            aligned_pairs = aligned_data[['building_id', 'variant_id']].drop_duplicates()
+            targets_aligned = targets.merge(
+                aligned_pairs,
+                on=['building_id', 'variant_id'],
+                how='inner'
+            )
+            
+            logger.info(f"[Preprocessor] Using {len(targets_aligned)} target records")
+            return targets_aligned
+        
+        # Check for new comparison structure first
+        comparison_outputs = self.data.get('comparison_outputs', {})
+        aggregated_outputs = self.data.get('aggregated_outputs', pd.DataFrame())
+        
+        if comparison_outputs or not aggregated_outputs.empty:
+            return self._aggregate_comparison_outputs(aligned_data)
+        
+        # Fallback to old structure
         base_outputs = self.data.get('base_outputs', pd.DataFrame())
         modified_outputs = self.data.get('modified_outputs', pd.DataFrame())
         
@@ -427,6 +656,105 @@ class SurrogateDataPreprocessor:
         logger.info(f"[Preprocessor] Aggregated outputs: {output_df.shape}")
         
         return output_df
+    
+    def _aggregate_comparison_outputs(self, aligned_data: pd.DataFrame) -> pd.DataFrame:
+        """
+        Aggregate outputs from new comparison structure.
+        """
+        logger.info("[Preprocessor] Aggregating comparison outputs")
+        
+        comparison_outputs = self.data.get('comparison_outputs', {})
+        logger.info(f"[Preprocessor] Comparison outputs available: {len(comparison_outputs)} datasets")
+        
+        # Get target variables from config
+        target_variables = self.config.get('target_variables', [
+            'electricity_facility_na',
+            'heating_energytransfer_na', 
+            'cooling_energytransfer_na'
+        ])
+        
+        # Get unique building IDs and variant IDs
+        logger.debug(f"[Preprocessor] Aligned data columns: {list(aligned_data.columns)}")
+        logger.debug(f"[Preprocessor] Aligned data shape: {aligned_data.shape}")
+        
+        if 'building_id' in aligned_data.columns and 'variant_id' in aligned_data.columns:
+            unique_pairs = aligned_data[['building_id', 'variant_id']].drop_duplicates()
+            logger.debug(f"[Preprocessor] Found {len(unique_pairs)} unique building-variant pairs")
+        else:
+            # For wide format, we need to create records for each variant column
+            variant_cols = [col for col in aligned_data.columns if col.startswith('variant_')]
+            building_id = aligned_data['building_id'].iloc[0] if 'building_id' in aligned_data.columns else None
+            
+            if not building_id:
+                logger.error("[Preprocessor] No building_id found in aligned data")
+                return pd.DataFrame()
+                
+            unique_pairs = pd.DataFrame([
+                {'building_id': building_id, 'variant_id': col} 
+                for col in variant_cols
+            ])
+            logger.info(f"[Preprocessor] Created {len(unique_pairs)} pairs from wide format")
+        
+        # Initialize output records
+        output_records = []
+        
+        # For each building/variant pair
+        for _, pair in unique_pairs.iterrows():
+            building_id = pair['building_id']
+            variant_id = pair['variant_id']
+            
+            record = {
+                'building_id': building_id,
+                'variant_id': variant_id
+            }
+            
+            # For each target variable  
+            for target_var in target_variables:
+                # Check if this target exists in comparison outputs
+                if target_var not in comparison_outputs:
+                    logger.warning(f"[Preprocessor] Target variable {target_var} not found in comparison outputs")
+                    continue
+                
+                # Get the dataframe for this target
+                df = comparison_outputs[target_var]
+                
+                # Extract variant column name (e.g., 'variant_0_value')
+                variant_col = f"{variant_id}_value"
+                
+                if variant_col in df.columns:
+                    # Get values for this variant
+                    values = df[variant_col].values
+                    
+                    # Store aggregated values
+                    record[f'{target_var}_sum'] = float(values.sum())
+                    record[f'{target_var}_mean'] = float(values.mean())
+                    record[f'{target_var}_max'] = float(values.max())
+                    record[f'{target_var}_min'] = float(values.min())
+                    
+                    # Calculate percent change if base values exist
+                    if 'base_value' in df.columns:
+                        base_values = df['base_value'].values
+                        base_sum = base_values.sum()
+                        if base_sum != 0:
+                            record[f'{target_var}_percent_change'] = float(
+                                (values.sum() - base_sum) / base_sum * 100
+                            )
+                else:
+                    logger.warning(f"[Preprocessor] Column {variant_col} not found for {target_var}")
+            
+            # Only add record if we have some output data
+            output_cols = [col for col in record.keys() if col not in ['building_id', 'variant_id']]
+            if output_cols:
+                output_records.append(record)
+        
+        if output_records:
+            output_df = pd.DataFrame(output_records)
+            logger.info(f"[Preprocessor] Created output matrix: {output_df.shape}")
+            logger.info(f"[Preprocessor] Output columns: {[col for col in output_df.columns if col not in ['building_id', 'variant_id']]}")
+            return output_df
+        else:
+            logger.warning("[Preprocessor] No output records created")
+            return pd.DataFrame()
     
     def handle_multi_level_data(self, 
                               param_matrix: pd.DataFrame, 
@@ -569,6 +897,15 @@ class SurrogateDataPreprocessor:
         Prepare final feature and target datasets for modeling.
         """
         logger.info("[Preprocessor] Preparing final datasets")
+        
+        # Check if outputs is empty
+        if outputs.empty:
+            logger.warning("[Preprocessor] Output matrix is empty, creating dummy targets")
+            # Create dummy targets with zeros for now
+            outputs = features[['building_id', 'variant_id']].copy()
+            for target_var in self.config['target_variables']:
+                outputs[f'{target_var}_mean'] = 0.0
+                outputs[f'{target_var}_percent_change'] = 0.0
         
         # Merge features with outputs
         merge_keys = ['building_id', 'variant_id']

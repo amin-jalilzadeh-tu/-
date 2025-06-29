@@ -78,8 +78,11 @@ class SurrogateDataExtractor:
         # Extract base and modified parameters
         self.extract_idf_parameters()
         
-        # Extract simulation outputs
-        self.extract_simulation_outputs()
+        # Extract simulation outputs - try new structure first
+        if (self.paths['parsed_modified'] / 'comparisons').exists():
+            self.extract_comparison_outputs()
+        else:
+            self.extract_simulation_outputs()
         
         # Extract sensitivity results
         self.extract_sensitivity_rankings()
@@ -89,6 +92,9 @@ class SurrogateDataExtractor:
         
         # Extract building registry
         self.extract_building_registry()
+        
+        # Extract validation results if available
+        self.extract_validation_results()
         
         logger.info("[Extractor] Data extraction completed")
     
@@ -101,18 +107,23 @@ class SurrogateDataExtractor:
             self.tracker.track_extraction(summary, self.data)
             
             # Export data quality reports
-            for name, df in self.data.items():
-                if df is not None and not df.empty:
-                    quality_report = self.tracker.generate_data_quality_report(df, name)
+            for name, data in self.data.items():
+                # Only generate quality reports for DataFrames
+                if isinstance(data, pd.DataFrame) and not data.empty:
+                    quality_report = self.tracker.generate_data_quality_report(data, name)
                     quality_path = self.tracker.dirs["extraction"] / f"quality_{name}.json"
                     with open(quality_path, "w") as f:
                         json.dump(quality_report, f, indent=2)
+                elif isinstance(data, dict) and data:
+                    # For dictionaries, log summary info
+                    logger.info(f"[Extractor] {name} contains {len(data)} entries (dictionary)")
         
         return self.data
     
     def extract_modification_parameters(self) -> pd.DataFrame:
         """
         Extract parameter modifications from modification tracking files.
+        Handles both wide and long format modification files.
         """
         logger.info("[Extractor] Extracting modification parameters")
         
@@ -124,48 +135,95 @@ class SurrogateDataExtractor:
             logger.warning("[Extractor] No modification detail files found")
             return pd.DataFrame()
         
-        # Load and concatenate all modification files
-        # Load and concatenate all modification files
-        dfs = []
-        for file in mod_files:
-            df = pd.read_parquet(file)
-            # Reset index to avoid conflicts
-            df = df.reset_index(drop=True)
-            dfs.append(df)
-
-        modifications = pd.concat(dfs, ignore_index=True)
+        # Separate wide and long format files
+        wide_files = [f for f in mod_files if 'wide' in f]
+        long_files = [f for f in mod_files if 'long' in f]
         
-        # Create a unique parameter identifier
-        # Create a unique parameter identifier - handle missing columns
-        param_id_parts = []
-        if 'category' in modifications.columns:
-            param_id_parts.append(modifications['category'])
-        if 'object_type' in modifications.columns:
-            param_id_parts.append(modifications['object_type'])
-        if 'object_name' in modifications.columns:
-            param_id_parts.append(modifications['object_name'])
-        if 'field_name' in modifications.columns:
-            param_id_parts.append(modifications['field_name'])
-
-        if param_id_parts:
-            modifications['param_id'] = param_id_parts[0]
-            for part in param_id_parts[1:]:
-                modifications['param_id'] = modifications['param_id'] + '*' + part
-        else:
-            # Fallback if structure is different
-            modifications['param_id'] = modifications.index.astype(str)
+        modifications = None
         
-        # Calculate relative changes
-        modifications['relative_change'] = np.where(
-            pd.to_numeric(modifications['original_value'], errors='coerce') != 0,
-            (pd.to_numeric(modifications['new_value'], errors='coerce') - 
-             pd.to_numeric(modifications['original_value'], errors='coerce')) / 
-            pd.to_numeric(modifications['original_value'], errors='coerce'),
-            np.nan
-        )
+        # Prefer wide format for surrogate modeling
+        if wide_files:
+            logger.info("[Extractor] Using wide format modification file")
+            modifications = pd.read_parquet(wide_files[0])
+            
+            # Wide format has parameters as rows and variants as columns
+            # Keep as is for easier feature matrix creation
+            self.data['modifications_wide'] = modifications
+            
+            # Also create long format for compatibility
+            value_vars = [col for col in modifications.columns if col.startswith('variant_')]
+            id_vars = [col for col in modifications.columns if not col.startswith('variant_')]
+            
+            modifications_long = pd.melt(
+                modifications,
+                id_vars=id_vars,
+                value_vars=value_vars,
+                var_name='variant_id',
+                value_name='new_value'
+            )
+            modifications = modifications_long
+            
+        elif long_files:
+            logger.info("[Extractor] Using long format modification file")
+            # Load all long format files
+            dfs = []
+            for file in long_files:
+                df = pd.read_parquet(file)
+                df = df.reset_index(drop=True)
+                dfs.append(df)
+            
+            modifications = pd.concat(dfs, ignore_index=True)
+            
+            # Create wide format for easier feature matrix creation
+            if 'parameter' in modifications.columns and 'variant_id' in modifications.columns:
+                pivot_cols = ['building_id'] if 'building_id' in modifications.columns else []
+                pivot_cols.append('parameter')
+                
+                modifications_wide = modifications.pivot_table(
+                    index=pivot_cols,
+                    columns='variant_id',
+                    values='new_value',
+                    aggfunc='first'
+                ).reset_index()
+                
+                self.data['modifications_wide'] = modifications_wide
         
-        self.data['modifications'] = modifications
-        logger.info(f"[Extractor] Extracted {len(modifications)} modifications")
+        if modifications is not None:
+            # Create a unique parameter identifier
+            param_id_parts = []
+            for col in ['category', 'object_type', 'object_name', 'field_name']:
+                if col in modifications.columns:
+                    param_id_parts.append(modifications[col])
+            
+            if param_id_parts:
+                modifications['param_id'] = param_id_parts[0].astype(str)
+                for part in param_id_parts[1:]:
+                    modifications['param_id'] = modifications['param_id'] + '*' + part.astype(str)
+            elif 'parameter' in modifications.columns:
+                modifications['param_id'] = modifications['parameter']
+            else:
+                modifications['param_id'] = modifications.index.astype(str)
+            
+            # Calculate relative changes if we have original values
+            if 'original_value' in modifications.columns and 'new_value' in modifications.columns:
+                modifications['relative_change'] = np.where(
+                    pd.to_numeric(modifications['original_value'], errors='coerce') != 0,
+                    (pd.to_numeric(modifications['new_value'], errors='coerce') - 
+                     pd.to_numeric(modifications['original_value'], errors='coerce')) / 
+                    pd.to_numeric(modifications['original_value'], errors='coerce'),
+                    np.nan
+                )
+            
+            self.data['modifications'] = modifications
+            logger.info(f"[Extractor] Extracted {len(modifications)} modification records")
+            
+            # Log unique parameters and variants
+            if 'parameter' in modifications.columns:
+                n_params = modifications['parameter'].nunique()
+                logger.info(f"[Extractor] Found {n_params} unique parameters")
+            if 'variant_id' in modifications.columns:
+                n_variants = modifications['variant_id'].nunique()
+                logger.info(f"[Extractor] Found {n_variants} variants")
         
         return modifications
     
@@ -375,38 +433,76 @@ class SurrogateDataExtractor:
         """Extract sensitivity analysis results for parameter importance."""
         logger.info("[Extractor] Extracting sensitivity rankings")
         
-        sensitivity_files = [
+        # New consolidated structure - primary file
+        sensitivity_results_path = self.paths['sensitivity'] / 'sensitivity_results.parquet'
+        sensitivity_params_path = self.paths['sensitivity'] / 'sensitivity_parameters.csv'
+        
+        # Fallback to old structure if needed
+        old_sensitivity_files = [
             'sensitivity_for_surrogate.parquet',
-            'modification_sensitivity_results.parquet',  # Try alternative names
-            'sensitivity_results.parquet',
+            'modification_sensitivity_results.parquet',
+            'modification_sensitivity_results_peak_months_cooling.parquet'
         ]
         
-        sensitivity_data = []
+        sensitivity_data = None
         
-        for file in sensitivity_files:
-            file_path = self.paths['sensitivity'] / file
-            if file_path.exists():
-                df = pd.read_parquet(file_path)
-                df['source_file'] = file
-                sensitivity_data.append(df)
-                logger.debug(f"[Extractor] Loaded {len(df)} rows from {file}")
+        # Try new structure first
+        if sensitivity_results_path.exists():
+            logger.info("[Extractor] Using new sensitivity structure")
+            sensitivity_data = pd.read_parquet(sensitivity_results_path)
+            
+            # Load additional parameter metadata if available
+            if sensitivity_params_path.exists():
+                params_metadata = pd.read_csv(sensitivity_params_path)
+                # Merge with main results
+                sensitivity_data = sensitivity_data.merge(
+                    params_metadata[['parameter', 'calibration_priority', 'surrogate_include', 
+                                   'min_value', 'max_value', 'current_value', 'units', 'description']],
+                    on='parameter',
+                    how='left'
+                )
+        else:
+            # Fallback to old structure
+            logger.info("[Extractor] Falling back to old sensitivity structure")
+            sensitivity_dfs = []
+            
+            for file in old_sensitivity_files:
+                file_path = self.paths['sensitivity'] / file
+                if file_path.exists():
+                    df = pd.read_parquet(file_path)
+                    df['source_file'] = file
+                    sensitivity_dfs.append(df)
+                    logger.debug(f"[Extractor] Loaded {len(df)} rows from {file}")
+            
+            if sensitivity_dfs:
+                sensitivity_data = pd.concat(sensitivity_dfs, ignore_index=True)
         
-        if sensitivity_data:
-            combined_sensitivity = pd.concat(sensitivity_data, ignore_index=True)
+        if sensitivity_data is not None and not sensitivity_data.empty:
+            # Process sensitivity data
+            if 'surrogate_include' in sensitivity_data.columns:
+                # Filter for surrogate modeling if flag exists
+                surrogate_params = sensitivity_data[sensitivity_data['surrogate_include'] == True].copy()
+            else:
+                # Use all parameters with significant sensitivity
+                surrogate_params = sensitivity_data[
+                    (sensitivity_data['sensitivity_score'] > 0) & 
+                    (sensitivity_data['p_value'] < 0.05)
+                ].copy()
             
-            # Calculate average sensitivity score by parameter
-            param_importance = combined_sensitivity.groupby('parameter').agg({
-                'sensitivity_score': 'mean',
-                'elasticity': 'mean',
-                'p_value': 'min',
-                'confidence_level': lambda x: x.mode()[0] if len(x) > 0 else 'low'
-            }).reset_index()
+            # Ensure we have ranking
+            if 'rank' not in surrogate_params.columns:
+                surrogate_params['rank'] = surrogate_params['sensitivity_score'].rank(ascending=False)
             
-            # Rank parameters
-            param_importance['rank'] = param_importance['sensitivity_score'].rank(ascending=False)
+            # Sort by rank
+            surrogate_params = surrogate_params.sort_values('rank')
             
-            self.data['sensitivity'] = param_importance
-            logger.info(f"[Extractor] Extracted sensitivity for {len(param_importance)} parameters")
+            self.data['sensitivity'] = surrogate_params
+            logger.info(f"[Extractor] Extracted sensitivity for {len(surrogate_params)} parameters")
+            
+            # Log top parameters
+            if len(surrogate_params) > 0:
+                top_params = surrogate_params.head(10)['parameter'].tolist()
+                logger.info(f"[Extractor] Top sensitive parameters: {top_params}")
         else:
             logger.warning("[Extractor] No sensitivity data found")
             self.data['sensitivity'] = pd.DataFrame()
@@ -498,20 +594,133 @@ class SurrogateDataExtractor:
         
         return self.data['building_registry']
     
+    def extract_comparison_outputs(self) -> Dict[str, pd.DataFrame]:
+        """
+        Extract simulation output comparisons from new structure.
+        """
+        logger.info("[Extractor] Extracting comparison outputs")
+        
+        comparison_dir = self.paths['parsed_modified'] / 'comparisons'
+        if not comparison_dir.exists():
+            logger.warning(f"[Extractor] Comparison directory not found: {comparison_dir}")
+            return {}
+        
+        # Get all comparison files
+        comparison_files = list(comparison_dir.glob("*.parquet"))
+        logger.info(f"[Extractor] Found {len(comparison_files)} comparison files")
+        
+        # Organize by variable, aggregation, and time period
+        comparisons = {}
+        metadata = []
+        
+        for file in comparison_files:
+            # Parse filename: var_{variable}_{aggregation}_{time_period}_b{building_id}.parquet
+            parts = file.stem.split('_')
+            if len(parts) >= 4 and parts[0] == "var":
+                variable = parts[1]
+                aggregation = parts[2]
+                time_period = parts[3]
+                
+                # Extract building ID if present
+                building_id = None
+                for part in parts:
+                    if part.startswith('b') and part[1:].isdigit():
+                        building_id = int(part[1:])
+                        break
+                
+                key = f"{variable}_{aggregation}_{time_period}"
+                
+                try:
+                    df = pd.read_parquet(file)
+                    
+                    # Add metadata columns
+                    df['variable'] = variable
+                    df['aggregation'] = aggregation
+                    df['time_period'] = time_period
+                    if building_id is not None:
+                        df['building_id'] = building_id
+                    
+                    comparisons[key] = df
+                    
+                    metadata.append({
+                        'variable': variable,
+                        'aggregation': aggregation,
+                        'time_period': time_period,
+                        'building_id': building_id,
+                        'n_records': len(df),
+                        'columns': list(df.columns)
+                    })
+                    
+                except Exception as e:
+                    logger.error(f"[Extractor] Failed to load {file}: {e}")
+        
+        # Store comparison data
+        self.data['comparison_outputs'] = comparisons
+        self.data['comparison_metadata'] = pd.DataFrame(metadata)
+        
+        logger.info(f"[Extractor] Extracted {len(comparisons)} comparison datasets")
+        
+        # Create aggregated output dataframe for surrogate modeling
+        if comparisons:
+            # Focus on key variables for surrogate modeling
+            key_variables = [
+                'electricity_facility',
+                'cooling_energytransfer',
+                'heating_energytransfer',
+                'zone_air_system_sensible_cooling_energy',
+                'zone_air_system_sensible_heating_energy'
+            ]
+            
+            aggregated_outputs = []
+            for key, df in comparisons.items():
+                variable = key.split('_')[0]
+                if any(kv in variable for kv in key_variables):
+                    # Reshape for surrogate modeling
+                    if 'variant_id' in df.columns:
+                        aggregated_outputs.append(df)
+            
+            if aggregated_outputs:
+                self.data['aggregated_outputs'] = pd.concat(aggregated_outputs, ignore_index=True)
+                logger.info(f"[Extractor] Created aggregated outputs with {len(self.data['aggregated_outputs'])} records")
+        
+        return comparisons
+    
     def extract_validation_results(self) -> Optional[pd.DataFrame]:
         """
         Extract validation results if available.
         """
         logger.info("[Extractor] Extracting validation results")
         
-        validation_path = self.paths['validation'] / 'validation_summary.parquet'
+        # Try multiple possible validation file locations
+        validation_files = [
+            self.paths['validation'] / 'validation_summary.parquet',
+            self.paths['validation'] / 'modified' / 'validation_summary.parquet',
+            self.paths['validation'] / 'base' / 'validation_summary.parquet'
+        ]
         
-        if validation_path.exists():
-            validation_df = pd.read_parquet(validation_path)
+        validation_dfs = []
+        for validation_path in validation_files:
+            if validation_path.exists():
+                df = pd.read_parquet(validation_path)
+                df['source'] = validation_path.parent.name
+                validation_dfs.append(df)
+                logger.info(f"[Extractor] Loaded validation results from {validation_path}")
+        
+        if validation_dfs:
+            validation_df = pd.concat(validation_dfs, ignore_index=True)
+            self.data['validation'] = validation_df
             logger.info(f"[Extractor] Extracted {len(validation_df)} validation results")
+            
+            # Filter for valid variants only
+            if 'validation_status' in validation_df.columns:
+                valid_variants = validation_df[validation_df['validation_status'] == 'PASS']
+                if len(valid_variants) < len(validation_df):
+                    logger.warning(f"[Extractor] {len(validation_df) - len(valid_variants)} variants failed validation")
+            
             return validation_df
         else:
             logger.info("[Extractor] No validation results found")
+            self.data['validation'] = pd.DataFrame()
             return None
     
     def _combine_output_categories(self, output_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
@@ -539,18 +748,33 @@ class SurrogateDataExtractor:
         }
         
         for key, data in self.data.items():
-            if data is not None and not data.empty:
+            # Handle dictionaries (like comparison_outputs)
+            if isinstance(data, dict):
+                if data:  # non-empty dict
+                    summary['data_sources'][key] = {
+                        'type': 'dictionary',
+                        'keys': list(data.keys()),
+                        'num_entries': len(data)
+                    }
+                    # Add specific info for comparison_outputs
+                    if key == 'comparison_outputs':
+                        total_rows = sum(len(df) if hasattr(df, '__len__') else 0 for df in data.values())
+                        summary['data_sources'][key]['total_rows'] = total_rows
+            # Handle DataFrames
+            elif data is not None and hasattr(data, 'empty') and not data.empty:
                 summary['data_sources'][key] = {
+                    'type': 'dataframe',
                     'rows': len(data),
                     'columns': len(data.columns),
                     'memory_usage_mb': data.memory_usage(deep=True).sum() / 1024 / 1024
                 }
                 
                 # Add specific summaries
-                if key == 'modifications':
+                if key == 'modifications' and 'param_id' in data.columns:
                     summary['data_sources'][key]['unique_parameters'] = data['param_id'].nunique()
-                    summary['data_sources'][key]['categories'] = data['category'].unique().tolist()
-                elif key == 'sensitivity':
+                    if 'category' in data.columns:
+                        summary['data_sources'][key]['categories'] = data['category'].unique().tolist()
+                elif key == 'sensitivity' and 'sensitivity_score' in data.columns:
                     summary['data_sources'][key]['high_sensitivity_params'] = len(
                         data[data['sensitivity_score'] > data['sensitivity_score'].quantile(0.75)]
                     )
