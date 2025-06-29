@@ -21,7 +21,7 @@ OUTPUT_DIRS     = [
     "/usr/src/app/user_configs"
 ]
 
-MAX_AGE_HOURS   = .2  # Delete any job folder older than 1 hour
+MAX_AGE_HOURS   = 1.2  # Delete any job folder older than 1 hour
 
 def cleanup_old_results():
     now = time.time()

@@ -78,23 +78,23 @@ class ModificationSensitivityAnalyzer(BaseSensitivityAnalyzer):
         df['param_pct_change'] = (df['param_delta'] / df['original_value_numeric'].replace(0, np.nan)) * 100
         
         # Create detailed parameter key that includes ALL components
-        # Handle empty field_name by using 'value' as default
-        df['field_name_clean'] = df['field_name'].fillna('').str.strip()
-        df['field_name_clean'] = df['field_name_clean'].replace('', 'value')
+        # Handle empty field by using 'value' as default
+        df['field_clean'] = df['field'].fillna('').str.strip()
+        df['field_clean'] = df['field_clean'].replace('', 'value')
         
         # Create the full parameter key with all components
         df['param_key'] = (
-            df['category'] + '*' + 
-            df['object_type'] + '*' + 
-            df['object_name'] + '*' + 
-            df['field_name_clean']
+            df['category'].astype(str) + '*' + 
+            df['object_type'].astype(str) + '*' + 
+            df['object_name'].astype(str) + '*' + 
+            df['field_clean']
         )
         
         # Also create a short parameter name for display
         df['param_display_name'] = (
-            df['category'] + '_' + 
-            df['object_name'] + '_' + 
-            df['field_name_clean']
+            df['category'].astype(str) + '_' + 
+            df['object_name'].astype(str) + '_' + 
+            df['field_clean']
         )
         
         # Detect scope if requested
@@ -846,7 +846,7 @@ class ModificationSensitivityAnalyzer(BaseSensitivityAnalyzer):
         
         # Group by building_id AND param_key to preserve parameter specificity
         agg_df = mod_df.groupby(
-            ['building_id', 'param_key', 'category', 'object_type', 'object_name', 'field_name_clean']
+            ['building_id', 'param_key', 'category', 'object_type', 'object_name', 'field_clean']
         ).agg({
             'param_delta': ['mean', 'std', 'count'],
             'param_pct_change': ['mean', 'std'],
@@ -880,7 +880,7 @@ class ModificationSensitivityAnalyzer(BaseSensitivityAnalyzer):
         
         # Preserve full parameter specificity
         agg_df = zone_mods.groupby(
-            ['category', 'param_key', 'object_type', 'object_name', 'field_name_clean']
+            ['category', 'param_key', 'object_type', 'object_name', 'field_clean']
         ).agg({
             'param_delta': ['mean', 'std', 'count'],
             'param_pct_change': ['mean', 'std'],
@@ -917,7 +917,7 @@ class ModificationSensitivityAnalyzer(BaseSensitivityAnalyzer):
             return pd.DataFrame()
         
         # Group by specific parameter key (not just category)
-        agg_data = building_mods.groupby(['param_key', 'field_name_clean']).agg({
+        agg_data = building_mods.groupby(['param_key', 'field_clean']).agg({
             'param_delta': 'mean',
             'param_pct_change': 'mean'
         }).reset_index()
@@ -1002,7 +1002,7 @@ class ModificationSensitivityAnalyzer(BaseSensitivityAnalyzer):
                 'param_delta': 'mean',
                 'object_type': 'first',
                 'object_name': 'first',
-                'field_name_clean': 'first'
+                'field_clean': 'first'
             }).reset_index()
             
             # Filter out parameters with no change
@@ -1051,7 +1051,7 @@ class ModificationSensitivityAnalyzer(BaseSensitivityAnalyzer):
                                 'output_change': float(output_change),
                                 'object_type': param_row['object_type'],
                                 'object_name': param_row['object_name'],
-                                'field_name': param_row['field_name_clean']
+                                'field_name': param_row['field_clean']
                             }
                         )
                         results.append(result)
@@ -1066,128 +1066,19 @@ class ModificationSensitivityAnalyzer(BaseSensitivityAnalyzer):
                             output_variables: List[str],
                             aggregation: str = 'sum',
                             groupby: Optional[List[str]] = None) -> pd.DataFrame:
-        """Calculate changes in outputs between base and modified runs"""
+        """Calculate changes in outputs between base and modified runs using comparison files"""
         self.logger.info("Calculating output deltas...")
         
-        if not self.base_results or not self.modified_results:
-            raise ValueError("Results not loaded. Call load_simulation_results first.")
+        # Use new comparison file format
+        comparison_deltas = self._calculate_deltas_from_comparison_files(
+            output_variables, 
+            frequency=self.config.get('result_frequency', 'daily')
+        )
         
-        delta_records = []
-        
-        # Determine grouping
-        if groupby is None:
-            groupby = ['building_id']
-        
-        # Process each category
-        for category, base_df in self.base_results.items():
-            if category == 'summary':  # Skip summary for now
-                continue
-                
-            if category not in self.modified_results:
-                continue
-                
-            mod_df = self.modified_results[category]
+        if comparison_deltas.empty:
+            self.logger.warning("No comparison data found. Make sure comparison files are available.")
             
-            # Find matching output variables
-            for var_name in output_variables:
-                var_clean = var_name.split('[')[0].strip()
-                
-                # For categories with Variable column (like hvac, zones)
-                if 'Variable' in base_df.columns:
-                    # Filter by variable name
-                    base_var_data = base_df[base_df['Variable'].str.contains(var_clean, case=False, na=False)]
-                    mod_var_data = mod_df[mod_df['Variable'].str.contains(var_clean, case=False, na=False)]
-                    
-                    if not base_var_data.empty and not mod_var_data.empty:
-                        # Group by building_id
-                        base_grouped = base_var_data.groupby(groupby)['Value'].sum()
-                        mod_grouped = mod_var_data.groupby(groupby)['Value'].sum()
-                        
-                        # Calculate deltas
-                        for idx in base_grouped.index:
-                            if idx in mod_grouped.index:
-                                base_val = base_grouped[idx]
-                                mod_val = mod_grouped[idx]
-                                
-                                delta_record = {
-                                    'category': category,
-                                    'variable': var_clean,
-                                    'variable_clean': var_clean,
-                                    f'{var_clean}_base': base_val,
-                                    f'{var_clean}_modified': mod_val,
-                                    f'{var_clean}_delta': mod_val - base_val,
-                                    f'{var_clean}_pct_change': ((mod_val - base_val) / base_val * 100) if base_val != 0 else 0
-                                }
-                                
-                                # Add groupby values
-                                if isinstance(idx, tuple):
-                                    for i, gb_col in enumerate(groupby):
-                                        delta_record[gb_col] = idx[i]
-                                else:
-                                    delta_record[groupby[0]] = idx
-                                
-                                delta_records.append(delta_record)
-                else:
-                    # Original column-based logic for backward compatibility
-                    matching_cols = [col for col in base_df.columns 
-                                if var_clean in col and col not in groupby + ['Date', 'DateTime', 'TimeIndex']]
-                    
-                    for col in matching_cols:
-                        if col not in mod_df.columns:
-                            continue
-                        
-                        # Calculate aggregated values
-                        if aggregation == 'sum':
-                            base_agg = base_df.groupby(groupby)[col].sum()
-                            mod_agg = mod_df.groupby(groupby)[col].sum()
-                        elif aggregation == 'mean':
-                            base_agg = base_df.groupby(groupby)[col].mean()
-                            mod_agg = mod_df.groupby(groupby)[col].mean()
-                        else:
-                            raise ValueError(f"Unknown aggregation method: {aggregation}")
-                        
-                        # Calculate deltas
-                        for idx in base_agg.index:
-                            if idx not in mod_agg.index:
-                                continue
-                                
-                            base_val = base_agg[idx]
-                            mod_val = mod_agg[idx]
-                            
-                            delta_record = {
-                                'category': category,
-                                'variable': col,
-                                'variable_clean': var_clean,
-                                f'{var_clean}_base': base_val,
-                                f'{var_clean}_modified': mod_val,
-                                f'{var_clean}_delta': mod_val - base_val,
-                                f'{var_clean}_pct_change': ((mod_val - base_val) / base_val * 100) if base_val != 0 else 0
-                            }
-                            
-                            # Add groupby values
-                            if isinstance(idx, tuple):
-                                for i, gb_col in enumerate(groupby):
-                                    delta_record[gb_col] = idx[i]
-                            else:
-                                delta_record[groupby[0]] = idx
-                            
-                            delta_records.append(delta_record)
-        
-        df_deltas = pd.DataFrame(delta_records)
-        self.output_deltas = df_deltas
-        # Debug output
-        self.logger.info(f"DEBUG output_deltas info:")
-        self.logger.info(f"  Shape: {df_deltas.shape}")
-        self.logger.info(f"  Columns: {list(df_deltas.columns)}")
-        self.logger.info(f"  Index: {df_deltas.index.names}, dtype: {df_deltas.index.dtype}")
-        self.logger.info(f"  Sample:\n{df_deltas.head(2)}")
-        if 'building_id' in df_deltas.columns:
-            self.logger.info(f"  building_id dtype: {df_deltas['building_id'].dtype}")
-            self.logger.info(f"  building_id values: {df_deltas['building_id'].unique()}")
-        return df_deltas
-
-
-
+        return comparison_deltas
 
 
 
@@ -1204,168 +1095,94 @@ class ModificationSensitivityAnalyzer(BaseSensitivityAnalyzer):
         }).reset_index()
     
     def _load_zone_level_results(self):
-        """Load zone-level simulation results"""
+        """Load zone-level simulation results from new format"""
         self.logger.info("Loading zone-level simulation results...")
-        zone_categories = ['hvac', 'temperature', 'ventilation', 'zones']
         
-        loaded_count = 0
-        for category in zone_categories:
-            # Base results
-            base_path = self.base_parsed_dir / f"sql_results/timeseries/aggregated/daily/{category}_daily.parquet"
-            if base_path.exists():
-                df = pd.read_parquet(base_path)
-                self.logger.debug(f"Loaded {category} base data: shape={df.shape}, columns={df.columns.tolist()}")
-                if 'Zone' in df.columns:
-                    self.zone_level_results[f"{category}_base"] = df
-                    loaded_count += 1
-                    # Check for building_id
-                    if 'building_id' not in df.columns:
-                        self.logger.warning(f"{category}_base data missing 'building_id' column")
-            
-            # Modified results
-            mod_path = self.modified_parsed_dir / f"sql_results/timeseries/aggregated/daily/{category}_daily.parquet"
-            if mod_path.exists():
-                df = pd.read_parquet(mod_path)
-                self.logger.debug(f"Loaded {category} modified data: shape={df.shape}, columns={df.columns.tolist()}")
-                if 'Zone' in df.columns:
-                    self.zone_level_results[f"{category}_modified"] = df
-                    loaded_count += 1
-                    # Check for building_id
-                    if 'building_id' not in df.columns:
-                        self.logger.warning(f"{category}_modified data missing 'building_id' column")
+        # Load from new format - zones are included in base data
+        base_path = self.base_parsed_dir / "timeseries" / "base_all_daily.parquet"
+        if base_path.exists():
+            try:
+                base_df = pd.read_parquet(base_path)
+                # Filter for zone data
+                zone_df = base_df[base_df['Zone'].notna() & (base_df['Zone'] != '')]
+                
+                # Group by category
+                for category in zone_df['category'].unique():
+                    cat_df = zone_df[zone_df['category'] == category]
+                    self.zone_level_results[f"{category}_base"] = cat_df
+                
+                self.logger.info(f"Loaded zone data for {len(zone_df['Zone'].unique())} zones")
+            except Exception as e:
+                self.logger.error(f"Failed to load zone data: {e}")
         
-        self.logger.info(f"Loaded {loaded_count} zone-level result files")
+        # Load comparison data for zones
+        comparison_path = self.modified_parsed_dir / "comparisons"
+        if comparison_path.exists():
+            # Zone data is included in comparison files
+            self.logger.info("Zone-level modified results available in comparison files")
     
     def _calculate_zone_deltas(self, 
                             output_variables: List[str],
                             aggregation: str) -> pd.DataFrame:
-        """Calculate output changes at zone level"""
+        """Calculate output changes at zone level using comparison files"""
         zone_deltas = []
         
-        # Process each zone-level category
-        for category in ['hvac', 'zones', 'temperature', 'ventilation']:
-            base_key = f"{category}_base"
-            mod_key = f"{category}_modified"
+        # Use comparison files for zone-level deltas
+        comparison_path = self.modified_parsed_dir / "comparisons"
+        if not comparison_path.exists():
+            self.logger.warning("No comparison files found for zone delta calculation")
+            return pd.DataFrame()
+        
+        # Process comparison files to get zone-level deltas
+        for var in output_variables:
+            var_clean = var.split('[')[0].strip().lower()
             
-            if base_key not in self.zone_level_results or mod_key not in self.zone_level_results:
-                continue
+            # Find comparison files for this variable
+            pattern = f"var_*{var_clean}*_daily_*.parquet"
+            var_files = list(comparison_path.glob(pattern))
             
-            base_df = self.zone_level_results[base_key]
-            mod_df = self.zone_level_results[mod_key]
-            
-            # Debug: log what we found
-            self.logger.debug(f"Processing {category}: base shape={base_df.shape}, mod shape={mod_df.shape}")
-            
-            # Check if we have the required columns
-            if 'Zone' not in base_df.columns or 'Zone' not in mod_df.columns:
-                self.logger.warning(f"Missing 'Zone' column in {category} data")
-                continue
-                
-            if 'building_id' not in base_df.columns:
-                self.logger.warning(f"Missing 'building_id' column in {category} base data")
-                continue
-                
-            # Get unique combinations of building_id and zone
-            zone_groups = base_df.groupby(['building_id', 'Zone'])
-            
-            for (building_id, zone), zone_base_group in zone_groups:
-                # Skip non-zone entries like water heaters
-                if 'WATERHEATER' in zone.upper():
-                    continue
+            for file_path in var_files:
+                try:
+                    df = pd.read_parquet(file_path)
                     
-                # Find matching modified data
-                zone_mod_mask = (mod_df['building_id'] == building_id) & (mod_df['Zone'] == zone)
-                zone_mod_group = mod_df[zone_mod_mask]
-                
-                if zone_mod_group.empty:
-                    self.logger.debug(f"No modified data for building {building_id}, zone {zone}")
-                    continue
-                
-                # Process each output variable
-                for var in output_variables:
-                    # Clean the variable name for matching
-                    var_clean = var.split('[')[0].strip()
+                    # Only process if zone data is available
+                    if 'Zone' not in df.columns or df['Zone'].isna().all():
+                        continue
                     
-                    # Look for matching variables in the 'Variable' column
-                    if 'Variable' in base_df.columns:
-                        # Find exact or partial matches in the Variable column
-                        base_var_data = zone_base_group[zone_base_group['Variable'].str.contains(var_clean, case=False, na=False)]
-                        mod_var_data = zone_mod_group[zone_mod_group['Variable'].str.contains(var_clean, case=False, na=False)]
+                    # Get variant columns
+                    variant_cols = [col for col in df.columns if col.startswith('variant_') and col.endswith('_value')]
+                    
+                    # Group by building and zone
+                    for (building_id, zone), zone_group in df.groupby(['building_id', 'Zone']):
+                        if pd.isna(zone) or zone == '' or 'WATERHEATER' in str(zone).upper():
+                            continue
                         
-                        if not base_var_data.empty and not mod_var_data.empty:
-                            # Group by variable for more precise matching
-                            for variable_name in base_var_data['Variable'].unique():
-                                base_subset = base_var_data[base_var_data['Variable'] == variable_name]
-                                mod_subset = mod_var_data[mod_var_data['Variable'] == variable_name]
-                                
-                                if not base_subset.empty and not mod_subset.empty:
-                                    # Aggregate values
-                                    if aggregation == 'sum':
-                                        base_val = base_subset['Value'].sum()
-                                        mod_val = mod_subset['Value'].sum()
-                                    else:
-                                        base_val = base_subset['Value'].mean()
-                                        mod_val = mod_subset['Value'].mean()
-                                    
-                                    # Calculate delta
-                                    delta = mod_val - base_val
-                                    pct_change = ((delta / base_val) * 100) if base_val != 0 else 0
-                                    
-                                    zone_deltas.append({
-                                        'zone': zone,
-                                        'building_id': building_id,
-                                        'variable': var_clean,
-                                        'variable_full': variable_name,
-                                        f'{var_clean}_delta': delta,
-                                        f'{var_clean}_pct_change': pct_change,
-                                        'base_value': base_val,
-                                        'modified_value': mod_val
-                                    })
-                                    
-                                    self.logger.debug(f"Calculated delta for {building_id}/{zone}/{variable_name}: {delta}")
-                    
-                    # Also check for column-based variables (backward compatibility)
-                    else:
-                        # Original column-matching logic
-                        matching_cols = [col for col in zone_base_group.columns 
-                                    if var_clean in col and col not in ['Zone', 'building_id', 'Date', 'DateTime', 'TimeIndex']]
+                        base_sum = zone_group['base_value'].sum()
                         
-                        for col in matching_cols:
-                            if col in zone_mod_group.columns:
-                                if aggregation == 'sum':
-                                    base_val = zone_base_group[col].sum()
-                                    mod_val = zone_mod_group[col].sum()
-                                else:
-                                    base_val = zone_base_group[col].mean()
-                                    mod_val = zone_mod_group[col].mean()
-                                
-                                delta = mod_val - base_val
-                                pct_change = ((delta / base_val) * 100) if base_val != 0 else 0
-                                
-                                zone_deltas.append({
-                                    'zone': zone,
-                                    'building_id': building_id,
-                                    'variable': var_clean,
-                                    'variable_full': col,
-                                    f'{var_clean}_delta': delta,
-                                    f'{var_clean}_pct_change': pct_change,
-                                    'base_value': base_val,
-                                    'modified_value': mod_val
-                                })
+                        # Average across variants
+                        variant_sums = []
+                        for var_col in variant_cols:
+                            variant_sums.append(zone_group[var_col].sum())
+                        
+                        if variant_sums and base_sum != 0:
+                            avg_variant = np.mean(variant_sums)
+                            delta = avg_variant - base_sum
+                            pct_change = (delta / base_sum * 100)
+                            
+                            zone_deltas.append({
+                                'zone': zone,
+                                'building_id': building_id,
+                                'variable': var_clean,
+                                f'{var_clean}_delta': delta,
+                                f'{var_clean}_pct_change': pct_change,
+                                'base_value': base_sum,
+                                'modified_value': avg_variant
+                            })
+                
+                except Exception as e:
+                    self.logger.warning(f"Error processing zone data from {file_path}: {e}")
         
-        df_deltas = pd.DataFrame(zone_deltas)
-        
-        # Debug logging
-        self.logger.info(f"Created {len(df_deltas)} zone deltas")
-        if not df_deltas.empty:
-            self.logger.debug(f"Zone deltas columns: {df_deltas.columns.tolist()}")
-            self.logger.debug(f"Unique zones with deltas: {df_deltas['zone'].unique().tolist()}")
-            self.logger.debug(f"Variables with deltas: {df_deltas['variable'].unique().tolist() if 'variable' in df_deltas.columns else []}")
-        else:
-            self.logger.warning("No zone deltas were calculated - check if output variables match the data")
-            self.logger.debug(f"Requested output variables: {output_variables}")
-        
-        return df_deltas
+        return pd.DataFrame(zone_deltas)
         
 
 
@@ -1377,47 +1194,6 @@ class ModificationSensitivityAnalyzer(BaseSensitivityAnalyzer):
 
 
     
-    def _get_zone_outputs(self, 
-                        building_id: int,
-                        zone: str,
-                        output_variables: List[str]) -> pd.DataFrame:
-        """Get output data for a specific zone"""
-        zone_outputs = []
-        
-        for category in ['hvac', 'zones', 'temperature']:
-            base_key = f"{category}_base"
-            mod_key = f"{category}_modified"
-            
-            if base_key in self.zone_level_results and mod_key in self.zone_level_results:
-                base_df = self.zone_level_results[base_key]
-                mod_df = self.zone_level_results[mod_key]
-                
-                # Filter for this zone
-                zone_base = base_df[
-                    (base_df['Zone'] == zone) & 
-                    (base_df['building_id'] == building_id)
-                ] if 'building_id' in base_df else base_df[base_df['Zone'] == zone]
-                
-                zone_mod = mod_df[
-                    (mod_df['Zone'] == zone) & 
-                    (mod_df['building_id'] == building_id)
-                ] if 'building_id' in mod_df else mod_df[mod_df['Zone'] == zone]
-                
-                # Extract outputs
-                for var in output_variables:
-                    matching_cols = [col for col in zone_base.columns if var in col]
-                    for col in matching_cols:
-                        if col in zone_mod.columns:
-                            zone_outputs.append({
-                                'zone': zone,
-                                'building_id': building_id,
-                                'variable': var,
-                                f'{var}_base': zone_base[col].sum(),
-                                f'{var}_modified': zone_mod[col].sum(),
-                                f'{var}_delta': zone_mod[col].sum() - zone_base[col].sum()
-                            })
-        
-        return pd.DataFrame(zone_outputs)
     
     def _get_parameter_category(self, param_name: str) -> str:
         """Extract category from parameter name"""
@@ -1585,3 +1361,114 @@ class ModificationSensitivityAnalyzer(BaseSensitivityAnalyzer):
                 json.dump(report, f, indent=2)
         
         return report
+    
+    def _calculate_deltas_from_comparison_files(self, 
+                                               output_variables: List[str],
+                                               frequency: str = 'daily') -> pd.DataFrame:
+        """Calculate deltas using new comparison file format"""
+        self.logger.info("Attempting to use new comparison file format...")
+        
+        comparison_path = self.modified_parsed_dir / "comparisons"
+        if not comparison_path.exists():
+            self.logger.info("No comparison directory found, falling back to old method")
+            return pd.DataFrame()
+        
+        # Get all variants from modification tracking
+        if self.modification_tracking is None:
+            self.modification_tracking = self.load_modification_tracking()
+        
+        all_deltas = []
+        
+        # Get all comparison files for the frequency
+        all_comparison_files = list(comparison_path.glob(f"var_*_{frequency}_*.parquet"))
+        
+        for var in output_variables:
+            # Clean variable name - remove colons, brackets and convert to lowercase
+            var_clean = var.split('[')[0].strip().lower()
+            var_clean_normalized = var_clean.replace(':', '').replace('_', '')
+            
+            # Find matching files by checking if the normalized variable name matches
+            var_files = []
+            for file_path in all_comparison_files:
+                # Parse filename to get variable name
+                parts = file_path.stem.split('_')
+                building_part = next((i for i, p in enumerate(parts) if p.startswith('b')), -1)
+                
+                if building_part > 0:
+                    file_var_name = '_'.join(parts[1:building_part-2])
+                    file_var_normalized = file_var_name.lower().replace('_', '')
+                    
+                    # Check if this file matches our variable
+                    if var_clean_normalized in file_var_normalized or file_var_normalized in var_clean_normalized:
+                        var_files.append(file_path)
+            
+            for file_path in var_files:
+                try:
+                    # Parse filename to get variable name
+                    parts = file_path.stem.split('_')
+                    building_part = next((i for i, p in enumerate(parts) if p.startswith('b')), -1)
+                    
+                    if building_part > 0:
+                        variable_name = '_'.join(parts[1:building_part-2])
+                        building_id = parts[building_part][1:]
+                        
+                        # Load comparison data
+                        df = pd.read_parquet(file_path)
+                        
+                        # Get variant columns
+                        variant_cols = [col for col in df.columns if col.startswith('variant_') and col.endswith('_value')]
+                        
+                        for variant_col in variant_cols:
+                            variant_id = variant_col.replace('_value', '')
+                            
+                            # Get modifications for this variant and building
+                            variant_mods = self.modification_tracking[
+                                (self.modification_tracking['variant_id'] == variant_id) &
+                                (self.modification_tracking['building_id'] == building_id)
+                            ]
+                            
+                            if not variant_mods.empty:
+                                # Calculate aggregated deltas
+                                base_sum = df['base_value'].sum()
+                                variant_sum = df[variant_col].sum()
+                                
+                                if base_sum != 0:
+                                    abs_delta = variant_sum - base_sum
+                                    pct_delta = (abs_delta / base_sum) * 100
+                                    
+                                    delta_record = {
+                                        'building_id': building_id,
+                                        'variant_id': variant_id,
+                                        'category': df['category'].iloc[0] if 'category' in df.columns else 'unknown',
+                                        'variable': var,
+                                        'variable_clean': var_clean,
+                                        f'{var_clean}_base': base_sum,
+                                        f'{var_clean}_modified': variant_sum,
+                                        f'{var_clean}_delta': abs_delta,
+                                        f'{var_clean}_pct_change': pct_delta,
+                                        'n_modifications': len(variant_mods)
+                                    }
+                                    
+                                    all_deltas.append(delta_record)
+                
+                except Exception as e:
+                    self.logger.warning(f"Failed to process comparison file {file_path}: {e}")
+        
+        if all_deltas:
+            deltas_df = pd.DataFrame(all_deltas)
+            
+            # If multiple variants per building, aggregate to building level
+            if 'variant_id' in deltas_df.columns:
+                # Group by building and take mean of variants
+                agg_dict = {col: 'mean' for col in deltas_df.columns 
+                           if col not in ['building_id', 'variant_id', 'category', 'variable', 'variable_clean']}
+                agg_dict['category'] = 'first'
+                agg_dict['variable'] = 'first'
+                agg_dict['variable_clean'] = 'first'
+                
+                deltas_df = deltas_df.groupby('building_id').agg(agg_dict).reset_index()
+            
+            self.logger.info(f"Calculated deltas from comparison files for {len(deltas_df)} buildings")
+            return deltas_df
+        
+        return pd.DataFrame()

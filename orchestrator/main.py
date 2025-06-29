@@ -296,6 +296,21 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
                             
 
 
+                            # Add time series aggregation for modified results
+                            if aggregation_cfg.get("perform_aggregation", False):
+                                with step_timer(logger, "time series aggregation (modified)"):
+                                    # Run aggregation on the modified results directory
+                                    aggregation_results_modified = run_timeseries_aggregation(
+                                        aggregation_cfg=aggregation_cfg,
+                                        job_output_dir=job_output_dir,
+                                        parsed_data_dir=os.path.join(job_output_dir, "parsed_modified_results"),
+                                        logger=logger
+                                    )
+                                    
+                                    if aggregation_results_modified and aggregation_results_modified.get('success', False):
+                                        logger.info(f"[INFO] Modified data aggregation completed:")
+                                        logger.info(f"  - Files created: {aggregation_results_modified.get('files_created', 0)}")
+                            
                             # Validation after modification parsing
                             check_canceled_func()
                             validation_results_modified = run_validation_stages(
@@ -312,39 +327,6 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
 
 
 
-    # -------------------------------------------------------------------------
-    # 8a) Time Series Aggregation (after )
-    # -------------------------------------------------------------------------
-
-    # In the modification section, after parsing modified results:
-    if sim_success and post_mod_cfg.get("parse_results"):
-        with step_timer(logger, "parsing modified results"):
-            run_parsing_modified_results(
-                parse_cfg=post_mod_cfg.get("parse_results", {}),
-                job_output_dir=job_output_dir,
-                modified_sim_output=os.path.join(job_output_dir, "Modified_Sim_Results"),
-                modified_idfs_dir=modified_results["modified_idfs_dir"],
-                idf_map_csv=os.path.join(job_output_dir, "extracted_idf_buildings.csv"),
-                logger=logger
-            )
-        
-        # Add time series aggregation for modified results
-        # In main.py, after modification parsing section (around line 374):
-
-        # Add time series aggregation for modified results
-        if aggregation_cfg.get("perform_aggregation", False):
-            with step_timer(logger, "time series aggregation (modified)"):
-                # Run aggregation on the modified results directory as well
-                aggregation_results_modified = run_timeseries_aggregation(
-                    aggregation_cfg=aggregation_cfg,
-                    job_output_dir=job_output_dir,
-                    parsed_data_dir=os.path.join(job_output_dir, "parsed_modified_results"),
-                    logger=logger
-                )
-                
-                if aggregation_results_modified and aggregation_results_modified.get('success', False):
-                    logger.info(f"[INFO] Modified data aggregation completed:")
-                    logger.info(f"  - Files created: {aggregation_results_modified.get('files_created', 0)}")
 
 
 

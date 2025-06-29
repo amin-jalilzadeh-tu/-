@@ -38,6 +38,7 @@ class BaseSensitivityAnalyzer(ABC):
         self.output_deltas = None
         self.validation_scores = {}
         self.time_slice_config = None
+        self.config = {}  # Configuration dictionary
         
         # Cache for loaded data
         self._cache = {}
@@ -249,10 +250,13 @@ class BaseSensitivityAnalyzer(ABC):
                               categories: Optional[List[str]] = None,
                               use_cache: bool = True,
                               time_slice_config: Optional[Dict[str, any]] = None) -> Tuple[Dict, Dict]:
-        """Load base and modified simulation results with caching and optional time filtering"""
-        # Import TimeSlicer
+        """Load base and modified simulation results using new data format"""
+        # Import required modules
         from .time_slicer import TimeSlicer
+        from .data_manager import SensitivityDataManager
+        
         time_slicer = TimeSlicer(self.logger)
+        data_manager = SensitivityDataManager(self.job_output_dir, self.logger)
         
         # Store time slice config for later use
         self.time_slice_config = time_slice_config
@@ -269,92 +273,41 @@ class BaseSensitivityAnalyzer(ABC):
         if time_slice_config and time_slice_config.get('enabled', False):
             slice_type = time_slice_config.get('slice_type', 'none')
             cache_key += f"_{slice_type}"
-            if slice_type == 'peak_months':
-                cache_key += f"_{time_slice_config.get('season', 'all')}"
-            elif slice_type == 'time_of_day':
-                hours = time_slice_config.get('peak_hours', [])
-                cache_key += f"_{hash(tuple(hours) if isinstance(hours, list) else str(hours))}"
         
         if use_cache and cache_key in self._cache:
             self.logger.debug(f"Using cached results for {cache_key}")
             return self._cache[cache_key]
         
-        self.logger.info(f"Loading {result_type} simulation results...")
-        if time_slice_config and time_slice_config.get('enabled', False):
-            self.logger.info(f"Applying time slice: {time_slice_config.get('slice_type', 'custom')}")
+        self.logger.info(f"Loading {result_type} simulation results using new format...")
         
-        if categories is None:
-            categories = ['hvac', 'energy', 'temperature', 'electricity', 'zones', 'ventilation']
+        # Use data manager to load results
+        results = data_manager.load_simulation_results(
+            result_type=result_type,
+            variables=None,  # Load all variables
+            load_modified=True,
+            time_slice_config=time_slice_config
+        )
         
-        # Determine if we need hourly data for time-of-day analysis
-        need_hourly = (time_slice_config and 
-                      time_slice_config.get('enabled', False) and 
-                      time_slice_config.get('slice_type') == 'time_of_day' and
-                      result_type == 'daily')
+        # Extract base and modified results
+        base_results = results.get('base', {})
+        modified_results = results.get('modified', {})
         
-        base_results = {}
-        modified_results = {}
+        # If we have comparison data, use it for modified results
+        if 'comparison_data' in results and results['comparison_data']:
+            # For backward compatibility, create modified results from comparison data
+            if not modified_results:
+                modified_results = self._create_modified_from_comparison(results['comparison_data'])
         
-        for category in categories:
-            # For time-of-day analysis, load hourly data if available
-            if need_hourly:
-                # Try hourly first, fall back to daily
-                base_hourly_path = self.base_parsed_dir / f"sql_results/timeseries/hourly/{category}_2013.parquet"
-                if base_hourly_path.exists():
-                    df = pd.read_parquet(base_hourly_path)
-                    # Apply time slicing
-                    if time_slice_config:
-                        df = time_slicer.slice_data(df, time_slice_config, 'DateTime')
-                    base_results[category] = df
-                    self.logger.debug(f"Loaded hourly base {category}: {len(df)} records")
-                    continue
-            
-            # Load aggregated results (daily/monthly)
-            base_path = self.base_parsed_dir / f"sql_results/timeseries/aggregated/{result_type}/{category}_{result_type}.parquet"
-            if base_path.exists():
-                df = pd.read_parquet(base_path)
-                
-                # Apply time slicing if configured
-                if time_slice_config and time_slice_config.get('enabled', False):
-                    df = time_slicer.slice_data(df, time_slice_config, 'DateTime')
-                
-                base_results[category] = df
-                self.logger.debug(f"Loaded base {category}: {len(df)} records")
-            
-            # Modified results
-            if need_hourly:
-                mod_hourly_path = self.modified_parsed_dir / f"sql_results/timeseries/hourly/{category}_2013.parquet"
-                if mod_hourly_path.exists():
-                    df = pd.read_parquet(mod_hourly_path)
-                    if time_slice_config:
-                        df = time_slicer.slice_data(df, time_slice_config, 'DateTime')
-                    modified_results[category] = df
-                    self.logger.debug(f"Loaded hourly modified {category}: {len(df)} records")
-                    continue
-            
-            mod_path = self.modified_parsed_dir / f"sql_results/timeseries/aggregated/{result_type}/{category}_{result_type}.parquet"
-            if mod_path.exists():
-                df = pd.read_parquet(mod_path)
-                
-                # Apply time slicing if configured
-                if time_slice_config and time_slice_config.get('enabled', False):
-                    df = time_slicer.slice_data(df, time_slice_config, 'DateTime')
-                
-                modified_results[category] = df
-                self.logger.debug(f"Loaded modified {category}: {len(df)} records")
+        self.logger.info(f"Loaded {len(base_results)} base categories and {len(modified_results)} modified categories")
         
         # Log time slice summary if applied
         if time_slice_config and time_slice_config.get('enabled', False) and base_results:
             # Get summary from first available dataset
             for category, df in base_results.items():
-                if not df.empty and 'DateTime' in df.columns:
-                    summary = time_slicer.get_time_slice_summary(df, 'DateTime')
-                    self.logger.info(f"Time slice summary: {summary['total_records']} records, "
-                                   f"months: {summary.get('unique_months', [])}")
+                if not df.empty and 'timestamp' in df.columns:
+                    summary = time_slicer.get_time_slice_summary(df, 'timestamp')
+                    self.logger.info(f"Time slice summary: {summary['total_records']} records")
                     break
-        
-        # Also load summary metrics (note: these might not have time columns)
-        self._load_summary_metrics(base_results, modified_results)
         
         # Cache results
         self._cache[cache_key] = (base_results, modified_results)
@@ -364,15 +317,28 @@ class BaseSensitivityAnalyzer(ABC):
         
         return base_results, modified_results
     
-    def _load_summary_metrics(self, base_results: Dict, modified_results: Dict):
-        """Load annual summary metrics if available"""
-        base_summary_path = self.base_parsed_dir / "sql_results/summary_metrics/annual_summary.parquet"
-        if base_summary_path.exists():
-            base_results['summary'] = pd.read_parquet(base_summary_path)
-            
-        mod_summary_path = self.modified_parsed_dir / "sql_results/summary_metrics/annual_summary.parquet"
-        if mod_summary_path.exists():
-            modified_results['summary'] = pd.read_parquet(mod_summary_path)
+    def _create_modified_from_comparison(self, comparison_data: Dict[str, pd.DataFrame]) -> Dict[str, pd.DataFrame]:
+        """Create modified results from comparison data for backward compatibility"""
+        modified_results = {}
+        
+        for var_name, df in comparison_data.items():
+            # Get first variant as modified
+            variant_cols = [col for col in df.columns if col.startswith('variant_') and col.endswith('_value')]
+            if variant_cols:
+                # Create modified dataframe
+                mod_df = df[['timestamp', 'building_id', 'Zone', 'variable_name', 'category', 'Units']].copy()
+                mod_df['Value'] = df[variant_cols[0]]  # Use first variant
+                mod_df.rename(columns={'variable_name': 'Variable'}, inplace=True)
+                
+                # Group by category
+                category = df['category'].iloc[0] if 'category' in df.columns else 'unknown'
+                if category not in modified_results:
+                    modified_results[category] = mod_df
+                else:
+                    modified_results[category] = pd.concat([modified_results[category], mod_df])
+        
+        return modified_results
+    
     
     def calculate_output_deltas(self, 
                               output_variables: List[str],
@@ -380,118 +346,74 @@ class BaseSensitivityAnalyzer(ABC):
                               groupby: Optional[List[str]] = None) -> pd.DataFrame:
         """Calculate changes in outputs between base and modified runs"""
         self.logger.info("Calculating output deltas...")
-        if self.time_slice_config and self.time_slice_config.get('enabled', False):
-            self.logger.info(f"Using time slice: {self.time_slice_config.get('slice_type', 'custom')}")
         
+        # Use data manager for delta calculation
+        from .data_manager import SensitivityDataManager
+        data_manager = SensitivityDataManager(self.job_output_dir, self.logger)
+        
+        # Load simulation results if not already loaded
+        if not hasattr(self, 'simulation_results') or not self.simulation_results:
+            results = data_manager.load_simulation_results(
+                result_type=self.config.get('result_frequency', 'daily'),
+                variables=output_variables,
+                load_modified=True,
+                time_slice_config=self.time_slice_config
+            )
+            self.simulation_results = results
+        else:
+            results = self.simulation_results
+        
+        # Use comparison data if available
+        if 'comparison_data' in results and results['comparison_data']:
+            self.logger.info("Using comparison data for delta calculation")
+            data_manager.simulation_results = results
+            return data_manager._extract_output_deltas(output_variables)
+        
+        # Otherwise, calculate from base and modified
         if not self.base_results or not self.modified_results:
-            raise ValueError("Results not loaded. Call load_simulation_results first.")
-        
-        delta_records = []
+            raise ValueError("No comparison data or base/modified results available")
         
         # Determine grouping
         if groupby is None:
             groupby = ['building_id']
         
-        # Process each category
+        # Simplified delta calculation using new format
+        delta_records = []
+        
         for category, base_df in self.base_results.items():
-            if category == 'summary':  # Skip summary for now
-                continue
-                
             if category not in self.modified_results:
                 continue
                 
             mod_df = self.modified_results[category]
             
-            # Find matching output variables
+            # Process each requested variable
             for var_name in output_variables:
                 var_clean = var_name.split('[')[0].strip()
                 
-                # For categories with Variable column (like hvac, zones)
-                if 'Variable' in base_df.columns:
-                    # Filter by variable name
-                    base_var_data = base_df[base_df['Variable'].str.contains(var_clean, case=False, na=False)]
-                    mod_var_data = mod_df[mod_df['Variable'].str.contains(var_clean, case=False, na=False)]
+                # Filter data for this variable
+                base_var_data = base_df[base_df['Variable'].str.contains(var_clean, case=False, na=False)]
+                mod_var_data = mod_df[mod_df['Variable'].str.contains(var_clean, case=False, na=False)]
+                
+                if not base_var_data.empty and not mod_var_data.empty:
+                    # Group by building_id
+                    base_grouped = base_var_data.groupby(groupby)['Value'].agg(aggregation)
+                    mod_grouped = mod_var_data.groupby(groupby)['Value'].agg(aggregation)
                     
-                    if not base_var_data.empty and not mod_var_data.empty:
-                        # Group by building_id
-                        base_grouped = base_var_data.groupby(groupby)['Value'].agg(aggregation)
-                        mod_grouped = mod_var_data.groupby(groupby)['Value'].agg(aggregation)
-                        
-                        # Calculate deltas
-                        for idx in base_grouped.index:
-                            if idx in mod_grouped.index:
-                                base_val = base_grouped[idx]
-                                mod_val = mod_grouped[idx]
-                                
-                                delta_record = {
-                                    'category': category,
-                                    'variable': var_clean,
-                                    'variable_clean': var_clean,
-                                    f'{var_clean}_base': base_val,
-                                    f'{var_clean}_modified': mod_val,
-                                    f'{var_clean}_delta': mod_val - base_val,
-                                    f'{var_clean}_pct_change': ((mod_val - base_val) / base_val * 100) if base_val != 0 else 0
-                                }
-                                
-                                # Add time slice info if present
-                                if self.time_slice_config and self.time_slice_config.get('enabled', False):
-                                    delta_record['time_slice_type'] = self.time_slice_config.get('slice_type', 'custom')
-                                    if self.time_slice_config.get('slice_type') == 'peak_months':
-                                        delta_record['season'] = self.time_slice_config.get('season', 'both')
-                                
-                                # Add groupby values
-                                if isinstance(idx, tuple):
-                                    for i, gb_col in enumerate(groupby):
-                                        delta_record[gb_col] = idx[i]
-                                else:
-                                    delta_record[groupby[0]] = idx
-                                
-                                delta_records.append(delta_record)
-                else:
-                    # Original column-based logic for backward compatibility
-                    matching_cols = [col for col in base_df.columns 
-                                if var_clean in col and col not in groupby + ['Date', 'DateTime', 'TimeIndex']]
-                    
-                    for col in matching_cols:
-                        if col not in mod_df.columns:
-                            continue
-                        
-                        # Calculate aggregated values
-                        if aggregation == 'sum':
-                            base_agg = base_df.groupby(groupby)[col].sum()
-                            mod_agg = mod_df.groupby(groupby)[col].sum()
-                        elif aggregation == 'mean':
-                            base_agg = base_df.groupby(groupby)[col].mean()
-                            mod_agg = mod_df.groupby(groupby)[col].mean()
-                        elif aggregation == 'max':
-                            base_agg = base_df.groupby(groupby)[col].max()
-                            mod_agg = mod_df.groupby(groupby)[col].max()
-                        else:
-                            raise ValueError(f"Unknown aggregation method: {aggregation}")
-                        
-                        # Calculate deltas
-                        for idx in base_agg.index:
-                            if idx not in mod_agg.index:
-                                continue
-                                
-                            base_val = base_agg[idx]
-                            mod_val = mod_agg[idx]
+                    # Calculate deltas
+                    for idx in base_grouped.index:
+                        if idx in mod_grouped.index:
+                            base_val = base_grouped[idx]
+                            mod_val = mod_grouped[idx]
                             
                             delta_record = {
                                 'category': category,
-                                'variable': col,
+                                'variable': var_clean,
                                 'variable_clean': var_clean,
                                 f'{var_clean}_base': base_val,
                                 f'{var_clean}_modified': mod_val,
                                 f'{var_clean}_delta': mod_val - base_val,
                                 f'{var_clean}_pct_change': ((mod_val - base_val) / base_val * 100) if base_val != 0 else 0
                             }
-                            
-                            # Add time slice info if present
-                            if self.time_slice_config and self.time_slice_config.get('enabled', False):
-                                delta_record['time_slice_type'] = self.time_slice_config.get('slice_type', 'custom')
-                                if self.time_slice_config.get('slice_type') == 'peak_months':
-                                    delta_record['season'] = self.time_slice_config.get('season', 'both')
                             
                             # Add groupby values
                             if isinstance(idx, tuple):

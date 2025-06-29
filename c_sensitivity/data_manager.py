@@ -164,7 +164,7 @@ class SensitivityDataManager:
                               variables: Optional[List[str]] = None,
                               load_modified: bool = True,
                               time_slice_config: Optional[Dict[str, any]] = None) -> Dict[str, pd.DataFrame]:
-        """Load simulation results for base and optionally modified runs with time filtering"""
+        """Load simulation results using new data format only"""
         from .time_slicer import TimeSlicer
         time_slicer = TimeSlicer(self.logger)
         
@@ -176,157 +176,27 @@ class SensitivityDataManager:
         
         results = {}
         
-        # Determine if we need hourly data for time-of-day analysis
-        need_hourly = (time_slice_config and 
-                      time_slice_config.get('enabled', False) and 
-                      time_slice_config.get('slice_type') == 'time_of_day' and
-                      result_type == 'daily')
+        # Load base data from new format
+        new_base_path = self.parsed_data_path / "timeseries" / f"base_all_{result_type}.parquet"
+        if not new_base_path.exists():
+            self.logger.error(f"Base data file not found: {new_base_path}")
+            return results
         
-        # Load base results
-        if need_hourly:
-            base_hourly_path = self.parsed_data_path / "sql_results/timeseries/hourly"
-            if base_hourly_path.exists():
-                results['base'] = self._load_hourly_results(base_hourly_path, variables, time_slice_config)
-                self.logger.info(f"Loaded hourly base results: {sum(len(df) for df in results['base'].values())} records")
-            else:
-                # Fall back to aggregated data
-                base_path = self.parsed_data_path / f"sql_results/timeseries/aggregated/{result_type}"
-                if base_path.exists():
-                    results['base'] = self._load_results_from_path(base_path, variables, time_slice_config)
-                    self.logger.info(f"Loaded aggregated base results: {sum(len(df) for df in results['base'].values())} records")
-        else:
-            base_path = self.parsed_data_path / f"sql_results/timeseries/aggregated/{result_type}"
-            if base_path.exists():
-                results['base'] = self._load_results_from_path(base_path, variables, time_slice_config)
-                self.logger.info(f"Loaded base results: {sum(len(df) for df in results['base'].values())} records")
+        results['base'] = self._load_new_base_format(result_type, variables, time_slice_config)
         
-        # Load modified results if requested
+        # Load comparison data if modified results requested
         if load_modified:
-            if need_hourly:
-                mod_hourly_path = self.modified_parsed_path / "sql_results/timeseries/hourly"
-                if mod_hourly_path.exists():
-                    results['modified'] = self._load_hourly_results(mod_hourly_path, variables, time_slice_config)
-                    self.logger.info(f"Loaded hourly modified results: {sum(len(df) for df in results['modified'].values())} records")
-                else:
-                    mod_path = self.modified_parsed_path / f"sql_results/timeseries/aggregated/{result_type}"
-                    if mod_path.exists():
-                        results['modified'] = self._load_results_from_path(mod_path, variables, time_slice_config)
-                        self.logger.info(f"Loaded aggregated modified results: {sum(len(df) for df in results['modified'].values())} records")
+            comparison_path = self.modified_parsed_path / "comparisons"
+            if comparison_path.exists():
+                self.logger.info("Loading comparison data")
+                comparison_results = self._load_comparison_results(result_type, variables, time_slice_config)
+                results.update(comparison_results)
             else:
-                mod_path = self.modified_parsed_path / f"sql_results/timeseries/aggregated/{result_type}"
-                if mod_path.exists():
-                    results['modified'] = self._load_results_from_path(mod_path, variables, time_slice_config)
-                    self.logger.info(f"Loaded modified results: {sum(len(df) for df in results['modified'].values())} records")
-        
-        # Also load summary metrics
-        self._load_summary_metrics(results)
+                self.logger.warning("No comparison directory found - modified results not available")
         
         self.simulation_results = results
         return results
     
-    def _load_results_from_path(self, 
-                               path: Path, 
-                               variables: Optional[List[str]] = None,
-                               time_slice_config: Optional[Dict[str, any]] = None) -> Dict[str, pd.DataFrame]:
-        """Load results from a specific path with optional time filtering"""
-        from .time_slicer import TimeSlicer
-        time_slicer = TimeSlicer(self.logger)
-        
-        results = {}
-        
-        # Categories to load
-        categories = ['hvac', 'energy', 'electricity', 'temperature', 'zones', 'ventilation']
-        
-        for category in categories:
-            file_path = path / f"{category}_{path.parent.name}.parquet"
-            if file_path.exists():
-                try:
-                    df = pd.read_parquet(file_path)
-                    
-                    # Apply time slicing if configured
-                    if time_slice_config and time_slice_config.get('enabled', False) and 'DateTime' in df.columns:
-                        df = time_slicer.slice_data(df, time_slice_config, 'DateTime')
-                    
-                    # Filter by variables if specified
-                    if variables and 'Variable' in df.columns:
-                        # Filter rows where Variable contains any of the requested variables
-                        mask = df['Variable'].str.contains('|'.join(variables), case=False, na=False)
-                        df = df[mask]
-                    elif variables:
-                        # Column-based filtering for backward compatibility
-                        cols_to_keep = ['Date', 'DateTime', 'building_id', 'TimeIndex']
-                        if 'Zone' in df.columns:
-                            cols_to_keep.append('Zone')
-                        
-                        # Find matching columns
-                        for var in variables:
-                            var_clean = var.split('[')[0].strip()
-                            matching_cols = [col for col in df.columns 
-                                           if var_clean in col and col not in cols_to_keep]
-                            cols_to_keep.extend(matching_cols)
-                        
-                        df = df[cols_to_keep]
-                    
-                    results[category] = df
-                    self.logger.debug(f"Loaded {category}: {len(df)} records")
-                except Exception as e:
-                    self.logger.warning(f"Failed to load {file_path}: {e}")
-        
-        return results
-    
-    def _load_hourly_results(self, 
-                            path: Path,
-                            variables: Optional[List[str]] = None,
-                            time_slice_config: Optional[Dict[str, any]] = None) -> Dict[str, pd.DataFrame]:
-        """Load hourly results for time-of-day analysis"""
-        from .time_slicer import TimeSlicer
-        time_slicer = TimeSlicer(self.logger)
-        
-        results = {}
-        
-        # Categories to load
-        categories = ['hvac', 'energy', 'electricity', 'temperature', 'zones', 'ventilation']
-        
-        for category in categories:
-            # Hourly files are usually named like hvac_2013.parquet
-            file_path = path / f"{category}_2013.parquet"
-            if file_path.exists():
-                try:
-                    df = pd.read_parquet(file_path)
-                    
-                    # Apply time slicing
-                    if time_slice_config and time_slice_config.get('enabled', False) and 'DateTime' in df.columns:
-                        df = time_slicer.slice_data(df, time_slice_config, 'DateTime')
-                    
-                    # Filter by variables if specified
-                    if variables and 'Variable' in df.columns:
-                        mask = df['Variable'].str.contains('|'.join(variables), case=False, na=False)
-                        df = df[mask]
-                    
-                    results[category] = df
-                    self.logger.debug(f"Loaded hourly {category}: {len(df)} records")
-                except Exception as e:
-                    self.logger.warning(f"Failed to load hourly {file_path}: {e}")
-        
-        return results
-    
-    def _load_summary_metrics(self, results_dict: Dict[str, Dict[str, pd.DataFrame]]):
-        """Load annual summary metrics"""
-        for result_type in ['base', 'modified']:
-            if result_type not in results_dict:
-                continue
-            
-            if result_type == 'base':
-                summary_path = self.parsed_data_path / "sql_results/summary_metrics/annual_summary.parquet"
-            else:
-                summary_path = self.modified_parsed_path / "sql_results/summary_metrics/annual_summary.parquet"
-            
-            if summary_path.exists():
-                try:
-                    results_dict[result_type]['summary'] = pd.read_parquet(summary_path)
-                    self.logger.debug(f"Loaded {result_type} summary metrics")
-                except Exception as e:
-                    self.logger.warning(f"Failed to load summary metrics: {e}")
     
     def create_analysis_dataset(self,
                               output_variables: Optional[List[str]] = None,
@@ -489,69 +359,57 @@ class SensitivityDataManager:
     
     def _extract_output_deltas(self, 
                              output_variables: Optional[List[str]] = None) -> pd.DataFrame:
-        """Extract output changes between base and modified"""
-        if 'base' not in self.simulation_results or 'modified' not in self.simulation_results:
-            self.logger.warning("Both base and modified results needed for deltas")
+        """Extract output changes from comparison data"""
+        if 'comparison_data' not in self.simulation_results:
+            self.logger.warning("No comparison data available for delta calculation")
             return pd.DataFrame()
         
         if output_variables is None:
             output_variables = ['Heating:EnergyTransfer', 'Cooling:EnergyTransfer', 'Electricity:Facility']
         
-        delta_dfs = []
+        delta_records = []
         
-        for category in ['hvac', 'energy', 'electricity']:
-            if category not in self.simulation_results['base'] or category not in self.simulation_results['modified']:
-                continue
-            
-            base_df = self.simulation_results['base'][category]
-            mod_df = self.simulation_results['modified'][category]
-            
-            # Handle Variable column format
-            if 'Variable' in base_df.columns:
-                for var in output_variables:
-                    var_clean = var.split('[')[0].strip()
+        # Process each comparison file
+        for var_name, df in self.simulation_results['comparison_data'].items():
+            # Check if this variable matches requested outputs
+            for req_var in output_variables:
+                var_clean = req_var.split('[')[0].strip().lower()
+                if var_clean in var_name.lower():
+                    # Get variant columns
+                    variant_cols = [col for col in df.columns if col.startswith('variant_') and col.endswith('_value')]
                     
-                    # Filter for this variable
-                    base_var = base_df[base_df['Variable'].str.contains(var_clean, case=False, na=False)]
-                    mod_var = mod_df[mod_df['Variable'].str.contains(var_clean, case=False, na=False)]
-                    
-                    if not base_var.empty and not mod_var.empty:
-                        # Aggregate by building
-                        base_agg = base_var.groupby('building_id')['Value'].sum()
-                        mod_agg = mod_var.groupby('building_id')['Value'].sum()
-                        
-                        # Calculate deltas
-                        delta_col = f"{var_clean}_delta"
-                        delta_df = pd.DataFrame(index=base_agg.index)
-                        delta_df[delta_col] = mod_agg - base_agg
-                        delta_df[f"{var_clean}_pct_change"] = (delta_df[delta_col] / base_agg.replace(0, np.nan)) * 100
-                        delta_dfs.append(delta_df)
-            else:
-                # Column-based format
-                for var in output_variables:
-                    var_clean = var.split('[')[0].strip()
-                    matching_cols = [col for col in base_df.columns if var_clean in col]
-                    
-                    for col in matching_cols:
-                        if col in mod_df.columns:
-                            # Aggregate by building
-                            base_agg = base_df.groupby('building_id')[col].sum()
-                            mod_agg = mod_df.groupby('building_id')[col].sum()
+                    if variant_cols:
+                        # Group by building
+                        for building_id in df['building_id'].unique():
+                            building_data = df[df['building_id'] == building_id]
                             
-                            delta_col = f"{var_clean}_delta"
-                            delta_df = pd.DataFrame(index=base_agg.index)
-                            delta_df[delta_col] = mod_agg[col] - base_agg[col]
-                            delta_df[f"{var_clean}_pct_change"] = (delta_df[delta_col] / base_agg[col].replace(0, np.nan)) * 100
-                            delta_dfs.append(delta_df)
+                            base_sum = building_data['base_value'].sum()
+                            
+                            # Calculate average change across variants
+                            variant_sums = []
+                            for var_col in variant_cols:
+                                variant_sums.append(building_data[var_col].sum())
+                            
+                            avg_variant = np.mean(variant_sums)
+                            delta = avg_variant - base_sum
+                            pct_change = (delta / base_sum * 100) if base_sum != 0 else 0
+                            
+                            delta_records.append({
+                                'building_id': building_id,
+                                f'{var_clean}_base': base_sum,
+                                f'{var_clean}_modified': avg_variant,
+                                f'{var_clean}_delta': delta,
+                                f'{var_clean}_pct_change': pct_change
+                            })
         
-        if delta_dfs:
-            return pd.concat(delta_dfs, axis=1)
+        if delta_records:
+            return pd.DataFrame(delta_records).groupby('building_id').first().reset_index()
         
         return pd.DataFrame()
     
     def _extract_outputs(self, 
                         output_variables: Optional[List[str]] = None) -> pd.DataFrame:
-        """Extract output variables from simulation results"""
+        """Extract output variables from base results"""
         if 'base' not in self.simulation_results:
             self.logger.warning("No base simulation results loaded")
             return pd.DataFrame()
@@ -559,43 +417,35 @@ class SensitivityDataManager:
         if output_variables is None:
             output_variables = ['Heating:EnergyTransfer', 'Cooling:EnergyTransfer', 'Electricity:Facility']
         
-        output_dfs = []
+        output_records = []
         
+        # Process base data by category
         for category, df in self.simulation_results['base'].items():
             if category == 'summary':
                 continue
             
-            # Handle Variable column format
-            if 'Variable' in df.columns:
-                for var in output_variables:
-                    var_clean = var.split('[')[0].strip()
-                    
-                    # Filter for this variable
-                    var_df = df[df['Variable'].str.contains(var_clean, case=False, na=False)]
-                    
-                    if not var_df.empty:
-                        # Aggregate by building
-                        if 'building_id' in var_df.columns:
-                            agg_df = var_df.groupby('building_id')['Value'].sum().to_frame()
-                            agg_df.columns = [var_clean]
-                            output_dfs.append(agg_df)
-            else:
-                # Column-based format
-                for var in output_variables:
-                    var_clean = var.split('[')[0].strip()
-                    matching_cols = [col for col in df.columns if var_clean in col and col not in ['Date', 'building_id', 'Zone']]
-                    
-                    if matching_cols:
-                        # Aggregate by building
-                        if 'building_id' in df.columns:
-                            agg_df = df.groupby('building_id')[matching_cols].sum()
-                        else:
-                            agg_df = df[matching_cols].sum().to_frame().T
+            # Process each requested variable
+            for var in output_variables:
+                var_clean = var.split('[')[0].strip()
+                
+                # Filter for this variable
+                var_df = df[df['Variable'].str.contains(var_clean, case=False, na=False)]
+                
+                if not var_df.empty:
+                    # Aggregate by building
+                    for building_id in var_df['building_id'].unique():
+                        building_var_data = var_df[var_df['building_id'] == building_id]
+                        total_value = building_var_data['Value'].sum()
                         
-                        output_dfs.append(agg_df)
+                        output_records.append({
+                            'building_id': building_id,
+                            var_clean: total_value
+                        })
         
-        if output_dfs:
-            return pd.concat(output_dfs, axis=1)
+        if output_records:
+            # Combine records by building
+            df = pd.DataFrame(output_records)
+            return df.groupby('building_id').sum().reset_index()
         
         return pd.DataFrame()
     
@@ -632,35 +482,35 @@ class SensitivityDataManager:
     
     def get_available_outputs(self) -> List[str]:
         """Get list of available output variables"""
-        if not self.simulation_results:
-            self.load_simulation_results(load_modified=False)
-        
         outputs = set()
         
-        for result_type, categories in self.simulation_results.items():
-            for category, df in categories.items():
-                if category == 'summary':
-                    continue
-                
-                # Extract variable names
-                if 'Variable' in df.columns:
-                    # Get unique variable names
-                    vars = df['Variable'].unique()
-                    for var in vars:
-                        # Clean up variable name
-                        if '[' in var:
-                            var_name = var.split('[')[0].strip()
-                        else:
-                            var_name = var
-                        outputs.add(var_name)
-                else:
-                    # Extract from column names
-                    for col in df.columns:
-                        if col not in ['Date', 'DateTime', 'building_id', 'Zone', 'TimeIndex']:
+        # Check comparison files first
+        comparison_path = self.modified_parsed_path / "comparisons"
+        if comparison_path.exists():
+            for file_path in comparison_path.glob("var_*.parquet"):
+                # Extract variable name from filename
+                parts = file_path.stem.split('_')
+                building_part = next((i for i, p in enumerate(parts) if p.startswith('b')), -1)
+                if building_part > 0:
+                    variable_name = '_'.join(parts[1:building_part-2])
+                    outputs.add(variable_name)
+        
+        # Also check base data
+        if not outputs:
+            base_daily = self.parsed_data_path / "timeseries" / "base_all_daily.parquet"
+            if base_daily.exists():
+                try:
+                    df = pd.read_parquet(base_daily)
+                    if 'VariableName' in df.columns:
+                        for var in df['VariableName'].unique():
                             # Clean up variable name
-                            if '[' in col:
-                                var_name = col.split('[')[0].strip()
-                                outputs.add(var_name)
+                            if '[' in var:
+                                var_name = var.split('[')[0].strip()
+                            else:
+                                var_name = var
+                            outputs.add(var_name)
+                except:
+                    pass
         
         return sorted(list(outputs))
     
@@ -697,11 +547,12 @@ class SensitivityDataManager:
                                   require_modifications: bool = False,
                                   require_zones: bool = False,
                                   require_hourly: bool = False) -> Dict[str, bool]:
-        """Check what data is available for analysis"""
+        """Check what data is available for analysis using new format"""
         status = {
             'has_parameters': False,
             'has_base_results': False,
             'has_modified_results': False,
+            'has_comparison_files': False,
             'has_modifications': False,
             'has_zone_data': False,
             'has_building_metadata': False,
@@ -717,32 +568,399 @@ class SensitivityDataManager:
         category_path = self.parsed_data_path / "idf_data" / "by_category"
         status['has_parameters'] = param_matrix.exists() or (category_path.exists() and list(category_path.glob("*.parquet")))
         
-        # Check results
-        base_path = self.parsed_data_path / "sql_results/timeseries/aggregated/daily"
-        status['has_base_results'] = base_path.exists() and list(base_path.glob("*.parquet"))
+        # Check new format results
+        base_daily = self.parsed_data_path / "timeseries" / "base_all_daily.parquet"
+        status['has_base_results'] = base_daily.exists()
         
-        mod_path = self.modified_parsed_path / "sql_results/timeseries/aggregated/daily"
-        status['has_modified_results'] = mod_path.exists() and list(mod_path.glob("*.parquet"))
+        # Check comparison files
+        comparison_path = self.modified_parsed_path / "comparisons"
+        if comparison_path.exists():
+            comparison_files = list(comparison_path.glob("var_*.parquet"))
+            status['has_comparison_files'] = len(comparison_files) > 0
+            status['has_modified_results'] = status['has_comparison_files']
         
         # Check modifications
         mod_files = list(self.modifications_path.glob("modifications_detail_*.parquet"))
         status['has_modifications'] = len(mod_files) > 0
         
-        # Check zone data
-        zone_path = base_path / "zones_daily.parquet"
-        status['has_zone_data'] = zone_path.exists()
+        # Check zone data - zones are included in the new format base files
+        if status['has_base_results']:
+            try:
+                df = pd.read_parquet(base_daily)
+                status['has_zone_data'] = 'Zone' in df.columns and len(df['Zone'].unique()) > 1
+            except:
+                pass
         
         # Check metadata
         status['has_building_metadata'] = not self.building_metadata.empty
         
         # Check hourly data
-        hourly_path = self.parsed_data_path / "sql_results/timeseries/hourly"
-        status['has_hourly_data'] = hourly_path.exists() and list(hourly_path.glob("*.parquet"))
+        base_hourly = self.parsed_data_path / "timeseries" / "base_all_hourly.parquet"
+        status['has_hourly_data'] = base_hourly.exists()
         
         # Determine readiness
         status['ready_for_traditional'] = status['has_parameters'] and status['has_base_results']
         status['ready_for_modification'] = status['has_modifications'] and status['has_base_results'] and status['has_modified_results']
         status['ready_for_multilevel'] = status['ready_for_modification'] and status['has_zone_data']
-        status['ready_for_time_slicing'] = status['has_base_results'] and (status['has_hourly_data'] or True)  # Daily data also works
+        status['ready_for_time_slicing'] = status['has_base_results']  # Any frequency works
         
         return status
+    
+    def _load_comparison_results(self, 
+                                result_type: str = 'daily',
+                                variables: Optional[List[str]] = None,
+                                time_slice_config: Optional[Dict[str, any]] = None) -> Dict[str, pd.DataFrame]:
+        """Load results from new comparison file format"""
+        from .time_slicer import TimeSlicer
+        time_slicer = TimeSlicer(self.logger)
+        
+        comparison_path = self.modified_parsed_path / "comparisons"
+        
+        results = {
+            'base': {},
+            'modified': {},
+            'variants': {},
+            'comparison_data': {}
+        }
+        
+        # Find all comparison files
+        pattern = f"var_*_{result_type}_*.parquet"
+        comparison_files = list(comparison_path.glob(pattern))
+        
+        if not comparison_files:
+            self.logger.warning(f"No comparison files found for frequency: {result_type}")
+            return {}
+        
+        self.logger.info(f"Found {len(comparison_files)} comparison files")
+        
+        # Group files by variable and building
+        file_groups = {}
+        for file_path in comparison_files:
+            # Parse filename: var_{variable_name}_{unit}_{frequency}_b{building_id}.parquet
+            parts = file_path.stem.split('_')
+            if len(parts) >= 5 and parts[0] == 'var':
+                # Extract variable name (may contain underscores)
+                building_part = next((i for i, p in enumerate(parts) if p.startswith('b')), -1)
+                if building_part > 0:
+                    variable_name = '_'.join(parts[1:building_part-2])
+                    unit = parts[building_part-2]
+                    frequency = parts[building_part-1]
+                    building_id = parts[building_part][1:]  # Remove 'b' prefix
+                    
+                    if frequency == result_type:
+                        if variable_name not in file_groups:
+                            file_groups[variable_name] = []
+                        file_groups[variable_name].append({
+                            'path': file_path,
+                            'building_id': building_id,
+                            'unit': unit
+                        })
+        
+        # Filter by requested variables if specified
+        if variables:
+            filtered_groups = {}
+            for var in variables:
+                # Clean variable name more thoroughly - remove colons and brackets
+                var_clean = var.split('[')[0].strip().lower()
+                var_clean = var_clean.replace(':', '').replace('_', '')  # Remove colons and underscores
+                
+                for var_name, files in file_groups.items():
+                    var_name_clean = var_name.lower().replace('_', '')
+                    if var_clean in var_name_clean or var_name_clean in var_clean:
+                        filtered_groups[var_name] = files
+            file_groups = filtered_groups
+        
+        # Load data from comparison files
+        all_base_data = []
+        all_modified_data = []
+        variant_data_by_id = {}
+        
+        for variable_name, file_list in file_groups.items():
+            variable_base_data = []
+            variable_modified_data = []
+            
+            for file_info in file_list:
+                try:
+                    df = pd.read_parquet(file_info['path'])
+                    
+                    # Apply time slicing if configured
+                    if time_slice_config and time_slice_config.get('enabled', False) and 'timestamp' in df.columns:
+                        df = time_slicer.slice_data(df, time_slice_config, 'timestamp')
+                    
+                    # Extract base and variant data
+                    if 'base_value' in df.columns:
+                        # Select available columns
+                        base_cols = ['timestamp', 'building_id', 'variable_name', 'category', 'Units', 'base_value']
+                        if 'Zone' in df.columns:
+                            base_cols.insert(2, 'Zone')
+                        
+                        base_df = df[base_cols].copy()
+                        base_df.rename(columns={'base_value': 'Value'}, inplace=True)
+                        
+                        # Add Zone column if missing
+                        if 'Zone' not in base_df.columns:
+                            base_df['Zone'] = 'Building'
+                        
+                        variable_base_data.append(base_df)
+                    
+                    # Find variant columns
+                    variant_cols = [col for col in df.columns if col.startswith('variant_') and col.endswith('_value')]
+                    
+                    for variant_col in variant_cols:
+                        variant_id = variant_col.replace('_value', '')
+                        
+                        # Select available columns
+                        variant_cols_list = ['timestamp', 'building_id', 'variable_name', 'category', 'Units', variant_col]
+                        if 'Zone' in df.columns:
+                            variant_cols_list.insert(2, 'Zone')
+                        
+                        variant_df = df[variant_cols_list].copy()
+                        variant_df.rename(columns={variant_col: 'Value'}, inplace=True)
+                        variant_df['variant_id'] = variant_id
+                        
+                        # Add Zone column if missing
+                        if 'Zone' not in variant_df.columns:
+                            variant_df['Zone'] = 'Building'
+                        
+                        if variant_id not in variant_data_by_id:
+                            variant_data_by_id[variant_id] = []
+                        variant_data_by_id[variant_id].append(variant_df)
+                    
+                    # Store comparison data for direct analysis
+                    if variable_name not in results['comparison_data']:
+                        results['comparison_data'][variable_name] = []
+                    results['comparison_data'][variable_name].append(df)
+                    
+                except Exception as e:
+                    self.logger.warning(f"Failed to load comparison file {file_info['path']}: {e}")
+            
+            if variable_base_data:
+                all_base_data.extend(variable_base_data)
+            if variable_modified_data:
+                all_modified_data.extend(variable_modified_data)
+        
+        # Combine base data
+        if all_base_data:
+            combined_base = pd.concat(all_base_data, ignore_index=True)
+            # Group by category for backward compatibility
+            for category in combined_base['category'].unique():
+                results['base'][category] = combined_base[combined_base['category'] == category]
+        
+        # Combine variant data
+        if variant_data_by_id:
+            # Use the first variant as 'modified' for backward compatibility
+            first_variant = next(iter(variant_data_by_id.keys()))
+            if variant_data_by_id[first_variant]:
+                combined_modified = pd.concat(variant_data_by_id[first_variant], ignore_index=True)
+                for category in combined_modified['category'].unique():
+                    results['modified'][category] = combined_modified[combined_modified['category'] == category]
+            
+            # Store all variants
+            for variant_id, variant_dfs in variant_data_by_id.items():
+                if variant_dfs:
+                    results['variants'][variant_id] = pd.concat(variant_dfs, ignore_index=True)
+        
+        # Concatenate comparison data by variable
+        for variable_name, dfs in results['comparison_data'].items():
+            if dfs:
+                results['comparison_data'][variable_name] = pd.concat(dfs, ignore_index=True)
+        
+        self.logger.info(f"Loaded comparison data for {len(file_groups)} variables")
+        if results['variants']:
+            self.logger.info(f"Found {len(results['variants'])} variants")
+        
+        return results
+    
+    def _load_new_base_format(self, 
+                             result_type: str = 'daily',
+                             variables: Optional[List[str]] = None,
+                             time_slice_config: Optional[Dict[str, any]] = None) -> Dict[str, pd.DataFrame]:
+        """Load data from new semi-wide base format"""
+        from .time_slicer import TimeSlicer
+        time_slicer = TimeSlicer(self.logger)
+        
+        file_path = self.parsed_data_path / "timeseries" / f"base_all_{result_type}.parquet"
+        
+        if not file_path.exists():
+            self.logger.warning(f"Base file not found: {file_path}")
+            return {}
+        
+        try:
+            # Load the semi-wide format data
+            df = pd.read_parquet(file_path)
+            
+            # Convert from semi-wide to long format
+            id_vars = ['building_id', 'variant_id', 'VariableName', 'category', 'Zone', 'Units']
+            date_cols = [col for col in df.columns if col not in id_vars]
+            
+            # Melt to long format
+            long_df = df.melt(
+                id_vars=id_vars,
+                value_vars=date_cols,
+                var_name='timestamp',
+                value_name='Value'
+            )
+            
+            # Convert timestamp to datetime
+            long_df['timestamp'] = pd.to_datetime(long_df['timestamp'])
+            
+            # Apply time slicing if configured
+            if time_slice_config and time_slice_config.get('enabled', False):
+                long_df = time_slicer.slice_data(long_df, time_slice_config, 'timestamp')
+            
+            # Filter by variables if specified
+            if variables:
+                variable_masks = []
+                for var in variables:
+                    var_clean = var.split('[')[0].strip()
+                    variable_masks.append(long_df['VariableName'].str.contains(var_clean, case=False, na=False))
+                
+                if variable_masks:
+                    combined_mask = pd.concat(variable_masks, axis=1).any(axis=1)
+                    long_df = long_df[combined_mask]
+            
+            # Group by category for backward compatibility
+            results = {}
+            for category in long_df['category'].unique():
+                category_df = long_df[long_df['category'] == category].copy()
+                category_df.rename(columns={'VariableName': 'Variable'}, inplace=True)
+                results[category] = category_df
+            
+            self.logger.info(f"Loaded {len(long_df)} records from new base format")
+            return results
+            
+        except Exception as e:
+            self.logger.error(f"Failed to load new base format: {e}")
+            return {}
+    
+    def load_variant_comparison_data(self, 
+                                   variable_name: str,
+                                   building_id: Optional[str] = None,
+                                   frequency: str = 'daily') -> pd.DataFrame:
+        """Load comparison data for a specific variable across all variants"""
+        comparison_path = self.modified_parsed_path / "comparisons"
+        
+        # Build file pattern
+        if building_id:
+            pattern = f"var_{variable_name}_*_{frequency}_b{building_id}.parquet"
+        else:
+            pattern = f"var_{variable_name}_*_{frequency}_*.parquet"
+        
+        files = list(comparison_path.glob(pattern))
+        
+        if not files:
+            self.logger.warning(f"No comparison files found for variable: {variable_name}")
+            return pd.DataFrame()
+        
+        dfs = []
+        for file_path in files:
+            try:
+                df = pd.read_parquet(file_path)
+                dfs.append(df)
+            except Exception as e:
+                self.logger.warning(f"Failed to load {file_path}: {e}")
+        
+        if dfs:
+            combined = pd.concat(dfs, ignore_index=True)
+            self.logger.info(f"Loaded comparison data for {variable_name}: {len(combined)} records")
+            return combined
+        
+        return pd.DataFrame()
+    
+    def get_variant_sensitivity_data(self, frequency: str = 'daily') -> pd.DataFrame:
+        """Get data formatted for variant-based sensitivity analysis"""
+        comparison_path = self.modified_parsed_path / "comparisons"
+        
+        # Load modification tracking
+        if self.modification_data is None:
+            self.load_modification_tracking()
+        
+        # Find all comparison files
+        pattern = f"var_*_{frequency}_*.parquet"
+        comparison_files = list(comparison_path.glob(pattern))
+        
+        if not comparison_files:
+            self.logger.warning("No comparison files found")
+            return pd.DataFrame()
+        
+        sensitivity_data = []
+        
+        for file_path in comparison_files:
+            try:
+                # Parse filename
+                parts = file_path.stem.split('_')
+                building_part = next((i for i, p in enumerate(parts) if p.startswith('b')), -1)
+                
+                if building_part > 0:
+                    variable_name = '_'.join(parts[1:building_part-2])
+                    building_id = parts[building_part][1:]
+                    
+                    # Load comparison data
+                    df = pd.read_parquet(file_path)
+                    
+                    # Get variant columns
+                    variant_cols = [col for col in df.columns if col.startswith('variant_') and col.endswith('_value')]
+                    
+                    for variant_col in variant_cols:
+                        variant_id = variant_col.replace('_value', '')
+                        
+                        # Calculate sensitivity metrics
+                        base_values = df['base_value'].values
+                        variant_values = df[variant_col].values
+                        
+                        # Remove NaN values
+                        mask = ~(np.isnan(base_values) | np.isnan(variant_values))
+                        base_values = base_values[mask]
+                        variant_values = variant_values[mask]
+                        
+                        if len(base_values) > 0:
+                            # Calculate various sensitivity metrics
+                            abs_change = np.mean(np.abs(variant_values - base_values))
+                            
+                            # Percentage change (handle zeros)
+                            with np.errstate(divide='ignore', invalid='ignore'):
+                                pct_changes = (variant_values - base_values) / base_values * 100
+                                pct_changes[~np.isfinite(pct_changes)] = 0
+                                avg_pct_change = np.mean(np.abs(pct_changes))
+                            
+                            # Normalized sensitivity (change per unit parameter change)
+                            if self.modification_data is not None:
+                                # Find parameter changes for this variant
+                                variant_mods = self.modification_data[
+                                    (self.modification_data['variant_id'] == variant_id) &
+                                    (self.modification_data['building_id'] == building_id)
+                                ]
+                                
+                                if not variant_mods.empty:
+                                    # Get average parameter change
+                                    avg_param_change = variant_mods['value_pct_change'].abs().mean()
+                                    
+                                    if avg_param_change > 0:
+                                        normalized_sensitivity = avg_pct_change / avg_param_change
+                                    else:
+                                        normalized_sensitivity = 0
+                                else:
+                                    normalized_sensitivity = avg_pct_change
+                            else:
+                                normalized_sensitivity = avg_pct_change
+                            
+                            sensitivity_data.append({
+                                'building_id': building_id,
+                                'variant_id': variant_id,
+                                'output_variable': variable_name,
+                                'frequency': frequency,
+                                'absolute_change': abs_change,
+                                'percent_change': avg_pct_change,
+                                'normalized_sensitivity': normalized_sensitivity,
+                                'n_observations': len(base_values)
+                            })
+                            
+            except Exception as e:
+                self.logger.warning(f"Failed to process {file_path}: {e}")
+        
+        if sensitivity_data:
+            sensitivity_df = pd.DataFrame(sensitivity_data)
+            self.logger.info(f"Created sensitivity data with {len(sensitivity_df)} records")
+            return sensitivity_df
+        
+        return pd.DataFrame()

@@ -41,6 +41,7 @@ class ValidationConfig:
         self.variables_to_validate = config.get('variables_to_validate', [])
         self.aggregation = config.get('aggregation', {})
         self.target_frequency = self.aggregation.get('target_frequency', 'daily')
+        self.frequency_mapping = self.aggregation.get('frequency_mapping', {})
         self.aggregation_methods = self.aggregation.get('methods', {
             'energy': 'sum',
             'temperature': 'mean',
@@ -61,6 +62,19 @@ class ValidationConfig:
         self.show_mappings = self.logging.get('show_mappings', True)
         self.show_aggregations = self.logging.get('show_aggregations', True)
         self.show_unit_conversions = self.logging.get('show_unit_conversions', True)
+    
+    def get_target_frequency_for_variable(self, variable: str) -> str:
+        """Get target frequency for a specific variable, supporting mixed frequencies"""
+        if self.target_frequency == 'mixed' and self.frequency_mapping:
+            # Check for exact match first
+            for pattern, freq in self.frequency_mapping.items():
+                if pattern.lower() in variable.lower():
+                    return freq
+            # Default to daily if no match found in mixed mode
+            return 'daily'
+        else:
+            # Use global target frequency
+            return self.target_frequency
     
     def get_threshold(self, metric: str, variable: str) -> float:
         """Get threshold for a specific metric and variable"""
@@ -93,6 +107,7 @@ class SmartValidationWrapper:
             'electricity': {
                 'patterns': [
                     r'electricity.*facility',
+                    r'electricity_facility',  # Added underscore version
                     r'facility.*electric',
                     r'total.*electric.*energy',
                     r'electric.*energy.*total',
@@ -104,6 +119,7 @@ class SmartValidationWrapper:
             'heating': {
                 'patterns': [
                     r'heating.*energy',
+                    r'heating_energytransfer',  # Added underscore version
                     r'zone.*air.*system.*sensible.*heating',
                     r'sensible.*heating.*energy',
                     r'heating.*transfer',
@@ -111,18 +127,19 @@ class SmartValidationWrapper:
                     r'heating:energytransfer',
                     r'heating\s+energy'
                 ],
-                'keywords': ['heating', 'heat', 'heater']
+                'keywords': ['heating', 'heat', 'heater', 'energytransfer']
             },
             'cooling': {
                 'patterns': [
                     r'cooling.*energy',
+                    r'cooling_energytransfer',  # Added underscore version
                     r'zone.*air.*system.*sensible.*cooling',
                     r'sensible.*cooling.*energy',
                     r'cooling.*transfer',
                     r'cooling:energytransfer',
                     r'cooling\s+energy'
                 ],
-                'keywords': ['cooling', 'cool']
+                'keywords': ['cooling', 'cool', 'energytransfer']
             },
             'temperature': {
                 'patterns': [
@@ -170,6 +187,26 @@ class SmartValidationWrapper:
         """Log a major step in the process"""
         self.step_count += 1
         logger.info(f"\nStep {self.step_count}/{self.total_steps}: {step_name}")
+    
+    def _normalize_variable_name(self, var_name: str) -> str:
+        """Normalize variable names for better matching
+        
+        - Remove units in brackets [J], [kWh], etc.
+        - Replace colons and spaces with underscores
+        - Convert to lowercase
+        - Remove extra underscores
+        """
+        # Remove units in brackets
+        normalized = re.sub(r'\[.*?\]', '', var_name)
+        # Remove parentheses content like (Hourly)
+        normalized = re.sub(r'\(.*?\)', '', normalized)
+        # Replace colons, spaces, and other separators with underscores
+        normalized = re.sub(r'[:;\s]+', '_', normalized)
+        # Convert to lowercase
+        normalized = normalized.lower()
+        # Remove extra underscores and strip
+        normalized = re.sub(r'_+', '_', normalized).strip('_')
+        return normalized
     
     def discover_available_data(self) -> Dict[str, Any]:
         """Discover what data the parser actually produced"""
@@ -563,10 +600,26 @@ class SmartValidationWrapper:
                         actual_freq = self._detect_frequency(df, file_info['file'])
                         
                         # Transform comparison file to standard format
+                        # Use variable_name from the dataframe if it exists, as it has the correct format
+                        if 'variable_name' in df.columns and not df['variable_name'].empty:
+                            variable_col = df['variable_name']
+                        else:
+                            # Fallback to file_info variable, but try to reconstruct proper format
+                            var_from_file = file_info['variable']
+                            # Convert underscore format back to proper format
+                            if var_from_file == 'electricity_facility':
+                                variable_col = 'Electricity:Facility'
+                            elif var_from_file == 'heating_energytransfer':
+                                variable_col = 'Heating:EnergyTransfer'
+                            elif var_from_file == 'cooling_energytransfer':
+                                variable_col = 'Cooling:EnergyTransfer'
+                            else:
+                                variable_col = var_from_file
+                        
                         sim_df = pd.DataFrame({
                             'building_id': df['building_id'],
                             'DateTime': df['timestamp'] if 'timestamp' in df.columns else df['DateTime'],
-                            'Variable': df['variable_name'] if 'variable_name' in df.columns else file_info['variable'],
+                            'Variable': variable_col,
                             'Value': df[value_column],
                             'Units': df['Units'] if 'Units' in df.columns else 'unknown',
                             'Zone': df['Zone'] if 'Zone' in df.columns else 'Building',
@@ -1055,6 +1108,8 @@ class SmartValidationWrapper:
     
     def _find_semantic_match(self, real_var: str, sim_vars: List[str]) -> Optional[ValidationMapping]:
         """Find semantic match for a variable"""
+        # Normalize variable names for better matching
+        real_var_normalized = self._normalize_variable_name(real_var)
         real_var_lower = real_var.lower()
         best_match = None
         best_score = 0
@@ -1064,8 +1119,10 @@ class SmartValidationWrapper:
             patterns = category_info['patterns']
             keywords = category_info['keywords']
             
-            # Check if real variable matches this category
+            # Check if real variable matches this category (using both original and normalized)
             real_matches_category = any(re.search(pattern, real_var_lower) for pattern in patterns)
+            if not real_matches_category:
+                real_matches_category = any(re.search(pattern, real_var_normalized) for pattern in patterns)
             if not real_matches_category:
                 # Check keywords
                 real_matches_category = any(keyword in real_var_lower for keyword in keywords)
@@ -1073,16 +1130,20 @@ class SmartValidationWrapper:
             if real_matches_category:
                 # Find simulation variables in same category
                 for sim_var in sim_vars:
+                    sim_var_normalized = self._normalize_variable_name(sim_var)
                     sim_var_lower = sim_var.lower()
                     
-                    # Check patterns
+                    # Check patterns (using both original and normalized)
                     sim_matches = any(re.search(pattern, sim_var_lower) for pattern in patterns)
+                    if not sim_matches:
+                        sim_matches = any(re.search(pattern, sim_var_normalized) for pattern in patterns)
                     if not sim_matches:
                         # Check keywords
                         sim_matches = any(keyword in sim_var_lower for keyword in keywords)
                     
                     if sim_matches:
-                        confidence = self._calculate_match_confidence(real_var_lower, sim_var_lower)
+                        # Calculate confidence using normalized names
+                        confidence = self._calculate_match_confidence(real_var_normalized, sim_var_normalized)
                         if confidence > best_score:
                             best_score = confidence
                             best_match = ValidationMapping(
@@ -1110,14 +1171,14 @@ class SmartValidationWrapper:
     def _suggest_matches(self, real_var: str, sim_vars: List[str]) -> List[str]:
         """Suggest possible matches for an unmapped variable"""
         suggestions = []
-        real_var_lower = real_var.lower()
+        real_var_split = real_var.lower().replace('_', ' ')
         
         # Extract key words from real variable
-        real_words = set(re.findall(r'\w+', real_var_lower))
+        real_words = set(re.findall(r'\b\w+\b', real_var_split))
         
         for sim_var in sim_vars:
-            sim_var_lower = sim_var.lower()
-            sim_words = set(re.findall(r'\w+', sim_var_lower))
+            sim_var_split = sim_var.lower().replace('_', ' ')
+            sim_words = set(re.findall(r'\b\w+\b', sim_var_split))
             
             # Check for any common words
             common_words = real_words & sim_words
@@ -1130,9 +1191,13 @@ class SmartValidationWrapper:
     
     def _calculate_match_confidence(self, var1: str, var2: str) -> float:
         """Calculate confidence score for variable match"""
-        # Extract words
-        words1 = set(re.findall(r'\w+', var1.lower()))
-        words2 = set(re.findall(r'\w+', var2.lower()))
+        # Extract words - split on underscores and non-word characters
+        # First replace underscores with spaces to properly split
+        var1_split = var1.lower().replace('_', ' ')
+        var2_split = var2.lower().replace('_', ' ')
+        
+        words1 = set(re.findall(r'\b\w+\b', var1_split))
+        words2 = set(re.findall(r'\b\w+\b', var2_split))
         
         if not words1 or not words2:
             return 0.0
@@ -1144,7 +1209,8 @@ class SmartValidationWrapper:
         key_terms = {
             'electricity', 'heating', 'cooling', 'temperature', 'energy',
             'facility', 'zone', 'air', 'system', 'sensible', 'water',
-            'heater', 'power', 'demand', 'transfer', 'total', 'mean'
+            'heater', 'power', 'demand', 'transfer', 'total', 'mean',
+            'energytransfer'  # Add this as a key term
         }
         
         key_matches = len(common & key_terms)

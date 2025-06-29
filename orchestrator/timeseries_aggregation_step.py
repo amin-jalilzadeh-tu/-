@@ -134,6 +134,8 @@ def aggregate_base_columns(df: pd.DataFrame, from_freq: str, to_freq: str,
         date_pattern = r'\d{4}-\d{2}-\d{2}_\d{2}'
     elif from_freq == 'daily':
         date_pattern = r'\d{4}-\d{2}-\d{2}$'
+    elif from_freq == 'monthly':
+        date_pattern = r'\d{4}-\d{2}$'
     else:
         return df
     
@@ -149,6 +151,11 @@ def aggregate_base_columns(df: pd.DataFrame, from_freq: str, to_freq: str,
         for col in date_cols:
             month_key = col[:7]  # YYYY-MM
             grouped_cols[month_key].append(col)
+    
+    elif from_freq == 'daily' and to_freq == 'yearly':
+        for col in date_cols:
+            year_key = col[:4]  # YYYY
+            grouped_cols[year_key].append(col)
     
     elif from_freq == 'hourly' and to_freq == 'daily':
         for col in date_cols:
@@ -340,7 +347,9 @@ def process_comparison_aggregation(comp_file: Path, from_freq: str, to_freq: str
                                  logger: logging.Logger) -> Optional[Path]:
     """Process aggregation for a comparison file"""
     # Extract info from filename
-    match = re.match(r'var_(.+?)_(.+?)_(.+?)_b(\d+)\.parquet', comp_file.name)
+    # More robust parsing to handle underscores in variable names
+    # Pattern: var_{variable_name}_{unit}_{freq}_b{building_id}.parquet  
+    match = re.match(r'var_(.+)_([^_]+)_([^_]+)_b(\d+)\.parquet', comp_file.name)
     if not match:
         return None
     
@@ -497,7 +506,9 @@ def run_timeseries_aggregation(
             
             for file in comp_dir.glob('var_*.parquet'):
                 if '_from_' not in file.stem:  # Original files only
-                    match = re.match(r'var_(.+?)_(.+?)_(.+?)_b(\d+)\.parquet', file.name)
+                    # More robust parsing to handle underscores in variable names
+                    # Pattern: var_{variable_name}_{unit}_{freq}_b{building_id}.parquet
+                    match = re.match(r'var_(.+)_([^_]+)_([^_]+)_b(\d+)\.parquet', file.name)
                     if match:
                         _, _, freq, _ = match.groups()
                         files_by_freq[freq].append(file)

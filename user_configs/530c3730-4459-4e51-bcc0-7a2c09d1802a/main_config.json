@@ -643,7 +643,7 @@
           "enabled": true,
           "run_after": "parsing",
           "config": {
-            "real_data_path": "data/test_validation_data/measured_data_parsed_format_daily.csv",
+            "real_data_path": "data/test_validation_data/measured_data_parsed_format_daily_4136733.csv",
             "variables_to_validate": [
               "Electricity",
               "Heating",
@@ -651,7 +651,7 @@
               "Temperature"
             ],
             "aggregation": {
-              "target_frequency": "daily",
+              "target_frequency": "monthly",
               "methods": {
                 "energy": "sum",
                 "temperature": "mean",
@@ -682,12 +682,20 @@
           "enabled": true,
           "run_after": "modification_parsing",
           "config": {
-            "real_data_path": "data/test_validation_data/measured_data_parsed_format_daily.csv",
+            "real_data_path": "data/test_validation_data/measured_data_parsed_format_daily_4136733.csv",
             "variables_to_validate": [
               "Electricity",
               "Heating",
               "Cooling"
             ],
+            "aggregation": {
+              "target_frequency": "yearly",
+              "methods": {
+                "energy": "sum",
+                "temperature": "mean",
+                "power": "mean"
+              }
+            },
             "thresholds": {
               "default": {
                 "cvrmse": 25.0,
@@ -707,7 +715,7 @@
           "enabled": false,
           "run_after": "calibration",
           "config": {
-            "real_data_path": "data/test_validation_data/measured_data_parsed_format_daily.csv",
+            "real_data_path": "data/test_validation_data/measured_data_parsed_format_daily_4136733.csv",
             "thresholds": {
               "default": {
                 "cvrmse": 15.0,
