@@ -139,8 +139,8 @@
           "Electricity:Facility"
         ],
         "patterns": [
-          "*Temperature*",
-          "*Energy*"
+          "*Energy*",
+          "*Temperature*"
         ]
       },
       "aggregation_rules": {
@@ -149,15 +149,15 @@
           {
             "pattern": [
               "*Energy*",
-              "*Electricity*",
-              "*Gas*"
+              "*Consumption*",
+              "Electricity:*"
             ],
             "method": "sum"
           },
           {
             "pattern": [
               "*Temperature*",
-              "*Humidity*"
+              "*Setpoint*"
             ],
             "method": "mean"
           },
@@ -408,6 +408,11 @@
           "enabled": true,
           "strategy": "balanced",
           "parameters": {
+            "output_variable_reporting_frequency": {
+              "method": "absolute",
+              "value": "Daily",
+              "comment": "Keep daily reporting for time series aggregation"
+            },
             "timesteps_per_hour": {
               "method": "absolute",
               "value": 6,

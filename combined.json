@@ -600,6 +600,11 @@
         "enabled": true,
         "strategy": "balanced",
         "parameters": {
+          "output_variable_reporting_frequency": {
+            "method": "absolute",
+            "value": "Daily",
+            "comment": "Keep daily reporting for time series aggregation"
+          },
           "timesteps_per_hour": {
             "method": "absolute",
             "value": 6,

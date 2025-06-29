@@ -180,57 +180,102 @@ class SmartValidationWrapper:
             'outputs_defined': {},
             'zones': {},
             'aggregation_needed': {},
-            'available_variables': set()
+            'available_variables': set(),
+            'available_frequencies': set()
         }
         
-        # Check timeseries data
-        ts_path = self.parsed_data_path / 'sql_results' / 'timeseries'
+        # Check new timeseries data structure
+        ts_path = self.parsed_data_path / 'timeseries'
         
-        # Check hourly data
-        hourly_path = ts_path / 'hourly'
-        if hourly_path.exists():
-            for file in hourly_path.glob('*.parquet'):
-                df = pd.read_parquet(file)
-                if not df.empty and 'Variable' in df.columns:
-                    variables = df['Variable'].unique().tolist()
-                    discovery['available_variables'].update(variables)
-                    
-                    discovery['timeseries'][file.stem] = {
-                        'file': str(file),
-                        'buildings': df['building_id'].unique().tolist() if 'building_id' in df.columns else [],
-                        'variables': variables,
-                        'zones': df['Zone'].unique().tolist() if 'Zone' in df.columns else [],
-                        'date_range': (df['DateTime'].min(), df['DateTime'].max()) if 'DateTime' in df.columns else None,
-                        'frequency': 'hourly',
-                        'records': len(df),
-                        'has_units': 'Units' in df.columns
-                    }
-                    
-                    logger.info(f"  - Found {file.stem}: {len(df):,} hourly records, {len(variables)} variables")
+        # Also check old structure for backward compatibility
+        old_ts_path = self.parsed_data_path / 'sql_results' / 'timeseries'
         
-        # Check daily aggregated data
-        daily_path = ts_path / 'aggregated' / 'daily'
-        if daily_path.exists():
-            for file in daily_path.glob('*.parquet'):
-                df = pd.read_parquet(file)
-                if not df.empty and 'Variable' in df.columns:
-                    variables = df['Variable'].unique().tolist()
-                    discovery['available_variables'].update(variables)
-                    
-                    discovery['timeseries'][f"{file.stem}_daily"] = {
-                        'file': str(file),
-                        'buildings': df['building_id'].unique().tolist() if 'building_id' in df.columns else [],
-                        'variables': variables,
-                        'zones': df['Zone'].unique().tolist() if 'Zone' in df.columns else [],
-                        'date_range': (df['DateTime'].min(), df['DateTime'].max()) if 'DateTime' in df.columns else None,
-                        'frequency': 'daily',
-                        'records': len(df),
-                        'has_units': 'Units' in df.columns
-                    }
-                    
-                    logger.info(f"  - Found {file.stem}_daily: {len(df):,} daily records, {len(variables)} variables")
-                    if 'Units' not in df.columns:
-                        logger.info(f"    Note: No Units column in {file.stem}_daily")
+        # Try new structure first
+        if ts_path.exists():
+            # Check for base_all_*.parquet files
+            for freq in ['hourly', 'daily', 'monthly', 'yearly']:
+                file_path = ts_path / f'base_all_{freq}.parquet'
+                if file_path.exists():
+                    try:
+                        df = pd.read_parquet(file_path)
+                        if not df.empty:
+                            # New format has wide structure with dates as columns
+                            # Extract metadata columns
+                            metadata_cols = ['building_id', 'variant_id', 'VariableName', 'category', 'Zone', 'Units']
+                            date_cols = [col for col in df.columns if col not in metadata_cols]
+                            
+                            if 'VariableName' in df.columns:
+                                variables = df['VariableName'].unique().tolist()
+                                discovery['available_variables'].update(variables)
+                            
+                            discovery['timeseries'][f'base_all_{freq}'] = {
+                                'file': str(file_path),
+                                'format': 'wide',  # New wide format
+                                'buildings': df['building_id'].unique().tolist() if 'building_id' in df.columns else [],
+                                'variables': variables if 'VariableName' in df.columns else [],
+                                'zones': df['Zone'].unique().tolist() if 'Zone' in df.columns else [],
+                                'date_columns': len(date_cols),
+                                'frequency': freq,
+                                'records': len(df),
+                                'has_units': 'Units' in df.columns
+                            }
+                            
+                            discovery['available_frequencies'].add(freq)
+                            logger.info(f"  - Found base_all_{freq}: {len(df)} rows × {len(date_cols)} date columns, {len(variables)} variables")
+                    except Exception as e:
+                        logger.debug(f"    Error reading {file_path}: {str(e)}")
+        
+        # Check old structure for backward compatibility
+        elif old_ts_path.exists():
+            # Check hourly data
+            hourly_path = old_ts_path / 'hourly'
+            if hourly_path.exists():
+                for file in hourly_path.glob('*.parquet'):
+                    df = pd.read_parquet(file)
+                    if not df.empty and 'Variable' in df.columns:
+                        variables = df['Variable'].unique().tolist()
+                        discovery['available_variables'].update(variables)
+                        
+                        discovery['timeseries'][file.stem] = {
+                            'file': str(file),
+                            'format': 'long',  # Old long format
+                            'buildings': df['building_id'].unique().tolist() if 'building_id' in df.columns else [],
+                            'variables': variables,
+                            'zones': df['Zone'].unique().tolist() if 'Zone' in df.columns else [],
+                            'date_range': (df['DateTime'].min(), df['DateTime'].max()) if 'DateTime' in df.columns else None,
+                            'frequency': 'hourly',
+                            'records': len(df),
+                            'has_units': 'Units' in df.columns
+                        }
+                        
+                        discovery['available_frequencies'].add('hourly')
+                        logger.info(f"  - Found {file.stem}: {len(df):,} hourly records, {len(variables)} variables")
+            
+            # Check daily aggregated data
+            daily_path = old_ts_path / 'aggregated' / 'daily'
+            if daily_path.exists():
+                for file in daily_path.glob('*.parquet'):
+                    df = pd.read_parquet(file)
+                    if not df.empty and 'Variable' in df.columns:
+                        variables = df['Variable'].unique().tolist()
+                        discovery['available_variables'].update(variables)
+                        
+                        discovery['timeseries'][f"{file.stem}_daily"] = {
+                            'file': str(file),
+                            'format': 'long',  # Old long format
+                            'buildings': df['building_id'].unique().tolist() if 'building_id' in df.columns else [],
+                            'variables': variables,
+                            'zones': df['Zone'].unique().tolist() if 'Zone' in df.columns else [],
+                            'date_range': (df['DateTime'].min(), df['DateTime'].max()) if 'DateTime' in df.columns else None,
+                            'frequency': 'daily',
+                            'records': len(df),
+                            'has_units': 'Units' in df.columns
+                        }
+                        
+                        discovery['available_frequencies'].add('daily')
+                        logger.info(f"  - Found {file.stem}_daily: {len(df):,} daily records, {len(variables)} variables")
+                        if 'Units' not in df.columns:
+                            logger.info(f"    Note: No Units column in {file.stem}_daily")
         
         # Log available variables
         if discovery['available_variables']:
@@ -239,6 +284,33 @@ class SmartValidationWrapper:
                 logger.info(f"    * {var}")
             if len(discovery['available_variables']) > 10:
                 logger.info(f"    ... and {len(discovery['available_variables']) - 10} more")
+        
+        # Check for comparison files (for modified results)
+        comparisons_path = self.parsed_data_path / 'comparisons'
+        if comparisons_path.exists():
+            comparison_files = list(comparisons_path.glob('var_*.parquet'))
+            if comparison_files:
+                logger.info(f"\n  Found {len(comparison_files)} comparison files")
+                discovery['comparison_files'] = {}
+                
+                for comp_file in comparison_files[:5]:  # Show first 5
+                    # Parse filename: var_{variable}_{unit}_{frequency}_b{building_id}.parquet
+                    parts = comp_file.stem.split('_')
+                    if len(parts) >= 5:
+                        variable = '_'.join(parts[1:-3])  # Handle multi-word variables
+                        frequency = parts[-2]
+                        building_id = parts[-1][1:]  # Remove 'b' prefix
+                        
+                        discovery['comparison_files'][comp_file.stem] = {
+                            'file': str(comp_file),
+                            'variable': variable,
+                            'frequency': frequency,
+                            'building_id': building_id
+                        }
+                        logger.debug(f"    - {comp_file.name}: {variable} ({frequency})")
+                
+                if len(comparison_files) > 5:
+                    logger.info(f"    ... and {len(comparison_files) - 5} more")
         
         # Check zone information
         zone_file = self.parsed_data_path / 'relationships' / 'zone_mappings.parquet'
@@ -399,6 +471,105 @@ class SmartValidationWrapper:
         else:
             return 'unknown'
     
+    def _convert_wide_to_long(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Convert wide format (dates as columns) to long format (dates as rows)"""
+        import re
+        
+        # Identify metadata columns vs date columns
+        metadata_cols = ['building_id', 'variant_id', 'VariableName', 'category', 'Zone', 'Units']
+        # Keep only metadata columns that exist in the dataframe
+        id_vars = [col for col in metadata_cols if col in df.columns]
+        
+        # Find date columns (format: YYYY-MM-DD or similar)
+        date_cols = []
+        for col in df.columns:
+            if col not in metadata_cols:
+                # Check if column name looks like a date
+                if re.match(r'\d{4}-\d{2}-\d{2}', str(col)):
+                    date_cols.append(col)
+        
+        if not date_cols:
+            logger.warning("No date columns found in wide format data")
+            return df
+        
+        # Melt the dataframe
+        df_long = df.melt(
+            id_vars=id_vars,
+            value_vars=date_cols,
+            var_name='DateTime',
+            value_name='Value'
+        )
+        
+        # Convert DateTime to proper datetime
+        df_long['DateTime'] = pd.to_datetime(df_long['DateTime'])
+        
+        # Rename VariableName to Variable for consistency
+        if 'VariableName' in df_long.columns:
+            df_long = df_long.rename(columns={'VariableName': 'Variable'})
+        
+        # Remove rows with null values
+        df_long = df_long.dropna(subset=['Value'])
+        
+        # Sort by building, variable, and date for better organization
+        sort_cols = ['building_id', 'Variable', 'DateTime']
+        sort_cols = [col for col in sort_cols if col in df_long.columns]
+        if sort_cols:
+            df_long = df_long.sort_values(sort_cols)
+        
+        logger.info(f"    Converted {len(df)} wide rows to {len(df_long)} long rows")
+        
+        return df_long
+    
+    def _load_from_comparison_files(self, discovery: Dict[str, Any], target_freq: str, variant_id: Optional[str] = None) -> pd.DataFrame:
+        """Load simulation data from comparison files (for modified results)
+        
+        Args:
+            discovery: Discovery information
+            target_freq: Target frequency (daily, monthly, etc.)
+            variant_id: Optional variant ID to load (e.g., 'variant_0', 'variant_1', etc.)
+                       If None, loads base values
+        """
+        comparison_data = []
+        
+        # Determine which column to use for values
+        value_column = f'{variant_id}_value' if variant_id else 'base_value'
+        
+        for file_info in discovery['comparison_files'].values():
+            if file_info['frequency'] == target_freq:
+                try:
+                    df = pd.read_parquet(file_info['file'])
+                    
+                    # Check if the requested value column exists
+                    if value_column not in df.columns:
+                        logger.debug(f"    Column {value_column} not found in {file_info['file']}")
+                        continue
+                    
+                    # Transform comparison file to standard format
+                    sim_df = pd.DataFrame({
+                        'building_id': df['building_id'],
+                        'DateTime': df['timestamp'] if 'timestamp' in df.columns else df['DateTime'],
+                        'Variable': df['variable_name'] if 'variable_name' in df.columns else file_info['variable'],
+                        'Value': df[value_column],
+                        'Units': df['Units'] if 'Units' in df.columns else 'unknown',
+                        'Zone': df['Zone'] if 'Zone' in df.columns else 'Building'
+                    })
+                    
+                    # Add variant info if loading variant data
+                    if variant_id:
+                        sim_df['variant_id'] = variant_id
+                    
+                    comparison_data.append(sim_df)
+                    logger.info(f"    Loaded {file_info['variable']} from comparison file ({value_column})")
+                except Exception as e:
+                    logger.debug(f"    Error loading {file_info['file']}: {str(e)}")
+        
+        if comparison_data:
+            combined_df = pd.concat(comparison_data, ignore_index=True)
+            logger.info(f"  - Loaded {len(combined_df)} records from {len(comparison_data)} comparison files")
+            return combined_df
+        
+        return pd.DataFrame()
+    
     def load_simulation_data(self, discovery: Dict[str, Any]) -> pd.DataFrame:
         """Load simulation data based on target frequency"""
         self._log_step("Loading simulation data...")
@@ -412,10 +583,15 @@ class SmartValidationWrapper:
         if target_freq == 'daily':
             # Load daily data first
             for dataset_name, dataset_info in discovery['timeseries'].items():
-                if 'daily' in dataset_name:
+                if 'daily' in dataset_name or dataset_info.get('frequency') == 'daily':
                     logger.info(f"  - Loading {dataset_name} ({dataset_info['records']:,} records)")
                     df = pd.read_parquet(dataset_info['file'])
                     if not df.empty:
+                        # Check if this is wide format (new structure)
+                        if dataset_info.get('format') == 'wide':
+                            logger.info(f"    Converting from wide to long format")
+                            df = self._convert_wide_to_long(df)
+                        
                         # Add Units column if missing
                         if 'Units' not in df.columns and dataset_info.get('has_units') is False:
                             logger.info(f"    Adding Units column to {dataset_name}")
@@ -424,20 +600,28 @@ class SmartValidationWrapper:
             
             # If no daily data, we'll aggregate hourly later
             if not all_sim_data:
-                logger.info("  - No daily data found, will aggregate hourly data")
+                logger.info("  - No daily data found, will check for hourly data")
                 for dataset_name, dataset_info in discovery['timeseries'].items():
-                    if 'hourly' in dataset_info['frequency']:
+                    if 'hourly' in dataset_name or dataset_info.get('frequency') == 'hourly':
                         logger.info(f"  - Loading {dataset_name} for aggregation ({dataset_info['records']:,} records)")
                         df = pd.read_parquet(dataset_info['file'])
                         if not df.empty:
+                            # Check if this is wide format (new structure)
+                            if dataset_info.get('format') == 'wide':
+                                logger.info(f"    Converting from wide to long format")
+                                df = self._convert_wide_to_long(df)
                             all_sim_data.append(df)
         else:
             # Load hourly data
             for dataset_name, dataset_info in discovery['timeseries'].items():
-                if 'hourly' in dataset_info['frequency']:
+                if 'hourly' in dataset_name or dataset_info.get('frequency') == 'hourly':
                     logger.info(f"  - Loading {dataset_name} ({dataset_info['records']:,} records)")
                     df = pd.read_parquet(dataset_info['file'])
                     if not df.empty:
+                        # Check if this is wide format (new structure)
+                        if dataset_info.get('format') == 'wide':
+                            logger.info(f"    Converting from wide to long format")
+                            df = self._convert_wide_to_long(df)
                         all_sim_data.append(df)
         
         if all_sim_data:
@@ -455,8 +639,13 @@ class SmartValidationWrapper:
             
             return sim_df
         else:
-            logger.error("  - No simulation data found!")
-            return pd.DataFrame()
+            # Try loading from comparison files if available
+            if 'comparison_files' in discovery and discovery['comparison_files']:
+                logger.info("  - No timeseries data found, checking comparison files...")
+                return self._load_from_comparison_files(discovery, target_freq)
+            else:
+                logger.error("  - No simulation data found!")
+                return pd.DataFrame()
     
     def align_frequencies(self, real_df: pd.DataFrame, sim_df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """Align data frequencies between real and simulated data"""
