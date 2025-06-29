@@ -532,7 +532,7 @@ class ModificationSensitivityAnalyzer(BaseSensitivityAnalyzer):
             param_change = stats['param_pct_change_mean']
             n_samples = stats['param_delta_count']
             
-            if param_change == 0 or pd.isna(param_change):
+            if abs(param_change) < 0.01 or pd.isna(param_change):
                 continue
             
             # Create sensitivity results for cross-level effects
@@ -693,11 +693,11 @@ class ModificationSensitivityAnalyzer(BaseSensitivityAnalyzer):
                                 param_change = param_pct_change[building_id]
                                 
                                 # Skip if no change in parameter
-                                if abs(param_change) < 0.001:
+                                if abs(param_change) < 0.01:  # Increased threshold to avoid numerical issues
                                     continue
                                 
-                                # Calculate elasticity
-                                elasticity = output_pct_change / param_change if param_change != 0 else 0
+                                # Calculate elasticity with safety check
+                                elasticity = output_pct_change / param_change if abs(param_change) > 0.01 else 0
                                 
                                 # Create result
                                 result = SensitivityResult(
@@ -1030,8 +1030,8 @@ class ModificationSensitivityAnalyzer(BaseSensitivityAnalyzer):
                         if abs(output_change) < 0.001:
                             continue
                         
-                        # Calculate elasticity
-                        elasticity = output_change / param_change if param_change != 0 else 0
+                        # Calculate elasticity with safety check
+                        elasticity = output_change / param_change if abs(param_change) > 0.01 else 0
                         
                         # Create sensitivity result
                         result = SensitivityResult(
@@ -1134,14 +1134,27 @@ class ModificationSensitivityAnalyzer(BaseSensitivityAnalyzer):
             return pd.DataFrame()
         
         # Process comparison files to get zone-level deltas
-        for var in output_variables:
-            var_clean = var.split('[')[0].strip().lower()
-            
-            # Find comparison files for this variable
-            pattern = f"var_*{var_clean}*_daily_*.parquet"
-            var_files = list(comparison_path.glob(pattern))
-            
-            for file_path in var_files:
+        # For zone-level analysis, look for zone-specific variables
+        zone_variables = ['zone_air_system_sensible_cooling_energy', 
+                         'zone_air_system_sensible_heating_energy',
+                         'zone_infiltration_latent_heat_gain_energy',
+                         'zone_infiltration_sensible_heat_gain_energy']
+        
+        # Find all zone-level comparison files
+        zone_files = []
+        for zone_var in zone_variables:
+            pattern = f"var_{zone_var}_*_daily_*.parquet"
+            zone_files.extend(list(comparison_path.glob(pattern)))
+        
+        # Also look for monthly if daily not available
+        if not zone_files:
+            for zone_var in zone_variables:
+                pattern = f"var_{zone_var}_*_monthly_*.parquet"
+                zone_files.extend(list(comparison_path.glob(pattern)))
+        
+        var_files = zone_files
+        
+        for file_path in var_files:
                 try:
                     df = pd.read_parquet(file_path)
                     

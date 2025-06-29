@@ -1,0 +1,1526 @@
+{
+  "base_results": {
+    "config_name": "base",
+    "mappings": [
+      "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+      "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+      "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)"
+    ],
+    "validation_results": [
+      {
+        "config_name": "base",
+        "building_id": "4136733",
+        "real_variable": "Electricity:Facility [J](Hourly)",
+        "sim_variable": "Electricity:Facility",
+        "data_points": 30,
+        "cvrmse": 100.3873573805121,
+        "nmbe": -99.95693752324325,
+        "cvrmse_threshold": 30.0,
+        "nmbe_threshold": 10.0,
+        "pass_cvrmse": "False",
+        "pass_nmbe": "False",
+        "pass_overall": "False"
+      }
+    ],
+    "alignment_details": [
+      {
+        "mapping": "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "real_count": 31,
+        "sim_count": 120,
+        "aligned_count": 0,
+        "unit_conversion": null,
+        "zone_aggregation": "Aggregated 10 zones",
+        "issues": [
+          "No overlapping dates for building 4136733",
+          "No data could be aligned"
+        ]
+      },
+      {
+        "mapping": "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "real_count": 31,
+        "sim_count": 120,
+        "aligned_count": 0,
+        "unit_conversion": null,
+        "zone_aggregation": "Aggregated 10 zones",
+        "issues": [
+          "No overlapping dates for building 4136733",
+          "No data could be aligned"
+        ]
+      },
+      {
+        "mapping": "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)",
+        "real_count": 31,
+        "sim_count": 365,
+        "aligned_count": 30,
+        "unit_conversion": null,
+        "zone_aggregation": null,
+        "issues": []
+      }
+    ],
+    "summary": {
+      "total_validations": 1,
+      "passed_validations": 0,
+      "pass_rate": 0.0,
+      "avg_cvrmse": 100.3873573805121,
+      "avg_nmbe": -99.95693752324325
+    }
+  },
+  "variant_results": {
+    "variant_0": {
+      "config_name": "variant_0",
+      "mappings": [
+        "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)"
+      ],
+      "validation_results": [
+        {
+          "config_name": "variant_0",
+          "building_id": "4136733",
+          "real_variable": "Electricity:Facility [J](Hourly)",
+          "sim_variable": "Electricity:Facility",
+          "data_points": 30,
+          "cvrmse": 100.39930890866857,
+          "nmbe": -99.96888753540262,
+          "cvrmse_threshold": 30.0,
+          "nmbe_threshold": 10.0,
+          "pass_cvrmse": "False",
+          "pass_nmbe": "False",
+          "pass_overall": "False"
+        }
+      ],
+      "alignment_details": [
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 365,
+          "aligned_count": 30,
+          "unit_conversion": null,
+          "zone_aggregation": null,
+          "issues": []
+        }
+      ],
+      "summary": {
+        "total_validations": 1,
+        "passed_validations": 0,
+        "pass_rate": 0.0,
+        "avg_cvrmse": 100.39930890866857,
+        "avg_nmbe": -99.96888753540262
+      }
+    },
+    "variant_1": {
+      "config_name": "variant_1",
+      "mappings": [
+        "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)"
+      ],
+      "validation_results": [
+        {
+          "config_name": "variant_1",
+          "building_id": "4136733",
+          "real_variable": "Electricity:Facility [J](Hourly)",
+          "sim_variable": "Electricity:Facility",
+          "data_points": 30,
+          "cvrmse": 100.3967367898618,
+          "nmbe": -99.96631574514836,
+          "cvrmse_threshold": 30.0,
+          "nmbe_threshold": 10.0,
+          "pass_cvrmse": "False",
+          "pass_nmbe": "False",
+          "pass_overall": "False"
+        }
+      ],
+      "alignment_details": [
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 365,
+          "aligned_count": 30,
+          "unit_conversion": null,
+          "zone_aggregation": null,
+          "issues": []
+        }
+      ],
+      "summary": {
+        "total_validations": 1,
+        "passed_validations": 0,
+        "pass_rate": 0.0,
+        "avg_cvrmse": 100.3967367898618,
+        "avg_nmbe": -99.96631574514836
+      }
+    },
+    "variant_10": {
+      "config_name": "variant_10",
+      "mappings": [
+        "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)"
+      ],
+      "validation_results": [
+        {
+          "config_name": "variant_10",
+          "building_id": "4136733",
+          "real_variable": "Electricity:Facility [J](Hourly)",
+          "sim_variable": "Electricity:Facility",
+          "data_points": 30,
+          "cvrmse": 100.40100396970881,
+          "nmbe": -99.97058237923555,
+          "cvrmse_threshold": 30.0,
+          "nmbe_threshold": 10.0,
+          "pass_cvrmse": "False",
+          "pass_nmbe": "False",
+          "pass_overall": "False"
+        }
+      ],
+      "alignment_details": [
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 365,
+          "aligned_count": 30,
+          "unit_conversion": null,
+          "zone_aggregation": null,
+          "issues": []
+        }
+      ],
+      "summary": {
+        "total_validations": 1,
+        "passed_validations": 0,
+        "pass_rate": 0.0,
+        "avg_cvrmse": 100.40100396970881,
+        "avg_nmbe": -99.97058237923555
+      }
+    },
+    "variant_11": {
+      "config_name": "variant_11",
+      "mappings": [
+        "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)"
+      ],
+      "validation_results": [
+        {
+          "config_name": "variant_11",
+          "building_id": "4136733",
+          "real_variable": "Electricity:Facility [J](Hourly)",
+          "sim_variable": "Electricity:Facility",
+          "data_points": 30,
+          "cvrmse": 100.40843780019166,
+          "nmbe": -99.97801525069521,
+          "cvrmse_threshold": 30.0,
+          "nmbe_threshold": 10.0,
+          "pass_cvrmse": "False",
+          "pass_nmbe": "False",
+          "pass_overall": "False"
+        }
+      ],
+      "alignment_details": [
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 365,
+          "aligned_count": 30,
+          "unit_conversion": null,
+          "zone_aggregation": null,
+          "issues": []
+        }
+      ],
+      "summary": {
+        "total_validations": 1,
+        "passed_validations": 0,
+        "pass_rate": 0.0,
+        "avg_cvrmse": 100.40843780019166,
+        "avg_nmbe": -99.97801525069521
+      }
+    },
+    "variant_12": {
+      "config_name": "variant_12",
+      "mappings": [
+        "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)"
+      ],
+      "validation_results": [
+        {
+          "config_name": "variant_12",
+          "building_id": "4136733",
+          "real_variable": "Electricity:Facility [J](Hourly)",
+          "sim_variable": "Electricity:Facility",
+          "data_points": 30,
+          "cvrmse": 100.39893097954555,
+          "nmbe": -99.96850965463354,
+          "cvrmse_threshold": 30.0,
+          "nmbe_threshold": 10.0,
+          "pass_cvrmse": "False",
+          "pass_nmbe": "False",
+          "pass_overall": "False"
+        }
+      ],
+      "alignment_details": [
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 365,
+          "aligned_count": 30,
+          "unit_conversion": null,
+          "zone_aggregation": null,
+          "issues": []
+        }
+      ],
+      "summary": {
+        "total_validations": 1,
+        "passed_validations": 0,
+        "pass_rate": 0.0,
+        "avg_cvrmse": 100.39893097954555,
+        "avg_nmbe": -99.96850965463354
+      }
+    },
+    "variant_13": {
+      "config_name": "variant_13",
+      "mappings": [
+        "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)"
+      ],
+      "validation_results": [
+        {
+          "config_name": "variant_13",
+          "building_id": "4136733",
+          "real_variable": "Electricity:Facility [J](Hourly)",
+          "sim_variable": "Electricity:Facility",
+          "data_points": 30,
+          "cvrmse": 100.39917644096907,
+          "nmbe": -99.96875508465473,
+          "cvrmse_threshold": 30.0,
+          "nmbe_threshold": 10.0,
+          "pass_cvrmse": "False",
+          "pass_nmbe": "False",
+          "pass_overall": "False"
+        }
+      ],
+      "alignment_details": [
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 365,
+          "aligned_count": 30,
+          "unit_conversion": null,
+          "zone_aggregation": null,
+          "issues": []
+        }
+      ],
+      "summary": {
+        "total_validations": 1,
+        "passed_validations": 0,
+        "pass_rate": 0.0,
+        "avg_cvrmse": 100.39917644096907,
+        "avg_nmbe": -99.96875508465473
+      }
+    },
+    "variant_14": {
+      "config_name": "variant_14",
+      "mappings": [
+        "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)"
+      ],
+      "validation_results": [
+        {
+          "config_name": "variant_14",
+          "building_id": "4136733",
+          "real_variable": "Electricity:Facility [J](Hourly)",
+          "sim_variable": "Electricity:Facility",
+          "data_points": 30,
+          "cvrmse": 100.39671068909955,
+          "nmbe": -99.96628964771367,
+          "cvrmse_threshold": 30.0,
+          "nmbe_threshold": 10.0,
+          "pass_cvrmse": "False",
+          "pass_nmbe": "False",
+          "pass_overall": "False"
+        }
+      ],
+      "alignment_details": [
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 365,
+          "aligned_count": 30,
+          "unit_conversion": null,
+          "zone_aggregation": null,
+          "issues": []
+        }
+      ],
+      "summary": {
+        "total_validations": 1,
+        "passed_validations": 0,
+        "pass_rate": 0.0,
+        "avg_cvrmse": 100.39671068909955,
+        "avg_nmbe": -99.96628964771367
+      }
+    },
+    "variant_15": {
+      "config_name": "variant_15",
+      "mappings": [
+        "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)"
+      ],
+      "validation_results": [
+        {
+          "config_name": "variant_15",
+          "building_id": "4136733",
+          "real_variable": "Electricity:Facility [J](Hourly)",
+          "sim_variable": "Electricity:Facility",
+          "data_points": 30,
+          "cvrmse": 100.40381878837583,
+          "nmbe": -99.97339683600288,
+          "cvrmse_threshold": 30.0,
+          "nmbe_threshold": 10.0,
+          "pass_cvrmse": "False",
+          "pass_nmbe": "False",
+          "pass_overall": "False"
+        }
+      ],
+      "alignment_details": [
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 365,
+          "aligned_count": 30,
+          "unit_conversion": null,
+          "zone_aggregation": null,
+          "issues": []
+        }
+      ],
+      "summary": {
+        "total_validations": 1,
+        "passed_validations": 0,
+        "pass_rate": 0.0,
+        "avg_cvrmse": 100.40381878837583,
+        "avg_nmbe": -99.97339683600288
+      }
+    },
+    "variant_16": {
+      "config_name": "variant_16",
+      "mappings": [
+        "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)"
+      ],
+      "validation_results": [
+        {
+          "config_name": "variant_16",
+          "building_id": "4136733",
+          "real_variable": "Electricity:Facility [J](Hourly)",
+          "sim_variable": "Electricity:Facility",
+          "data_points": 30,
+          "cvrmse": 100.40421647657006,
+          "nmbe": -99.97379447294523,
+          "cvrmse_threshold": 30.0,
+          "nmbe_threshold": 10.0,
+          "pass_cvrmse": "False",
+          "pass_nmbe": "False",
+          "pass_overall": "False"
+        }
+      ],
+      "alignment_details": [
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 365,
+          "aligned_count": 30,
+          "unit_conversion": null,
+          "zone_aggregation": null,
+          "issues": []
+        }
+      ],
+      "summary": {
+        "total_validations": 1,
+        "passed_validations": 0,
+        "pass_rate": 0.0,
+        "avg_cvrmse": 100.40421647657006,
+        "avg_nmbe": -99.97379447294523
+      }
+    },
+    "variant_17": {
+      "config_name": "variant_17",
+      "mappings": [
+        "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)"
+      ],
+      "validation_results": [
+        {
+          "config_name": "variant_17",
+          "building_id": "4136733",
+          "real_variable": "Electricity:Facility [J](Hourly)",
+          "sim_variable": "Electricity:Facility",
+          "data_points": 30,
+          "cvrmse": 100.39599852224718,
+          "nmbe": -99.96557757160511,
+          "cvrmse_threshold": 30.0,
+          "nmbe_threshold": 10.0,
+          "pass_cvrmse": "False",
+          "pass_nmbe": "False",
+          "pass_overall": "False"
+        }
+      ],
+      "alignment_details": [
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 365,
+          "aligned_count": 30,
+          "unit_conversion": null,
+          "zone_aggregation": null,
+          "issues": []
+        }
+      ],
+      "summary": {
+        "total_validations": 1,
+        "passed_validations": 0,
+        "pass_rate": 0.0,
+        "avg_cvrmse": 100.39599852224718,
+        "avg_nmbe": -99.96557757160511
+      }
+    },
+    "variant_18": {
+      "config_name": "variant_18",
+      "mappings": [
+        "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)"
+      ],
+      "validation_results": [
+        {
+          "config_name": "variant_18",
+          "building_id": "4136733",
+          "real_variable": "Electricity:Facility [J](Hourly)",
+          "sim_variable": "Electricity:Facility",
+          "data_points": 30,
+          "cvrmse": 100.39917576528647,
+          "nmbe": -99.96875440905858,
+          "cvrmse_threshold": 30.0,
+          "nmbe_threshold": 10.0,
+          "pass_cvrmse": "False",
+          "pass_nmbe": "False",
+          "pass_overall": "False"
+        }
+      ],
+      "alignment_details": [
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 365,
+          "aligned_count": 30,
+          "unit_conversion": null,
+          "zone_aggregation": null,
+          "issues": []
+        }
+      ],
+      "summary": {
+        "total_validations": 1,
+        "passed_validations": 0,
+        "pass_rate": 0.0,
+        "avg_cvrmse": 100.39917576528647,
+        "avg_nmbe": -99.96875440905858
+      }
+    },
+    "variant_2": {
+      "config_name": "variant_2",
+      "mappings": [
+        "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)"
+      ],
+      "validation_results": [
+        {
+          "config_name": "variant_2",
+          "building_id": "4136733",
+          "real_variable": "Electricity:Facility [J](Hourly)",
+          "sim_variable": "Electricity:Facility",
+          "data_points": 30,
+          "cvrmse": 100.40446357799438,
+          "nmbe": -99.97404154250937,
+          "cvrmse_threshold": 30.0,
+          "nmbe_threshold": 10.0,
+          "pass_cvrmse": "False",
+          "pass_nmbe": "False",
+          "pass_overall": "False"
+        }
+      ],
+      "alignment_details": [
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 365,
+          "aligned_count": 30,
+          "unit_conversion": null,
+          "zone_aggregation": null,
+          "issues": []
+        }
+      ],
+      "summary": {
+        "total_validations": 1,
+        "passed_validations": 0,
+        "pass_rate": 0.0,
+        "avg_cvrmse": 100.40446357799438,
+        "avg_nmbe": -99.97404154250937
+      }
+    },
+    "variant_3": {
+      "config_name": "variant_3",
+      "mappings": [
+        "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)"
+      ],
+      "validation_results": [
+        {
+          "config_name": "variant_3",
+          "building_id": "4136733",
+          "real_variable": "Electricity:Facility [J](Hourly)",
+          "sim_variable": "Electricity:Facility",
+          "data_points": 30,
+          "cvrmse": 100.40177205555611,
+          "nmbe": -99.97135036647971,
+          "cvrmse_threshold": 30.0,
+          "nmbe_threshold": 10.0,
+          "pass_cvrmse": "False",
+          "pass_nmbe": "False",
+          "pass_overall": "False"
+        }
+      ],
+      "alignment_details": [
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 365,
+          "aligned_count": 30,
+          "unit_conversion": null,
+          "zone_aggregation": null,
+          "issues": []
+        }
+      ],
+      "summary": {
+        "total_validations": 1,
+        "passed_validations": 0,
+        "pass_rate": 0.0,
+        "avg_cvrmse": 100.40177205555611,
+        "avg_nmbe": -99.97135036647971
+      }
+    },
+    "variant_4": {
+      "config_name": "variant_4",
+      "mappings": [
+        "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)"
+      ],
+      "validation_results": [
+        {
+          "config_name": "variant_4",
+          "building_id": "4136733",
+          "real_variable": "Electricity:Facility [J](Hourly)",
+          "sim_variable": "Electricity:Facility",
+          "data_points": 30,
+          "cvrmse": 100.40814066977018,
+          "nmbe": -99.97771815880718,
+          "cvrmse_threshold": 30.0,
+          "nmbe_threshold": 10.0,
+          "pass_cvrmse": "False",
+          "pass_nmbe": "False",
+          "pass_overall": "False"
+        }
+      ],
+      "alignment_details": [
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 365,
+          "aligned_count": 30,
+          "unit_conversion": null,
+          "zone_aggregation": null,
+          "issues": []
+        }
+      ],
+      "summary": {
+        "total_validations": 1,
+        "passed_validations": 0,
+        "pass_rate": 0.0,
+        "avg_cvrmse": 100.40814066977018,
+        "avg_nmbe": -99.97771815880718
+      }
+    },
+    "variant_5": {
+      "config_name": "variant_5",
+      "mappings": [
+        "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)"
+      ],
+      "validation_results": [
+        {
+          "config_name": "variant_5",
+          "building_id": "4136733",
+          "real_variable": "Electricity:Facility [J](Hourly)",
+          "sim_variable": "Electricity:Facility",
+          "data_points": 30,
+          "cvrmse": 100.40633972978658,
+          "nmbe": -99.9759174520206,
+          "cvrmse_threshold": 30.0,
+          "nmbe_threshold": 10.0,
+          "pass_cvrmse": "False",
+          "pass_nmbe": "False",
+          "pass_overall": "False"
+        }
+      ],
+      "alignment_details": [
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 365,
+          "aligned_count": 30,
+          "unit_conversion": null,
+          "zone_aggregation": null,
+          "issues": []
+        }
+      ],
+      "summary": {
+        "total_validations": 1,
+        "passed_validations": 0,
+        "pass_rate": 0.0,
+        "avg_cvrmse": 100.40633972978658,
+        "avg_nmbe": -99.9759174520206
+      }
+    },
+    "variant_6": {
+      "config_name": "variant_6",
+      "mappings": [
+        "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)"
+      ],
+      "validation_results": [
+        {
+          "config_name": "variant_6",
+          "building_id": "4136733",
+          "real_variable": "Electricity:Facility [J](Hourly)",
+          "sim_variable": "Electricity:Facility",
+          "data_points": 30,
+          "cvrmse": 100.40816801472316,
+          "nmbe": -99.97774550021467,
+          "cvrmse_threshold": 30.0,
+          "nmbe_threshold": 10.0,
+          "pass_cvrmse": "False",
+          "pass_nmbe": "False",
+          "pass_overall": "False"
+        }
+      ],
+      "alignment_details": [
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 365,
+          "aligned_count": 30,
+          "unit_conversion": null,
+          "zone_aggregation": null,
+          "issues": []
+        }
+      ],
+      "summary": {
+        "total_validations": 1,
+        "passed_validations": 0,
+        "pass_rate": 0.0,
+        "avg_cvrmse": 100.40816801472316,
+        "avg_nmbe": -99.97774550021467
+      }
+    },
+    "variant_7": {
+      "config_name": "variant_7",
+      "mappings": [
+        "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)"
+      ],
+      "validation_results": [
+        {
+          "config_name": "variant_7",
+          "building_id": "4136733",
+          "real_variable": "Electricity:Facility [J](Hourly)",
+          "sim_variable": "Electricity:Facility",
+          "data_points": 30,
+          "cvrmse": 100.39631401578282,
+          "nmbe": -99.96589302495266,
+          "cvrmse_threshold": 30.0,
+          "nmbe_threshold": 10.0,
+          "pass_cvrmse": "False",
+          "pass_nmbe": "False",
+          "pass_overall": "False"
+        }
+      ],
+      "alignment_details": [
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 365,
+          "aligned_count": 30,
+          "unit_conversion": null,
+          "zone_aggregation": null,
+          "issues": []
+        }
+      ],
+      "summary": {
+        "total_validations": 1,
+        "passed_validations": 0,
+        "pass_rate": 0.0,
+        "avg_cvrmse": 100.39631401578282,
+        "avg_nmbe": -99.96589302495266
+      }
+    },
+    "variant_8": {
+      "config_name": "variant_8",
+      "mappings": [
+        "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)"
+      ],
+      "validation_results": [
+        {
+          "config_name": "variant_8",
+          "building_id": "4136733",
+          "real_variable": "Electricity:Facility [J](Hourly)",
+          "sim_variable": "Electricity:Facility",
+          "data_points": 30,
+          "cvrmse": 100.39952196311745,
+          "nmbe": -99.96910056258042,
+          "cvrmse_threshold": 30.0,
+          "nmbe_threshold": 10.0,
+          "pass_cvrmse": "False",
+          "pass_nmbe": "False",
+          "pass_overall": "False"
+        }
+      ],
+      "alignment_details": [
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 365,
+          "aligned_count": 30,
+          "unit_conversion": null,
+          "zone_aggregation": null,
+          "issues": []
+        }
+      ],
+      "summary": {
+        "total_validations": 1,
+        "passed_validations": 0,
+        "pass_rate": 0.0,
+        "avg_cvrmse": 100.39952196311745,
+        "avg_nmbe": -99.96910056258042
+      }
+    },
+    "variant_9": {
+      "config_name": "variant_9",
+      "mappings": [
+        "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+        "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)"
+      ],
+      "validation_results": [
+        {
+          "config_name": "variant_9",
+          "building_id": "4136733",
+          "real_variable": "Electricity:Facility [J](Hourly)",
+          "sim_variable": "Electricity:Facility",
+          "data_points": 30,
+          "cvrmse": 100.40432179550322,
+          "nmbe": -99.97389977830046,
+          "cvrmse_threshold": 30.0,
+          "nmbe_threshold": 10.0,
+          "pass_cvrmse": "False",
+          "pass_nmbe": "False",
+          "pass_overall": "False"
+        }
+      ],
+      "alignment_details": [
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Cooling Energy', sim_var='Zone Air System Sensible Cooling Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Zone Air System Sensible Heating Energy', sim_var='Zone Air System Sensible Heating Energy', confidence=1.0, match_type='exact', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 120,
+          "aligned_count": 0,
+          "unit_conversion": null,
+          "zone_aggregation": "Aggregated 10 zones",
+          "issues": [
+            "No overlapping dates for building 4136733",
+            "No data could be aligned"
+          ]
+        },
+        {
+          "mapping": "ValidationMapping(real_var='Electricity:Facility [J](Hourly)', sim_var='Electricity:Facility', confidence=0.6444444444444444, match_type='semantic', aggregation_info=None)",
+          "real_count": 31,
+          "sim_count": 365,
+          "aligned_count": 30,
+          "unit_conversion": null,
+          "zone_aggregation": null,
+          "issues": []
+        }
+      ],
+      "summary": {
+        "total_validations": 1,
+        "passed_validations": 0,
+        "pass_rate": 0.0,
+        "avg_cvrmse": 100.40432179550322,
+        "avg_nmbe": -99.97389977830046
+      }
+    }
+  },
+  "variant_comparison": {
+    "variant_0": {
+      "cvrmse_improvement": -0.011905411665705587,
+      "nmbe_improvement": -0.01195516034750619,
+      "pass_rate_improvement": 0.0,
+      "absolute_metrics": {
+        "cvrmse": 100.39930890866857,
+        "nmbe": -99.96888753540262,
+        "pass_rate": 0.0
+      }
+    },
+    "variant_1": {
+      "cvrmse_improvement": -0.00934321770634244,
+      "nmbe_improvement": -0.00938226213956239,
+      "pass_rate_improvement": 0.0,
+      "absolute_metrics": {
+        "cvrmse": 100.3967367898618,
+        "nmbe": -99.96631574514836,
+        "pass_rate": 0.0
+      }
+    },
+    "variant_10": {
+      "cvrmse_improvement": -0.013593932097429384,
+      "nmbe_improvement": -0.013650734336597635,
+      "pass_rate_improvement": 0.0,
+      "absolute_metrics": {
+        "cvrmse": 100.40100396970881,
+        "nmbe": -99.97058237923555,
+        "pass_rate": 0.0
+      }
+    },
+    "variant_11": {
+      "cvrmse_improvement": -0.020999078200315106,
+      "nmbe_improvement": -0.02108680795372672,
+      "pass_rate_improvement": 0.0,
+      "absolute_metrics": {
+        "cvrmse": 100.40843780019166,
+        "nmbe": -99.97801525069521,
+        "pass_rate": 0.0
+      }
+    },
+    "variant_12": {
+      "cvrmse_improvement": -0.01152894083025337,
+      "nmbe_improvement": -0.011577116783505014,
+      "pass_rate_improvement": 0.0,
+      "absolute_metrics": {
+        "cvrmse": 100.39893097954555,
+        "nmbe": -99.96850965463354,
+        "pass_rate": 0.0
+      }
+    },
+    "variant_13": {
+      "cvrmse_improvement": -0.011773455109663336,
+      "nmbe_improvement": -0.011822652538477574,
+      "pass_rate_improvement": 0.0,
+      "absolute_metrics": {
+        "cvrmse": 100.39917644096907,
+        "nmbe": -99.96875508465473,
+        "pass_rate": 0.0
+      }
+    },
+    "variant_14": {
+      "cvrmse_improvement": -0.009317217657196234,
+      "nmbe_improvement": -0.009356153461820494,
+      "pass_rate_improvement": 0.0,
+      "absolute_metrics": {
+        "cvrmse": 100.39671068909955,
+        "nmbe": -99.96628964771367,
+        "pass_rate": 0.0
+      }
+    },
+    "variant_15": {
+      "cvrmse_improvement": -0.01639788942877937,
+      "nmbe_improvement": -0.016466403600845267,
+      "pass_rate_improvement": 0.0,
+      "absolute_metrics": {
+        "cvrmse": 100.40381878837583,
+        "nmbe": -99.97339683600288,
+        "pass_rate": 0.0
+      }
+    },
+    "variant_16": {
+      "cvrmse_improvement": -0.01679404309255106,
+      "nmbe_improvement": -0.016864211849282405,
+      "pass_rate_improvement": 0.0,
+      "absolute_metrics": {
+        "cvrmse": 100.40421647657006,
+        "nmbe": -99.97379447294523,
+        "pass_rate": 0.0
+      }
+    },
+    "variant_17": {
+      "cvrmse_improvement": -0.008607798791165912,
+      "nmbe_improvement": -0.008643770583553173,
+      "pass_rate_improvement": 0.0,
+      "absolute_metrics": {
+        "cvrmse": 100.39599852224718,
+        "nmbe": -99.96557757160511,
+        "pass_rate": 0.0
+      }
+    },
+    "variant_18": {
+      "cvrmse_improvement": -0.011772782034270898,
+      "nmbe_improvement": -0.011821976651268783,
+      "pass_rate_improvement": 0.0,
+      "absolute_metrics": {
+        "cvrmse": 100.39917576528647,
+        "nmbe": -99.96875440905858,
+        "pass_rate": 0.0
+      }
+    },
+    "variant_2": {
+      "cvrmse_improvement": -0.017040191044613035,
+      "nmbe_improvement": -0.017111387853531005,
+      "pass_rate_improvement": 0.0,
+      "absolute_metrics": {
+        "cvrmse": 100.40446357799438,
+        "nmbe": -99.97404154250937,
+        "pass_rate": 0.0
+      }
+    },
+    "variant_3": {
+      "cvrmse_improvement": -0.014359054187840288,
+      "nmbe_improvement": -0.01441905243756122,
+      "pass_rate_improvement": 0.0,
+      "absolute_metrics": {
+        "cvrmse": 100.40177205555611,
+        "nmbe": -99.97135036647971,
+        "pass_rate": 0.0
+      }
+    },
+    "variant_4": {
+      "cvrmse_improvement": -0.02070309429433334,
+      "nmbe_improvement": -0.020789588075456326,
+      "pass_rate_improvement": 0.0,
+      "absolute_metrics": {
+        "cvrmse": 100.40814066977018,
+        "nmbe": -99.97771815880718,
+        "pass_rate": 0.0
+      }
+    },
+    "variant_5": {
+      "cvrmse_improvement": -0.018909103466614126,
+      "nmbe_improvement": -0.01898810552586974,
+      "pass_rate_improvement": 0.0,
+      "absolute_metrics": {
+        "cvrmse": 100.40633972978658,
+        "nmbe": -99.9759174520206,
+        "pass_rate": 0.0
+      }
+    },
+    "variant_6": {
+      "cvrmse_improvement": -0.020730333733338786,
+      "nmbe_improvement": -0.020816941261904164,
+      "pass_rate_improvement": 0.0,
+      "absolute_metrics": {
+        "cvrmse": 100.40816801472316,
+        "nmbe": -99.97774550021467,
+        "pass_rate": 0.0
+      }
+    },
+    "variant_7": {
+      "cvrmse_improvement": -0.008922074954888299,
+      "nmbe_improvement": -0.008959359831653567,
+      "pass_rate_improvement": 0.0,
+      "absolute_metrics": {
+        "cvrmse": 100.39631401578282,
+        "nmbe": -99.96589302495266,
+        "pass_rate": 0.0
+      }
+    },
+    "variant_8": {
+      "cvrmse_improvement": -0.012117644016907242,
+      "nmbe_improvement": -0.012168279299612538,
+      "pass_rate_improvement": 0.0,
+      "absolute_metrics": {
+        "cvrmse": 100.39952196311745,
+        "nmbe": -99.96910056258042,
+        "pass_rate": 0.0
+      }
+    },
+    "variant_9": {
+      "cvrmse_improvement": -0.01689895563922411,
+      "nmbe_improvement": -0.01696956257114653,
+      "pass_rate_improvement": 0.0,
+      "absolute_metrics": {
+        "cvrmse": 100.40432179550322,
+        "nmbe": -99.97389977830046,
+        "pass_rate": 0.0
+      }
+    }
+  },
+  "best_variant": "variant_17",
+  "summary": {
+    "total_configurations": 20,
+    "configurations_validated": 20,
+    "best_configuration": "base",
+    "best_pass_rate": 0.0,
+    "best_cvrmse": 100.3873573805121,
+    "improvements_found": []
+  },
+  "mappings": []
+}

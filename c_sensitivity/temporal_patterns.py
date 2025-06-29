@@ -63,6 +63,14 @@ class TemporalPatternsAnalyzer:
         """
         self.logger.info("Starting temporal pattern analysis...")
         
+        if config is None:
+            config = {}
+        if config is None:
+            config = {}
+        if config is None:
+            config = {}
+        if config is None:
+            config = {}
         time_column = config.get('time_column', 'DateTime')
         frequency_analysis = config.get('frequency_analysis', True)
         max_lag = config.get('max_lag', 24)
@@ -73,8 +81,8 @@ class TemporalPatternsAnalyzer:
         
         # Ensure time column exists
         if time_column not in X.columns:
-            self.logger.warning(f"Time column '{time_column}' not found. Creating synthetic time series.")
-            X[time_column] = pd.date_range(start='2023-01-01', periods=len(X), freq='H')
+            self.logger.error(f"Time column '{time_column}' not found in data.")
+            raise ValueError(f"Time column '{time_column}' not found in data. Cannot perform temporal pattern analysis.")
         
         # Sort by time
         X = X.sort_values(time_column)

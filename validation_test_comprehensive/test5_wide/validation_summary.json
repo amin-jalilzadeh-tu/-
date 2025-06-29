@@ -1,0 +1,421 @@
+{
+  "discovery": {
+    "timeseries": {},
+    "outputs_defined": {},
+    "zones": {
+      "4136733": [
+        "ZONE1_FRONTPERIMETER",
+        "ZONE1_RIGHTPERIMETER",
+        "ZONE1_REARPERIMETER",
+        "ZONE1_LEFTPERIMETER",
+        "ZONE1_CORE",
+        "ZONE2_FRONTPERIMETER",
+        "ZONE2_RIGHTPERIMETER",
+        "ZONE2_REARPERIMETER",
+        "ZONE2_LEFTPERIMETER",
+        "ZONE2_CORE"
+      ]
+    },
+    "aggregation_needed": {
+      "4136733": true
+    },
+    "available_variables": "set()",
+    "available_frequencies": "set()",
+    "comparison_files": {
+      "var_cooling_energytransfer_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_cooling_energytransfer_na_monthly_b4136733.parquet",
+        "variable": "cooling_energytransfer_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_cooling_energytransfer_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_cooling_energytransfer_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "cooling_energytransfer_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_electricity_facility_na_daily_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_electricity_facility_na_daily_b4136733.parquet",
+        "variable": "electricity_facility_na",
+        "frequency": "daily",
+        "building_id": "4136733"
+      },
+      "var_electricity_facility_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_electricity_facility_na_monthly_b4136733.parquet",
+        "variable": "electricity_facility_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_electricity_facility_na_monthly_from_daily_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_electricity_facility_na_monthly_from_daily_b4136733.parquet",
+        "variable": "electricity_facility_na_monthly",
+        "frequency": "from_daily",
+        "building_id": "4136733"
+      },
+      "var_electricity_facility_na_yearly_from_daily_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_electricity_facility_na_yearly_from_daily_b4136733.parquet",
+        "variable": "electricity_facility_na_yearly",
+        "frequency": "from_daily",
+        "building_id": "4136733"
+      },
+      "var_electricity_facility_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_electricity_facility_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "electricity_facility_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_heating_energytransfer_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_heating_energytransfer_na_monthly_b4136733.parquet",
+        "variable": "heating_energytransfer_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_heating_energytransfer_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_heating_energytransfer_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "heating_energytransfer_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_site_diffuse_solar_radiation_rate_per_area_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_site_diffuse_solar_radiation_rate_per_area_na_monthly_b4136733.parquet",
+        "variable": "site_diffuse_solar_radiation_rate_per_area_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_site_diffuse_solar_radiation_rate_per_area_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_site_diffuse_solar_radiation_rate_per_area_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "site_diffuse_solar_radiation_rate_per_area_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_site_outdoor_air_drybulb_temperature_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_site_outdoor_air_drybulb_temperature_na_monthly_b4136733.parquet",
+        "variable": "site_outdoor_air_drybulb_temperature_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_site_outdoor_air_drybulb_temperature_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_site_outdoor_air_drybulb_temperature_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "site_outdoor_air_drybulb_temperature_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_site_outdoor_air_relative_humidity_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_site_outdoor_air_relative_humidity_na_monthly_b4136733.parquet",
+        "variable": "site_outdoor_air_relative_humidity_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_site_outdoor_air_relative_humidity_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_site_outdoor_air_relative_humidity_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "site_outdoor_air_relative_humidity_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_surface_inside_face_conduction_heat_transfer_rate_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_surface_inside_face_conduction_heat_transfer_rate_na_monthly_b4136733.parquet",
+        "variable": "surface_inside_face_conduction_heat_transfer_rate_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_surface_inside_face_conduction_heat_transfer_rate_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_surface_inside_face_conduction_heat_transfer_rate_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "surface_inside_face_conduction_heat_transfer_rate_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_surface_inside_face_temperature_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_surface_inside_face_temperature_na_monthly_b4136733.parquet",
+        "variable": "surface_inside_face_temperature_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_surface_inside_face_temperature_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_surface_inside_face_temperature_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "surface_inside_face_temperature_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_surface_outside_face_temperature_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_surface_outside_face_temperature_na_monthly_b4136733.parquet",
+        "variable": "surface_outside_face_temperature_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_surface_outside_face_temperature_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_surface_outside_face_temperature_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "surface_outside_face_temperature_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_surface_shading_device_is_on_time_fraction_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_surface_shading_device_is_on_time_fraction_na_monthly_b4136733.parquet",
+        "variable": "surface_shading_device_is_on_time_fraction_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_surface_shading_device_is_on_time_fraction_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_surface_shading_device_is_on_time_fraction_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "surface_shading_device_is_on_time_fraction_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_surface_window_blind_slat_angle_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_surface_window_blind_slat_angle_na_monthly_b4136733.parquet",
+        "variable": "surface_window_blind_slat_angle_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_surface_window_blind_slat_angle_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_surface_window_blind_slat_angle_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "surface_window_blind_slat_angle_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_surface_window_heat_gain_rate_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_surface_window_heat_gain_rate_na_monthly_b4136733.parquet",
+        "variable": "surface_window_heat_gain_rate_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_surface_window_heat_gain_rate_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_surface_window_heat_gain_rate_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "surface_window_heat_gain_rate_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_surface_window_heat_loss_rate_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_surface_window_heat_loss_rate_na_monthly_b4136733.parquet",
+        "variable": "surface_window_heat_loss_rate_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_surface_window_heat_loss_rate_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_surface_window_heat_loss_rate_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "surface_window_heat_loss_rate_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_surface_window_transmitted_beam_solar_radiation_rate_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_surface_window_transmitted_beam_solar_radiation_rate_na_monthly_b4136733.parquet",
+        "variable": "surface_window_transmitted_beam_solar_radiation_rate_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_surface_window_transmitted_beam_solar_radiation_rate_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_surface_window_transmitted_beam_solar_radiation_rate_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "surface_window_transmitted_beam_solar_radiation_rate_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_surface_window_transmitted_diffuse_solar_radiation_rate_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_surface_window_transmitted_diffuse_solar_radiation_rate_na_monthly_b4136733.parquet",
+        "variable": "surface_window_transmitted_diffuse_solar_radiation_rate_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_surface_window_transmitted_diffuse_solar_radiation_rate_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_surface_window_transmitted_diffuse_solar_radiation_rate_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "surface_window_transmitted_diffuse_solar_radiation_rate_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_surface_window_transmitted_solar_radiation_rate_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_surface_window_transmitted_solar_radiation_rate_na_monthly_b4136733.parquet",
+        "variable": "surface_window_transmitted_solar_radiation_rate_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_surface_window_transmitted_solar_radiation_rate_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_surface_window_transmitted_solar_radiation_rate_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "surface_window_transmitted_solar_radiation_rate_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_water_heater_heating_energy_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_water_heater_heating_energy_na_monthly_b4136733.parquet",
+        "variable": "water_heater_heating_energy_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_water_heater_heating_energy_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_water_heater_heating_energy_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "water_heater_heating_energy_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_air_system_sensible_cooling_energy_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_air_system_sensible_cooling_energy_na_monthly_b4136733.parquet",
+        "variable": "zone_air_system_sensible_cooling_energy_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_air_system_sensible_cooling_energy_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_air_system_sensible_cooling_energy_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "zone_air_system_sensible_cooling_energy_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_air_system_sensible_cooling_rate_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_air_system_sensible_cooling_rate_na_monthly_b4136733.parquet",
+        "variable": "zone_air_system_sensible_cooling_rate_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_air_system_sensible_cooling_rate_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_air_system_sensible_cooling_rate_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "zone_air_system_sensible_cooling_rate_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_air_system_sensible_heating_energy_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_air_system_sensible_heating_energy_na_monthly_b4136733.parquet",
+        "variable": "zone_air_system_sensible_heating_energy_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_air_system_sensible_heating_energy_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_air_system_sensible_heating_energy_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "zone_air_system_sensible_heating_energy_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_air_system_sensible_heating_rate_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_air_system_sensible_heating_rate_na_monthly_b4136733.parquet",
+        "variable": "zone_air_system_sensible_heating_rate_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_air_system_sensible_heating_rate_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_air_system_sensible_heating_rate_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "zone_air_system_sensible_heating_rate_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_infiltration_latent_heat_gain_energy_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_infiltration_latent_heat_gain_energy_na_monthly_b4136733.parquet",
+        "variable": "zone_infiltration_latent_heat_gain_energy_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_infiltration_latent_heat_gain_energy_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_infiltration_latent_heat_gain_energy_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "zone_infiltration_latent_heat_gain_energy_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_infiltration_latent_heat_loss_energy_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_infiltration_latent_heat_loss_energy_na_monthly_b4136733.parquet",
+        "variable": "zone_infiltration_latent_heat_loss_energy_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_infiltration_latent_heat_loss_energy_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_infiltration_latent_heat_loss_energy_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "zone_infiltration_latent_heat_loss_energy_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_infiltration_sensible_heat_gain_energy_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_infiltration_sensible_heat_gain_energy_na_monthly_b4136733.parquet",
+        "variable": "zone_infiltration_sensible_heat_gain_energy_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_infiltration_sensible_heat_gain_energy_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_infiltration_sensible_heat_gain_energy_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "zone_infiltration_sensible_heat_gain_energy_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_infiltration_sensible_heat_loss_energy_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_infiltration_sensible_heat_loss_energy_na_monthly_b4136733.parquet",
+        "variable": "zone_infiltration_sensible_heat_loss_energy_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_infiltration_sensible_heat_loss_energy_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_infiltration_sensible_heat_loss_energy_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "zone_infiltration_sensible_heat_loss_energy_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_mean_air_temperature_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_mean_air_temperature_na_monthly_b4136733.parquet",
+        "variable": "zone_mean_air_temperature_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_mean_air_temperature_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_mean_air_temperature_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "zone_mean_air_temperature_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_mean_radiant_temperature_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_mean_radiant_temperature_na_monthly_b4136733.parquet",
+        "variable": "zone_mean_radiant_temperature_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_mean_radiant_temperature_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_mean_radiant_temperature_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "zone_mean_radiant_temperature_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_mechanical_ventilation_mass_flow_rate_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_mechanical_ventilation_mass_flow_rate_na_monthly_b4136733.parquet",
+        "variable": "zone_mechanical_ventilation_mass_flow_rate_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_mechanical_ventilation_mass_flow_rate_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_mechanical_ventilation_mass_flow_rate_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "zone_mechanical_ventilation_mass_flow_rate_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_windows_total_transmitted_solar_radiation_rate_na_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_windows_total_transmitted_solar_radiation_rate_na_monthly_b4136733.parquet",
+        "variable": "zone_windows_total_transmitted_solar_radiation_rate_na",
+        "frequency": "monthly",
+        "building_id": "4136733"
+      },
+      "var_zone_windows_total_transmitted_solar_radiation_rate_na_yearly_from_monthly_b4136733": {
+        "file": "/mnt/d/Documents/daily/E_Plus_2040_py/output/530c3730-4459-4e51-bcc0-7a2c09d1802a/parsed_modified_results/comparisons/var_zone_windows_total_transmitted_solar_radiation_rate_na_yearly_from_monthly_b4136733.parquet",
+        "variable": "zone_windows_total_transmitted_solar_radiation_rate_na_yearly",
+        "frequency": "from_monthly",
+        "building_id": "4136733"
+      }
+    }
+  },
+  "mappings": [
+    {
+      "real_variable": "Zone Air System Sensible Cooling Energy",
+      "sim_variable": "Zone Air System Sensible Cooling Energy",
+      "confidence": 1.0,
+      "match_type": "exact"
+    },
+    {
+      "real_variable": "Zone Air System Sensible Heating Energy",
+      "sim_variable": "Zone Air System Sensible Heating Energy",
+      "confidence": 1.0,
+      "match_type": "exact"
+    },
+    {
+      "real_variable": "Electricity:Facility [J](Hourly)",
+      "sim_variable": "Electricity:Facility",
+      "confidence": 0.6444444444444444,
+      "match_type": "semantic"
+    }
+  ],
+  "validation_results": [],
+  "alignment_details": [],
+  "summary": {
+    "status": "No validation results"
+  },
+  "recommendations": [
+    "Consider standardizing variable names: 1 variables have low confidence mappings"
+  ]
+}

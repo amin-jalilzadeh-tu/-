@@ -449,6 +449,15 @@ class SensitivityDataManager:
         
         return pd.DataFrame()
     
+    def load_metadata(self) -> pd.DataFrame:
+        """Load building metadata - public method"""
+        return self.building_metadata
+    
+    @property
+    def metadata(self) -> pd.DataFrame:
+        """Property for backward compatibility"""
+        return self.building_metadata
+    
     def get_building_info(self, building_id: Union[str, int]) -> Dict[str, Any]:
         """Get metadata for a specific building"""
         if self.building_metadata.empty:

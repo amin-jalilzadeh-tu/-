@@ -40,13 +40,15 @@ class ValidationConfig:
         # Extract main settings
         self.variables_to_validate = config.get('variables_to_validate', [])
         self.aggregation = config.get('aggregation', {})
-        self.target_frequency = self.aggregation.get('target_frequency', 'daily')
+        # Allow target_frequency at top level or in aggregation section
+        self.target_frequency = config.get('target_frequency', self.aggregation.get('target_frequency', 'daily'))
         self.frequency_mapping = self.aggregation.get('frequency_mapping', {})
         self.aggregation_methods = self.aggregation.get('methods', {
             'energy': 'sum',
             'temperature': 'mean',
             'power': 'mean'
         })
+        self.year_agnostic_matching = config.get('year_agnostic_matching', False)
         
         # Thresholds
         self.thresholds = config.get('thresholds', {})
@@ -330,21 +332,38 @@ class SmartValidationWrapper:
                 logger.info(f"\n  Found {len(comparison_files)} comparison files")
                 discovery['comparison_files'] = {}
                 
-                for comp_file in comparison_files[:5]:  # Show first 5
+                for comp_file in comparison_files:  # Process ALL files, not just first 5
                     # Parse filename: var_{variable}_{unit}_{frequency}_b{building_id}.parquet
                     parts = comp_file.stem.split('_')
                     if len(parts) >= 5:
-                        variable = '_'.join(parts[1:-3])  # Handle multi-word variables
-                        frequency = parts[-2]
-                        building_id = parts[-1][1:]  # Remove 'b' prefix
+                        # Find where 'b' prefix starts to identify building_id
+                        building_idx = -1
+                        for i, part in enumerate(parts):
+                            if part.startswith('b') and part[1:].isdigit():
+                                building_idx = i
+                                break
                         
-                        discovery['comparison_files'][comp_file.stem] = {
-                            'file': str(comp_file),
-                            'variable': variable,
-                            'frequency': frequency,
-                            'building_id': building_id
-                        }
-                        logger.debug(f"    - {comp_file.name}: {variable} ({frequency})")
+                        if building_idx > 0:
+                            # Extract frequency (the part before building_id)
+                            frequency = parts[building_idx - 1]
+                            # Handle frequency variants like "monthly_from_daily"
+                            if building_idx - 2 >= 0 and parts[building_idx - 2] in ['from', 'yearly', 'monthly', 'daily', 'hourly']:
+                                frequency = '_'.join(parts[building_idx - 2:building_idx])
+                            
+                            # Extract variable name (everything between 'var' and frequency)
+                            variable = '_'.join(parts[1:building_idx - 1])
+                            if frequency.startswith('from_'):
+                                variable = '_'.join(parts[1:building_idx - 2])
+                            
+                            building_id = parts[building_idx][1:]  # Remove 'b' prefix
+                            
+                            discovery['comparison_files'][comp_file.stem] = {
+                                'file': str(comp_file),
+                                'variable': variable,
+                                'frequency': frequency,
+                                'building_id': building_id
+                            }
+                            logger.debug(f"    - {comp_file.name}: {variable} ({frequency})")
                 
                 if len(comparison_files) > 5:
                     logger.info(f"    ... and {len(comparison_files) - 5} more")
@@ -517,12 +536,12 @@ class SmartValidationWrapper:
         # Keep only metadata columns that exist in the dataframe
         id_vars = [col for col in metadata_cols if col in df.columns]
         
-        # Find date columns (format: YYYY-MM-DD or similar)
+        # Find date columns (format: YYYY-MM-DD or YYYY-MM)
         date_cols = []
         for col in df.columns:
             if col not in metadata_cols:
-                # Check if column name looks like a date
-                if re.match(r'\d{4}-\d{2}-\d{2}', str(col)):
+                # Check if column name looks like a date (daily or monthly format)
+                if re.match(r'^\d{4}-\d{2}(?:-\d{2})?$', str(col)):
                     date_cols.append(col)
         
         if not date_cols:
@@ -580,67 +599,97 @@ class SmartValidationWrapper:
             freq_priority = [target_freq, 'daily', 'monthly']
         
         # Track what frequency we actually loaded
-        loaded_frequency = None
+        loaded_frequencies = {}
         
-        for preferred_freq in freq_priority:
-            if comparison_data:  # Already loaded data
-                break
-                
-            for file_info in discovery['comparison_files'].values():
-                if file_info['frequency'] == preferred_freq:
-                    try:
-                        df = pd.read_parquet(file_info['file'])
-                        
-                        # Check if the requested value column exists
-                        if value_column not in df.columns:
-                            logger.debug(f"    Column {value_column} not found in {file_info['file']}")
-                            continue
-                        
-                        # Detect actual frequency from the data
-                        actual_freq = self._detect_frequency(df, file_info['file'])
-                        
-                        # Transform comparison file to standard format
-                        # Use variable_name from the dataframe if it exists, as it has the correct format
-                        if 'variable_name' in df.columns and not df['variable_name'].empty:
-                            variable_col = df['variable_name']
-                        else:
-                            # Fallback to file_info variable, but try to reconstruct proper format
-                            var_from_file = file_info['variable']
-                            # Convert underscore format back to proper format
-                            if var_from_file == 'electricity_facility':
-                                variable_col = 'Electricity:Facility'
-                            elif var_from_file == 'heating_energytransfer':
-                                variable_col = 'Heating:EnergyTransfer'
-                            elif var_from_file == 'cooling_energytransfer':
-                                variable_col = 'Cooling:EnergyTransfer'
+        # Group files by variable to ensure we load all variables
+        files_by_var = {}
+        for file_name, file_info in discovery['comparison_files'].items():
+            var_name = file_info['variable']
+            if var_name not in files_by_var:
+                files_by_var[var_name] = []
+            files_by_var[var_name].append(file_info)
+        
+        # Load data for each variable
+        logger.debug(f"  Variables to load: {list(files_by_var.keys())}")
+        
+        for var_name, var_files in files_by_var.items():
+            var_loaded = False
+            logger.debug(f"  Attempting to load variable: {var_name}")
+            
+            for preferred_freq in freq_priority:
+                if var_loaded:
+                    break
+                    
+                for file_info in var_files:
+                    # Match frequency, including aggregated frequencies like "monthly_from_daily"
+                    if file_info['frequency'] == preferred_freq or file_info['frequency'].startswith(preferred_freq + '_'):
+                        try:
+                            df = pd.read_parquet(file_info['file'])
+                            
+                            # Check if the requested value column exists
+                            if value_column not in df.columns:
+                                logger.debug(f"    Column {value_column} not found in {file_info['file']}")
+                                continue
+                            
+                            # Detect actual frequency from the data
+                            actual_freq = self._detect_frequency(df, file_info['file'])
+                            
+                            # Transform comparison file to standard format
+                            # Use variable_name from the dataframe if it exists, as it has the correct format
+                            if 'variable_name' in df.columns and not df['variable_name'].empty:
+                                variable_col = df['variable_name']
                             else:
-                                variable_col = var_from_file
-                        
-                        sim_df = pd.DataFrame({
-                            'building_id': df['building_id'],
-                            'DateTime': df['timestamp'] if 'timestamp' in df.columns else df['DateTime'],
-                            'Variable': variable_col,
-                            'Value': df[value_column],
-                            'Units': df['Units'] if 'Units' in df.columns else 'unknown',
-                            'Zone': df['Zone'] if 'Zone' in df.columns else 'Building',
-                            '_source_frequency': actual_freq  # Store actual frequency for aggregation
-                        })
-                        
-                        # Add variant info if loading variant data
-                        if variant_id:
-                            sim_df['variant_id'] = variant_id
-                        
-                        comparison_data.append(sim_df)
-                        loaded_frequency = actual_freq
-                        logger.info(f"    Loaded {file_info['variable']} from comparison file ({value_column}, {actual_freq} data)")
-                    except Exception as e:
-                        logger.debug(f"    Error loading {file_info['file']}: {str(e)}")
+                                # Fallback to file_info variable, but try to reconstruct proper format
+                                var_from_file = file_info['variable']
+                                # Convert underscore format back to proper format
+                                if var_from_file == 'electricity_facility':
+                                    variable_col = 'Electricity:Facility'
+                                elif var_from_file == 'heating_energytransfer':
+                                    variable_col = 'Heating:EnergyTransfer'
+                                elif var_from_file == 'cooling_energytransfer':
+                                    variable_col = 'Cooling:EnergyTransfer'
+                                elif var_from_file == 'zone_air_system_sensible_heating_energy':
+                                    variable_col = 'Zone Air System Sensible Heating Energy'
+                                elif var_from_file == 'zone_air_system_sensible_cooling_energy':
+                                    variable_col = 'Zone Air System Sensible Cooling Energy'
+                                else:
+                                    # Convert underscores to spaces and title case
+                                    variable_col = var_from_file.replace('_', ' ').title()
+                            
+                            sim_df = pd.DataFrame({
+                                'building_id': df['building_id'],
+                                'DateTime': df['timestamp'] if 'timestamp' in df.columns else df['DateTime'],
+                                'Variable': variable_col,
+                                'Value': df[value_column],
+                                'Units': df['Units'] if 'Units' in df.columns else 'unknown',
+                                'Zone': df['Zone'] if 'Zone' in df.columns else 'Building',
+                                '_source_frequency': actual_freq  # Store actual frequency for aggregation
+                            })
+                            
+                            # Add variant info if loading variant data
+                            if variant_id:
+                                sim_df['variant_id'] = variant_id
+                            
+                            comparison_data.append(sim_df)
+                            loaded_frequencies[var_name] = actual_freq
+                            var_loaded = True
+                            logger.info(f"    Loaded {file_info['variable']} from comparison file ({value_column}, {actual_freq} data)")
+                            break  # Stop after loading this variable
+                        except Exception as e:
+                            logger.debug(f"    Error loading {file_info['file']}: {str(e)}")
         
         if comparison_data:
             combined_df = pd.concat(comparison_data, ignore_index=True)
             logger.info(f"  - Loaded {len(combined_df)} records from {len(comparison_data)} comparison files")
-            if loaded_frequency and loaded_frequency != target_freq:
-                logger.info(f"  - Loaded {loaded_frequency} frequency data (target was {target_freq})")
+            
+            # Log frequency information
+            if loaded_frequencies:
+                unique_freqs = set(loaded_frequencies.values())
+                if len(unique_freqs) == 1 and list(unique_freqs)[0] != target_freq:
+                    logger.info(f"  - Loaded {list(unique_freqs)[0]} frequency data (target was {target_freq})")
+                elif len(unique_freqs) > 1:
+                    logger.info(f"  - Loaded mixed frequencies: {', '.join(f'{var}: {freq}' for var, freq in loaded_frequencies.items())}")
+            
             return combined_df
         
         return pd.DataFrame()
@@ -1354,9 +1403,25 @@ class SmartValidationWrapper:
             building_real['Date'] = pd.to_datetime(building_real['DateTime']).dt.date
             building_sim['Date'] = pd.to_datetime(building_sim['DateTime']).dt.date
             
+            # Check if year-agnostic matching is enabled
+            year_agnostic = self.config.year_agnostic_matching
+            
+            if year_agnostic:
+                # Create month-day keys for matching, ignoring year
+                building_real['MatchKey'] = pd.to_datetime(building_real['DateTime']).dt.strftime('%m-%d')
+                building_sim['MatchKey'] = pd.to_datetime(building_sim['DateTime']).dt.strftime('%m-%d')
+                merge_on = ['building_id', 'MatchKey']
+            else:
+                merge_on = ['building_id', 'Date']
+            
             # Check if Units column exists in each dataframe
             real_cols = ['building_id', 'Date', 'Value']
             sim_cols = ['building_id', 'Date', 'Value']
+            
+            if year_agnostic:
+                real_cols.append('MatchKey')
+                sim_cols.append('MatchKey')
+            
             real_rename = {'Value': 'Real_Value'}
             sim_rename = {'Value': 'Sim_Value'}
 
@@ -1371,7 +1436,7 @@ class SmartValidationWrapper:
             merged = pd.merge(
                 building_real[real_cols].rename(columns=real_rename),
                 building_sim[sim_cols].rename(columns=sim_rename),
-                on=['building_id', 'Date'],
+                on=merge_on,
                 how='inner'
             )
             
@@ -2022,9 +2087,25 @@ def run_smart_validation(parsed_data_path: str, real_data_path: str,
         output_path = Path(output_path)
         output_path.mkdir(parents=True, exist_ok=True)
         
-        # Save validation results
+        # Collect all validation results (handles both standard and variant validation)
+        all_validation_results = []
+        
+        # Check for standard validation results
         if results.get('validation_results'):
-            val_df = pd.DataFrame(results['validation_results'])
+            all_validation_results.extend(results['validation_results'])
+        
+        # Check for variant validation results
+        if results.get('base_results', {}).get('validation_results'):
+            all_validation_results.extend(results['base_results']['validation_results'])
+        
+        if results.get('variant_results'):
+            for variant_id, variant_data in results['variant_results'].items():
+                if variant_data.get('validation_results'):
+                    all_validation_results.extend(variant_data['validation_results'])
+        
+        # Save all validation results
+        if all_validation_results:
+            val_df = pd.DataFrame(all_validation_results)
             val_df.to_csv(output_path / 'validation_results.csv', index=False)
             val_df.to_parquet(output_path / 'validation_results.parquet', index=False)
         

@@ -1,0 +1,4 @@
+real_variable,sim_variable,confidence,match_type
+Cooling Energy Usage,Zone Air System Sensible Cooling Energy,0.21587301587301586,semantic
+Heating Energy Usage,Water Heater Heating Energy,0.28444444444444444,semantic
+Total Electricity Consumption,Electricity:Facility,0.17222222222222222,semantic

@@ -301,3 +301,20 @@ class TimeSlicer:
                             errors.append("End hour must be between 0 and 23")
         
         return len(errors) == 0, errors
+    
+    def apply_time_slice(self, 
+                        df: pd.DataFrame,
+                        config: Dict[str, any],
+                        datetime_col: str = 'DateTime') -> pd.DataFrame:
+        """
+        Apply time slicing to a DataFrame (alias for slice_data for compatibility)
+        
+        Args:
+            df: DataFrame with datetime column
+            config: Time slicing configuration
+            datetime_col: Name of datetime column
+            
+        Returns:
+            Filtered DataFrame
+        """
+        return self.slice_data(df, config, datetime_col)

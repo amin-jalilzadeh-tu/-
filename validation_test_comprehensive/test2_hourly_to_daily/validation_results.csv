@@ -1,0 +1,2 @@
+building_id,real_variable,sim_variable,mapping_confidence,mapping_type,data_points,cvrmse,nmbe,mbe,cvrmse_threshold,nmbe_threshold,pass_cvrmse,pass_nmbe,unit_conversion,zone_aggregation,issues
+4136733,Electricity:Facility [J](Hourly),Electricity:Facility,0.6444444444444444,semantic,30,99.9732350627129,-99.93696990578246,-99.93696990578246,30.0,10.0,False,False,,,[]

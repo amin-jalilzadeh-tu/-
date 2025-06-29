@@ -1,0 +1,1473 @@
+building_id,DateTime,Variable,Value,Units
+4136733,2013-01-01,Electricity:Facility [J](Daily),13459269.915704362,J
+4136733,2013-01-01,Water Heater Heating Energy,39552452.94851269,J
+4136733,2013-01-01,Zone Air System Sensible Cooling Energy,1988641.069663243,J
+4136733,2013-01-01,Zone Air System Sensible Heating Energy,23524508.772298675,J
+4136733,2013-01-01,Zone Mean Air Temperature,15.8728151771876,C
+4136733,2013-01-02,Electricity:Facility [J](Daily),13737955.061465364,J
+4136733,2013-01-02,Zone Air System Sensible Cooling Energy,2658803.491235915,J
+4136733,2013-01-02,Zone Air System Sensible Heating Energy,30043004.692185987,J
+4136733,2013-01-02,Zone Mean Air Temperature,19.65179716447906,C
+4136733,2013-01-03,Electricity:Facility [J](Daily),7397114.682557967,J
+4136733,2013-01-03,Zone Air System Sensible Cooling Energy,1392367.1888274655,J
+4136733,2013-01-03,Zone Air System Sensible Heating Energy,25917649.99209995,J
+4136733,2013-01-03,Zone Mean Air Temperature,19.074682443272255,C
+4136733,2013-01-04,Electricity:Facility [J](Daily),5351514.114603932,J
+4136733,2013-01-04,Zone Air System Sensible Cooling Energy,1310839.6604700447,J
+4136733,2013-01-04,Zone Air System Sensible Heating Energy,29934870.81841657,J
+4136733,2013-01-04,Zone Mean Air Temperature,13.591300024631085,C
+4136733,2013-01-05,Electricity:Facility [J](Daily),17152341.254785437,J
+4136733,2013-01-05,Zone Air System Sensible Cooling Energy,1021226.0300703523,J
+4136733,2013-01-05,Zone Air System Sensible Heating Energy,25610847.02050158,J
+4136733,2013-01-05,Zone Mean Air Temperature,19.21475023923423,C
+4136733,2013-01-06,Electricity:Facility [J](Daily),7159786.371505316,J
+4136733,2013-01-06,Zone Air System Sensible Cooling Energy,2428822.62065341,J
+4136733,2013-01-06,Zone Air System Sensible Heating Energy,30280088.554934014,J
+4136733,2013-01-06,Zone Mean Air Temperature,23.133147314038336,C
+4136733,2013-01-07,Electricity:Facility [J](Daily),8749359.156036897,J
+4136733,2013-01-07,Zone Air System Sensible Cooling Energy,1976914.7188589028,J
+4136733,2013-01-07,Zone Air System Sensible Heating Energy,24439083.546495553,J
+4136733,2013-01-07,Zone Mean Air Temperature,20.882238563471528,C
+4136733,2013-01-08,Electricity:Facility [J](Daily),12492182.861050399,J
+4136733,2013-01-08,Zone Air System Sensible Cooling Energy,1589360.1202420502,J
+4136733,2013-01-08,Zone Air System Sensible Heating Energy,7045072.516967238,J
+4136733,2013-01-08,Zone Mean Air Temperature,23.090022952839707,C
+4136733,2013-01-09,Electricity:Facility [J](Daily),13919032.392029133,J
+4136733,2013-01-09,Zone Air System Sensible Cooling Energy,1886712.5804579356,J
+4136733,2013-01-09,Zone Air System Sensible Heating Energy,16595552.639948003,J
+4136733,2013-01-09,Zone Mean Air Temperature,16.19088432768742,C
+4136733,2013-01-10,Electricity:Facility [J](Daily),8485225.625130873,J
+4136733,2013-01-10,Zone Air System Sensible Cooling Energy,577811.1243594483,J
+4136733,2013-01-10,Zone Air System Sensible Heating Energy,24225899.93775746,J
+4136733,2013-01-10,Zone Mean Air Temperature,17.589235715428202,C
+4136733,2013-01-11,Electricity:Facility [J](Daily),7745456.350541305,J
+4136733,2013-01-11,Zone Air System Sensible Cooling Energy,803838.9173542787,J
+4136733,2013-01-11,Zone Air System Sensible Heating Energy,10043728.963729016,J
+4136733,2013-01-11,Zone Mean Air Temperature,19.4703038302155,C
+4136733,2013-01-12,Electricity:Facility [J](Daily),12223095.00690717,J
+4136733,2013-01-12,Zone Air System Sensible Cooling Energy,1079948.5486257628,J
+4136733,2013-01-12,Zone Air System Sensible Heating Energy,27114004.204895724,J
+4136733,2013-01-12,Zone Mean Air Temperature,12.674480222772086,C
+4136733,2013-01-13,Electricity:Facility [J](Daily),7878108.468998025,J
+4136733,2013-01-13,Zone Air System Sensible Cooling Energy,4584763.916518559,J
+4136733,2013-01-13,Zone Air System Sensible Heating Energy,19554343.09448008,J
+4136733,2013-01-13,Zone Mean Air Temperature,12.45198124298746,C
+4136733,2013-01-14,Electricity:Facility [J](Daily),8176685.042763866,J
+4136733,2013-01-14,Zone Air System Sensible Cooling Energy,4104106.2967401557,J
+4136733,2013-01-14,Zone Air System Sensible Heating Energy,14079222.65088708,J
+4136733,2013-01-14,Zone Mean Air Temperature,18.160914200051273,C
+4136733,2013-01-15,Electricity:Facility [J](Daily),6421601.930541887,J
+4136733,2013-01-15,Zone Air System Sensible Cooling Energy,769631.7215474345,J
+4136733,2013-01-15,Zone Air System Sensible Heating Energy,13879782.270589741,J
+4136733,2013-01-15,Zone Mean Air Temperature,17.580109733691152,C
+4136733,2013-01-16,Electricity:Facility [J](Daily),5271658.507481615,J
+4136733,2013-01-16,Zone Air System Sensible Cooling Energy,4633027.120476694,J
+4136733,2013-01-16,Zone Air System Sensible Heating Energy,20476332.036908112,J
+4136733,2013-01-16,Zone Mean Air Temperature,13.047496145150058,C
+4136733,2013-01-17,Electricity:Facility [J](Daily),6285607.4637502,J
+4136733,2013-01-17,Zone Air System Sensible Cooling Energy,4150314.484867772,J
+4136733,2013-01-17,Zone Air System Sensible Heating Energy,13227214.472673101,J
+4136733,2013-01-17,Zone Mean Air Temperature,21.514332663092986,C
+4136733,2013-01-18,Electricity:Facility [J](Daily),9970933.96637016,J
+4136733,2013-01-18,Zone Air System Sensible Cooling Energy,3685923.5989438654,J
+4136733,2013-01-18,Zone Air System Sensible Heating Energy,23857984.24875041,J
+4136733,2013-01-18,Zone Mean Air Temperature,13.34615639328084,C
+4136733,2013-01-19,Electricity:Facility [J](Daily),12314827.906330803,J
+4136733,2013-01-19,Zone Air System Sensible Cooling Energy,990433.3950756984,J
+4136733,2013-01-19,Zone Air System Sensible Heating Energy,22629927.227363918,J
+4136733,2013-01-19,Zone Mean Air Temperature,11.732796073124716,C
+4136733,2013-01-20,Electricity:Facility [J](Daily),11212912.72469458,J
+4136733,2013-01-20,Zone Air System Sensible Cooling Energy,2168613.068421877,J
+4136733,2013-01-20,Zone Air System Sensible Heating Energy,29701162.306197472,J
+4136733,2013-01-20,Zone Mean Air Temperature,18.316058765112185,C
+4136733,2013-01-21,Electricity:Facility [J](Daily),13575628.17690076,J
+4136733,2013-01-21,Zone Air System Sensible Cooling Energy,3467507.3402609555,J
+4136733,2013-01-21,Zone Air System Sensible Heating Energy,16815181.630328536,J
+4136733,2013-01-21,Zone Mean Air Temperature,15.769493851567043,C
+4136733,2013-01-22,Electricity:Facility [J](Daily),13359084.974309193,J
+4136733,2013-01-22,Zone Air System Sensible Cooling Energy,3534935.3373845415,J
+4136733,2013-01-22,Zone Air System Sensible Heating Energy,44064593.937970914,J
+4136733,2013-01-22,Zone Mean Air Temperature,17.225981204778268,C
+4136733,2013-01-23,Electricity:Facility [J](Daily),11885020.027305318,J
+4136733,2013-01-23,Zone Air System Sensible Cooling Energy,4172489.8958732644,J
+4136733,2013-01-23,Zone Air System Sensible Heating Energy,13466387.77947666,J
+4136733,2013-01-23,Zone Mean Air Temperature,21.900684411646882,C
+4136733,2013-01-24,Electricity:Facility [J](Daily),10366845.59710469,J
+4136733,2013-01-24,Zone Air System Sensible Cooling Energy,5324963.8558222465,J
+4136733,2013-01-24,Zone Air System Sensible Heating Energy,14766438.937661989,J
+4136733,2013-01-24,Zone Mean Air Temperature,16.081025985642448,C
+4136733,2013-01-25,Electricity:Facility [J](Daily),16497223.11601969,J
+4136733,2013-01-25,Zone Air System Sensible Cooling Energy,4647626.350550158,J
+4136733,2013-01-25,Zone Air System Sensible Heating Energy,23711160.52398119,J
+4136733,2013-01-25,Zone Mean Air Temperature,18.752993799170223,C
+4136733,2013-01-26,Electricity:Facility [J](Daily),19609165.10378831,J
+4136733,2013-01-26,Zone Air System Sensible Cooling Energy,2229214.132500773,J
+4136733,2013-01-26,Zone Air System Sensible Heating Energy,12444177.782279193,J
+4136733,2013-01-26,Zone Mean Air Temperature,17.96653440069645,C
+4136733,2013-01-27,Electricity:Facility [J](Daily),11676611.195698211,J
+4136733,2013-01-27,Zone Air System Sensible Cooling Energy,5278555.350274142,J
+4136733,2013-01-27,Zone Air System Sensible Heating Energy,27731445.319677223,J
+4136733,2013-01-27,Zone Mean Air Temperature,16.671792355793862,C
+4136733,2013-01-28,Electricity:Facility [J](Daily),7760992.760692076,J
+4136733,2013-01-28,Zone Air System Sensible Cooling Energy,3007783.5956236613,J
+4136733,2013-01-28,Zone Air System Sensible Heating Energy,14871890.393999161,J
+4136733,2013-01-28,Zone Mean Air Temperature,21.742244373291744,C
+4136733,2013-01-29,Electricity:Facility [J](Daily),8075284.87105726,J
+4136733,2013-01-29,Zone Air System Sensible Cooling Energy,1289205.2697040762,J
+4136733,2013-01-29,Zone Air System Sensible Heating Energy,33060738.297086414,J
+4136733,2013-01-29,Zone Mean Air Temperature,19.835840371525528,C
+4136733,2013-01-30,Electricity:Facility [J](Daily),16113421.829677524,J
+4136733,2013-01-30,Zone Air System Sensible Cooling Energy,2886053.260139947,J
+4136733,2013-01-30,Zone Air System Sensible Heating Energy,10723096.5443339,J
+4136733,2013-01-30,Zone Mean Air Temperature,20.77198936956447,C
+4136733,2013-01-31,Electricity:Facility [J](Daily),9905339.80277996,J
+4136733,2013-01-31,Zone Air System Sensible Cooling Energy,6448919.001807544,J
+4136733,2013-01-31,Zone Air System Sensible Heating Energy,10662922.078198794,J
+4136733,2013-01-31,Zone Mean Air Temperature,16.15967503463279,C
+4136733,2013-02-01,Electricity:Facility [J](Daily),13019110.589635946,J
+4136733,2013-02-01,Water Heater Heating Energy,45712847.807821944,J
+4136733,2013-02-01,Zone Air System Sensible Cooling Energy,4620501.2884184485,J
+4136733,2013-02-01,Zone Air System Sensible Heating Energy,18385237.09431919,J
+4136733,2013-02-01,Zone Mean Air Temperature,16.442085963970996,C
+4136733,2013-02-02,Electricity:Facility [J](Daily),10054097.02165818,J
+4136733,2013-02-02,Zone Air System Sensible Cooling Energy,1219343.416245365,J
+4136733,2013-02-02,Zone Air System Sensible Heating Energy,31464369.30396994,J
+4136733,2013-02-02,Zone Mean Air Temperature,12.47550401841752,C
+4136733,2013-02-03,Electricity:Facility [J](Daily),13671911.362501012,J
+4136733,2013-02-03,Zone Air System Sensible Cooling Energy,3093331.6230925354,J
+4136733,2013-02-03,Zone Air System Sensible Heating Energy,20467253.829545606,J
+4136733,2013-02-03,Zone Mean Air Temperature,21.625368640129544,C
+4136733,2013-02-04,Electricity:Facility [J](Daily),12678611.530501017,J
+4136733,2013-02-04,Zone Air System Sensible Cooling Energy,6504128.349238449,J
+4136733,2013-02-04,Zone Air System Sensible Heating Energy,14244668.940875834,J
+4136733,2013-02-04,Zone Mean Air Temperature,18.916072696606445,C
+4136733,2013-02-05,Electricity:Facility [J](Daily),7706116.822817681,J
+4136733,2013-02-05,Zone Air System Sensible Cooling Energy,5322221.340894446,J
+4136733,2013-02-05,Zone Air System Sensible Heating Energy,11378125.643868316,J
+4136733,2013-02-05,Zone Mean Air Temperature,18.34899351933436,C
+4136733,2013-02-06,Electricity:Facility [J](Daily),16301206.391695404,J
+4136733,2013-02-06,Zone Air System Sensible Cooling Energy,413550.46698725515,J
+4136733,2013-02-06,Zone Air System Sensible Heating Energy,23494340.719423667,J
+4136733,2013-02-06,Zone Mean Air Temperature,19.28782405097922,C
+4136733,2013-02-07,Electricity:Facility [J](Daily),12510319.578890258,J
+4136733,2013-02-07,Zone Air System Sensible Cooling Energy,6529563.063741373,J
+4136733,2013-02-07,Zone Air System Sensible Heating Energy,16378280.545491468,J
+4136733,2013-02-07,Zone Mean Air Temperature,17.241558278646504,C
+4136733,2013-02-08,Electricity:Facility [J](Daily),14637090.478003666,J
+4136733,2013-02-08,Zone Air System Sensible Cooling Energy,4670485.780693495,J
+4136733,2013-02-08,Zone Air System Sensible Heating Energy,20666011.668637294,J
+4136733,2013-02-08,Zone Mean Air Temperature,21.71643721258369,C
+4136733,2013-02-09,Electricity:Facility [J](Daily),9721755.664188081,J
+4136733,2013-02-09,Zone Air System Sensible Cooling Energy,2177899.38891849,J
+4136733,2013-02-09,Zone Air System Sensible Heating Energy,20852391.289358452,J
+4136733,2013-02-09,Zone Mean Air Temperature,19.524897035769445,C
+4136733,2013-02-10,Electricity:Facility [J](Daily),17911704.250903208,J
+4136733,2013-02-10,Zone Air System Sensible Cooling Energy,1241454.275775077,J
+4136733,2013-02-10,Zone Air System Sensible Heating Energy,22366349.60716473,J
+4136733,2013-02-10,Zone Mean Air Temperature,20.58722628929613,C
+4136733,2013-02-11,Electricity:Facility [J](Daily),15194375.31054285,J
+4136733,2013-02-11,Zone Air System Sensible Cooling Energy,3114572.1466405047,J
+4136733,2013-02-11,Zone Air System Sensible Heating Energy,7231018.305700239,J
+4136733,2013-02-11,Zone Mean Air Temperature,18.5310254403161,C
+4136733,2013-02-12,Electricity:Facility [J](Daily),16828267.004290074,J
+4136733,2013-02-12,Zone Air System Sensible Cooling Energy,3818774.351600605,J
+4136733,2013-02-12,Zone Air System Sensible Heating Energy,9927070.94408243,J
+4136733,2013-02-12,Zone Mean Air Temperature,20.67891006673193,C
+4136733,2013-02-13,Electricity:Facility [J](Daily),8903793.162357263,J
+4136733,2013-02-13,Zone Air System Sensible Cooling Energy,3889289.1259466424,J
+4136733,2013-02-13,Zone Air System Sensible Heating Energy,7193304.090216372,J
+4136733,2013-02-13,Zone Mean Air Temperature,17.890285949882085,C
+4136733,2013-02-14,Electricity:Facility [J](Daily),14970734.508318864,J
+4136733,2013-02-14,Zone Air System Sensible Cooling Energy,7204008.95762144,J
+4136733,2013-02-14,Zone Air System Sensible Heating Energy,19322019.57725163,J
+4136733,2013-02-14,Zone Mean Air Temperature,21.987083358168828,C
+4136733,2013-02-15,Electricity:Facility [J](Daily),15015430.437698577,J
+4136733,2013-02-15,Zone Air System Sensible Cooling Energy,4607717.992013167,J
+4136733,2013-02-15,Zone Air System Sensible Heating Energy,25660701.146410502,J
+4136733,2013-02-15,Zone Mean Air Temperature,19.240481236988174,C
+4136733,2013-02-16,Electricity:Facility [J](Daily),13678602.771802567,J
+4136733,2013-02-16,Zone Air System Sensible Cooling Energy,5930446.800111919,J
+4136733,2013-02-16,Zone Air System Sensible Heating Energy,14256850.39717876,J
+4136733,2013-02-16,Zone Mean Air Temperature,20.9291153947898,C
+4136733,2013-02-17,Electricity:Facility [J](Daily),19793923.86408692,J
+4136733,2013-02-17,Zone Air System Sensible Cooling Energy,7336332.337753194,J
+4136733,2013-02-17,Zone Air System Sensible Heating Energy,4995203.332715488,J
+4136733,2013-02-17,Zone Mean Air Temperature,22.224344321932954,C
+4136733,2013-02-18,Electricity:Facility [J](Daily),13950597.762183258,J
+4136733,2013-02-18,Zone Air System Sensible Cooling Energy,5736210.855268859,J
+4136733,2013-02-18,Zone Air System Sensible Heating Energy,8495226.150635423,J
+4136733,2013-02-18,Zone Mean Air Temperature,18.767941655944476,C
+4136733,2013-02-19,Electricity:Facility [J](Daily),11979838.699072476,J
+4136733,2013-02-19,Zone Air System Sensible Cooling Energy,4923323.393320441,J
+4136733,2013-02-19,Zone Air System Sensible Heating Energy,19880347.02569864,J
+4136733,2013-02-19,Zone Mean Air Temperature,23.339216558874323,C
+4136733,2013-02-20,Electricity:Facility [J](Daily),9283079.565202633,J
+4136733,2013-02-20,Zone Air System Sensible Cooling Energy,3299129.0152365016,J
+4136733,2013-02-20,Zone Air System Sensible Heating Energy,24759766.179924924,J
+4136733,2013-02-20,Zone Mean Air Temperature,16.19995259344442,C
+4136733,2013-02-21,Electricity:Facility [J](Daily),16100016.92400646,J
+4136733,2013-02-21,Zone Air System Sensible Cooling Energy,6102329.046780693,J
+4136733,2013-02-21,Zone Air System Sensible Heating Energy,25600962.93101919,J
+4136733,2013-02-21,Zone Mean Air Temperature,20.08010499949805,C
+4136733,2013-02-22,Electricity:Facility [J](Daily),12564750.336525321,J
+4136733,2013-02-22,Zone Air System Sensible Cooling Energy,6581835.656095845,J
+4136733,2013-02-22,Zone Air System Sensible Heating Energy,32018848.324896496,J
+4136733,2013-02-22,Zone Mean Air Temperature,17.308572904745134,C
+4136733,2013-02-23,Electricity:Facility [J](Daily),14460345.62163082,J
+4136733,2013-02-23,Zone Air System Sensible Cooling Energy,10809890.907620562,J
+4136733,2013-02-23,Zone Air System Sensible Heating Energy,7726092.203609089,J
+4136733,2013-02-23,Zone Mean Air Temperature,20.51848701090177,C
+4136733,2013-02-24,Electricity:Facility [J](Daily),19765266.771402713,J
+4136733,2013-02-24,Zone Air System Sensible Cooling Energy,7852568.133574492,J
+4136733,2013-02-24,Zone Air System Sensible Heating Energy,19953247.794114765,J
+4136733,2013-02-24,Zone Mean Air Temperature,15.036060184123865,C
+4136733,2013-02-25,Electricity:Facility [J](Daily),16049539.266659822,J
+4136733,2013-02-25,Zone Air System Sensible Cooling Energy,4055607.957400362,J
+4136733,2013-02-25,Zone Air System Sensible Heating Energy,2904177.709205237,J
+4136733,2013-02-25,Zone Mean Air Temperature,21.419707690131418,C
+4136733,2013-02-26,Electricity:Facility [J](Daily),11864572.295828588,J
+4136733,2013-02-26,Zone Air System Sensible Cooling Energy,3942494.911791408,J
+4136733,2013-02-26,Zone Air System Sensible Heating Energy,13809767.359362725,J
+4136733,2013-02-26,Zone Mean Air Temperature,16.439026351691023,C
+4136733,2013-02-27,Electricity:Facility [J](Daily),10200074.627059884,J
+4136733,2013-02-27,Zone Air System Sensible Cooling Energy,3842285.372332508,J
+4136733,2013-02-27,Zone Air System Sensible Heating Energy,16213005.547186306,J
+4136733,2013-02-27,Zone Mean Air Temperature,25.36044063906864,C
+4136733,2013-02-28,Electricity:Facility [J](Daily),10371774.324803013,J
+4136733,2013-02-28,Zone Air System Sensible Cooling Energy,6048277.285416797,J
+4136733,2013-02-28,Zone Air System Sensible Heating Energy,20388388.876348846,J
+4136733,2013-02-28,Zone Mean Air Temperature,17.092903031564813,C
+4136733,2013-03-01,Electricity:Facility [J](Daily),4210535.7508962555,J
+4136733,2013-03-01,Water Heater Heating Energy,58645361.93005235,J
+4136733,2013-03-01,Zone Air System Sensible Cooling Energy,7823180.752091104,J
+4136733,2013-03-01,Zone Air System Sensible Heating Energy,16841591.7415485,J
+4136733,2013-03-01,Zone Mean Air Temperature,23.358352916375225,C
+4136733,2013-03-02,Electricity:Facility [J](Daily),23272790.559328955,J
+4136733,2013-03-02,Zone Air System Sensible Cooling Energy,1095881.227060484,J
+4136733,2013-03-02,Zone Air System Sensible Heating Energy,7769661.592259849,J
+4136733,2013-03-02,Zone Mean Air Temperature,28.316312170887763,C
+4136733,2013-03-03,Electricity:Facility [J](Daily),10684988.08083468,J
+4136733,2013-03-03,Zone Air System Sensible Cooling Energy,4972591.551770563,J
+4136733,2013-03-03,Zone Air System Sensible Heating Energy,10971357.77332426,J
+4136733,2013-03-03,Zone Mean Air Temperature,21.317548880011554,C
+4136733,2013-03-04,Electricity:Facility [J](Daily),12997426.090317782,J
+4136733,2013-03-04,Zone Air System Sensible Cooling Energy,4132816.7091995315,J
+4136733,2013-03-04,Zone Air System Sensible Heating Energy,13346628.335052667,J
+4136733,2013-03-04,Zone Mean Air Temperature,20.90670357867363,C
+4136733,2013-03-05,Electricity:Facility [J](Daily),13020589.61715034,J
+4136733,2013-03-05,Zone Air System Sensible Cooling Energy,5382480.817648743,J
+4136733,2013-03-05,Zone Air System Sensible Heating Energy,12366505.148373557,J
+4136733,2013-03-05,Zone Mean Air Temperature,21.15941794981582,C
+4136733,2013-03-06,Electricity:Facility [J](Daily),14180937.604065144,J
+4136733,2013-03-06,Zone Air System Sensible Cooling Energy,7078635.826060833,J
+4136733,2013-03-06,Zone Air System Sensible Heating Energy,12851534.86836614,J
+4136733,2013-03-06,Zone Mean Air Temperature,20.998696835737867,C
+4136733,2013-03-07,Electricity:Facility [J](Daily),14580238.482212674,J
+4136733,2013-03-07,Zone Air System Sensible Cooling Energy,9018230.625003276,J
+4136733,2013-03-07,Zone Air System Sensible Heating Energy,12868947.899112731,J
+4136733,2013-03-07,Zone Mean Air Temperature,17.513106279464555,C
+4136733,2013-03-08,Electricity:Facility [J](Daily),13738457.727830378,J
+4136733,2013-03-08,Zone Air System Sensible Cooling Energy,0.0,J
+4136733,2013-03-08,Zone Air System Sensible Heating Energy,7165891.528845409,J
+4136733,2013-03-08,Zone Mean Air Temperature,18.912008204291176,C
+4136733,2013-03-09,Electricity:Facility [J](Daily),11608816.086964088,J
+4136733,2013-03-09,Zone Air System Sensible Cooling Energy,7277312.872251893,J
+4136733,2013-03-09,Zone Air System Sensible Heating Energy,8631759.550922846,J
+4136733,2013-03-09,Zone Mean Air Temperature,20.25322623096526,C
+4136733,2013-03-10,Electricity:Facility [J](Daily),13229636.376876285,J
+4136733,2013-03-10,Zone Air System Sensible Cooling Energy,13999543.920896647,J
+4136733,2013-03-10,Zone Air System Sensible Heating Energy,20000343.904152144,J
+4136733,2013-03-10,Zone Mean Air Temperature,18.04852770450603,C
+4136733,2013-03-11,Electricity:Facility [J](Daily),16707670.60412478,J
+4136733,2013-03-11,Zone Air System Sensible Cooling Energy,2990238.8256319272,J
+4136733,2013-03-11,Zone Air System Sensible Heating Energy,11027779.431822816,J
+4136733,2013-03-11,Zone Mean Air Temperature,14.989598849442451,C
+4136733,2013-03-12,Electricity:Facility [J](Daily),14421290.139425611,J
+4136733,2013-03-12,Zone Air System Sensible Cooling Energy,7592152.757365468,J
+4136733,2013-03-12,Zone Air System Sensible Heating Energy,5961789.043745709,J
+4136733,2013-03-12,Zone Mean Air Temperature,17.272792676425958,C
+4136733,2013-03-13,Electricity:Facility [J](Daily),9989280.360674385,J
+4136733,2013-03-13,Zone Air System Sensible Cooling Energy,10851717.357163861,J
+4136733,2013-03-13,Zone Air System Sensible Heating Energy,17164131.38024203,J
+4136733,2013-03-13,Zone Mean Air Temperature,11.737132309264597,C
+4136733,2013-03-14,Electricity:Facility [J](Daily),15495521.859747864,J
+4136733,2013-03-14,Zone Air System Sensible Cooling Energy,7755068.6822273005,J
+4136733,2013-03-14,Zone Air System Sensible Heating Energy,13651547.056464493,J
+4136733,2013-03-14,Zone Mean Air Temperature,19.31411802421427,C
+4136733,2013-03-15,Electricity:Facility [J](Daily),14426952.603270479,J
+4136733,2013-03-15,Zone Air System Sensible Cooling Energy,11587564.938808927,J
+4136733,2013-03-15,Zone Air System Sensible Heating Energy,16967243.471617244,J
+4136733,2013-03-15,Zone Mean Air Temperature,18.03951177320696,C
+4136733,2013-03-16,Electricity:Facility [J](Daily),15879067.75499022,J
+4136733,2013-03-16,Zone Air System Sensible Cooling Energy,0.0,J
+4136733,2013-03-16,Zone Air System Sensible Heating Energy,9473037.518777562,J
+4136733,2013-03-16,Zone Mean Air Temperature,16.95626202943761,C
+4136733,2013-03-17,Electricity:Facility [J](Daily),9829940.118647944,J
+4136733,2013-03-17,Zone Air System Sensible Cooling Energy,15442677.952581847,J
+4136733,2013-03-17,Zone Air System Sensible Heating Energy,15342553.531948838,J
+4136733,2013-03-17,Zone Mean Air Temperature,22.830912337716683,C
+4136733,2013-03-18,Electricity:Facility [J](Daily),17961640.884455346,J
+4136733,2013-03-18,Zone Air System Sensible Cooling Energy,7375272.864474624,J
+4136733,2013-03-18,Zone Air System Sensible Heating Energy,717978.1787455523,J
+4136733,2013-03-18,Zone Mean Air Temperature,18.048722239092466,C
+4136733,2013-03-19,Electricity:Facility [J](Daily),20754809.95356908,J
+4136733,2013-03-19,Zone Air System Sensible Cooling Energy,1680964.542666925,J
+4136733,2013-03-19,Zone Air System Sensible Heating Energy,13371590.19875184,J
+4136733,2013-03-19,Zone Mean Air Temperature,19.908054670065358,C
+4136733,2013-03-20,Electricity:Facility [J](Daily),15474196.479707872,J
+4136733,2013-03-20,Zone Air System Sensible Cooling Energy,2756822.068167184,J
+4136733,2013-03-20,Zone Air System Sensible Heating Energy,23165278.269639507,J
+4136733,2013-03-20,Zone Mean Air Temperature,15.982573650745167,C
+4136733,2013-03-21,Electricity:Facility [J](Daily),23934099.39140447,J
+4136733,2013-03-21,Zone Air System Sensible Cooling Energy,2171016.7454186184,J
+4136733,2013-03-21,Zone Air System Sensible Heating Energy,15407182.742277121,J
+4136733,2013-03-21,Zone Mean Air Temperature,27.086048436807552,C
+4136733,2013-03-22,Electricity:Facility [J](Daily),14107387.241900219,J
+4136733,2013-03-22,Zone Air System Sensible Cooling Energy,6534683.131416114,J
+4136733,2013-03-22,Zone Air System Sensible Heating Energy,10669216.80080632,J
+4136733,2013-03-22,Zone Mean Air Temperature,22.078734530853996,C
+4136733,2013-03-23,Electricity:Facility [J](Daily),18077871.526043396,J
+4136733,2013-03-23,Zone Air System Sensible Cooling Energy,14607577.83556881,J
+4136733,2013-03-23,Zone Air System Sensible Heating Energy,11750096.211232135,J
+4136733,2013-03-23,Zone Mean Air Temperature,24.523106851989287,C
+4136733,2013-03-24,Electricity:Facility [J](Daily),12876663.121410057,J
+4136733,2013-03-24,Zone Air System Sensible Cooling Energy,8671284.594885834,J
+4136733,2013-03-24,Zone Air System Sensible Heating Energy,12147105.23657792,J
+4136733,2013-03-24,Zone Mean Air Temperature,23.092897627863774,C
+4136733,2013-03-25,Electricity:Facility [J](Daily),9670876.723824678,J
+4136733,2013-03-25,Zone Air System Sensible Cooling Energy,4582165.700504251,J
+4136733,2013-03-25,Zone Air System Sensible Heating Energy,13474818.577702438,J
+4136733,2013-03-25,Zone Mean Air Temperature,23.008875506604365,C
+4136733,2013-03-26,Electricity:Facility [J](Daily),8810438.076069662,J
+4136733,2013-03-26,Zone Air System Sensible Cooling Energy,6479201.0312572075,J
+4136733,2013-03-26,Zone Air System Sensible Heating Energy,20461583.62329982,J
+4136733,2013-03-26,Zone Mean Air Temperature,16.235477601372608,C
+4136733,2013-03-27,Electricity:Facility [J](Daily),15077090.208259232,J
+4136733,2013-03-27,Zone Air System Sensible Cooling Energy,8832773.393819764,J
+4136733,2013-03-27,Zone Air System Sensible Heating Energy,8649621.874314982,J
+4136733,2013-03-27,Zone Mean Air Temperature,17.79014178103264,C
+4136733,2013-03-28,Electricity:Facility [J](Daily),19694808.70374089,J
+4136733,2013-03-28,Zone Air System Sensible Cooling Energy,12509895.868927656,J
+4136733,2013-03-28,Zone Air System Sensible Heating Energy,3761579.46013972,J
+4136733,2013-03-28,Zone Mean Air Temperature,22.49092680213444,C
+4136733,2013-03-29,Electricity:Facility [J](Daily),11472889.258011201,J
+4136733,2013-03-29,Zone Air System Sensible Cooling Energy,12470105.992468856,J
+4136733,2013-03-29,Zone Air System Sensible Heating Energy,12731276.259033645,J
+4136733,2013-03-29,Zone Mean Air Temperature,19.860542750937945,C
+4136733,2013-03-30,Electricity:Facility [J](Daily),20869687.744929064,J
+4136733,2013-03-30,Zone Air System Sensible Cooling Energy,10850784.97445604,J
+4136733,2013-03-30,Zone Air System Sensible Heating Energy,13960295.871836562,J
+4136733,2013-03-30,Zone Mean Air Temperature,22.322664820989008,C
+4136733,2013-03-31,Electricity:Facility [J](Daily),24368125.934006017,J
+4136733,2013-03-31,Zone Air System Sensible Cooling Energy,6907729.603944838,J
+4136733,2013-03-31,Zone Air System Sensible Heating Energy,11131052.196864942,J
+4136733,2013-03-31,Zone Mean Air Temperature,22.29987575964029,C
+4136733,2013-04-01,Electricity:Facility [J](Daily),13150304.515846051,J
+4136733,2013-04-01,Water Heater Heating Energy,63506047.050077006,J
+4136733,2013-04-01,Zone Air System Sensible Cooling Energy,2816742.6518061715,J
+4136733,2013-04-01,Zone Air System Sensible Heating Energy,9025716.236587202,J
+4136733,2013-04-01,Zone Mean Air Temperature,17.264195918570664,C
+4136733,2013-04-02,Electricity:Facility [J](Daily),13018783.35796475,J
+4136733,2013-04-02,Zone Air System Sensible Cooling Energy,9785115.680987729,J
+4136733,2013-04-02,Zone Air System Sensible Heating Energy,5006518.252238417,J
+4136733,2013-04-02,Zone Mean Air Temperature,16.150654051088786,C
+4136733,2013-04-03,Electricity:Facility [J](Daily),12003543.108607229,J
+4136733,2013-04-03,Zone Air System Sensible Cooling Energy,14199247.770369144,J
+4136733,2013-04-03,Zone Air System Sensible Heating Energy,3864919.959232847,J
+4136733,2013-04-03,Zone Mean Air Temperature,23.32682780236456,C
+4136733,2013-04-04,Electricity:Facility [J](Daily),11978277.641714245,J
+4136733,2013-04-04,Zone Air System Sensible Cooling Energy,3674084.620185106,J
+4136733,2013-04-04,Zone Air System Sensible Heating Energy,7631120.513886675,J
+4136733,2013-04-04,Zone Mean Air Temperature,28.128222787094828,C
+4136733,2013-04-05,Electricity:Facility [J](Daily),6986360.866399494,J
+4136733,2013-04-05,Zone Air System Sensible Cooling Energy,17190157.449834894,J
+4136733,2013-04-05,Zone Air System Sensible Heating Energy,8805663.604051782,J
+4136733,2013-04-05,Zone Mean Air Temperature,20.558412407326355,C
+4136733,2013-04-06,Electricity:Facility [J](Daily),7106090.909076297,J
+4136733,2013-04-06,Zone Air System Sensible Cooling Energy,7854007.249987878,J
+4136733,2013-04-06,Zone Air System Sensible Heating Energy,11008613.260836951,J
+4136733,2013-04-06,Zone Mean Air Temperature,26.27318868511619,C
+4136733,2013-04-07,Electricity:Facility [J](Daily),17729837.958144683,J
+4136733,2013-04-07,Zone Air System Sensible Cooling Energy,11582582.328144874,J
+4136733,2013-04-07,Zone Air System Sensible Heating Energy,6905481.668420903,J
+4136733,2013-04-07,Zone Mean Air Temperature,20.836660619262425,C
+4136733,2013-04-08,Electricity:Facility [J](Daily),21709773.703352835,J
+4136733,2013-04-08,Zone Air System Sensible Cooling Energy,11780652.878471555,J
+4136733,2013-04-08,Zone Air System Sensible Heating Energy,6842194.69082381,J
+4136733,2013-04-08,Zone Mean Air Temperature,21.591326937038243,C
+4136733,2013-04-09,Electricity:Facility [J](Daily),12878155.85394202,J
+4136733,2013-04-09,Zone Air System Sensible Cooling Energy,7081922.308269909,J
+4136733,2013-04-09,Zone Air System Sensible Heating Energy,11359063.61277975,J
+4136733,2013-04-09,Zone Mean Air Temperature,19.499034167757806,C
+4136733,2013-04-10,Electricity:Facility [J](Daily),15596821.1004756,J
+4136733,2013-04-10,Zone Air System Sensible Cooling Energy,14224279.516731171,J
+4136733,2013-04-10,Zone Air System Sensible Heating Energy,10678617.39446028,J
+4136733,2013-04-10,Zone Mean Air Temperature,27.822693035661395,C
+4136733,2013-04-11,Electricity:Facility [J](Daily),18768389.79910704,J
+4136733,2013-04-11,Zone Air System Sensible Cooling Energy,7954409.08667684,J
+4136733,2013-04-11,Zone Air System Sensible Heating Energy,5776146.023459877,J
+4136733,2013-04-11,Zone Mean Air Temperature,23.78186277512552,C
+4136733,2013-04-12,Electricity:Facility [J](Daily),20588257.938383244,J
+4136733,2013-04-12,Zone Air System Sensible Cooling Energy,19164053.48609716,J
+4136733,2013-04-12,Zone Air System Sensible Heating Energy,6982049.724522773,J
+4136733,2013-04-12,Zone Mean Air Temperature,25.409288604203283,C
+4136733,2013-04-13,Electricity:Facility [J](Daily),11403825.120794954,J
+4136733,2013-04-13,Zone Air System Sensible Cooling Energy,19751057.316963114,J
+4136733,2013-04-13,Zone Air System Sensible Heating Energy,12819272.228881208,J
+4136733,2013-04-13,Zone Mean Air Temperature,21.849600322608207,C
+4136733,2013-04-14,Electricity:Facility [J](Daily),17319505.9186555,J
+4136733,2013-04-14,Zone Air System Sensible Cooling Energy,8761564.075529214,J
+4136733,2013-04-14,Zone Air System Sensible Heating Energy,6451197.267123426,J
+4136733,2013-04-14,Zone Mean Air Temperature,20.854581883022377,C
+4136733,2013-04-15,Electricity:Facility [J](Daily),21058741.36307876,J
+4136733,2013-04-15,Zone Air System Sensible Cooling Energy,17373080.39680046,J
+4136733,2013-04-15,Zone Air System Sensible Heating Energy,4044174.0369516476,J
+4136733,2013-04-15,Zone Mean Air Temperature,22.51114494593981,C
+4136733,2013-04-16,Electricity:Facility [J](Daily),27567148.38159404,J
+4136733,2013-04-16,Zone Air System Sensible Cooling Energy,6126450.3745251335,J
+4136733,2013-04-16,Zone Air System Sensible Heating Energy,9441727.775667895,J
+4136733,2013-04-16,Zone Mean Air Temperature,22.25167172430941,C
+4136733,2013-04-17,Electricity:Facility [J](Daily),9491136.01238104,J
+4136733,2013-04-17,Zone Air System Sensible Cooling Energy,11329130.391823426,J
+4136733,2013-04-17,Zone Air System Sensible Heating Energy,4237414.9011223335,J
+4136733,2013-04-17,Zone Mean Air Temperature,19.490074380523726,C
+4136733,2013-04-18,Electricity:Facility [J](Daily),18192951.643913526,J
+4136733,2013-04-18,Zone Air System Sensible Cooling Energy,12084523.431106722,J
+4136733,2013-04-18,Zone Air System Sensible Heating Energy,11455118.35125227,J
+4136733,2013-04-18,Zone Mean Air Temperature,23.922798830184192,C
+4136733,2013-04-19,Electricity:Facility [J](Daily),17526236.497827902,J
+4136733,2013-04-19,Zone Air System Sensible Cooling Energy,20261314.814188685,J
+4136733,2013-04-19,Zone Air System Sensible Heating Energy,6839267.002580138,J
+4136733,2013-04-19,Zone Mean Air Temperature,24.576342808245666,C
+4136733,2013-04-20,Electricity:Facility [J](Daily),16182949.071031144,J
+4136733,2013-04-20,Zone Air System Sensible Cooling Energy,10730313.933739224,J
+4136733,2013-04-20,Zone Air System Sensible Heating Energy,8572994.288548226,J
+4136733,2013-04-20,Zone Mean Air Temperature,14.258335173898438,C
+4136733,2013-04-21,Electricity:Facility [J](Daily),18474808.088775612,J
+4136733,2013-04-21,Zone Air System Sensible Cooling Energy,16317687.373805827,J
+4136733,2013-04-21,Zone Air System Sensible Heating Energy,11619380.610254835,J
+4136733,2013-04-21,Zone Mean Air Temperature,25.251152047738334,C
+4136733,2013-04-22,Electricity:Facility [J](Daily),4341527.68734977,J
+4136733,2013-04-22,Zone Air System Sensible Cooling Energy,21081236.93112803,J
+4136733,2013-04-22,Zone Air System Sensible Heating Energy,3578869.3242754317,J
+4136733,2013-04-22,Zone Mean Air Temperature,24.075074085860447,C
+4136733,2013-04-23,Electricity:Facility [J](Daily),19560385.826883134,J
+4136733,2013-04-23,Zone Air System Sensible Cooling Energy,1572397.5023419375,J
+4136733,2013-04-23,Zone Air System Sensible Heating Energy,4935844.722609664,J
+4136733,2013-04-23,Zone Mean Air Temperature,27.32386074362389,C
+4136733,2013-04-24,Electricity:Facility [J](Daily),18514596.30653777,J
+4136733,2013-04-24,Zone Air System Sensible Cooling Energy,12685575.347178968,J
+4136733,2013-04-24,Zone Air System Sensible Heating Energy,5068076.661792657,J
+4136733,2013-04-24,Zone Mean Air Temperature,23.22873757308594,C
+4136733,2013-04-25,Electricity:Facility [J](Daily),22329409.694658455,J
+4136733,2013-04-25,Zone Air System Sensible Cooling Energy,20574070.356328916,J
+4136733,2013-04-25,Zone Air System Sensible Heating Energy,8854496.995572237,J
+4136733,2013-04-25,Zone Mean Air Temperature,21.933840307210343,C
+4136733,2013-04-26,Electricity:Facility [J](Daily),19423682.92278878,J
+4136733,2013-04-26,Zone Air System Sensible Cooling Energy,6065631.634531437,J
+4136733,2013-04-26,Zone Air System Sensible Heating Energy,3140387.7228590334,J
+4136733,2013-04-26,Zone Mean Air Temperature,25.73466714229696,C
+4136733,2013-04-27,Electricity:Facility [J](Daily),23373023.16277116,J
+4136733,2013-04-27,Zone Air System Sensible Cooling Energy,6468564.684295731,J
+4136733,2013-04-27,Zone Air System Sensible Heating Energy,7546156.953468706,J
+4136733,2013-04-27,Zone Mean Air Temperature,24.855415113387153,C
+4136733,2013-04-28,Electricity:Facility [J](Daily),16218225.477675317,J
+4136733,2013-04-28,Zone Air System Sensible Cooling Energy,7826166.238493506,J
+4136733,2013-04-28,Zone Air System Sensible Heating Energy,5570741.714705509,J
+4136733,2013-04-28,Zone Mean Air Temperature,22.273272577643297,C
+4136733,2013-04-29,Electricity:Facility [J](Daily),19144339.57066286,J
+4136733,2013-04-29,Zone Air System Sensible Cooling Energy,4368469.251949448,J
+4136733,2013-04-29,Zone Air System Sensible Heating Energy,5445721.057933866,J
+4136733,2013-04-29,Zone Mean Air Temperature,26.081791359883656,C
+4136733,2013-04-30,Electricity:Facility [J](Daily),25020497.154798027,J
+4136733,2013-04-30,Zone Air System Sensible Cooling Energy,18783233.846780937,J
+4136733,2013-04-30,Zone Air System Sensible Heating Energy,3829882.3661860726,J
+4136733,2013-04-30,Zone Mean Air Temperature,23.330756944510075,C
+4136733,2013-05-01,Electricity:Facility [J](Daily),16526576.395306136,J
+4136733,2013-05-01,Water Heater Heating Energy,88620848.33630364,J
+4136733,2013-05-01,Zone Air System Sensible Cooling Energy,21170244.8091568,J
+4136733,2013-05-01,Zone Air System Sensible Heating Energy,3974334.8139374666,J
+4136733,2013-05-01,Zone Mean Air Temperature,28.013435941166318,C
+4136733,2013-05-02,Electricity:Facility [J](Daily),10334168.270926723,J
+4136733,2013-05-02,Zone Air System Sensible Cooling Energy,9462825.313731559,J
+4136733,2013-05-02,Zone Air System Sensible Heating Energy,3715888.942091548,J
+4136733,2013-05-02,Zone Mean Air Temperature,15.544039911455114,C
+4136733,2013-05-03,Electricity:Facility [J](Daily),21741070.961545393,J
+4136733,2013-05-03,Zone Air System Sensible Cooling Energy,12372094.04850433,J
+4136733,2013-05-03,Zone Air System Sensible Heating Energy,6214016.884949132,J
+4136733,2013-05-03,Zone Mean Air Temperature,23.681799900901144,C
+4136733,2013-05-04,Electricity:Facility [J](Daily),13526951.811439391,J
+4136733,2013-05-04,Zone Air System Sensible Cooling Energy,14577994.38742782,J
+4136733,2013-05-04,Zone Air System Sensible Heating Energy,2270382.631343197,J
+4136733,2013-05-04,Zone Mean Air Temperature,24.76472774553472,C
+4136733,2013-05-05,Electricity:Facility [J](Daily),18320522.22559888,J
+4136733,2013-05-05,Zone Air System Sensible Cooling Energy,8053647.5322627,J
+4136733,2013-05-05,Zone Air System Sensible Heating Energy,7035823.121886847,J
+4136733,2013-05-05,Zone Mean Air Temperature,27.3122926130733,C
+4136733,2013-05-06,Electricity:Facility [J](Daily),21841229.857711595,J
+4136733,2013-05-06,Zone Air System Sensible Cooling Energy,7602382.99023924,J
+4136733,2013-05-06,Zone Air System Sensible Heating Energy,5839366.750949674,J
+4136733,2013-05-06,Zone Mean Air Temperature,21.5697428189697,C
+4136733,2013-05-07,Electricity:Facility [J](Daily),13975728.784031915,J
+4136733,2013-05-07,Zone Air System Sensible Cooling Energy,9551761.79691494,J
+4136733,2013-05-07,Zone Air System Sensible Heating Energy,4185144.4042534973,J
+4136733,2013-05-07,Zone Mean Air Temperature,26.194061133616216,C
+4136733,2013-05-08,Electricity:Facility [J](Daily),18264394.888991803,J
+4136733,2013-05-08,Zone Air System Sensible Cooling Energy,15438382.393875921,J
+4136733,2013-05-08,Zone Air System Sensible Heating Energy,4608004.307918749,J
+4136733,2013-05-08,Zone Mean Air Temperature,24.605076024409076,C
+4136733,2013-05-09,Electricity:Facility [J](Daily),14109928.746199701,J
+4136733,2013-05-09,Zone Air System Sensible Cooling Energy,29473916.327562574,J
+4136733,2013-05-09,Zone Air System Sensible Heating Energy,2051178.6048245635,J
+4136733,2013-05-09,Zone Mean Air Temperature,24.93055173673257,C
+4136733,2013-05-10,Electricity:Facility [J](Daily),14347566.130431691,J
+4136733,2013-05-10,Zone Air System Sensible Cooling Energy,10985489.391929142,J
+4136733,2013-05-10,Zone Air System Sensible Heating Energy,617945.4311985297,J
+4136733,2013-05-10,Zone Mean Air Temperature,28.32569828118789,C
+4136733,2013-05-11,Electricity:Facility [J](Daily),10514964.547280326,J
+4136733,2013-05-11,Zone Air System Sensible Cooling Energy,20405749.470917188,J
+4136733,2013-05-11,Zone Air System Sensible Heating Energy,3293014.1333778137,J
+4136733,2013-05-11,Zone Mean Air Temperature,28.51300144912294,C
+4136733,2013-05-12,Electricity:Facility [J](Daily),15994499.561864395,J
+4136733,2013-05-12,Zone Air System Sensible Cooling Energy,14234642.807520123,J
+4136733,2013-05-12,Zone Air System Sensible Heating Energy,3361570.838646206,J
+4136733,2013-05-12,Zone Mean Air Temperature,27.82620570522731,C
+4136733,2013-05-13,Electricity:Facility [J](Daily),14438573.791379381,J
+4136733,2013-05-13,Zone Air System Sensible Cooling Energy,2546179.538050142,J
+4136733,2013-05-13,Zone Air System Sensible Heating Energy,4053891.9118459197,J
+4136733,2013-05-13,Zone Mean Air Temperature,21.108505988390103,C
+4136733,2013-05-14,Electricity:Facility [J](Daily),17403857.604376677,J
+4136733,2013-05-14,Zone Air System Sensible Cooling Energy,0.0,J
+4136733,2013-05-14,Zone Air System Sensible Heating Energy,3573561.26749486,J
+4136733,2013-05-14,Zone Mean Air Temperature,27.578155548672765,C
+4136733,2013-05-15,Electricity:Facility [J](Daily),21234493.612058632,J
+4136733,2013-05-15,Zone Air System Sensible Cooling Energy,22464113.357131384,J
+4136733,2013-05-15,Zone Air System Sensible Heating Energy,1796068.2506059776,J
+4136733,2013-05-15,Zone Mean Air Temperature,22.183724328979014,C
+4136733,2013-05-16,Electricity:Facility [J](Daily),4404649.223110114,J
+4136733,2013-05-16,Zone Air System Sensible Cooling Energy,10898228.281359237,J
+4136733,2013-05-16,Zone Air System Sensible Heating Energy,4436171.1028758455,J
+4136733,2013-05-16,Zone Mean Air Temperature,17.515202500527973,C
+4136733,2013-05-17,Electricity:Facility [J](Daily),20717437.324932296,J
+4136733,2013-05-17,Zone Air System Sensible Cooling Energy,9005068.067623567,J
+4136733,2013-05-17,Zone Air System Sensible Heating Energy,2878327.8324217056,J
+4136733,2013-05-17,Zone Mean Air Temperature,25.234411503639553,C
+4136733,2013-05-18,Electricity:Facility [J](Daily),22062398.562500577,J
+4136733,2013-05-18,Zone Air System Sensible Cooling Energy,17925722.32806683,J
+4136733,2013-05-18,Zone Air System Sensible Heating Energy,996688.1341603916,J
+4136733,2013-05-18,Zone Mean Air Temperature,13.962441689074629,C
+4136733,2013-05-19,Electricity:Facility [J](Daily),25119061.590043716,J
+4136733,2013-05-19,Zone Air System Sensible Cooling Energy,15924791.419161655,J
+4136733,2013-05-19,Zone Air System Sensible Heating Energy,3183025.5811097426,J
+4136733,2013-05-19,Zone Mean Air Temperature,27.528366847013615,C
+4136733,2013-05-20,Electricity:Facility [J](Daily),24557186.592787653,J
+4136733,2013-05-20,Zone Air System Sensible Cooling Energy,15391913.357784718,J
+4136733,2013-05-20,Zone Air System Sensible Heating Energy,1304187.9369016688,J
+4136733,2013-05-20,Zone Mean Air Temperature,22.252408784050647,C
+4136733,2013-05-21,Electricity:Facility [J](Daily),15765159.211032186,J
+4136733,2013-05-21,Zone Air System Sensible Cooling Energy,9857977.692328611,J
+4136733,2013-05-21,Zone Air System Sensible Heating Energy,2044371.0484207238,J
+4136733,2013-05-21,Zone Mean Air Temperature,22.34409745048621,C
+4136733,2013-05-22,Electricity:Facility [J](Daily),15642397.12865146,J
+4136733,2013-05-22,Zone Air System Sensible Cooling Energy,6587487.826789414,J
+4136733,2013-05-22,Zone Air System Sensible Heating Energy,2459613.287816343,J
+4136733,2013-05-22,Zone Mean Air Temperature,26.82471537228401,C
+4136733,2013-05-23,Electricity:Facility [J](Daily),21769000.258973125,J
+4136733,2013-05-23,Zone Air System Sensible Cooling Energy,0.0,J
+4136733,2013-05-23,Zone Air System Sensible Heating Energy,3430452.6848616246,J
+4136733,2013-05-23,Zone Mean Air Temperature,24.156276799899327,C
+4136733,2013-05-24,Electricity:Facility [J](Daily),19640822.807457805,J
+4136733,2013-05-24,Zone Air System Sensible Cooling Energy,4589947.803891009,J
+4136733,2013-05-24,Zone Air System Sensible Heating Energy,2250869.045271943,J
+4136733,2013-05-24,Zone Mean Air Temperature,20.00826415034042,C
+4136733,2013-05-25,Electricity:Facility [J](Daily),21217152.936628073,J
+4136733,2013-05-25,Zone Air System Sensible Cooling Energy,10005899.82527126,J
+4136733,2013-05-25,Zone Air System Sensible Heating Energy,2572262.3236137377,J
+4136733,2013-05-25,Zone Mean Air Temperature,24.73437054191232,C
+4136733,2013-05-26,Electricity:Facility [J](Daily),11548960.250359384,J
+4136733,2013-05-26,Zone Air System Sensible Cooling Energy,18198616.39903816,J
+4136733,2013-05-26,Zone Air System Sensible Heating Energy,2779559.564318896,J
+4136733,2013-05-26,Zone Mean Air Temperature,22.274519880090754,C
+4136733,2013-05-27,Electricity:Facility [J](Daily),10745625.691991217,J
+4136733,2013-05-27,Zone Air System Sensible Cooling Energy,23302098.940984447,J
+4136733,2013-05-27,Zone Air System Sensible Heating Energy,2663412.9168186663,J
+4136733,2013-05-27,Zone Mean Air Temperature,24.139576989818384,C
+4136733,2013-05-28,Electricity:Facility [J](Daily),22176944.28970998,J
+4136733,2013-05-28,Zone Air System Sensible Cooling Energy,11968493.391135713,J
+4136733,2013-05-28,Zone Air System Sensible Heating Energy,0.0,J
+4136733,2013-05-28,Zone Mean Air Temperature,21.22137789404176,C
+4136733,2013-05-29,Electricity:Facility [J](Daily),19270564.73660729,J
+4136733,2013-05-29,Zone Air System Sensible Cooling Energy,11559032.374239787,J
+4136733,2013-05-29,Zone Air System Sensible Heating Energy,1392001.0688576864,J
+4136733,2013-05-29,Zone Mean Air Temperature,25.762018571349348,C
+4136733,2013-05-30,Electricity:Facility [J](Daily),22021595.033796567,J
+4136733,2013-05-30,Zone Air System Sensible Cooling Energy,2628582.853465586,J
+4136733,2013-05-30,Zone Air System Sensible Heating Energy,1387800.439363664,J
+4136733,2013-05-30,Zone Mean Air Temperature,26.930303544159475,C
+4136733,2013-05-31,Electricity:Facility [J](Daily),24798097.075804885,J
+4136733,2013-05-31,Zone Air System Sensible Cooling Energy,12739405.98288246,J
+4136733,2013-05-31,Zone Air System Sensible Heating Energy,1126573.6079374722,J
+4136733,2013-05-31,Zone Mean Air Temperature,20.90396755766479,C
+4136733,2013-06-01,Electricity:Facility [J](Daily),17674427.454189505,J
+4136733,2013-06-01,Water Heater Heating Energy,83377804.03008659,J
+4136733,2013-06-01,Zone Air System Sensible Cooling Energy,9175086.008209756,J
+4136733,2013-06-01,Zone Air System Sensible Heating Energy,948703.9006502685,J
+4136733,2013-06-01,Zone Mean Air Temperature,27.330201048649393,C
+4136733,2013-06-02,Electricity:Facility [J](Daily),3159640.590301536,J
+4136733,2013-06-02,Zone Air System Sensible Cooling Energy,13575041.162995517,J
+4136733,2013-06-02,Zone Air System Sensible Heating Energy,2098816.276753605,J
+4136733,2013-06-02,Zone Mean Air Temperature,26.970725594814823,C
+4136733,2013-06-03,Electricity:Facility [J](Daily),13053371.961096795,J
+4136733,2013-06-03,Zone Air System Sensible Cooling Energy,5703677.452733003,J
+4136733,2013-06-03,Zone Air System Sensible Heating Energy,94708.87616903897,J
+4136733,2013-06-03,Zone Mean Air Temperature,22.96823973233261,C
+4136733,2013-06-04,Electricity:Facility [J](Daily),17789703.69370411,J
+4136733,2013-06-04,Zone Air System Sensible Cooling Energy,11559485.909764307,J
+4136733,2013-06-04,Zone Air System Sensible Heating Energy,2087482.3590046675,J
+4136733,2013-06-04,Zone Mean Air Temperature,27.899031748788325,C
+4136733,2013-06-05,Electricity:Facility [J](Daily),19103071.904090997,J
+4136733,2013-06-05,Zone Air System Sensible Cooling Energy,15279807.919049945,J
+4136733,2013-06-05,Zone Air System Sensible Heating Energy,1241940.5888543671,J
+4136733,2013-06-05,Zone Mean Air Temperature,25.662984613130348,C
+4136733,2013-06-06,Electricity:Facility [J](Daily),11250697.77022187,J
+4136733,2013-06-06,Zone Air System Sensible Cooling Energy,18284445.938818146,J
+4136733,2013-06-06,Zone Air System Sensible Heating Energy,2079563.2584800525,J
+4136733,2013-06-06,Zone Mean Air Temperature,20.966983299591025,C
+4136733,2013-06-07,Electricity:Facility [J](Daily),16094685.995188912,J
+4136733,2013-06-07,Zone Air System Sensible Cooling Energy,3825625.0113492906,J
+4136733,2013-06-07,Zone Air System Sensible Heating Energy,2337647.1904432345,J
+4136733,2013-06-07,Zone Mean Air Temperature,18.821360116345833,C
+4136733,2013-06-08,Electricity:Facility [J](Daily),16677293.293338291,J
+4136733,2013-06-08,Zone Air System Sensible Cooling Energy,20295306.240124762,J
+4136733,2013-06-08,Zone Air System Sensible Heating Energy,2470461.349961575,J
+4136733,2013-06-08,Zone Mean Air Temperature,14.266160204210518,C
+4136733,2013-06-09,Electricity:Facility [J](Daily),17727469.112993103,J
+4136733,2013-06-09,Zone Air System Sensible Cooling Energy,12549533.093722954,J
+4136733,2013-06-09,Zone Air System Sensible Heating Energy,1301376.073102983,J
+4136733,2013-06-09,Zone Mean Air Temperature,25.699741104020806,C
+4136733,2013-06-10,Electricity:Facility [J](Daily),18832205.750585366,J
+4136733,2013-06-10,Zone Air System Sensible Cooling Energy,6647057.867844516,J
+4136733,2013-06-10,Zone Air System Sensible Heating Energy,1164523.7509860604,J
+4136733,2013-06-10,Zone Mean Air Temperature,21.271567548885585,C
+4136733,2013-06-11,Electricity:Facility [J](Daily),23295361.894275304,J
+4136733,2013-06-11,Zone Air System Sensible Cooling Energy,16783389.036487933,J
+4136733,2013-06-11,Zone Air System Sensible Heating Energy,2196297.744834754,J
+4136733,2013-06-11,Zone Mean Air Temperature,19.86212165926739,C
+4136733,2013-06-12,Electricity:Facility [J](Daily),4301538.495295625,J
+4136733,2013-06-12,Zone Air System Sensible Cooling Energy,23604579.08780914,J
+4136733,2013-06-12,Zone Air System Sensible Heating Energy,575347.8964306706,J
+4136733,2013-06-12,Zone Mean Air Temperature,17.112296689007273,C
+4136733,2013-06-13,Electricity:Facility [J](Daily),15048874.022893442,J
+4136733,2013-06-13,Zone Air System Sensible Cooling Energy,5338610.334311451,J
+4136733,2013-06-13,Zone Air System Sensible Heating Energy,954202.4133579388,J
+4136733,2013-06-13,Zone Mean Air Temperature,22.368895273072148,C
+4136733,2013-06-14,Electricity:Facility [J](Daily),21983461.158221725,J
+4136733,2013-06-14,Zone Air System Sensible Cooling Energy,19112823.12768215,J
+4136733,2013-06-14,Zone Air System Sensible Heating Energy,2301683.936477384,J
+4136733,2013-06-14,Zone Mean Air Temperature,22.478391331180337,C
+4136733,2013-06-15,Electricity:Facility [J](Daily),16247303.998205217,J
+4136733,2013-06-15,Zone Air System Sensible Cooling Energy,12909557.480582915,J
+4136733,2013-06-15,Zone Air System Sensible Heating Energy,1036121.5012176892,J
+4136733,2013-06-15,Zone Mean Air Temperature,23.178807635472022,C
+4136733,2013-06-16,Electricity:Facility [J](Daily),15517460.723244574,J
+4136733,2013-06-16,Zone Air System Sensible Cooling Energy,4149959.2466090126,J
+4136733,2013-06-16,Zone Air System Sensible Heating Energy,787406.0482384381,J
+4136733,2013-06-16,Zone Mean Air Temperature,16.557162262698206,C
+4136733,2013-06-17,Electricity:Facility [J](Daily),16907632.13486275,J
+4136733,2013-06-17,Zone Air System Sensible Cooling Energy,25228049.37471921,J
+4136733,2013-06-17,Zone Air System Sensible Heating Energy,1384978.6881548024,J
+4136733,2013-06-17,Zone Mean Air Temperature,29.58679858585647,C
+4136733,2013-06-18,Electricity:Facility [J](Daily),18512683.118008267,J
+4136733,2013-06-18,Zone Air System Sensible Cooling Energy,20208958.281691648,J
+4136733,2013-06-18,Zone Air System Sensible Heating Energy,1353941.8967723162,J
+4136733,2013-06-18,Zone Mean Air Temperature,23.466442702445963,C
+4136733,2013-06-19,Electricity:Facility [J](Daily),20562890.96219445,J
+4136733,2013-06-19,Zone Air System Sensible Cooling Energy,9211405.779777978,J
+4136733,2013-06-19,Zone Air System Sensible Heating Energy,1005540.1955814988,J
+4136733,2013-06-19,Zone Mean Air Temperature,23.888314960336245,C
+4136733,2013-06-20,Electricity:Facility [J](Daily),26226912.849545237,J
+4136733,2013-06-20,Zone Air System Sensible Cooling Energy,16709316.978800694,J
+4136733,2013-06-20,Zone Air System Sensible Heating Energy,815390.4169741125,J
+4136733,2013-06-20,Zone Mean Air Temperature,22.650392803984857,C
+4136733,2013-06-21,Electricity:Facility [J](Daily),23994361.190662682,J
+4136733,2013-06-21,Zone Air System Sensible Cooling Energy,12904951.07521889,J
+4136733,2013-06-21,Zone Air System Sensible Heating Energy,1044506.9941704833,J
+4136733,2013-06-21,Zone Mean Air Temperature,19.872296815833046,C
+4136733,2013-06-22,Electricity:Facility [J](Daily),28176847.07907105,J
+4136733,2013-06-22,Zone Air System Sensible Cooling Energy,14337448.219402337,J
+4136733,2013-06-22,Zone Air System Sensible Heating Energy,1174001.1022251046,J
+4136733,2013-06-22,Zone Mean Air Temperature,23.100744318338744,C
+4136733,2013-06-23,Electricity:Facility [J](Daily),13834278.423515348,J
+4136733,2013-06-23,Zone Air System Sensible Cooling Energy,24515885.666235223,J
+4136733,2013-06-23,Zone Air System Sensible Heating Energy,1351268.4543728519,J
+4136733,2013-06-23,Zone Mean Air Temperature,23.972891033433285,C
+4136733,2013-06-24,Electricity:Facility [J](Daily),18582876.76735891,J
+4136733,2013-06-24,Zone Air System Sensible Cooling Energy,21091524.726888087,J
+4136733,2013-06-24,Zone Air System Sensible Heating Energy,1555486.1883425422,J
+4136733,2013-06-24,Zone Mean Air Temperature,24.4747699032592,C
+4136733,2013-06-25,Electricity:Facility [J](Daily),14183003.020808402,J
+4136733,2013-06-25,Zone Air System Sensible Cooling Energy,14302022.515183778,J
+4136733,2013-06-25,Zone Air System Sensible Heating Energy,1206562.006361127,J
+4136733,2013-06-25,Zone Mean Air Temperature,19.94979927244506,C
+4136733,2013-06-26,Electricity:Facility [J](Daily),21997309.188298922,J
+4136733,2013-06-26,Zone Air System Sensible Cooling Energy,4604547.277625732,J
+4136733,2013-06-26,Zone Air System Sensible Heating Energy,1003646.247338943,J
+4136733,2013-06-26,Zone Mean Air Temperature,31.26124837698269,C
+4136733,2013-06-27,Electricity:Facility [J](Daily),24607818.038471133,J
+4136733,2013-06-27,Zone Air System Sensible Cooling Energy,19576226.964769825,J
+4136733,2013-06-27,Zone Air System Sensible Heating Energy,807636.7749625058,J
+4136733,2013-06-27,Zone Mean Air Temperature,21.8971720326301,C
+4136733,2013-06-28,Electricity:Facility [J](Daily),19679049.908528548,J
+4136733,2013-06-28,Zone Air System Sensible Cooling Energy,12627156.416604642,J
+4136733,2013-06-28,Zone Air System Sensible Heating Energy,1251549.4649335416,J
+4136733,2013-06-28,Zone Mean Air Temperature,19.764667866933383,C
+4136733,2013-06-29,Electricity:Facility [J](Daily),19987479.905033533,J
+4136733,2013-06-29,Zone Air System Sensible Cooling Energy,25551989.638998877,J
+4136733,2013-06-29,Zone Air System Sensible Heating Energy,701329.3056923314,J
+4136733,2013-06-29,Zone Mean Air Temperature,28.333668186591627,C
+4136733,2013-06-30,Electricity:Facility [J](Daily),11644886.290564837,J
+4136733,2013-06-30,Zone Air System Sensible Cooling Energy,25759601.520555068,J
+4136733,2013-06-30,Zone Air System Sensible Heating Energy,362771.716477218,J
+4136733,2013-06-30,Zone Mean Air Temperature,21.740186568978668,C
+4136733,2013-07-01,Electricity:Facility [J](Daily),11065522.485956378,J
+4136733,2013-07-01,Water Heater Heating Energy,76878260.30211377,J
+4136733,2013-07-01,Zone Air System Sensible Cooling Energy,5700567.031569473,J
+4136733,2013-07-01,Zone Air System Sensible Heating Energy,1353041.7126479812,J
+4136733,2013-07-01,Zone Mean Air Temperature,14.812335463478952,C
+4136733,2013-07-02,Electricity:Facility [J](Daily),30879406.517562013,J
+4136733,2013-07-02,Zone Air System Sensible Cooling Energy,9877536.533282835,J
+4136733,2013-07-02,Zone Air System Sensible Heating Energy,2701038.5269406373,J
+4136733,2013-07-02,Zone Mean Air Temperature,21.619792358482698,C
+4136733,2013-07-03,Electricity:Facility [J](Daily),12600209.48974584,J
+4136733,2013-07-03,Zone Air System Sensible Cooling Energy,16244231.541993711,J
+4136733,2013-07-03,Zone Air System Sensible Heating Energy,1344102.049983081,J
+4136733,2013-07-03,Zone Mean Air Temperature,29.054790862756576,C
+4136733,2013-07-04,Electricity:Facility [J](Daily),21631169.121497512,J
+4136733,2013-07-04,Zone Air System Sensible Cooling Energy,20431865.626296997,J
+4136733,2013-07-04,Zone Air System Sensible Heating Energy,159078.2586146486,J
+4136733,2013-07-04,Zone Mean Air Temperature,15.60962721655803,C
+4136733,2013-07-05,Electricity:Facility [J](Daily),15242217.303604465,J
+4136733,2013-07-05,Zone Air System Sensible Cooling Energy,12670559.410055166,J
+4136733,2013-07-05,Zone Air System Sensible Heating Energy,1951118.3638889021,J
+4136733,2013-07-05,Zone Mean Air Temperature,26.989274137375087,C
+4136733,2013-07-06,Electricity:Facility [J](Daily),13077287.823866216,J
+4136733,2013-07-06,Zone Air System Sensible Cooling Energy,9367323.093309697,J
+4136733,2013-07-06,Zone Air System Sensible Heating Energy,2041046.3507297505,J
+4136733,2013-07-06,Zone Mean Air Temperature,28.104218818944307,C
+4136733,2013-07-07,Electricity:Facility [J](Daily),12866376.614176262,J
+4136733,2013-07-07,Zone Air System Sensible Cooling Energy,18560956.122120608,J
+4136733,2013-07-07,Zone Air System Sensible Heating Energy,3098602.7932469826,J
+4136733,2013-07-07,Zone Mean Air Temperature,21.900532614057816,C
+4136733,2013-07-08,Electricity:Facility [J](Daily),25381912.040506456,J
+4136733,2013-07-08,Zone Air System Sensible Cooling Energy,19933663.36429001,J
+4136733,2013-07-08,Zone Air System Sensible Heating Energy,488866.803447391,J
+4136733,2013-07-08,Zone Mean Air Temperature,24.1335288395003,C
+4136733,2013-07-09,Electricity:Facility [J](Daily),5067161.886113171,J
+4136733,2013-07-09,Zone Air System Sensible Cooling Energy,17164590.529704798,J
+4136733,2013-07-09,Zone Air System Sensible Heating Energy,919881.5475441104,J
+4136733,2013-07-09,Zone Mean Air Temperature,25.513752992624546,C
+4136733,2013-07-10,Electricity:Facility [J](Daily),19638831.81732545,J
+4136733,2013-07-10,Zone Air System Sensible Cooling Energy,13999057.020904899,J
+4136733,2013-07-10,Zone Air System Sensible Heating Energy,1202233.146024248,J
+4136733,2013-07-10,Zone Mean Air Temperature,20.96099092880338,C
+4136733,2013-07-11,Electricity:Facility [J](Daily),15684453.419762531,J
+4136733,2013-07-11,Zone Air System Sensible Cooling Energy,590965.010262481,J
+4136733,2013-07-11,Zone Air System Sensible Heating Energy,1737347.3182130903,J
+4136733,2013-07-11,Zone Mean Air Temperature,21.159012497648426,C
+4136733,2013-07-12,Electricity:Facility [J](Daily),26527489.336549588,J
+4136733,2013-07-12,Zone Air System Sensible Cooling Energy,16928310.28146316,J
+4136733,2013-07-12,Zone Air System Sensible Heating Energy,2386394.5567092095,J
+4136733,2013-07-12,Zone Mean Air Temperature,26.622380655573522,C
+4136733,2013-07-13,Electricity:Facility [J](Daily),14530868.249927025,J
+4136733,2013-07-13,Zone Air System Sensible Cooling Energy,19586760.042633712,J
+4136733,2013-07-13,Zone Air System Sensible Heating Energy,3390377.525294791,J
+4136733,2013-07-13,Zone Mean Air Temperature,29.36260693154619,C
+4136733,2013-07-14,Electricity:Facility [J](Daily),14000653.381430238,J
+4136733,2013-07-14,Zone Air System Sensible Cooling Energy,13393922.00459032,J
+4136733,2013-07-14,Zone Air System Sensible Heating Energy,2702137.734967021,J
+4136733,2013-07-14,Zone Mean Air Temperature,23.26578769052002,C
+4136733,2013-07-15,Electricity:Facility [J](Daily),15699667.411131648,J
+4136733,2013-07-15,Zone Air System Sensible Cooling Energy,18188889.081111215,J
+4136733,2013-07-15,Zone Air System Sensible Heating Energy,1037280.2613074972,J
+4136733,2013-07-15,Zone Mean Air Temperature,19.393032828372046,C
+4136733,2013-07-16,Electricity:Facility [J](Daily),21492865.921052177,J
+4136733,2013-07-16,Zone Air System Sensible Cooling Energy,5043557.103484805,J
+4136733,2013-07-16,Zone Air System Sensible Heating Energy,2266331.5392679395,J
+4136733,2013-07-16,Zone Mean Air Temperature,24.234173568207435,C
+4136733,2013-07-17,Electricity:Facility [J](Daily),15406506.324418122,J
+4136733,2013-07-17,Zone Air System Sensible Cooling Energy,10744278.918647092,J
+4136733,2013-07-17,Zone Air System Sensible Heating Energy,2516954.214186268,J
+4136733,2013-07-17,Zone Mean Air Temperature,24.34857001407132,C
+4136733,2013-07-18,Electricity:Facility [J](Daily),25118276.301073834,J
+4136733,2013-07-18,Zone Air System Sensible Cooling Energy,4440951.750866306,J
+4136733,2013-07-18,Zone Air System Sensible Heating Energy,4086879.2016135543,J
+4136733,2013-07-18,Zone Mean Air Temperature,24.78149051063555,C
+4136733,2013-07-19,Electricity:Facility [J](Daily),29092589.940657396,J
+4136733,2013-07-19,Zone Air System Sensible Cooling Energy,16285602.75561365,J
+4136733,2013-07-19,Zone Air System Sensible Heating Energy,2815825.336922023,J
+4136733,2013-07-19,Zone Mean Air Temperature,22.25123116069379,C
+4136733,2013-07-20,Electricity:Facility [J](Daily),12674185.6131504,J
+4136733,2013-07-20,Zone Air System Sensible Cooling Energy,9329472.801153399,J
+4136733,2013-07-20,Zone Air System Sensible Heating Energy,3130525.4662176985,J
+4136733,2013-07-20,Zone Mean Air Temperature,23.054506518477826,C
+4136733,2013-07-21,Electricity:Facility [J](Daily),18719135.365562703,J
+4136733,2013-07-21,Zone Air System Sensible Cooling Energy,9982320.18609362,J
+4136733,2013-07-21,Zone Air System Sensible Heating Energy,1867593.149409587,J
+4136733,2013-07-21,Zone Mean Air Temperature,28.857489403239413,C
+4136733,2013-07-22,Electricity:Facility [J](Daily),14244577.896523643,J
+4136733,2013-07-22,Zone Air System Sensible Cooling Energy,0.0,J
+4136733,2013-07-22,Zone Air System Sensible Heating Energy,3544975.999481216,J
+4136733,2013-07-22,Zone Mean Air Temperature,23.311331142580077,C
+4136733,2013-07-23,Electricity:Facility [J](Daily),14144488.378671777,J
+4136733,2013-07-23,Zone Air System Sensible Cooling Energy,16886140.515660748,J
+4136733,2013-07-23,Zone Air System Sensible Heating Energy,3589044.5051960726,J
+4136733,2013-07-23,Zone Mean Air Temperature,27.161103585756788,C
+4136733,2013-07-24,Electricity:Facility [J](Daily),17743017.074344426,J
+4136733,2013-07-24,Zone Air System Sensible Cooling Energy,4723943.213256301,J
+4136733,2013-07-24,Zone Air System Sensible Heating Energy,1989374.1840946975,J
+4136733,2013-07-24,Zone Mean Air Temperature,31.00773306019004,C
+4136733,2013-07-25,Electricity:Facility [J](Daily),20169293.94487447,J
+4136733,2013-07-25,Zone Air System Sensible Cooling Energy,21561740.5994573,J
+4136733,2013-07-25,Zone Air System Sensible Heating Energy,2534942.294685174,J
+4136733,2013-07-25,Zone Mean Air Temperature,23.78017998560007,C
+4136733,2013-07-26,Electricity:Facility [J](Daily),25980036.278649416,J
+4136733,2013-07-26,Zone Air System Sensible Cooling Energy,15155298.77871019,J
+4136733,2013-07-26,Zone Air System Sensible Heating Energy,2153010.189777691,J
+4136733,2013-07-26,Zone Mean Air Temperature,29.36362160368068,C
+4136733,2013-07-27,Electricity:Facility [J](Daily),23936162.738117456,J
+4136733,2013-07-27,Zone Air System Sensible Cooling Energy,17380381.667131793,J
+4136733,2013-07-27,Zone Air System Sensible Heating Energy,2483485.1477247844,J
+4136733,2013-07-27,Zone Mean Air Temperature,28.8865661184551,C
+4136733,2013-07-28,Electricity:Facility [J](Daily),8481292.634268807,J
+4136733,2013-07-28,Zone Air System Sensible Cooling Energy,9593229.80864122,J
+4136733,2013-07-28,Zone Air System Sensible Heating Energy,3065959.2434031838,J
+4136733,2013-07-28,Zone Mean Air Temperature,20.64459925000749,C
+4136733,2013-07-29,Electricity:Facility [J](Daily),25287311.178751476,J
+4136733,2013-07-29,Zone Air System Sensible Cooling Energy,17205456.606591955,J
+4136733,2013-07-29,Zone Air System Sensible Heating Energy,4389458.906102748,J
+4136733,2013-07-29,Zone Mean Air Temperature,25.735172723172074,C
+4136733,2013-07-30,Electricity:Facility [J](Daily),19475837.42417744,J
+4136733,2013-07-30,Zone Air System Sensible Cooling Energy,0.0,J
+4136733,2013-07-30,Zone Air System Sensible Heating Energy,2137618.6046562013,J
+4136733,2013-07-30,Zone Mean Air Temperature,25.11863690323663,C
+4136733,2013-07-31,Electricity:Facility [J](Daily),23711937.89810572,J
+4136733,2013-07-31,Zone Air System Sensible Cooling Energy,16362649.377855148,J
+4136733,2013-07-31,Zone Air System Sensible Heating Energy,5994605.98858913,J
+4136733,2013-07-31,Zone Mean Air Temperature,20.921507534537625,C
+4136733,2013-08-01,Electricity:Facility [J](Daily),16785778.34972407,J
+4136733,2013-08-01,Water Heater Heating Energy,82135563.56043161,J
+4136733,2013-08-01,Zone Air System Sensible Cooling Energy,20267719.361947007,J
+4136733,2013-08-01,Zone Air System Sensible Heating Energy,4692849.7581437845,J
+4136733,2013-08-01,Zone Mean Air Temperature,22.076612509837762,C
+4136733,2013-08-02,Electricity:Facility [J](Daily),20960357.82608499,J
+4136733,2013-08-02,Zone Air System Sensible Cooling Energy,8729989.333182858,J
+4136733,2013-08-02,Zone Air System Sensible Heating Energy,5228463.083552618,J
+4136733,2013-08-02,Zone Mean Air Temperature,25.87353293653931,C
+4136733,2013-08-03,Electricity:Facility [J](Daily),13523595.576432006,J
+4136733,2013-08-03,Zone Air System Sensible Cooling Energy,10989650.517588092,J
+4136733,2013-08-03,Zone Air System Sensible Heating Energy,7850878.464689967,J
+4136733,2013-08-03,Zone Mean Air Temperature,26.124640206202976,C
+4136733,2013-08-04,Electricity:Facility [J](Daily),17302971.302739877,J
+4136733,2013-08-04,Zone Air System Sensible Cooling Energy,16706301.54851962,J
+4136733,2013-08-04,Zone Air System Sensible Heating Energy,3900378.967470953,J
+4136733,2013-08-04,Zone Mean Air Temperature,16.272022633472492,C
+4136733,2013-08-05,Electricity:Facility [J](Daily),11637850.378969265,J
+4136733,2013-08-05,Zone Air System Sensible Cooling Energy,12128698.192415139,J
+4136733,2013-08-05,Zone Air System Sensible Heating Energy,4598758.475451442,J
+4136733,2013-08-05,Zone Mean Air Temperature,20.494649640984168,C
+4136733,2013-08-06,Electricity:Facility [J](Daily),5783630.312472749,J
+4136733,2013-08-06,Zone Air System Sensible Cooling Energy,20021631.37006327,J
+4136733,2013-08-06,Zone Air System Sensible Heating Energy,3499196.389066882,J
+4136733,2013-08-06,Zone Mean Air Temperature,22.065890863215632,C
+4136733,2013-08-07,Electricity:Facility [J](Daily),19220803.211537354,J
+4136733,2013-08-07,Zone Air System Sensible Cooling Energy,13246226.906285845,J
+4136733,2013-08-07,Zone Air System Sensible Heating Energy,4007275.6736682006,J
+4136733,2013-08-07,Zone Mean Air Temperature,26.97072268830828,C
+4136733,2013-08-08,Electricity:Facility [J](Daily),19457009.60468606,J
+4136733,2013-08-08,Zone Air System Sensible Cooling Energy,7896748.559626734,J
+4136733,2013-08-08,Zone Air System Sensible Heating Energy,6728819.607001296,J
+4136733,2013-08-08,Zone Mean Air Temperature,22.72776310950023,C
+4136733,2013-08-09,Electricity:Facility [J](Daily),8927515.740896214,J
+4136733,2013-08-09,Zone Air System Sensible Cooling Energy,20157544.137533464,J
+4136733,2013-08-09,Zone Air System Sensible Heating Energy,4861651.623075753,J
+4136733,2013-08-09,Zone Mean Air Temperature,23.106521192424854,C
+4136733,2013-08-10,Electricity:Facility [J](Daily),20632873.917485908,J
+4136733,2013-08-10,Zone Air System Sensible Cooling Energy,13727763.271408537,J
+4136733,2013-08-10,Zone Air System Sensible Heating Energy,8194899.629399828,J
+4136733,2013-08-10,Zone Mean Air Temperature,23.793513145553522,C
+4136733,2013-08-11,Electricity:Facility [J](Daily),14220532.980382342,J
+4136733,2013-08-11,Zone Air System Sensible Cooling Energy,15588796.920151504,J
+4136733,2013-08-11,Zone Air System Sensible Heating Energy,2567036.976496032,J
+4136733,2013-08-11,Zone Mean Air Temperature,22.254871418170207,C
+4136733,2013-08-12,Electricity:Facility [J](Daily),17327849.519971713,J
+4136733,2013-08-12,Zone Air System Sensible Cooling Energy,14168894.780830514,J
+4136733,2013-08-12,Zone Air System Sensible Heating Energy,2093232.4469330378,J
+4136733,2013-08-12,Zone Mean Air Temperature,13.187425500446594,C
+4136733,2013-08-13,Electricity:Facility [J](Daily),12862590.722908864,J
+4136733,2013-08-13,Zone Air System Sensible Cooling Energy,15668399.12573842,J
+4136733,2013-08-13,Zone Air System Sensible Heating Energy,7062813.7958877,J
+4136733,2013-08-13,Zone Mean Air Temperature,19.882746259406353,C
+4136733,2013-08-14,Electricity:Facility [J](Daily),19963461.997349422,J
+4136733,2013-08-14,Zone Air System Sensible Cooling Energy,564598.6449668172,J
+4136733,2013-08-14,Zone Air System Sensible Heating Energy,0.0,J
+4136733,2013-08-14,Zone Mean Air Temperature,22.767072119789198,C
+4136733,2013-08-15,Electricity:Facility [J](Daily),24918855.324095465,J
+4136733,2013-08-15,Zone Air System Sensible Cooling Energy,16875764.08728496,J
+4136733,2013-08-15,Zone Air System Sensible Heating Energy,3144712.021451504,J
+4136733,2013-08-15,Zone Mean Air Temperature,20.047881091596896,C
+4136733,2013-08-16,Electricity:Facility [J](Daily),13952229.79760888,J
+4136733,2013-08-16,Zone Air System Sensible Cooling Energy,9201781.783347249,J
+4136733,2013-08-16,Zone Air System Sensible Heating Energy,3487055.5700700507,J
+4136733,2013-08-16,Zone Mean Air Temperature,20.96272195881634,C
+4136733,2013-08-17,Electricity:Facility [J](Daily),21687155.73256029,J
+4136733,2013-08-17,Zone Air System Sensible Cooling Energy,17392708.517223492,J
+4136733,2013-08-17,Zone Air System Sensible Heating Energy,8548225.835236419,J
+4136733,2013-08-17,Zone Mean Air Temperature,22.58362555093158,C
+4136733,2013-08-18,Electricity:Facility [J](Daily),21903346.78244971,J
+4136733,2013-08-18,Zone Air System Sensible Cooling Energy,13641160.746241305,J
+4136733,2013-08-18,Zone Air System Sensible Heating Energy,6069491.544036046,J
+4136733,2013-08-18,Zone Mean Air Temperature,21.45440477430525,C
+4136733,2013-08-19,Electricity:Facility [J](Daily),12133531.017364731,J
+4136733,2013-08-19,Zone Air System Sensible Cooling Energy,11743257.66255199,J
+4136733,2013-08-19,Zone Air System Sensible Heating Energy,3035824.341448736,J
+4136733,2013-08-19,Zone Mean Air Temperature,19.656088256002032,C
+4136733,2013-08-20,Electricity:Facility [J](Daily),18522059.141053777,J
+4136733,2013-08-20,Zone Air System Sensible Cooling Energy,13100559.814239664,J
+4136733,2013-08-20,Zone Air System Sensible Heating Energy,6144830.796487572,J
+4136733,2013-08-20,Zone Mean Air Temperature,29.872209863501926,C
+4136733,2013-08-21,Electricity:Facility [J](Daily),21670046.457092363,J
+4136733,2013-08-21,Zone Air System Sensible Cooling Energy,13835032.698813451,J
+4136733,2013-08-21,Zone Air System Sensible Heating Energy,6292059.120669162,J
+4136733,2013-08-21,Zone Mean Air Temperature,16.883378218678622,C
+4136733,2013-08-22,Electricity:Facility [J](Daily),21230245.23984094,J
+4136733,2013-08-22,Zone Air System Sensible Cooling Energy,19615017.60880398,J
+4136733,2013-08-22,Zone Air System Sensible Heating Energy,8692531.582120307,J
+4136733,2013-08-22,Zone Mean Air Temperature,27.138073213281146,C
+4136733,2013-08-23,Electricity:Facility [J](Daily),23142922.712090895,J
+4136733,2013-08-23,Zone Air System Sensible Cooling Energy,13645567.389015729,J
+4136733,2013-08-23,Zone Air System Sensible Heating Energy,7474725.106238064,J
+4136733,2013-08-23,Zone Mean Air Temperature,27.967397624692087,C
+4136733,2013-08-24,Electricity:Facility [J](Daily),22650927.175717518,J
+4136733,2013-08-24,Zone Air System Sensible Cooling Energy,22395646.6733513,J
+4136733,2013-08-24,Zone Air System Sensible Heating Energy,6544898.969674005,J
+4136733,2013-08-24,Zone Mean Air Temperature,22.6440447742204,C
+4136733,2013-08-25,Electricity:Facility [J](Daily),10500517.271679282,J
+4136733,2013-08-25,Zone Air System Sensible Cooling Energy,11913884.916899314,J
+4136733,2013-08-25,Zone Air System Sensible Heating Energy,9127302.217231829,J
+4136733,2013-08-25,Zone Mean Air Temperature,25.027377462311264,C
+4136733,2013-08-26,Electricity:Facility [J](Daily),20914301.121102132,J
+4136733,2013-08-26,Zone Air System Sensible Cooling Energy,6957693.33811533,J
+4136733,2013-08-26,Zone Air System Sensible Heating Energy,7400616.13813733,J
+4136733,2013-08-26,Zone Mean Air Temperature,22.090866565703163,C
+4136733,2013-08-27,Electricity:Facility [J](Daily),11464928.83693441,J
+4136733,2013-08-27,Zone Air System Sensible Cooling Energy,0.0,J
+4136733,2013-08-27,Zone Air System Sensible Heating Energy,12851906.613453493,J
+4136733,2013-08-27,Zone Mean Air Temperature,25.31594444660925,C
+4136733,2013-08-28,Electricity:Facility [J](Daily),18326845.527716212,J
+4136733,2013-08-28,Zone Air System Sensible Cooling Energy,9287995.439965162,J
+4136733,2013-08-28,Zone Air System Sensible Heating Energy,9570114.550771248,J
+4136733,2013-08-28,Zone Mean Air Temperature,31.476146159299724,C
+4136733,2013-08-29,Electricity:Facility [J](Daily),15083325.829371085,J
+4136733,2013-08-29,Zone Air System Sensible Cooling Energy,9924394.788149713,J
+4136733,2013-08-29,Zone Air System Sensible Heating Energy,11862067.553504717,J
+4136733,2013-08-29,Zone Mean Air Temperature,15.473855404652424,C
+4136733,2013-08-30,Electricity:Facility [J](Daily),13459109.06820461,J
+4136733,2013-08-30,Zone Air System Sensible Cooling Energy,898428.3793090468,J
+4136733,2013-08-30,Zone Air System Sensible Heating Energy,5863779.404030621,J
+4136733,2013-08-30,Zone Mean Air Temperature,27.83563940111206,C
+4136733,2013-08-31,Electricity:Facility [J](Daily),23403185.588923756,J
+4136733,2013-08-31,Zone Air System Sensible Cooling Energy,12227876.594372999,J
+4136733,2013-08-31,Zone Air System Sensible Heating Energy,2916498.5387255694,J
+4136733,2013-08-31,Zone Mean Air Temperature,19.052706731126985,C
+4136733,2013-09-01,Electricity:Facility [J](Daily),14595675.376272105,J
+4136733,2013-09-01,Water Heater Heating Energy,60291223.3322247,J
+4136733,2013-09-01,Zone Air System Sensible Cooling Energy,23861694.188071553,J
+4136733,2013-09-01,Zone Air System Sensible Heating Energy,6010077.466207614,J
+4136733,2013-09-01,Zone Mean Air Temperature,23.21892735496539,C
+4136733,2013-09-02,Electricity:Facility [J](Daily),22287719.97854137,J
+4136733,2013-09-02,Zone Air System Sensible Cooling Energy,9283615.953082459,J
+4136733,2013-09-02,Zone Air System Sensible Heating Energy,12311266.624552712,J
+4136733,2013-09-02,Zone Mean Air Temperature,17.786729598010787,C
+4136733,2013-09-03,Electricity:Facility [J](Daily),21218012.833486702,J
+4136733,2013-09-03,Zone Air System Sensible Cooling Energy,12975854.443735601,J
+4136733,2013-09-03,Zone Air System Sensible Heating Energy,12694293.127006333,J
+4136733,2013-09-03,Zone Mean Air Temperature,23.024356190130117,C
+4136733,2013-09-04,Electricity:Facility [J](Daily),22948139.4345156,J
+4136733,2013-09-04,Zone Air System Sensible Cooling Energy,3593270.293048335,J
+4136733,2013-09-04,Zone Air System Sensible Heating Energy,2860654.7846331503,J
+4136733,2013-09-04,Zone Mean Air Temperature,20.640564008787926,C
+4136733,2013-09-05,Electricity:Facility [J](Daily),12074470.544677097,J
+4136733,2013-09-05,Zone Air System Sensible Cooling Energy,15904168.851406947,J
+4136733,2013-09-05,Zone Air System Sensible Heating Energy,9245994.709333707,J
+4136733,2013-09-05,Zone Mean Air Temperature,22.023757980143642,C
+4136733,2013-09-06,Electricity:Facility [J](Daily),12641053.729118159,J
+4136733,2013-09-06,Zone Air System Sensible Cooling Energy,8638375.500858722,J
+4136733,2013-09-06,Zone Air System Sensible Heating Energy,8731124.544304233,J
+4136733,2013-09-06,Zone Mean Air Temperature,24.358974121446238,C
+4136733,2013-09-07,Electricity:Facility [J](Daily),15498262.277607815,J
+4136733,2013-09-07,Zone Air System Sensible Cooling Energy,5787301.159714091,J
+4136733,2013-09-07,Zone Air System Sensible Heating Energy,5771498.316583453,J
+4136733,2013-09-07,Zone Mean Air Temperature,27.718973729309877,C
+4136733,2013-09-08,Electricity:Facility [J](Daily),13713692.497020986,J
+4136733,2013-09-08,Zone Air System Sensible Cooling Energy,6953100.3829403175,J
+4136733,2013-09-08,Zone Air System Sensible Heating Energy,2185419.566501924,J
+4136733,2013-09-08,Zone Mean Air Temperature,21.777727160748327,C
+4136733,2013-09-09,Electricity:Facility [J](Daily),10970068.173636585,J
+4136733,2013-09-09,Zone Air System Sensible Cooling Energy,1190918.6166479078,J
+4136733,2013-09-09,Zone Air System Sensible Heating Energy,9716360.452378899,J
+4136733,2013-09-09,Zone Mean Air Temperature,21.496853689875397,C
+4136733,2013-09-10,Electricity:Facility [J](Daily),7465666.560308098,J
+4136733,2013-09-10,Zone Air System Sensible Cooling Energy,12334899.2765488,J
+4136733,2013-09-10,Zone Air System Sensible Heating Energy,5531482.678031418,J
+4136733,2013-09-10,Zone Mean Air Temperature,24.77162181695462,C
+4136733,2013-09-11,Electricity:Facility [J](Daily),17359701.10410429,J
+4136733,2013-09-11,Zone Air System Sensible Cooling Energy,15253005.530357772,J
+4136733,2013-09-11,Zone Air System Sensible Heating Energy,9246889.117105173,J
+4136733,2013-09-11,Zone Mean Air Temperature,24.63461184926911,C
+4136733,2013-09-12,Electricity:Facility [J](Daily),6633671.806210971,J
+4136733,2013-09-12,Zone Air System Sensible Cooling Energy,9086241.565330032,J
+4136733,2013-09-12,Zone Air System Sensible Heating Energy,10602550.352652065,J
+4136733,2013-09-12,Zone Mean Air Temperature,23.672467219579623,C
+4136733,2013-09-13,Electricity:Facility [J](Daily),19437525.37169988,J
+4136733,2013-09-13,Zone Air System Sensible Cooling Energy,9782993.255677087,J
+4136733,2013-09-13,Zone Air System Sensible Heating Energy,11601417.847910374,J
+4136733,2013-09-13,Zone Mean Air Temperature,19.17413911723503,C
+4136733,2013-09-14,Electricity:Facility [J](Daily),15349111.132246483,J
+4136733,2013-09-14,Zone Air System Sensible Cooling Energy,8928068.202811304,J
+4136733,2013-09-14,Zone Air System Sensible Heating Energy,7913903.520992298,J
+4136733,2013-09-14,Zone Mean Air Temperature,16.704246681724637,C
+4136733,2013-09-15,Electricity:Facility [J](Daily),14636038.141294591,J
+4136733,2013-09-15,Zone Air System Sensible Cooling Energy,0.0,J
+4136733,2013-09-15,Zone Air System Sensible Heating Energy,12425217.698009908,J
+4136733,2013-09-15,Zone Mean Air Temperature,17.456980846339857,C
+4136733,2013-09-16,Electricity:Facility [J](Daily),12603950.17434886,J
+4136733,2013-09-16,Zone Air System Sensible Cooling Energy,6606183.390233723,J
+4136733,2013-09-16,Zone Air System Sensible Heating Energy,12250512.756230772,J
+4136733,2013-09-16,Zone Mean Air Temperature,21.86595234820387,C
+4136733,2013-09-17,Electricity:Facility [J](Daily),11032945.116823293,J
+4136733,2013-09-17,Zone Air System Sensible Cooling Energy,5311567.15849524,J
+4136733,2013-09-17,Zone Air System Sensible Heating Energy,13894107.46879002,J
+4136733,2013-09-17,Zone Mean Air Temperature,18.71344493406539,C
+4136733,2013-09-18,Electricity:Facility [J](Daily),22795609.352265544,J
+4136733,2013-09-18,Zone Air System Sensible Cooling Energy,7165629.803303302,J
+4136733,2013-09-18,Zone Air System Sensible Heating Energy,13126635.616022997,J
+4136733,2013-09-18,Zone Mean Air Temperature,20.15419710713523,C
+4136733,2013-09-19,Electricity:Facility [J](Daily),26687358.92737526,J
+4136733,2013-09-19,Zone Air System Sensible Cooling Energy,7651838.657372466,J
+4136733,2013-09-19,Zone Air System Sensible Heating Energy,19368426.061369237,J
+4136733,2013-09-19,Zone Mean Air Temperature,21.028077351383654,C
+4136733,2013-09-20,Electricity:Facility [J](Daily),22704930.70198855,J
+4136733,2013-09-20,Zone Air System Sensible Cooling Energy,2746296.648845916,J
+4136733,2013-09-20,Zone Air System Sensible Heating Energy,8756847.728673676,J
+4136733,2013-09-20,Zone Mean Air Temperature,19.077509680643537,C
+4136733,2013-09-21,Electricity:Facility [J](Daily),14941350.614692643,J
+4136733,2013-09-21,Zone Air System Sensible Cooling Energy,8837156.839705769,J
+4136733,2013-09-21,Zone Air System Sensible Heating Energy,13660956.68064456,J
+4136733,2013-09-21,Zone Mean Air Temperature,21.341997216953843,C
+4136733,2013-09-22,Electricity:Facility [J](Daily),13635632.147624722,J
+4136733,2013-09-22,Zone Air System Sensible Cooling Energy,5330749.693325037,J
+4136733,2013-09-22,Zone Air System Sensible Heating Energy,6969651.841390831,J
+4136733,2013-09-22,Zone Mean Air Temperature,23.80969488747373,C
+4136733,2013-09-23,Electricity:Facility [J](Daily),9924509.362602236,J
+4136733,2013-09-23,Zone Air System Sensible Cooling Energy,8344878.4013227355,J
+4136733,2013-09-23,Zone Air System Sensible Heating Energy,5700903.549692832,J
+4136733,2013-09-23,Zone Mean Air Temperature,23.966945547343187,C
+4136733,2013-09-24,Electricity:Facility [J](Daily),16732300.435181338,J
+4136733,2013-09-24,Zone Air System Sensible Cooling Energy,8901930.944212735,J
+4136733,2013-09-24,Zone Air System Sensible Heating Energy,14444292.495887505,J
+4136733,2013-09-24,Zone Mean Air Temperature,20.751543046129857,C
+4136733,2013-09-25,Electricity:Facility [J](Daily),22358588.49589994,J
+4136733,2013-09-25,Zone Air System Sensible Cooling Energy,9865309.599044258,J
+4136733,2013-09-25,Zone Air System Sensible Heating Energy,14301173.584443895,J
+4136733,2013-09-25,Zone Mean Air Temperature,24.182749343421307,C
+4136733,2013-09-26,Electricity:Facility [J](Daily),7446112.243035444,J
+4136733,2013-09-26,Zone Air System Sensible Cooling Energy,6224141.506158243,J
+4136733,2013-09-26,Zone Air System Sensible Heating Energy,17731231.82576695,J
+4136733,2013-09-26,Zone Mean Air Temperature,18.512887402442225,C
+4136733,2013-09-27,Electricity:Facility [J](Daily),19673664.2781352,J
+4136733,2013-09-27,Zone Air System Sensible Cooling Energy,12668275.483790398,J
+4136733,2013-09-27,Zone Air System Sensible Heating Energy,12794421.32052054,J
+4136733,2013-09-27,Zone Mean Air Temperature,13.864074503742149,C
+4136733,2013-09-28,Electricity:Facility [J](Daily),12163672.831623573,J
+4136733,2013-09-28,Zone Air System Sensible Cooling Energy,14444996.471466558,J
+4136733,2013-09-28,Zone Air System Sensible Heating Energy,13008788.098597318,J
+4136733,2013-09-28,Zone Mean Air Temperature,15.609319128504543,C
+4136733,2013-09-29,Electricity:Facility [J](Daily),15571757.10317304,J
+4136733,2013-09-29,Zone Air System Sensible Cooling Energy,5814562.651384243,J
+4136733,2013-09-29,Zone Air System Sensible Heating Energy,15094519.396785969,J
+4136733,2013-09-29,Zone Mean Air Temperature,19.458392190227258,C
+4136733,2013-09-30,Electricity:Facility [J](Daily),10649996.65521912,J
+4136733,2013-09-30,Zone Air System Sensible Cooling Energy,8677280.463284953,J
+4136733,2013-09-30,Zone Air System Sensible Heating Energy,9769556.288278392,J
+4136733,2013-09-30,Zone Mean Air Temperature,25.88022936892488,C
+4136733,2013-10-01,Electricity:Facility [J](Daily),14058786.823446648,J
+4136733,2013-10-01,Water Heater Heating Energy,55705401.6138569,J
+4136733,2013-10-01,Zone Air System Sensible Cooling Energy,9295099.982279867,J
+4136733,2013-10-01,Zone Air System Sensible Heating Energy,29293130.408628475,J
+4136733,2013-10-01,Zone Mean Air Temperature,15.934617590852692,C
+4136733,2013-10-02,Electricity:Facility [J](Daily),17045700.205673363,J
+4136733,2013-10-02,Zone Air System Sensible Cooling Energy,3545370.8565501655,J
+4136733,2013-10-02,Zone Air System Sensible Heating Energy,2896846.1233592927,J
+4136733,2013-10-02,Zone Mean Air Temperature,21.574529167214283,C
+4136733,2013-10-03,Electricity:Facility [J](Daily),18615093.283587284,J
+4136733,2013-10-03,Zone Air System Sensible Cooling Energy,13258176.959918609,J
+4136733,2013-10-03,Zone Air System Sensible Heating Energy,11792184.539644442,J
+4136733,2013-10-03,Zone Mean Air Temperature,22.384147387939564,C
+4136733,2013-10-04,Electricity:Facility [J](Daily),16656078.258112116,J
+4136733,2013-10-04,Zone Air System Sensible Cooling Energy,5129666.442940225,J
+4136733,2013-10-04,Zone Air System Sensible Heating Energy,17908071.918294616,J
+4136733,2013-10-04,Zone Mean Air Temperature,24.04179780578504,C
+4136733,2013-10-05,Electricity:Facility [J](Daily),7209517.890377176,J
+4136733,2013-10-05,Zone Air System Sensible Cooling Energy,5484873.79132844,J
+4136733,2013-10-05,Zone Air System Sensible Heating Energy,20696147.84128239,J
+4136733,2013-10-05,Zone Mean Air Temperature,15.623627885218657,C
+4136733,2013-10-06,Electricity:Facility [J](Daily),15488543.446238238,J
+4136733,2013-10-06,Zone Air System Sensible Cooling Energy,8747863.159914574,J
+4136733,2013-10-06,Zone Air System Sensible Heating Energy,12062017.148441693,J
+4136733,2013-10-06,Zone Mean Air Temperature,21.777685220626328,C
+4136733,2013-10-07,Electricity:Facility [J](Daily),12063544.982915519,J
+4136733,2013-10-07,Zone Air System Sensible Cooling Energy,3397611.7709822305,J
+4136733,2013-10-07,Zone Air System Sensible Heating Energy,19541483.466221157,J
+4136733,2013-10-07,Zone Mean Air Temperature,22.883825342774475,C
+4136733,2013-10-08,Electricity:Facility [J](Daily),9761004.992028851,J
+4136733,2013-10-08,Zone Air System Sensible Cooling Energy,3047158.561998477,J
+4136733,2013-10-08,Zone Air System Sensible Heating Energy,6304423.836195989,J
+4136733,2013-10-08,Zone Mean Air Temperature,21.25713953059343,C
+4136733,2013-10-09,Electricity:Facility [J](Daily),14703709.299279604,J
+4136733,2013-10-09,Zone Air System Sensible Cooling Energy,10675055.771595765,J
+4136733,2013-10-09,Zone Air System Sensible Heating Energy,17771583.840760835,J
+4136733,2013-10-09,Zone Mean Air Temperature,24.171030506582966,C
+4136733,2013-10-10,Electricity:Facility [J](Daily),8136643.364606736,J
+4136733,2013-10-10,Zone Air System Sensible Cooling Energy,9836160.388365122,J
+4136733,2013-10-10,Zone Air System Sensible Heating Energy,23249451.040734403,J
+4136733,2013-10-10,Zone Mean Air Temperature,17.93954826194365,C
+4136733,2013-10-11,Electricity:Facility [J](Daily),15788159.098916573,J
+4136733,2013-10-11,Zone Air System Sensible Cooling Energy,6215716.8655824475,J
+4136733,2013-10-11,Zone Air System Sensible Heating Energy,16312205.368303137,J
+4136733,2013-10-11,Zone Mean Air Temperature,20.336813888759586,C
+4136733,2013-10-12,Electricity:Facility [J](Daily),16328955.552435515,J
+4136733,2013-10-12,Zone Air System Sensible Cooling Energy,6025441.38078538,J
+4136733,2013-10-12,Zone Air System Sensible Heating Energy,11191499.4662874,J
+4136733,2013-10-12,Zone Mean Air Temperature,21.512881811306226,C
+4136733,2013-10-13,Electricity:Facility [J](Daily),11703819.539342878,J
+4136733,2013-10-13,Zone Air System Sensible Cooling Energy,7200857.951980433,J
+4136733,2013-10-13,Zone Air System Sensible Heating Energy,10220644.23533312,J
+4136733,2013-10-13,Zone Mean Air Temperature,22.831859955286344,C
+4136733,2013-10-14,Electricity:Facility [J](Daily),17063119.766171683,J
+4136733,2013-10-14,Zone Air System Sensible Cooling Energy,5118840.587103798,J
+4136733,2013-10-14,Zone Air System Sensible Heating Energy,20692084.019037686,J
+4136733,2013-10-14,Zone Mean Air Temperature,19.64892915881792,C
+4136733,2013-10-15,Electricity:Facility [J](Daily),7664860.389674512,J
+4136733,2013-10-15,Zone Air System Sensible Cooling Energy,9332553.91392337,J
+4136733,2013-10-15,Zone Air System Sensible Heating Energy,18460700.63784868,J
+4136733,2013-10-15,Zone Mean Air Temperature,20.775173070811512,C
+4136733,2013-10-16,Electricity:Facility [J](Daily),19676197.587947693,J
+4136733,2013-10-16,Zone Air System Sensible Cooling Energy,4992857.63749715,J
+4136733,2013-10-16,Zone Air System Sensible Heating Energy,11346900.06263438,J
+4136733,2013-10-16,Zone Mean Air Temperature,20.37937994091159,C
+4136733,2013-10-17,Electricity:Facility [J](Daily),8324404.534509914,J
+4136733,2013-10-17,Zone Air System Sensible Cooling Energy,1780408.543070485,J
+4136733,2013-10-17,Zone Air System Sensible Heating Energy,12542170.825259151,J
+4136733,2013-10-17,Zone Mean Air Temperature,23.46389780069734,C
+4136733,2013-10-18,Electricity:Facility [J](Daily),16167946.73657127,J
+4136733,2013-10-18,Zone Air System Sensible Cooling Energy,6202720.3494517105,J
+4136733,2013-10-18,Zone Air System Sensible Heating Energy,17341562.68957486,J
+4136733,2013-10-18,Zone Mean Air Temperature,18.17448581509077,C
+4136733,2013-10-19,Electricity:Facility [J](Daily),11201942.421734322,J
+4136733,2013-10-19,Zone Air System Sensible Cooling Energy,4873053.760039613,J
+4136733,2013-10-19,Zone Air System Sensible Heating Energy,16999965.62988218,J
+4136733,2013-10-19,Zone Mean Air Temperature,16.690502511900753,C
+4136733,2013-10-20,Electricity:Facility [J](Daily),12762541.284929734,J
+4136733,2013-10-20,Zone Air System Sensible Cooling Energy,6842238.924631785,J
+4136733,2013-10-20,Zone Air System Sensible Heating Energy,21484998.91223051,J
+4136733,2013-10-20,Zone Mean Air Temperature,17.17317904923823,C
+4136733,2013-10-21,Electricity:Facility [J](Daily),7492469.72566287,J
+4136733,2013-10-21,Zone Air System Sensible Cooling Energy,734780.7048130559,J
+4136733,2013-10-21,Zone Air System Sensible Heating Energy,5699948.55759485,J
+4136733,2013-10-21,Zone Mean Air Temperature,12.253540666944458,C
+4136733,2013-10-22,Electricity:Facility [J](Daily),15803484.172118576,J
+4136733,2013-10-22,Zone Air System Sensible Cooling Energy,8863498.582509441,J
+4136733,2013-10-22,Zone Air System Sensible Heating Energy,31872152.895628642,J
+4136733,2013-10-22,Zone Mean Air Temperature,16.72511952440202,C
+4136733,2013-10-23,Electricity:Facility [J](Daily),10751193.238258485,J
+4136733,2013-10-23,Zone Air System Sensible Cooling Energy,4583486.437479742,J
+4136733,2013-10-23,Zone Air System Sensible Heating Energy,20325655.84744689,J
+4136733,2013-10-23,Zone Mean Air Temperature,20.571665963708913,C
+4136733,2013-10-24,Electricity:Facility [J](Daily),10809883.103353828,J
+4136733,2013-10-24,Zone Air System Sensible Cooling Energy,7711801.404006318,J
+4136733,2013-10-24,Zone Air System Sensible Heating Energy,15189505.499754557,J
+4136733,2013-10-24,Zone Mean Air Temperature,16.612452069457138,C
+4136733,2013-10-25,Electricity:Facility [J](Daily),14590194.806423526,J
+4136733,2013-10-25,Zone Air System Sensible Cooling Energy,4603307.951784728,J
+4136733,2013-10-25,Zone Air System Sensible Heating Energy,6638691.187086414,J
+4136733,2013-10-25,Zone Mean Air Temperature,17.529118545341987,C
+4136733,2013-10-26,Electricity:Facility [J](Daily),16945858.66425159,J
+4136733,2013-10-26,Zone Air System Sensible Cooling Energy,4251533.138281033,J
+4136733,2013-10-26,Zone Air System Sensible Heating Energy,14297193.187952809,J
+4136733,2013-10-26,Zone Mean Air Temperature,18.955276030071072,C
+4136733,2013-10-27,Electricity:Facility [J](Daily),16828766.871913742,J
+4136733,2013-10-27,Zone Air System Sensible Cooling Energy,2690598.2777810465,J
+4136733,2013-10-27,Zone Air System Sensible Heating Energy,25389438.12934145,J
+4136733,2013-10-27,Zone Mean Air Temperature,18.27617190931626,C
+4136733,2013-10-28,Electricity:Facility [J](Daily),12813283.182416623,J
+4136733,2013-10-28,Zone Air System Sensible Cooling Energy,5595826.885626052,J
+4136733,2013-10-28,Zone Air System Sensible Heating Energy,22604673.393153608,J
+4136733,2013-10-28,Zone Mean Air Temperature,20.108951548145,C
+4136733,2013-10-29,Electricity:Facility [J](Daily),14118742.208420407,J
+4136733,2013-10-29,Zone Air System Sensible Cooling Energy,2933302.5360163176,J
+4136733,2013-10-29,Zone Air System Sensible Heating Energy,11649939.799037749,J
+4136733,2013-10-29,Zone Mean Air Temperature,18.691187000399243,C
+4136733,2013-10-30,Electricity:Facility [J](Daily),9640407.285784103,J
+4136733,2013-10-30,Zone Air System Sensible Cooling Energy,754451.8271932044,J
+4136733,2013-10-30,Zone Air System Sensible Heating Energy,22978044.29347097,J
+4136733,2013-10-30,Zone Mean Air Temperature,17.087862800535543,C
+4136733,2013-10-31,Electricity:Facility [J](Daily),16036567.101389682,J
+4136733,2013-10-31,Zone Air System Sensible Cooling Energy,8204065.613257388,J
+4136733,2013-10-31,Zone Air System Sensible Heating Energy,13957726.700582141,J
+4136733,2013-10-31,Zone Mean Air Temperature,21.750919096071463,C
+4136733,2013-11-01,Electricity:Facility [J](Daily),11096994.021427684,J
+4136733,2013-11-01,Water Heater Heating Energy,41747872.72849553,J
+4136733,2013-11-01,Zone Air System Sensible Cooling Energy,6253259.028837102,J
+4136733,2013-11-01,Zone Air System Sensible Heating Energy,20474700.848920535,J
+4136733,2013-11-01,Zone Mean Air Temperature,20.201165825188212,C
+4136733,2013-11-02,Electricity:Facility [J](Daily),11001976.455684591,J
+4136733,2013-11-02,Zone Air System Sensible Cooling Energy,4543878.93362701,J
+4136733,2013-11-02,Zone Air System Sensible Heating Energy,11166948.395513559,J
+4136733,2013-11-02,Zone Mean Air Temperature,18.705638722646214,C
+4136733,2013-11-03,Electricity:Facility [J](Daily),11509753.678820074,J
+4136733,2013-11-03,Zone Air System Sensible Cooling Energy,7225057.190554894,J
+4136733,2013-11-03,Zone Air System Sensible Heating Energy,24296264.759469364,J
+4136733,2013-11-03,Zone Mean Air Temperature,20.44352105171433,C
+4136733,2013-11-04,Electricity:Facility [J](Daily),18336813.615744602,J
+4136733,2013-11-04,Zone Air System Sensible Cooling Energy,4758791.553547007,J
+4136733,2013-11-04,Zone Air System Sensible Heating Energy,23141948.309428662,J
+4136733,2013-11-04,Zone Mean Air Temperature,15.771274663950427,C
+4136733,2013-11-05,Electricity:Facility [J](Daily),13600795.650849199,J
+4136733,2013-11-05,Zone Air System Sensible Cooling Energy,1370916.8445091892,J
+4136733,2013-11-05,Zone Air System Sensible Heating Energy,16294879.078853877,J
+4136733,2013-11-05,Zone Mean Air Temperature,19.439258411770393,C
+4136733,2013-11-06,Electricity:Facility [J](Daily),14861506.211820936,J
+4136733,2013-11-06,Zone Air System Sensible Cooling Energy,5368777.391475291,J
+4136733,2013-11-06,Zone Air System Sensible Heating Energy,27675724.56666828,J
+4136733,2013-11-06,Zone Mean Air Temperature,21.466575841614926,C
+4136733,2013-11-07,Electricity:Facility [J](Daily),11329979.438293438,J
+4136733,2013-11-07,Zone Air System Sensible Cooling Energy,4973531.38257059,J
+4136733,2013-11-07,Zone Air System Sensible Heating Energy,21604407.45278559,J
+4136733,2013-11-07,Zone Mean Air Temperature,21.519834525060954,C
+4136733,2013-11-08,Electricity:Facility [J](Daily),12068038.733512698,J
+4136733,2013-11-08,Zone Air System Sensible Cooling Energy,561927.3847735871,J
+4136733,2013-11-08,Zone Air System Sensible Heating Energy,15083977.4492989,J
+4136733,2013-11-08,Zone Mean Air Temperature,15.470308299476105,C
+4136733,2013-11-09,Electricity:Facility [J](Daily),16736562.719285818,J
+4136733,2013-11-09,Zone Air System Sensible Cooling Energy,2698241.3210894223,J
+4136733,2013-11-09,Zone Air System Sensible Heating Energy,13353161.528523372,J
+4136733,2013-11-09,Zone Mean Air Temperature,20.511911197030294,C
+4136733,2013-11-10,Electricity:Facility [J](Daily),6524646.789579672,J
+4136733,2013-11-10,Zone Air System Sensible Cooling Energy,4429543.363918088,J
+4136733,2013-11-10,Zone Air System Sensible Heating Energy,18127654.163943898,J
+4136733,2013-11-10,Zone Mean Air Temperature,20.13332106107566,C
+4136733,2013-11-11,Electricity:Facility [J](Daily),11818492.641138287,J
+4136733,2013-11-11,Zone Air System Sensible Cooling Energy,5796214.375705872,J
+4136733,2013-11-11,Zone Air System Sensible Heating Energy,24565777.917739462,J
+4136733,2013-11-11,Zone Mean Air Temperature,18.42883286761708,C
+4136733,2013-11-12,Electricity:Facility [J](Daily),18976160.838906422,J
+4136733,2013-11-12,Zone Air System Sensible Cooling Energy,4922945.773957292,J
+4136733,2013-11-12,Zone Air System Sensible Heating Energy,21939527.88183828,J
+4136733,2013-11-12,Zone Mean Air Temperature,17.275261961648358,C
+4136733,2013-11-13,Electricity:Facility [J](Daily),11634228.622169418,J
+4136733,2013-11-13,Zone Air System Sensible Cooling Energy,555745.8185993169,J
+4136733,2013-11-13,Zone Air System Sensible Heating Energy,14084953.284876427,J
+4136733,2013-11-13,Zone Mean Air Temperature,19.56585624397259,C
+4136733,2013-11-14,Electricity:Facility [J](Daily),10036618.103215134,J
+4136733,2013-11-14,Zone Air System Sensible Cooling Energy,4103874.6593766087,J
+4136733,2013-11-14,Zone Air System Sensible Heating Energy,17539836.03885727,J
+4136733,2013-11-14,Zone Mean Air Temperature,18.277008840309076,C
+4136733,2013-11-15,Electricity:Facility [J](Daily),10651432.765098328,J
+4136733,2013-11-15,Zone Air System Sensible Cooling Energy,3847169.2214060444,J
+4136733,2013-11-15,Zone Air System Sensible Heating Energy,22877082.114943005,J
+4136733,2013-11-15,Zone Mean Air Temperature,19.640793260103848,C
+4136733,2013-11-16,Electricity:Facility [J](Daily),5622618.585496568,J
+4136733,2013-11-16,Zone Air System Sensible Cooling Energy,4163880.7523550238,J
+4136733,2013-11-16,Zone Air System Sensible Heating Energy,20662993.878352806,J
+4136733,2013-11-16,Zone Mean Air Temperature,20.69016124742147,C
+4136733,2013-11-17,Electricity:Facility [J](Daily),14809564.786547787,J
+4136733,2013-11-17,Zone Air System Sensible Cooling Energy,4838111.201496107,J
+4136733,2013-11-17,Zone Air System Sensible Heating Energy,20775489.379001755,J
+4136733,2013-11-17,Zone Mean Air Temperature,13.313471698212197,C
+4136733,2013-11-18,Electricity:Facility [J](Daily),11755489.270976974,J
+4136733,2013-11-18,Zone Air System Sensible Cooling Energy,3368552.665346839,J
+4136733,2013-11-18,Zone Air System Sensible Heating Energy,23269172.992298596,J
+4136733,2013-11-18,Zone Mean Air Temperature,19.198127965368354,C
+4136733,2013-11-19,Electricity:Facility [J](Daily),7861388.097989068,J
+4136733,2013-11-19,Zone Air System Sensible Cooling Energy,3386767.7004753673,J
+4136733,2013-11-19,Zone Air System Sensible Heating Energy,29231835.275752842,J
+4136733,2013-11-19,Zone Mean Air Temperature,16.974722673275316,C
+4136733,2013-11-20,Electricity:Facility [J](Daily),13733421.748001691,J
+4136733,2013-11-20,Zone Air System Sensible Cooling Energy,4448904.026964411,J
+4136733,2013-11-20,Zone Air System Sensible Heating Energy,26502037.478915405,J
+4136733,2013-11-20,Zone Mean Air Temperature,21.957294800999,C
+4136733,2013-11-21,Electricity:Facility [J](Daily),13936171.566376785,J
+4136733,2013-11-21,Zone Air System Sensible Cooling Energy,1989237.5818856538,J
+4136733,2013-11-21,Zone Air System Sensible Heating Energy,31286773.597256437,J
+4136733,2013-11-21,Zone Mean Air Temperature,18.69983612423854,C
+4136733,2013-11-22,Electricity:Facility [J](Daily),16411593.850464098,J
+4136733,2013-11-22,Zone Air System Sensible Cooling Energy,1320409.7180756275,J
+4136733,2013-11-22,Zone Air System Sensible Heating Energy,31777236.48094101,J
+4136733,2013-11-22,Zone Mean Air Temperature,15.102605355788649,C
+4136733,2013-11-23,Electricity:Facility [J](Daily),10366970.470768157,J
+4136733,2013-11-23,Zone Air System Sensible Cooling Energy,578763.4059628067,J
+4136733,2013-11-23,Zone Air System Sensible Heating Energy,21048124.728759363,J
+4136733,2013-11-23,Zone Mean Air Temperature,16.861925426299845,C
+4136733,2013-11-24,Electricity:Facility [J](Daily),8342139.222040855,J
+4136733,2013-11-24,Zone Air System Sensible Cooling Energy,2071818.373642943,J
+4136733,2013-11-24,Zone Air System Sensible Heating Energy,9557737.035984518,J
+4136733,2013-11-24,Zone Mean Air Temperature,18.022927440305804,C
+4136733,2013-11-25,Electricity:Facility [J](Daily),5612574.7472322825,J
+4136733,2013-11-25,Zone Air System Sensible Cooling Energy,2877548.431668462,J
+4136733,2013-11-25,Zone Air System Sensible Heating Energy,21698436.68861391,J
+4136733,2013-11-25,Zone Mean Air Temperature,18.693095198493722,C
+4136733,2013-11-26,Electricity:Facility [J](Daily),9543050.529716574,J
+4136733,2013-11-26,Zone Air System Sensible Cooling Energy,1583388.6752487228,J
+4136733,2013-11-26,Zone Air System Sensible Heating Energy,25595631.742763273,J
+4136733,2013-11-26,Zone Mean Air Temperature,17.90143599504285,C
+4136733,2013-11-27,Electricity:Facility [J](Daily),12925347.155314513,J
+4136733,2013-11-27,Zone Air System Sensible Cooling Energy,4175807.9201231175,J
+4136733,2013-11-27,Zone Air System Sensible Heating Energy,19408860.939760678,J
+4136733,2013-11-27,Zone Mean Air Temperature,16.54826361336068,C
+4136733,2013-11-28,Electricity:Facility [J](Daily),11214634.459906854,J
+4136733,2013-11-28,Zone Air System Sensible Cooling Energy,2402062.03649371,J
+4136733,2013-11-28,Zone Air System Sensible Heating Energy,37932089.75377035,J
+4136733,2013-11-28,Zone Mean Air Temperature,16.79075641361297,C
+4136733,2013-11-29,Electricity:Facility [J](Daily),10579085.034863735,J
+4136733,2013-11-29,Zone Air System Sensible Cooling Energy,3283200.840778438,J
+4136733,2013-11-29,Zone Air System Sensible Heating Energy,0.0,J
+4136733,2013-11-29,Zone Mean Air Temperature,17.24578421549976,C
+4136733,2013-11-30,Electricity:Facility [J](Daily),15938247.785962872,J
+4136733,2013-11-30,Zone Air System Sensible Cooling Energy,5064818.949715986,J
+4136733,2013-11-30,Zone Air System Sensible Heating Energy,30252711.710423227,J
+4136733,2013-11-30,Zone Mean Air Temperature,14.885505754911772,C
+4136733,2013-12-01,Electricity:Facility [J](Daily),14186336.437826676,J
+4136733,2013-12-01,Water Heater Heating Energy,37020842.204757765,J
+4136733,2013-12-01,Zone Air System Sensible Cooling Energy,1420427.748345403,J
+4136733,2013-12-01,Zone Air System Sensible Heating Energy,24009273.530620318,J
+4136733,2013-12-01,Zone Mean Air Temperature,20.143233939202144,C
+4136733,2013-12-02,Electricity:Facility [J](Daily),11950607.14978029,J
+4136733,2013-12-02,Zone Air System Sensible Cooling Energy,1970416.0150752855,J
+4136733,2013-12-02,Zone Air System Sensible Heating Energy,9203087.472658696,J
+4136733,2013-12-02,Zone Mean Air Temperature,22.90922370993113,C
+4136733,2013-12-03,Electricity:Facility [J](Daily),10479988.009739328,J
+4136733,2013-12-03,Zone Air System Sensible Cooling Energy,4924674.005996077,J
+4136733,2013-12-03,Zone Air System Sensible Heating Energy,25327293.77990062,J
+4136733,2013-12-03,Zone Mean Air Temperature,23.050923864396346,C
+4136733,2013-12-04,Electricity:Facility [J](Daily),12829597.069473725,J
+4136733,2013-12-04,Zone Air System Sensible Cooling Energy,2163423.1980213136,J
+4136733,2013-12-04,Zone Air System Sensible Heating Energy,32459456.38207184,J
+4136733,2013-12-04,Zone Mean Air Temperature,16.02568055103049,C
+4136733,2013-12-05,Electricity:Facility [J](Daily),9093094.479188303,J
+4136733,2013-12-05,Zone Air System Sensible Cooling Energy,3384855.989684918,J
+4136733,2013-12-05,Zone Air System Sensible Heating Energy,22344721.096837834,J
+4136733,2013-12-05,Zone Mean Air Temperature,12.545647379137241,C
+4136733,2013-12-06,Electricity:Facility [J](Daily),3167926.314284014,J
+4136733,2013-12-06,Zone Air System Sensible Cooling Energy,2928513.675840813,J
+4136733,2013-12-06,Zone Air System Sensible Heating Energy,14954861.274350198,J
+4136733,2013-12-06,Zone Mean Air Temperature,21.17188834569865,C
+4136733,2013-12-07,Electricity:Facility [J](Daily),10191717.791098787,J
+4136733,2013-12-07,Zone Air System Sensible Cooling Energy,3302852.7541408995,J
+4136733,2013-12-07,Zone Air System Sensible Heating Energy,9342708.929455228,J
+4136733,2013-12-07,Zone Mean Air Temperature,17.331686558895626,C
+4136733,2013-12-08,Electricity:Facility [J](Daily),10381931.61708358,J
+4136733,2013-12-08,Zone Air System Sensible Cooling Energy,2221969.7076093447,J
+4136733,2013-12-08,Zone Air System Sensible Heating Energy,34772623.772963926,J
+4136733,2013-12-08,Zone Mean Air Temperature,16.23170284238499,C
+4136733,2013-12-09,Electricity:Facility [J](Daily),14714081.974104129,J
+4136733,2013-12-09,Zone Air System Sensible Cooling Energy,2002847.0138328702,J
+4136733,2013-12-09,Zone Air System Sensible Heating Energy,14815801.96707154,J
+4136733,2013-12-09,Zone Mean Air Temperature,17.936989683382453,C
+4136733,2013-12-10,Electricity:Facility [J](Daily),13967525.760845428,J
+4136733,2013-12-10,Zone Air System Sensible Cooling Energy,3391476.087154005,J
+4136733,2013-12-10,Zone Air System Sensible Heating Energy,26479712.171259116,J
+4136733,2013-12-10,Zone Mean Air Temperature,19.35392110416797,C
+4136733,2013-12-11,Electricity:Facility [J](Daily),9393393.335130982,J
+4136733,2013-12-11,Zone Air System Sensible Cooling Energy,3925431.178688949,J
+4136733,2013-12-11,Zone Air System Sensible Heating Energy,20948396.33298488,J
+4136733,2013-12-11,Zone Mean Air Temperature,14.71608909744372,C
+4136733,2013-12-12,Electricity:Facility [J](Daily),9830481.504789049,J
+4136733,2013-12-12,Zone Air System Sensible Cooling Energy,1132327.7390048222,J
+4136733,2013-12-12,Zone Air System Sensible Heating Energy,20261844.93967525,J
+4136733,2013-12-12,Zone Mean Air Temperature,17.8534165389366,C
+4136733,2013-12-13,Electricity:Facility [J](Daily),14558665.090864452,J
+4136733,2013-12-13,Zone Air System Sensible Cooling Energy,2810062.971509883,J
+4136733,2013-12-13,Zone Air System Sensible Heating Energy,16997933.73892747,J
+4136733,2013-12-13,Zone Mean Air Temperature,19.58124040676964,C
+4136733,2013-12-14,Electricity:Facility [J](Daily),5963428.044297049,J
+4136733,2013-12-14,Zone Air System Sensible Cooling Energy,2154009.629837297,J
+4136733,2013-12-14,Zone Air System Sensible Heating Energy,27837056.62810515,J
+4136733,2013-12-14,Zone Mean Air Temperature,20.421055180259323,C
+4136733,2013-12-15,Electricity:Facility [J](Daily),8781627.924228482,J
+4136733,2013-12-15,Zone Air System Sensible Cooling Energy,2557450.4798252215,J
+4136733,2013-12-15,Zone Air System Sensible Heating Energy,22647622.061858825,J
+4136733,2013-12-15,Zone Mean Air Temperature,19.628201724254605,C
+4136733,2013-12-16,Electricity:Facility [J](Daily),14166588.348793164,J
+4136733,2013-12-16,Zone Air System Sensible Cooling Energy,2227434.804279794,J
+4136733,2013-12-16,Zone Air System Sensible Heating Energy,13616131.15004242,J
+4136733,2013-12-16,Zone Mean Air Temperature,22.406037731392004,C
+4136733,2013-12-17,Electricity:Facility [J](Daily),18374319.18397473,J
+4136733,2013-12-17,Zone Air System Sensible Cooling Energy,516327.8900853197,J
+4136733,2013-12-17,Zone Air System Sensible Heating Energy,25634627.255385984,J
+4136733,2013-12-17,Zone Mean Air Temperature,17.168975848125278,C
+4136733,2013-12-18,Electricity:Facility [J](Daily),13557574.862030605,J
+4136733,2013-12-18,Zone Air System Sensible Cooling Energy,1520321.0661728536,J
+4136733,2013-12-18,Zone Air System Sensible Heating Energy,31924244.50358314,J
+4136733,2013-12-18,Zone Mean Air Temperature,15.347628465608459,C
+4136733,2013-12-19,Electricity:Facility [J](Daily),8680837.415812675,J
+4136733,2013-12-19,Zone Air System Sensible Cooling Energy,1450471.0248383011,J
+4136733,2013-12-19,Zone Air System Sensible Heating Energy,19056130.66581641,J
+4136733,2013-12-19,Zone Mean Air Temperature,17.868095978670894,C
+4136733,2013-12-20,Electricity:Facility [J](Daily),8091565.405995163,J
+4136733,2013-12-20,Zone Air System Sensible Cooling Energy,1996196.5440174257,J
+4136733,2013-12-20,Zone Air System Sensible Heating Energy,29642995.546695605,J
+4136733,2013-12-20,Zone Mean Air Temperature,17.833564762688543,C
+4136733,2013-12-21,Electricity:Facility [J](Daily),8758179.045327192,J
+4136733,2013-12-21,Zone Air System Sensible Cooling Energy,661433.8646242467,J
+4136733,2013-12-21,Zone Air System Sensible Heating Energy,17501100.311584655,J
+4136733,2013-12-21,Zone Mean Air Temperature,18.755777098065973,C
+4136733,2013-12-22,Electricity:Facility [J](Daily),12276348.316608766,J
+4136733,2013-12-22,Zone Air System Sensible Cooling Energy,1887583.5913966477,J
+4136733,2013-12-22,Zone Air System Sensible Heating Energy,40363750.51657018,J
+4136733,2013-12-22,Zone Mean Air Temperature,16.385971956697578,C
+4136733,2013-12-23,Electricity:Facility [J](Daily),8964043.939963616,J
+4136733,2013-12-23,Zone Air System Sensible Cooling Energy,2810583.8356413683,J
+4136733,2013-12-23,Zone Air System Sensible Heating Energy,13863297.379939986,J
+4136733,2013-12-23,Zone Mean Air Temperature,15.03216262148582,C
+4136733,2013-12-24,Electricity:Facility [J](Daily),17323483.44048385,J
+4136733,2013-12-24,Zone Air System Sensible Cooling Energy,829790.8386826902,J
+4136733,2013-12-24,Zone Air System Sensible Heating Energy,31548843.375924226,J
+4136733,2013-12-24,Zone Mean Air Temperature,14.50415814774723,C
+4136733,2013-12-25,Electricity:Facility [J](Daily),13588208.824840587,J
+4136733,2013-12-25,Zone Air System Sensible Cooling Energy,495535.8486058178,J
+4136733,2013-12-25,Zone Air System Sensible Heating Energy,10684518.81221824,J
+4136733,2013-12-25,Zone Mean Air Temperature,15.765160795220154,C
+4136733,2013-12-26,Electricity:Facility [J](Daily),11918530.184576008,J
+4136733,2013-12-26,Zone Air System Sensible Cooling Energy,2748033.18621001,J
+4136733,2013-12-26,Zone Air System Sensible Heating Energy,32869911.577328544,J
+4136733,2013-12-26,Zone Mean Air Temperature,18.31277506031483,C
+4136733,2013-12-27,Electricity:Facility [J](Daily),4135787.9764825883,J
+4136733,2013-12-27,Zone Air System Sensible Cooling Energy,2795779.030653882,J
+4136733,2013-12-27,Zone Air System Sensible Heating Energy,29270472.95127638,J
+4136733,2013-12-27,Zone Mean Air Temperature,21.447009574764564,C
+4136733,2013-12-28,Electricity:Facility [J](Daily),15551337.963680154,J
+4136733,2013-12-28,Zone Air System Sensible Cooling Energy,2361137.9959434653,J
+4136733,2013-12-28,Zone Air System Sensible Heating Energy,32564344.02393941,J
+4136733,2013-12-28,Zone Mean Air Temperature,16.743261198573265,C
+4136733,2013-12-29,Electricity:Facility [J](Daily),14983775.954983134,J
+4136733,2013-12-29,Zone Air System Sensible Cooling Energy,3174829.6171906996,J
+4136733,2013-12-29,Zone Air System Sensible Heating Energy,30462425.09209016,J
+4136733,2013-12-29,Zone Mean Air Temperature,16.520754303989122,C
+4136733,2013-12-30,Electricity:Facility [J](Daily),11716731.191515088,J
+4136733,2013-12-30,Zone Air System Sensible Cooling Energy,1985234.7276033256,J
+4136733,2013-12-30,Zone Air System Sensible Heating Energy,31078766.850275137,J
+4136733,2013-12-30,Zone Mean Air Temperature,22.338070209533033,C
+4136733,2013-12-31,Electricity:Facility [J](Daily),10081249.352275906,J
+4136733,2013-12-31,Zone Air System Sensible Cooling Energy,1647196.6713477604,J
+4136733,2013-12-31,Zone Air System Sensible Heating Energy,31683125.191617254,J
+4136733,2013-12-31,Zone Mean Air Temperature,21.120618591345306,C

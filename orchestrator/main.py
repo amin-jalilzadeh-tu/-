@@ -441,12 +441,15 @@ def orchestrate_workflow(job_config: dict, cancel_event: threading.Event = None)
                     use_multi_level = sens_cfg.get("modification_analysis", {}).get("multi_level_analysis", True)
                     
                     if use_multi_level:
-                        # Check for zone-level data
-                        zone_data_path = Path(job_output_dir) / "parsed_data" / "sql_results" / "timeseries" / "aggregated" / "daily" / "zones_daily.parquet"
+                        # Check for zone-level data in comparison files
+                        comparison_dir = Path(job_output_dir) / "parsed_modified_results" / "comparisons"
                         relationships_path = Path(job_output_dir) / "parsed_data" / "relationships"
                         
-                        if not zone_data_path.exists():
-                            logger.warning("[WARN] Zone-level data not found, falling back to building-level analysis")
+                        # Look for zone-specific comparison files
+                        zone_files = list(comparison_dir.glob("var_zone_*.parquet")) if comparison_dir.exists() else []
+                        
+                        if not zone_files:
+                            logger.warning("[WARN] Zone-level comparison data not found, falling back to building-level analysis")
                             sens_cfg["modification_analysis"]["multi_level_analysis"] = False
                         elif not relationships_path.exists():
                             logger.warning("[WARN] Zone/equipment relationships not found, falling back to building-level analysis")

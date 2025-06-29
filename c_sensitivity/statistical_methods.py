@@ -13,7 +13,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import r2_score
 from sklearn.feature_selection import mutual_info_regression
 import warnings
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Dict, List, Tuple, Optional, Any, Union
 import logging
 
 warnings.filterwarnings('ignore', category=FutureWarning)
@@ -139,7 +139,7 @@ class StatisticalMethods:
     
     def correlation_analysis(self, 
                            X: pd.DataFrame, 
-                           y: pd.DataFrame,
+                           y: Union[pd.DataFrame, pd.Series],
                            method: str = 'pearson',
                            min_samples: int = 5) -> pd.DataFrame:
         """
@@ -147,7 +147,7 @@ class StatisticalMethods:
         
         Args:
             X: Input parameters
-            y: Output variables
+            y: Output variables (DataFrame or Series)
             method: 'pearson', 'spearman', or 'kendall'
             min_samples: Minimum samples required
             
@@ -155,6 +155,10 @@ class StatisticalMethods:
             DataFrame with sensitivity results
         """
         results = []
+        
+        # Convert Series to DataFrame if needed
+        if isinstance(y, pd.Series):
+            y = pd.DataFrame({y.name if y.name else 'output': y})
         
         # Remove non-numeric columns
         X_numeric = X.select_dtypes(include=[np.number])
@@ -248,7 +252,7 @@ class StatisticalMethods:
     
     def regression_analysis(self,
                           X: pd.DataFrame,
-                          y: pd.DataFrame,
+                          y: Union[pd.DataFrame, pd.Series],
                           model_type: str = 'linear',
                           normalize: bool = True) -> pd.DataFrame:
         """
@@ -264,6 +268,10 @@ class StatisticalMethods:
             DataFrame with regression coefficients as sensitivity
         """
         results = []
+        
+        # Convert Series to DataFrame if needed
+        if isinstance(y, pd.Series):
+            y = pd.DataFrame({y.name if y.name else 'output': y})
         
         # Select numeric columns
         X_numeric = X.select_dtypes(include=[np.number])
@@ -406,6 +414,10 @@ class StatisticalMethods:
                 continue
         
         return pd.DataFrame(results)
+    
+    def mutual_information(self, X: pd.DataFrame, y: Union[pd.DataFrame, pd.Series], **kwargs) -> pd.DataFrame:
+        """Alias for mutual_information_analysis for compatibility"""
+        return self.mutual_information_analysis(X, y, **kwargs)
     
     def random_forest_importance(self,
                                X: pd.DataFrame,

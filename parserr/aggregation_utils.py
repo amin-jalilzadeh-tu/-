@@ -202,7 +202,8 @@ class SmartAggregator:
         
         # Identify date columns
         import re
-        date_pattern = r'\d{4}-\d{2}-\d{2}'
+        # Pattern to match both YYYY-MM-DD and YYYY-MM formats
+        date_pattern = r'^\d{4}-\d{2}(?:-\d{2})?$'
         date_cols = [col for col in df.columns if re.match(date_pattern, str(col))]
         
         if not date_cols:

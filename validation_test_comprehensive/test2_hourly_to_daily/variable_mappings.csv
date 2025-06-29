@@ -1,0 +1,2 @@
+real_variable,sim_variable,confidence,match_type
+Electricity:Facility [J](Hourly),Electricity:Facility,0.6444444444444444,semantic

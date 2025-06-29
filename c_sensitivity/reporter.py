@@ -83,9 +83,13 @@ class SensitivityReporter:
         # Add detailed results sections
         if 'traditional' in results:
             html_content += self._create_traditional_section(results['traditional'])
+        elif isinstance(results.get('traditional'), pd.DataFrame):
+            html_content += self._create_traditional_section({'results': results['traditional']})
         
         if 'modification' in results:
             html_content += self._create_modification_section(results['modification'])
+        elif isinstance(results.get('modification'), pd.DataFrame):
+            html_content += self._create_modification_section({'results': results['modification']})
         
         if 'hybrid' in results:
             html_content += self._create_hybrid_section(results['hybrid'])
@@ -202,6 +206,168 @@ class SensitivityReporter:
         html += '</div>\n'
         return html
     
+    def _create_modification_section(self, results: Dict[str, Any]) -> str:
+        """Create modification-based sensitivity analysis section"""
+        html = '<div class="section">\n<h2>Modification-Based Sensitivity Analysis</h2>\n'
+        
+        # Analysis metadata
+        if 'metadata' in results:
+            meta = results['metadata']
+            html += '<div class="subsection">\n'
+            html += f'<div class="metric"><strong>Analysis Method:</strong> {meta.get("method", "elasticity")}</div>\n'
+            html += f'<div class="metric"><strong>Number of Variants:</strong> {meta.get("n_variants", 0)}</div>\n'
+            html += '</div>\n'
+        
+        # Parameter sensitivity results
+        if 'results' in results:
+            html += '<h3>Parameter Sensitivity Results</h3>\n'
+            html += '<table>\n<tr><th>Parameter</th><th>Category</th><th>Sensitivity Score</th><th>Method</th></tr>\n'
+            
+            # Handle different result formats
+            if isinstance(results['results'], pd.DataFrame):
+                # DataFrame format
+                df = results['results']
+                if 'sensitivity_score' in df.columns:
+                    sorted_df = df.nlargest(20, 'sensitivity_score')
+                    
+                    for _, row in sorted_df.iterrows():
+                        param_name = row.get('parameter', '')
+                        formatted_name = self._format_parameter_name(param_name)
+                        category = row.get('category', 'Unknown')
+                        score = row.get('sensitivity_score', 0)
+                        method = row.get('method', 'elasticity')
+                        
+                        html += f'<tr><td title="{param_name}">{formatted_name}</td>'
+                        html += f'<td>{category}</td>'
+                        html += f'<td>{score:.4f}</td>'
+                        html += f'<td>{method}</td></tr>\n'
+            else:
+                # List format
+                sorted_results = sorted(results['results'], 
+                                      key=lambda x: x.get('sensitivity_score', 0), 
+                                      reverse=True)
+                
+                for result in sorted_results[:20]:  # Show top 20
+                    param_name = result.get('parameter', '')
+                    formatted_name = self._format_parameter_name(param_name)
+                    category = result.get('metadata', {}).get('category', 'Unknown')
+                    score = result.get('sensitivity_score', 0)
+                    method = result.get('method', 'elasticity')
+                    
+                    html += f'<tr><td title="{param_name}">{formatted_name}</td>'
+                    html += f'<td>{category}</td>'
+                    html += f'<td>{score:.4f}</td>'
+                    html += f'<td>{method}</td></tr>\n'
+            
+            html += '</table>\n'
+        
+        # Parameter groups analysis
+        if 'parameter_groups' in results:
+            html += '<h3>Parameter Group Analysis</h3>\n'
+            html += '<table>\n<tr><th>Group</th><th>Average Sensitivity</th><th>Max Sensitivity</th></tr>\n'
+            
+            for group, stats in results['parameter_groups'].items():
+                avg_sens = stats.get('avg_sensitivity', 0)
+                max_sens = stats.get('max_sensitivity', 0)
+                html += f'<tr><td>{group}</td><td>{avg_sens:.4f}</td><td>{max_sens:.4f}</td></tr>\n'
+            
+            html += '</table>\n'
+        
+        html += '</div>\n'
+        return html
+    
+    def _create_traditional_section(self, results: Dict[str, Any]) -> str:
+        """Create traditional sensitivity analysis section"""
+        html = '<div class="section">\n<h2>Traditional Sensitivity Analysis</h2>\n'
+        
+        # Add content based on what's available in results
+        if 'summary' in results:
+            html += '<p>Traditional analysis using statistical methods on parameter variations.</p>\n'
+            if 'method' in results['summary']:
+                html += f'<div class="metric"><strong>Method:</strong> {results["summary"]["method"]}</div>\n'
+        
+        html += '</div>\n'
+        return html
+    
+    def _create_hybrid_section(self, results: Dict[str, Any]) -> str:
+        """Create hybrid sensitivity analysis section"""
+        html = '<div class="section">\n<h2>Hybrid Sensitivity Analysis</h2>\n'
+        
+        html += '<p>Combined results from multiple sensitivity analysis methods.</p>\n'
+        
+        if 'comparison' in results:
+            html += '<h3>Method Comparison</h3>\n'
+            html += '<p>Analysis of agreement between different sensitivity methods.</p>\n'
+        
+        html += '</div>\n'
+        return html
+    
+    def _create_visualization_section(self, results: Dict[str, Any]) -> str:
+        """Create visualization section of the report"""
+        html = '<div class="section">\n<h2>Visualizations</h2>\n'
+        
+        # Check if we have data for visualizations
+        has_data = False
+        if 'modification' in results:
+            if isinstance(results['modification'], pd.DataFrame):
+                has_data = not results['modification'].empty
+            elif isinstance(results['modification'], dict) and 'results' in results['modification']:
+                has_data = True
+        elif 'traditional' in results:
+            if isinstance(results['traditional'], pd.DataFrame):
+                has_data = not results['traditional'].empty
+            elif isinstance(results['traditional'], dict) and 'results' in results['traditional']:
+                has_data = True
+        
+        if has_data:
+            html += '<div class="plot-container">\n'
+            html += '<p><em>Note: Visualizations can be generated separately using the visualization methods.</em></p>\n'
+            
+            # List available visualizations
+            html += '<h3>Available Visualizations:</h3>\n'
+            html += '<ul>\n'
+            html += '<li>Parameter Sensitivity Heatmap</li>\n'
+            html += '<li>Top Parameters Ranking Chart</li>\n'
+            html += '<li>Multi-level Analysis Comparison</li>\n'
+            html += '<li>Time Slice Comparison (if applicable)</li>\n'
+            html += '</ul>\n'
+            html += '</div>\n'
+        else:
+            html += '<p>No data available for visualizations.</p>\n'
+        
+        html += '</div>\n'
+        return html
+
+    def generate_sensitivity_report(self, 
+                                  results_df: pd.DataFrame,
+                                  output_dir: Path,
+                                  analysis_type: str = 'sensitivity') -> Path:
+        """Generate JSON report from sensitivity results"""
+        report = {
+            'metadata': {
+                'timestamp': datetime.now().isoformat(),
+                'analysis_type': analysis_type,
+                'n_results': len(results_df)
+            },
+            'summary': {
+                'top_parameters': []
+            },
+            'detailed_results': results_df.to_dict('records') if not results_df.empty else []
+        }
+        
+        # Get top parameters
+        if 'sensitivity_score' in results_df.columns:
+            top_params = results_df.nlargest(10, 'sensitivity_score')
+            report['summary']['top_parameters'] = top_params[['parameter', 'sensitivity_score']].to_dict('records')
+        
+        # Save report
+        report_path = output_dir / f'{analysis_type}_report.json'
+        with open(report_path, 'w') as f:
+            json.dump(report, f, indent=2)
+        
+        self.logger.info(f"Generated report: {report_path}")
+        return report_path
+
     def create_sensitivity_heatmap(self,
                                  sensitivity_df: pd.DataFrame,
                                  top_n_params: int = 20,

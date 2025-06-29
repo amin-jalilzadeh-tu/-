@@ -1,7 +1,0 @@
-EnergyPlus Output Variables Analysis
-================================================================================
-
-Total variables in dictionary: 476
-Variables WITH data: 476
-Variables WITHOUT data: 0
-

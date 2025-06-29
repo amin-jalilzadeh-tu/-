@@ -61,6 +61,27 @@ class RegionalSensitivityAnalyzer:
         """
         self.logger.info("Starting regional sensitivity analysis...")
         
+        # Validate input data
+        if X is None or X.empty:
+            self.logger.error("Input parameter data (X) is empty")
+            return pd.DataFrame()
+        
+        if y is None or y.empty:
+            self.logger.error("Output data (y) is empty")
+            return pd.DataFrame()
+        
+        # Check for numeric columns
+        X_numeric = X.select_dtypes(include=[np.number])
+        y_numeric = y.select_dtypes(include=[np.number])
+        
+        if X_numeric.empty:
+            self.logger.error("No numeric columns found in parameter data")
+            return pd.DataFrame()
+        
+        if y_numeric.empty:
+            self.logger.error("No numeric columns found in output data")
+            return pd.DataFrame()
+        
         n_regions = config.get('n_regions', 5)
         region_method = config.get('region_method', 'kmeans')
         local_window_size = config.get('local_window_size', 0.1)
@@ -145,9 +166,18 @@ class RegionalSensitivityAnalyzer:
         # Drop any remaining rows with NaN (shouldn't be many)
         X_numeric = X_numeric.dropna()
         
+        # Check if we have any data left
+        if X_numeric.empty:
+            self.logger.error("No data left after cleaning NaN values")
+            return {}
+        
         if len(X_numeric) < n_regions:
             self.logger.warning(f"Not enough samples ({len(X_numeric)}) for {n_regions} regions after NaN removal")
             n_regions = min(n_regions, max(2, len(X_numeric) // 10))
+            
+        if n_regions < 2:
+            self.logger.error("Not enough data for regional analysis")
+            return {}
         
         # Scale data
         X_scaled = self.scaler.fit_transform(X_numeric)
@@ -164,10 +194,7 @@ class RegionalSensitivityAnalyzer:
             # Calculate cluster center in original space
             center = {}
             for j, col in enumerate(X_numeric.columns):
-                center_scaled = kmeans.cluster_centers_[i, j]
-                center[col] = self.scaler.inverse_transform(
-                    [[center_scaled]]
-                )[0][0]
+                center[col] = kmeans.cluster_centers_[i][j]
             
             regions[i] = {
                 'mask': mask,

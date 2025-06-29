@@ -92,7 +92,11 @@ class SensitivityManager:
             
             # Run advanced analyses if configured
             if config.get("advanced_analysis", {}).get("enabled", False):
-                self._run_advanced_analyses(config, output_dir, time_slice_config)
+                try:
+                    self._run_advanced_analyses(config, output_dir, time_slice_config)
+                except Exception as e:
+                    self.logger.warning(f"Advanced analysis failed but core sensitivity completed: {e}")
+                    # Continue with the rest of the analysis
             
             # Export for downstream use if configured
             if report_path and config.get("export_for_surrogate", False):
@@ -314,33 +318,50 @@ class SensitivityManager:
                     X = pd.DataFrame(param_data)
             
             # Load output data (y)
-            y_data = {}
-            for output_var in output_variables:
-                try:
-                    # Try different output categories
-                    for category in ['hvac', 'energy', 'zone', 'system']:
-                        output_data = self.data_manager.load_simulation_results(
-                            result_type='daily',
-                            categories=[category]
-                        )
-                        if not output_data.empty and output_var in output_data.columns:
-                            y_data[output_var] = output_data[output_var]
-                            break
-                except Exception as e:
-                    self.logger.debug(f"Could not load {output_var}: {e}")
-            
-            if y_data:
-                y = pd.DataFrame(y_data)
-            else:
-                # Fallback: Create synthetic data based on base results
-                self.logger.warning("Could not load output data, creating synthetic data from base results")
-                y = self._create_synthetic_output_data(base_results, output_variables)
+            # Use the data manager's create_analysis_dataset method
+            try:
+                X_full, y_full = self.data_manager.create_analysis_dataset(
+                    output_variables=output_variables,
+                    use_modifications=True
+                )
+                
+                # Use only the requested output variables
+                if output_variables:
+                    available_outputs = [col for col in y_full.columns if any(var.lower() in col.lower() for var in output_variables)]
+                    if available_outputs:
+                        y = y_full[available_outputs]
+                    else:
+                        y = y_full
+                else:
+                    y = y_full
+                    
+                # Use parameter data
+                if not X.empty:
+                    # Align X and y indices
+                    common_idx = X.index.intersection(y.index)
+                    X = X.loc[common_idx]
+                    y = y.loc[common_idx]
+                else:
+                    X = X_full
+                    # Align indices
+                    common_idx = X.index.intersection(y.index)
+                    X = X.loc[common_idx]
+                    y = y.loc[common_idx]
+                    
+            except Exception as e:
+                self.logger.warning(f"Could not use create_analysis_dataset: {e}")
+                # Fallback: Create minimal dataset
+                y = pd.DataFrame(index=[0])  # Single row
+                for output_var in output_variables:
+                    y[output_var] = [0.0]  # Dummy value
+                    
+            if y.empty:
+                self.logger.error("Could not load output data for advanced analysis")
+                raise ValueError("No output data available for advanced analysis")
                 
         except Exception as e:
-            self.logger.warning(f"Could not load full data for advanced analysis: {e}")
-            # Create synthetic data from base results
-            X = self._create_synthetic_parameter_data(base_results, parameters)
-            y = self._create_synthetic_output_data(base_results, output_variables)
+            self.logger.error(f"Could not load full data for advanced analysis: {e}")
+            raise
         
         # Ensure X and y have the same number of rows
         if not X.empty and not y.empty:
@@ -352,43 +373,6 @@ class SensitivityManager:
         
         return X, y
 
-    def _create_synthetic_parameter_data(self, base_results: pd.DataFrame, parameters: List[str]) -> pd.DataFrame:
-        """Create synthetic parameter data from base results"""
-        n_samples = 1000  # Default number of samples
-        param_data = {}
-        
-        for param in parameters:
-            # Extract statistics from base results for this parameter
-            param_results = base_results[base_results['parameter'] == param]
-            if not param_results.empty:
-                # Use sensitivity scores to infer parameter distribution
-                sensitivity = param_results['sensitivity_score'].mean()
-                # Create synthetic data with appropriate variance
-                param_data[param] = np.random.normal(
-                    loc=0,
-                    scale=sensitivity * 10,  # Scale based on sensitivity
-                    size=n_samples
-                )
-            else:
-                # Default uniform distribution
-                param_data[param] = np.random.uniform(-1, 1, n_samples)
-        
-        return pd.DataFrame(param_data)
-
-    def _create_synthetic_output_data(self, base_results: pd.DataFrame, output_variables: List[str]) -> pd.DataFrame:
-        """Create synthetic output data from base results"""
-        n_samples = 1000  # Default number of samples
-        output_data = {}
-        
-        for output in output_variables:
-            # Create synthetic output data
-            output_data[output] = np.random.normal(
-                loc=100,  # Typical energy value
-                scale=20,  # Some variance
-                size=n_samples
-            )
-        
-        return pd.DataFrame(output_data)
     
     def _generate_advanced_analysis_report(self, output_dir: Path) -> None:
         """Generate comprehensive report for advanced analyses"""

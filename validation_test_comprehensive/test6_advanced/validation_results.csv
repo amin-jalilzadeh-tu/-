@@ -1,0 +1,5 @@
+building_id,real_variable,sim_variable,mapping_confidence,mapping_type,data_points,cvrmse,nmbe,mbe,cvrmse_threshold,nmbe_threshold,pass_cvrmse,pass_nmbe,unit_conversion,zone_aggregation,issues
+4136733,Zone Air System Sensible Cooling Energy,Zone Air System Sensible Cooling Energy,1.0,exact,11,124.0589861398517,-100.0,-100.0,30.0,10.0,False,False,,Aggregated 10 zones,[]
+4136733,Zone Mean Air Temperature,Zone Mean Air Temperature,1.0,exact,11,,,,15.0,5.0,False,False,,Aggregated 10 zones,[]
+4136733,Zone Air System Sensible Heating Energy,Zone Air System Sensible Heating Energy,1.0,exact,11,122.9753140036758,-100.0,-100.0,30.0,10.0,False,False,,Aggregated 10 zones,[]
+4136733,Electricity:Facility [J](Hourly),Electricity:Facility,0.6444444444444444,semantic,12,100.82746092068055,-99.95334911338684,-99.95334911338684,25.0,10.0,False,False,,,[]

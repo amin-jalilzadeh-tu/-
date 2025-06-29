@@ -1,0 +1,2 @@
+building_id,real_variable,sim_variable,mapping_confidence,mapping_type,data_points,cvrmse,nmbe,mbe,cvrmse_threshold,nmbe_threshold,pass_cvrmse,pass_nmbe,unit_conversion,zone_aggregation,issues
+4136733,Total Electricity Consumption,Electricity:Facility,0.17222222222222222,semantic,30,100.4531213232488,-99.95469352586531,-99.95469352586531,30.0,10.0,False,False,,,[]
