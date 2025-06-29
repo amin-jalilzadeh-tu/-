@@ -75,23 +75,39 @@ class TimeSeriesAggregator:
 
 def detect_frequency_from_columns(df: pd.DataFrame) -> str:
     """Detect frequency from date column names"""
+    # Get all potential date columns
     date_cols = [col for col in df.columns if re.match(r'\d{4}-\d{2}-\d{2}', str(col))]
     
     if not date_cols:
+        # Try monthly format (YYYY-MM)
+        date_cols = [col for col in df.columns if re.match(r'\d{4}-\d{2}$', str(col))]
+        if date_cols:
+            return 'monthly'
         return 'unknown'
     
-    # Check if columns are daily (YYYY-MM-DD)
-    if len(date_cols[0]) == 10:
+    # If we have at least 2 date columns, check the interval
+    if len(date_cols) >= 2:
+        try:
+            # Parse first two dates
+            date1 = pd.to_datetime(date_cols[0])
+            date2 = pd.to_datetime(date_cols[1])
+            diff = (date2 - date1).days
+            
+            if diff == 1:
+                return 'daily'
+            elif 28 <= diff <= 31:
+                return 'monthly'
+            elif diff == 7:
+                return 'weekly'
+            elif diff == 365 or diff == 366:
+                return 'yearly'
+        except:
+            pass
+    
+    # Check format patterns
+    if len(date_cols[0]) == 10:  # YYYY-MM-DD
         return 'daily'
-    
-    # Check if columns are monthly (YYYY-MM)
-    date_cols = [col for col in df.columns if re.match(r'\d{4}-\d{2}$', str(col))]
-    if date_cols:
-        return 'monthly'
-    
-    # Check if columns have hours (YYYY-MM-DD_HH)
-    date_cols = [col for col in df.columns if re.match(r'\d{4}-\d{2}-\d{2}_\d{2}', str(col))]
-    if date_cols:
+    elif '_' in str(date_cols[0]) and re.match(r'\d{4}-\d{2}-\d{2}_\d{2}', str(date_cols[0])):
         return 'hourly'
     
     return 'unknown'
@@ -101,6 +117,12 @@ def aggregate_base_columns(df: pd.DataFrame, from_freq: str, to_freq: str,
                           aggregator: TimeSeriesAggregator) -> pd.DataFrame:
     """Aggregate base data columns directly without reshaping"""
     if from_freq == to_freq:
+        return df
+    
+    # Check if this is already aggregated data with the wrong name
+    detected_freq = detect_frequency_from_columns(df)
+    if detected_freq == to_freq:
+        aggregator.logger.info(f"    Data already at {to_freq} frequency, no aggregation needed")
         return df
     
     # Get metadata columns (non-date columns)
@@ -274,6 +296,7 @@ def process_base_aggregation(base_file: Path, from_freq: str, to_freq: str,
     """Process aggregation for a base file"""
     # Check if target already exists
     if from_freq == to_freq:
+        logger.debug(f"  Source and target frequencies match ({from_freq}), skipping")
         return None
     
     # Create output filename
@@ -416,16 +439,27 @@ def run_timeseries_aggregation(
                         base_files['monthly'] = file
                     else:
                         # Detect from columns
-                        df_sample = pd.read_parquet(file, columns=['building_id'])
-                        freq = detect_frequency_from_columns(pd.read_parquet(file))
-                        if freq != 'unknown':
-                            base_files[freq] = file
+                        try:
+                            # Read a small sample to detect frequency
+                            df_sample = pd.read_parquet(file)
+                            freq = detect_frequency_from_columns(df_sample)
+                            if freq != 'unknown':
+                                base_files[freq] = file
+                                logger.info(f"  Detected {freq} frequency in {file.name}")
+                        except Exception as e:
+                            logger.warning(f"  Failed to detect frequency in {file.name}: {e}")
+            
+            # Log available base files
+            logger.info(f"  Found base files: {list(base_files.keys())}")
             
             # Create aggregations
             for i, source_freq in enumerate(freq_hierarchy):
                 if source_freq in base_files:
+                    logger.info(f"\n  Processing {source_freq} base data...")
                     for target_freq in target_frequencies:
-                        if freq_hierarchy.index(target_freq) > i:
+                        target_idx = freq_hierarchy.index(target_freq) if target_freq in freq_hierarchy else -1
+                        if target_idx > i:
+                            logger.info(f"    Aggregating {source_freq} → {target_freq}")
                             output_file = process_base_aggregation(
                                 base_files[source_freq], source_freq, target_freq,
                                 aggregation_cfg, aggregator, logger
@@ -435,6 +469,10 @@ def run_timeseries_aggregation(
                                 results['base_files_created'] += 1
                                 if target_freq not in results['frequencies_created']:
                                     results['frequencies_created'].append(target_freq)
+                        elif target_idx == i:
+                            logger.debug(f"    Skipping {target_freq} (same as source)")
+                        else:
+                            logger.debug(f"    Cannot aggregate {source_freq} → {target_freq}")
     
     # Process comparison data
     if aggregation_cfg.get('input_options', {}).get('use_variant_data', True):

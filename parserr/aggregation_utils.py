@@ -177,6 +177,117 @@ class SmartAggregator:
         else:
             return pd.DataFrame()
     
+    def aggregate_wide_format(self, df: pd.DataFrame,
+                            from_freq: str,
+                            to_freq: str) -> pd.DataFrame:
+        """
+        Aggregate data in wide format (dates as columns)
+        
+        Args:
+            df: Input dataframe with dates as columns
+            from_freq: Source frequency
+            to_freq: Target frequency
+            
+        Returns:
+            Aggregated dataframe in wide format
+        """
+        # Check if aggregation is valid
+        if not self.can_aggregate(from_freq, to_freq):
+            self.logger.warning(f"Cannot aggregate from {from_freq} to {to_freq}")
+            return df
+        
+        # Get metadata columns (non-date columns)
+        meta_cols = ['building_id', 'variant_id', 'VariableName', 'category', 'Zone', 'Units']
+        meta_cols = [col for col in meta_cols if col in df.columns]
+        
+        # Identify date columns
+        import re
+        date_pattern = r'\d{4}-\d{2}-\d{2}'
+        date_cols = [col for col in df.columns if re.match(date_pattern, str(col))]
+        
+        if not date_cols:
+            self.logger.warning("No date columns found in wide format data")
+            return df
+        
+        # Convert to long format for aggregation
+        df_long = df.melt(
+            id_vars=meta_cols,
+            value_vars=date_cols,
+            var_name='DateTime',
+            value_name='Value'
+        )
+        
+        # Parse dates
+        df_long['DateTime'] = pd.to_datetime(df_long['DateTime'])
+        
+        # Aggregate based on variable type
+        aggregated_dfs = []
+        
+        for idx, row in df[meta_cols + ['VariableName']].drop_duplicates().iterrows():
+            # Get data for this variable
+            var_name = row.get('VariableName', '')
+            
+            # Create filter condition
+            filter_cond = True
+            for col in meta_cols:
+                if col in row.index:
+                    filter_cond &= (df_long[col] == row[col])
+            
+            var_data = df_long[filter_cond].copy()
+            
+            if var_data.empty:
+                continue
+            
+            # Determine aggregation method
+            agg_method = self.determine_aggregation_method(var_name)
+            
+            # Group by target frequency
+            freq_map = {
+                'hourly': 'H',
+                'daily': 'D',
+                'monthly': 'M',
+                'yearly': 'Y'
+            }
+            
+            var_data = var_data.set_index('DateTime')
+            
+            if agg_method == 'sum':
+                resampled = var_data['Value'].resample(freq_map[to_freq]).sum()
+            elif agg_method == 'mean':
+                resampled = var_data['Value'].resample(freq_map[to_freq]).mean()
+            elif agg_method == 'max':
+                resampled = var_data['Value'].resample(freq_map[to_freq]).max()
+            elif agg_method == 'min':
+                resampled = var_data['Value'].resample(freq_map[to_freq]).min()
+            else:
+                resampled = var_data['Value'].resample(freq_map[to_freq]).last()
+            
+            # Convert back to wide format
+            result_row = row.to_dict()
+            
+            # Add aggregated values
+            for date, value in resampled.items():
+                if to_freq == 'monthly':
+                    col_name = date.strftime('%Y-%m')
+                elif to_freq == 'yearly':
+                    col_name = date.strftime('%Y')
+                else:
+                    col_name = date.strftime('%Y-%m-%d')
+                result_row[col_name] = value
+            
+            aggregated_dfs.append(pd.DataFrame([result_row]))
+        
+        if aggregated_dfs:
+            result = pd.concat(aggregated_dfs, ignore_index=True)
+            
+            # Ensure column order: metadata first, then dates
+            date_cols_new = [col for col in result.columns if col not in meta_cols]
+            date_cols_new.sort()
+            
+            return result[meta_cols + date_cols_new]
+        else:
+            return pd.DataFrame()
+    
     def create_aggregation_pipeline(self, df: pd.DataFrame,
                                   original_freq: str,
                                   target_freqs: List[str] = None) -> Dict[str, pd.DataFrame]:

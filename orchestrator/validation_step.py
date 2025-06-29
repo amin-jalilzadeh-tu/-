@@ -71,12 +71,16 @@ def run_validation(
     
     # Import smart validation
     try:
+        # Check if we should validate variants (for modified stage)
+        validate_variants = stage_config.get('validate_variants', False) or stage_name == 'modified'
+        
         # Run validation
         results = run_smart_validation(
             parsed_data_path=parsed_data_path,
             real_data_path=real_data_path,
             config=val_config,
-            output_path=output_path
+            output_path=output_path,
+            validate_variants=validate_variants
         )
         
         # Add stage information to results
@@ -90,14 +94,26 @@ def run_validation(
                 logger.warning(f"[WARN] Validation status: {summary['status']}")
             else:
                 logger.info(f"[INFO] Validation complete for stage '{stage_name}':")
-                logger.info(f"  - Pass rate: {summary.get('pass_rate', 0):.1f}%")
-                logger.info(f"  - Buildings validated: {summary.get('buildings_validated', 0)}")
-                logger.info(f"  - Variables validated: {summary.get('variables_validated', 0)}")
                 
-                if summary.get('unit_conversions', 0) > 0:
-                    logger.info(f"  - Unit conversions: {summary['unit_conversions']}")
-                if summary.get('zone_aggregations', 0) > 0:
-                    logger.info(f"  - Zone aggregations: {summary['zone_aggregations']}")
+                # Check if this is variant validation
+                if validate_variants and 'configurations_validated' in summary:
+                    logger.info(f"  - Configurations validated: {summary.get('configurations_validated', 0)}")
+                    logger.info(f"  - Best configuration: {summary.get('best_configuration', 'Unknown')}")
+                    logger.info(f"  - Best pass rate: {summary.get('best_pass_rate', 0):.1f}%")
+                    logger.info(f"  - Best CVRMSE: {summary.get('best_cvrmse', 0):.1f}%")
+                    
+                    if summary.get('improvements_found'):
+                        logger.info(f"  - Found {len(summary['improvements_found'])} improved variants")
+                else:
+                    # Standard validation logging
+                    logger.info(f"  - Pass rate: {summary.get('pass_rate', 0):.1f}%")
+                    logger.info(f"  - Buildings validated: {summary.get('buildings_validated', 0)}")
+                    logger.info(f"  - Variables validated: {summary.get('variables_validated', 0)}")
+                    
+                    if summary.get('unit_conversions', 0) > 0:
+                        logger.info(f"  - Unit conversions: {summary['unit_conversions']}")
+                    if summary.get('zone_aggregations', 0) > 0:
+                        logger.info(f"  - Zone aggregations: {summary['zone_aggregations']}")
                 
                 # Save summary for other steps (calibration, etc.)
                 if results.get('validation_results'):

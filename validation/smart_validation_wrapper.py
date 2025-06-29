@@ -534,38 +534,60 @@ class SmartValidationWrapper:
         # Determine which column to use for values
         value_column = f'{variant_id}_value' if variant_id else 'base_value'
         
-        for file_info in discovery['comparison_files'].values():
-            if file_info['frequency'] == target_freq:
-                try:
-                    df = pd.read_parquet(file_info['file'])
-                    
-                    # Check if the requested value column exists
-                    if value_column not in df.columns:
-                        logger.debug(f"    Column {value_column} not found in {file_info['file']}")
-                        continue
-                    
-                    # Transform comparison file to standard format
-                    sim_df = pd.DataFrame({
-                        'building_id': df['building_id'],
-                        'DateTime': df['timestamp'] if 'timestamp' in df.columns else df['DateTime'],
-                        'Variable': df['variable_name'] if 'variable_name' in df.columns else file_info['variable'],
-                        'Value': df[value_column],
-                        'Units': df['Units'] if 'Units' in df.columns else 'unknown',
-                        'Zone': df['Zone'] if 'Zone' in df.columns else 'Building'
-                    })
-                    
-                    # Add variant info if loading variant data
-                    if variant_id:
-                        sim_df['variant_id'] = variant_id
-                    
-                    comparison_data.append(sim_df)
-                    logger.info(f"    Loaded {file_info['variable']} from comparison file ({value_column})")
-                except Exception as e:
-                    logger.debug(f"    Error loading {file_info['file']}: {str(e)}")
+        # Priority order for loading comparison files based on target frequency
+        if target_freq == 'daily':
+            freq_priority = ['daily', 'monthly']  # Try daily first, fall back to monthly
+        elif target_freq == 'monthly':
+            freq_priority = ['monthly', 'daily']  # Try monthly first, can aggregate daily
+        else:
+            freq_priority = [target_freq, 'daily', 'monthly']
+        
+        # Track what frequency we actually loaded
+        loaded_frequency = None
+        
+        for preferred_freq in freq_priority:
+            if comparison_data:  # Already loaded data
+                break
+                
+            for file_info in discovery['comparison_files'].values():
+                if file_info['frequency'] == preferred_freq:
+                    try:
+                        df = pd.read_parquet(file_info['file'])
+                        
+                        # Check if the requested value column exists
+                        if value_column not in df.columns:
+                            logger.debug(f"    Column {value_column} not found in {file_info['file']}")
+                            continue
+                        
+                        # Detect actual frequency from the data
+                        actual_freq = self._detect_frequency(df, file_info['file'])
+                        
+                        # Transform comparison file to standard format
+                        sim_df = pd.DataFrame({
+                            'building_id': df['building_id'],
+                            'DateTime': df['timestamp'] if 'timestamp' in df.columns else df['DateTime'],
+                            'Variable': df['variable_name'] if 'variable_name' in df.columns else file_info['variable'],
+                            'Value': df[value_column],
+                            'Units': df['Units'] if 'Units' in df.columns else 'unknown',
+                            'Zone': df['Zone'] if 'Zone' in df.columns else 'Building',
+                            '_source_frequency': actual_freq  # Store actual frequency for aggregation
+                        })
+                        
+                        # Add variant info if loading variant data
+                        if variant_id:
+                            sim_df['variant_id'] = variant_id
+                        
+                        comparison_data.append(sim_df)
+                        loaded_frequency = actual_freq
+                        logger.info(f"    Loaded {file_info['variable']} from comparison file ({value_column}, {actual_freq} data)")
+                    except Exception as e:
+                        logger.debug(f"    Error loading {file_info['file']}: {str(e)}")
         
         if comparison_data:
             combined_df = pd.concat(comparison_data, ignore_index=True)
             logger.info(f"  - Loaded {len(combined_df)} records from {len(comparison_data)} comparison files")
+            if loaded_frequency and loaded_frequency != target_freq:
+                logger.info(f"  - Loaded {loaded_frequency} frequency data (target was {target_freq})")
             return combined_df
         
         return pd.DataFrame()
@@ -578,51 +600,56 @@ class SmartValidationWrapper:
         target_freq = self.config.target_frequency
         
         logger.info(f"  - Target frequency: {target_freq}")
+        logger.info(f"  - Available frequencies: {sorted(discovery.get('available_frequencies', []))}")
         
-        # Prefer data that matches target frequency
+        # Priority order for loading data based on target frequency
         if target_freq == 'daily':
-            # Load daily data first
+            freq_priority = ['daily', 'hourly', 'monthly']
+        elif target_freq == 'monthly':
+            freq_priority = ['monthly', 'daily', 'hourly']
+        elif target_freq == 'hourly':
+            freq_priority = ['hourly', 'daily']
+        else:
+            freq_priority = ['daily', 'monthly', 'hourly']
+        
+        # Try to load data in priority order
+        data_loaded = False
+        loaded_frequency = None
+        
+        for preferred_freq in freq_priority:
+            if data_loaded:
+                break
+                
+            # Check if this frequency is available
+            if preferred_freq not in discovery.get('available_frequencies', []):
+                continue
+            
+            # Load all datasets with this frequency
             for dataset_name, dataset_info in discovery['timeseries'].items():
-                if 'daily' in dataset_name or dataset_info.get('frequency') == 'daily':
-                    logger.info(f"  - Loading {dataset_name} ({dataset_info['records']:,} records)")
+                if dataset_info.get('frequency') == preferred_freq:
+                    logger.info(f"  - Loading {dataset_name} ({preferred_freq} data, {dataset_info['records']:,} records)")
                     df = pd.read_parquet(dataset_info['file'])
+                    
                     if not df.empty:
                         # Check if this is wide format (new structure)
                         if dataset_info.get('format') == 'wide':
                             logger.info(f"    Converting from wide to long format")
                             df = self._convert_wide_to_long(df)
                         
+                        # Add frequency info for later aggregation decisions
+                        df['_source_frequency'] = preferred_freq
+                        
                         # Add Units column if missing
                         if 'Units' not in df.columns and dataset_info.get('has_units') is False:
                             logger.info(f"    Adding Units column to {dataset_name}")
                             df['Units'] = df['Variable'].apply(self._infer_units_from_variable)
+                        
                         all_sim_data.append(df)
-            
-            # If no daily data, we'll aggregate hourly later
-            if not all_sim_data:
-                logger.info("  - No daily data found, will check for hourly data")
-                for dataset_name, dataset_info in discovery['timeseries'].items():
-                    if 'hourly' in dataset_name or dataset_info.get('frequency') == 'hourly':
-                        logger.info(f"  - Loading {dataset_name} for aggregation ({dataset_info['records']:,} records)")
-                        df = pd.read_parquet(dataset_info['file'])
-                        if not df.empty:
-                            # Check if this is wide format (new structure)
-                            if dataset_info.get('format') == 'wide':
-                                logger.info(f"    Converting from wide to long format")
-                                df = self._convert_wide_to_long(df)
-                            all_sim_data.append(df)
-        else:
-            # Load hourly data
-            for dataset_name, dataset_info in discovery['timeseries'].items():
-                if 'hourly' in dataset_name or dataset_info.get('frequency') == 'hourly':
-                    logger.info(f"  - Loading {dataset_name} ({dataset_info['records']:,} records)")
-                    df = pd.read_parquet(dataset_info['file'])
-                    if not df.empty:
-                        # Check if this is wide format (new structure)
-                        if dataset_info.get('format') == 'wide':
-                            logger.info(f"    Converting from wide to long format")
-                            df = self._convert_wide_to_long(df)
-                        all_sim_data.append(df)
+                        data_loaded = True
+                        loaded_frequency = preferred_freq
+        
+        if data_loaded:
+            logger.info(f"  - Loaded {loaded_frequency} frequency data (will {'aggregate' if loaded_frequency != target_freq else 'use as-is'})")
         
         if all_sim_data:
             sim_df = pd.concat(all_sim_data, ignore_index=True)
@@ -656,7 +683,14 @@ class SmartValidationWrapper:
         
         # Detect frequencies
         real_freq = self._detect_frequency(real_df)
-        sim_freq = self._detect_frequency(sim_df)
+        
+        # For simulation data, check if we stored the source frequency
+        if '_source_frequency' in sim_df.columns:
+            sim_freq = sim_df['_source_frequency'].iloc[0] if len(sim_df) > 0 else 'unknown'
+            # Remove the helper column
+            sim_df = sim_df.drop('_source_frequency', axis=1)
+        else:
+            sim_freq = self._detect_frequency(sim_df)
         
         logger.info(f"  - Real data frequency: {real_freq}")
         logger.info(f"  - Sim data frequency: {sim_freq}")
@@ -666,19 +700,107 @@ class SmartValidationWrapper:
         target = self.config.target_frequency
         
         # Aggregate simulation data if needed
-        if sim_freq == 'hourly' and target == 'daily':
-            logger.info("  - Aggregating hourly simulation data to daily...")
-            sim_df = self._aggregate_to_daily(sim_df)
+        if sim_freq != target:
+            if sim_freq == 'hourly' and target == 'daily':
+                logger.info("  - Aggregating hourly simulation data to daily...")
+                sim_df = self._aggregate_to_daily(sim_df)
+            elif sim_freq == 'monthly' and target == 'daily':
+                logger.info("  - Note: Monthly data loaded for daily validation (will validate monthly averages)")
+                # Don't disaggregate monthly to daily - just note it
+            elif sim_freq == 'daily' and target == 'monthly':
+                logger.info("  - Aggregating daily simulation data to monthly...")
+                sim_df = self._aggregate_to_monthly(sim_df)
+        else:
+            logger.info(f"  - Simulation data already at target frequency ({target})")
         
         # Aggregate real data if needed
-        if real_freq == 'hourly' and target == 'daily':
-            logger.info("  - Aggregating hourly real data to daily...")
-            real_df = self._aggregate_to_daily(real_df)
+        if real_freq != target:
+            if real_freq == 'hourly' and target == 'daily':
+                logger.info("  - Aggregating hourly real data to daily...")
+                real_df = self._aggregate_to_daily(real_df)
+            elif real_freq == 'daily' and target == 'monthly':
+                logger.info("  - Aggregating daily real data to monthly...")
+                real_df = self._aggregate_to_monthly(real_df)
+        else:
+            logger.info(f"  - Real data already at target frequency ({target})")
         
         return real_df, sim_df
     
-    def _detect_frequency(self, df: pd.DataFrame) -> str:
-        """Detect data frequency"""
+    def _is_date_column(self, col_name: str) -> bool:
+        """Check if a column name represents a date"""
+        import re
+        # Check for YYYY-MM-DD format
+        if re.match(r'^\d{4}-\d{2}-\d{2}$', str(col_name)):
+            return True
+        # Check for YYYY-MM format
+        if re.match(r'^\d{4}-\d{2}$', str(col_name)):
+            return True
+        return False
+    
+    def _detect_frequency_from_columns(self, columns: List[str]) -> str:
+        """Detect frequency from date column names"""
+        date_cols = [col for col in columns if self._is_date_column(col)]
+        
+        if len(date_cols) < 2:
+            return 'unknown'
+        
+        # Check format of first date column
+        first_col = date_cols[0]
+        
+        # Monthly format (YYYY-MM)
+        if re.match(r'^\d{4}-\d{2}$', first_col):
+            return 'monthly'
+        
+        # Daily format (YYYY-MM-DD) - need to check spacing
+        if re.match(r'^\d{4}-\d{2}-\d{2}$', first_col):
+            try:
+                # Parse first few dates
+                dates = pd.to_datetime(date_cols[:min(10, len(date_cols))])
+                # Check intervals
+                intervals = [(dates[i+1] - dates[i]).days for i in range(len(dates)-1)]
+                
+                # Check if all intervals are 1 day
+                if all(interval == 1 for interval in intervals):
+                    return 'daily'
+                # Check if hourly (would have multiple entries per day)
+                elif all(interval == 0 for interval in intervals[:5]):  # Same day
+                    return 'hourly'
+                else:
+                    return 'other'
+            except:
+                return 'unknown'
+        
+        return 'unknown'
+    
+    def _detect_frequency_from_filename(self, filename: str) -> str:
+        """Detect frequency from filename patterns"""
+        filename_lower = filename.lower()
+        
+        if 'hourly' in filename_lower:
+            return 'hourly'
+        elif 'daily' in filename_lower:
+            return 'daily'
+        elif 'monthly' in filename_lower:
+            return 'monthly'
+        elif 'yearly' in filename_lower or 'annual' in filename_lower:
+            return 'yearly'
+        
+        return 'unknown'
+    
+    def _detect_frequency(self, df: pd.DataFrame, filename: Optional[str] = None) -> str:
+        """Detect data frequency from dataframe or filename"""
+        # First try filename if provided
+        if filename:
+            freq = self._detect_frequency_from_filename(filename)
+            if freq != 'unknown':
+                return freq
+        
+        # Check if this is wide format (dates as columns)
+        date_cols = [col for col in df.columns if self._is_date_column(col)]
+        if date_cols:
+            return self._detect_frequency_from_columns(df.columns)
+        
+        # Original logic for long format
         if 'DateTime' not in df.columns or len(df) < 2:
             return 'unknown'
         
@@ -772,6 +894,69 @@ class SmartValidationWrapper:
             result_df = result_df.drop('Date', axis=1)
             
             logger.info(f"  - Aggregation complete: {len(df)} → {len(result_df)} records")
+            return result_df
+        
+        return df
+    
+    def _aggregate_to_monthly(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Aggregate data to monthly frequency"""
+        if 'DateTime' not in df.columns:
+            return df
+        
+        # Ensure DateTime is datetime type
+        df['DateTime'] = pd.to_datetime(df['DateTime'])
+        
+        # Create month column
+        df['YearMonth'] = df['DateTime'].dt.to_period('M')
+        
+        # Group columns
+        group_cols = ['building_id', 'YearMonth']
+        if 'Variable' in df.columns:
+            group_cols.insert(1, 'Variable')
+        if 'Zone' in df.columns and df['Zone'].nunique() > 1:
+            group_cols.append('Zone')
+        
+        # Aggregate
+        agg_results = []
+        
+        if 'Variable' in df.columns:
+            for var in df['Variable'].unique():
+                var_df = df[df['Variable'] == var]
+                
+                # Determine aggregation method
+                var_lower = var.lower()
+                agg_method = self._get_aggregation_method(var_lower)
+                
+                logger.info(f"    * {var}: aggregating to monthly ({agg_method})")
+                
+                # Aggregate
+                var_group_cols = [col for col in group_cols if col in var_df.columns]
+                
+                if 'Units' in var_df.columns:
+                    agg_df = var_df.groupby(var_group_cols).agg({
+                        'Value': agg_method,
+                        'Units': 'first'
+                    }).reset_index()
+                else:
+                    agg_df = var_df.groupby(var_group_cols).agg({
+                        'Value': agg_method
+                    }).reset_index()
+                
+                agg_results.append(agg_df)
+        else:
+            # No variable column
+            agg_df = df.groupby(group_cols).agg({
+                'Value': 'sum'
+            }).reset_index()
+            agg_results.append(agg_df)
+        
+        if agg_results:
+            result_df = pd.concat(agg_results, ignore_index=True)
+            # Convert YearMonth back to DateTime (first day of month)
+            result_df['DateTime'] = pd.to_datetime(result_df['YearMonth'].astype(str))
+            result_df = result_df.drop('YearMonth', axis=1)
+            
+            logger.info(f"  - Monthly aggregation complete: {len(df)} → {len(result_df)} records")
             return result_df
         
         return df
@@ -1335,6 +1520,251 @@ class SmartValidationWrapper:
         
         return results
     
+    def validate_all_variants(self) -> Dict[str, Any]:
+        """Validate all variants from comparison files against measured data"""
+        logger.info("\n" + "="*60)
+        logger.info("VARIANT VALIDATION STARTING")
+        logger.info("="*60)
+        
+        all_results = {
+            'base_results': None,
+            'variant_results': {},
+            'variant_comparison': {},
+            'best_variant': None,
+            'summary': {}
+        }
+        
+        try:
+            # Step 1: Discover available data
+            discovery = self.discover_available_data()
+            
+            if not discovery.get('comparison_files'):
+                logger.error("No comparison files found for variant validation")
+                all_results['summary'] = {'status': 'No comparison files found'}
+                return all_results
+            
+            # Step 2: Load real data once
+            real_df = self.load_and_parse_real_data()
+            real_vars = real_df['Variable'].unique().tolist() if 'Variable' in real_df.columns else []
+            
+            # Step 3: Get list of variants from first comparison file
+            sample_file = next(iter(discovery['comparison_files'].values()))
+            df_sample = pd.read_parquet(sample_file['file'])
+            variant_columns = [col for col in df_sample.columns if col.startswith('variant_') and col.endswith('_value')]
+            variant_ids = [col.replace('_value', '') for col in variant_columns]
+            
+            logger.info(f"\nFound {len(variant_ids)} variants to validate")
+            
+            # Step 4: Validate base simulation
+            logger.info("\n--- Validating Base Simulation ---")
+            base_sim_df = self._load_from_comparison_files(discovery, self.config.target_frequency, variant_id=None)
+            
+            if not base_sim_df.empty:
+                # Run validation for base
+                base_results = self._validate_single_configuration(real_df, base_sim_df, real_vars, "base")
+                all_results['base_results'] = base_results
+            
+            # Step 5: Validate each variant
+            for variant_id in sorted(variant_ids):
+                logger.info(f"\n--- Validating {variant_id} ---")
+                variant_sim_df = self._load_from_comparison_files(discovery, self.config.target_frequency, variant_id=variant_id)
+                
+                if not variant_sim_df.empty:
+                    variant_results = self._validate_single_configuration(real_df, variant_sim_df, real_vars, variant_id)
+                    all_results['variant_results'][variant_id] = variant_results
+            
+            # Step 6: Compare all results and find best variant
+            all_results['variant_comparison'] = self._compare_variant_results(all_results)
+            all_results['best_variant'] = self._find_best_variant(all_results)
+            all_results['summary'] = self._generate_variant_summary(all_results)
+            
+        except Exception as e:
+            logger.error(f"Variant validation error: {str(e)}", exc_info=True)
+            all_results['summary'] = {'status': f'Error: {str(e)}'}
+        
+        return all_results
+    
+    def _validate_single_configuration(self, real_df: pd.DataFrame, sim_df: pd.DataFrame, 
+                                     real_vars: List[str], config_name: str) -> Dict[str, Any]:
+        """Validate a single configuration (base or variant) against real data"""
+        results = {
+            'config_name': config_name,
+            'mappings': [],
+            'validation_results': [],
+            'alignment_details': [],
+            'summary': {}
+        }
+        
+        if sim_df.empty:
+            results['summary'] = {'status': 'No simulation data'}
+            return results
+        
+        sim_vars = sim_df['Variable'].unique().tolist() if 'Variable' in sim_df.columns else []
+        
+        # Align frequencies
+        real_df_aligned, sim_df_aligned = self.align_frequencies(real_df, sim_df)
+        
+        # Create variable mappings
+        results['mappings'] = self.create_variable_mappings(real_vars, sim_vars)
+        
+        # Validate each mapping
+        for mapping in results['mappings']:
+            try:
+                aligned_df, alignment_info = self.align_and_validate_mapping(real_df_aligned, sim_df_aligned, mapping)
+                results['alignment_details'].append(alignment_info)
+                
+                if not aligned_df.empty:
+                    # Calculate metrics for each building
+                    for building_id in aligned_df['building_id'].unique():
+                        building_data = aligned_df[aligned_df['building_id'] == building_id]
+                        
+                        if len(building_data) >= 10:
+                            # Calculate metrics
+                            real_values = building_data['Real_Value'].values
+                            sim_values = building_data['Sim_Value'].values
+                            
+                            cvrmse_val = cv_rmse(sim_values, real_values)
+                            nmbe_val = nmbe(sim_values, real_values)
+                            
+                            # Get thresholds
+                            cvrmse_threshold = self.config.get_threshold('cvrmse', mapping.real_var)
+                            nmbe_threshold = self.config.get_threshold('nmbe', mapping.real_var)
+                            
+                            # Store results
+                            result = {
+                                'config_name': config_name,
+                                'building_id': building_id,
+                                'real_variable': mapping.real_var,
+                                'sim_variable': mapping.sim_var,
+                                'data_points': len(building_data),
+                                'cvrmse': cvrmse_val,
+                                'nmbe': nmbe_val,
+                                'cvrmse_threshold': cvrmse_threshold,
+                                'nmbe_threshold': nmbe_threshold,
+                                'pass_cvrmse': cvrmse_val <= cvrmse_threshold,
+                                'pass_nmbe': abs(nmbe_val) <= nmbe_threshold,
+                                'pass_overall': cvrmse_val <= cvrmse_threshold and abs(nmbe_val) <= nmbe_threshold
+                            }
+                            
+                            results['validation_results'].append(result)
+                            
+            except Exception as e:
+                logger.error(f"Error validating {mapping.real_var} for {config_name}: {str(e)}")
+        
+        # Generate summary
+        results['summary'] = self._generate_config_summary(results)
+        
+        return results
+    
+    def _generate_config_summary(self, results: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate summary for a single configuration"""
+        val_results = results['validation_results']
+        
+        if not val_results:
+            return {'status': 'No validation results'}
+        
+        passed_validations = [r for r in val_results if r['pass_overall']]
+        
+        return {
+            'total_validations': len(val_results),
+            'passed_validations': len(passed_validations),
+            'pass_rate': len(passed_validations) / len(val_results) * 100 if val_results else 0,
+            'avg_cvrmse': sum(r['cvrmse'] for r in val_results) / len(val_results),
+            'avg_nmbe': sum(r['nmbe'] for r in val_results) / len(val_results)
+        }
+    
+    def _compare_variant_results(self, all_results: Dict[str, Any]) -> Dict[str, Any]:
+        """Compare all variant results with base"""
+        comparison = {}
+        
+        if not all_results['base_results'] or not all_results['base_results']['summary'].get('avg_cvrmse'):
+            return comparison
+        
+        base_cvrmse = all_results['base_results']['summary']['avg_cvrmse']
+        base_nmbe = all_results['base_results']['summary']['avg_nmbe']
+        base_pass_rate = all_results['base_results']['summary']['pass_rate']
+        
+        for variant_id, variant_results in all_results['variant_results'].items():
+            if variant_results['summary'].get('avg_cvrmse'):
+                var_cvrmse = variant_results['summary']['avg_cvrmse']
+                var_nmbe = variant_results['summary']['avg_nmbe']
+                var_pass_rate = variant_results['summary']['pass_rate']
+                
+                comparison[variant_id] = {
+                    'cvrmse_improvement': ((base_cvrmse - var_cvrmse) / base_cvrmse * 100) if base_cvrmse > 0 else 0,
+                    'nmbe_improvement': ((abs(base_nmbe) - abs(var_nmbe)) / abs(base_nmbe) * 100) if base_nmbe != 0 else 0,
+                    'pass_rate_improvement': var_pass_rate - base_pass_rate,
+                    'absolute_metrics': {
+                        'cvrmse': var_cvrmse,
+                        'nmbe': var_nmbe,
+                        'pass_rate': var_pass_rate
+                    }
+                }
+        
+        return comparison
+    
+    def _find_best_variant(self, all_results: Dict[str, Any]) -> Optional[str]:
+        """Find the best performing variant"""
+        if not all_results['variant_comparison']:
+            return None
+        
+        # Score based on pass rate first, then CVRMSE
+        best_variant = None
+        best_score = float('-inf')
+        
+        for variant_id, metrics in all_results['variant_comparison'].items():
+            # Score = pass_rate + (100 - cvrmse)
+            score = metrics['absolute_metrics']['pass_rate'] + (100 - metrics['absolute_metrics']['cvrmse'])
+            
+            if score > best_score:
+                best_score = score
+                best_variant = variant_id
+        
+        return best_variant
+    
+    def _generate_variant_summary(self, all_results: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate overall variant validation summary"""
+        summary = {
+            'total_configurations': 1 + len(all_results['variant_results']),  # base + variants
+            'configurations_validated': 0,
+            'best_configuration': 'base',
+            'best_pass_rate': 0,
+            'best_cvrmse': float('inf'),
+            'improvements_found': []
+        }
+        
+        # Check base results
+        if all_results['base_results'] and all_results['base_results']['summary'].get('pass_rate') is not None:
+            summary['configurations_validated'] += 1
+            base_pass_rate = all_results['base_results']['summary']['pass_rate']
+            base_cvrmse = all_results['base_results']['summary']['avg_cvrmse']
+            summary['best_pass_rate'] = base_pass_rate
+            summary['best_cvrmse'] = base_cvrmse
+        
+        # Check variant results
+        for variant_id, variant_results in all_results['variant_results'].items():
+            if variant_results['summary'].get('pass_rate') is not None:
+                summary['configurations_validated'] += 1
+                var_pass_rate = variant_results['summary']['pass_rate']
+                var_cvrmse = variant_results['summary']['avg_cvrmse']
+                
+                if var_pass_rate > summary['best_pass_rate'] or (var_pass_rate == summary['best_pass_rate'] and var_cvrmse < summary['best_cvrmse']):
+                    summary['best_configuration'] = variant_id
+                    summary['best_pass_rate'] = var_pass_rate
+                    summary['best_cvrmse'] = var_cvrmse
+                
+                # Check for improvements
+                if all_results['variant_comparison'].get(variant_id):
+                    improvement = all_results['variant_comparison'][variant_id]
+                    if improvement['cvrmse_improvement'] > 5 or improvement['pass_rate_improvement'] > 0:
+                        summary['improvements_found'].append({
+                            'variant': variant_id,
+                            'cvrmse_improvement': improvement['cvrmse_improvement'],
+                            'pass_rate_improvement': improvement['pass_rate_improvement']
+                        })
+        
+        return summary
+    
     def _generate_summary(self, results: Dict[str, Any]) -> Dict[str, Any]:
         """Generate validation summary"""
         val_results = results['validation_results']
@@ -1428,19 +1858,70 @@ class SmartValidationWrapper:
 
 def run_smart_validation(parsed_data_path: str, real_data_path: str, 
                         config: Optional[Dict[str, Any]] = None,
-                        output_path: Optional[str] = None) -> Dict[str, Any]:
-    """Run smart validation and save results"""
+                        output_path: Optional[str] = None,
+                        validate_variants: bool = False) -> Dict[str, Any]:
+    """Run smart validation and save results
+    
+    Args:
+        parsed_data_path: Path to parsed simulation data
+        real_data_path: Path to real/measured data
+        config: Validation configuration
+        output_path: Path to save results
+        validate_variants: If True, validates all variants from comparison files
+    """
     
     # Create validator
     validator = SmartValidationWrapper(parsed_data_path, real_data_path, config)
     
     # Run validation
-    results = validator.validate_all()
-    
-    # Print summary
-    print("\n" + "="*60)
-    print("SMART VALIDATION SUMMARY")
-    print("="*60)
+    if validate_variants:
+        results = validator.validate_all_variants()
+        print("\n" + "="*60)
+        print("VARIANT VALIDATION SUMMARY")
+        print("="*60)
+        
+        # Print variant-specific summary
+        summary = results.get('summary', {})
+        if 'status' in summary:
+            print(f"\nStatus: {summary['status']}")
+        else:
+            print(f"\nConfigurations validated: {summary.get('configurations_validated', 0)} of {summary.get('total_configurations', 0)}")
+            print(f"Best configuration: {summary.get('best_configuration', 'Unknown')}")
+            print(f"Best pass rate: {summary.get('best_pass_rate', 0):.1f}%")
+            print(f"Best CVRMSE: {summary.get('best_cvrmse', 0):.1f}%")
+            
+            if summary.get('improvements_found'):
+                print("\nImprovements found:")
+                for imp in summary['improvements_found']:
+                    print(f"  - {imp['variant']}: CVRMSE improved by {imp['cvrmse_improvement']:.1f}%")
+            
+            # Print detailed results for each configuration
+            if results.get('base_results'):
+                base_summary = results['base_results'].get('summary', {})
+                print(f"\nBase results:")
+                print(f"  Pass rate: {base_summary.get('pass_rate', 0):.1f}%")
+                print(f"  Avg CVRMSE: {base_summary.get('avg_cvrmse', 0):.1f}%")
+                print(f"  Avg NMBE: {base_summary.get('avg_nmbe', 0):.1f}%")
+            
+            # Show top 5 variants
+            if results.get('variant_comparison'):
+                sorted_variants = sorted(
+                    results['variant_comparison'].items(),
+                    key=lambda x: x[1]['absolute_metrics']['pass_rate'] + (100 - x[1]['absolute_metrics']['cvrmse']),
+                    reverse=True
+                )[:5]
+                
+                print("\nTop 5 variants:")
+                for variant_id, metrics in sorted_variants:
+                    print(f"  - {variant_id}:")
+                    print(f"    Pass rate: {metrics['absolute_metrics']['pass_rate']:.1f}%")
+                    print(f"    CVRMSE: {metrics['absolute_metrics']['cvrmse']:.1f}%")
+                    print(f"    Improvement: {metrics['cvrmse_improvement']:.1f}%")
+    else:
+        results = validator.validate_all()
+        print("\n" + "="*60)
+        print("SMART VALIDATION SUMMARY")
+        print("="*60)
     
     summary = results['summary']
     if 'status' in summary:
