@@ -30,6 +30,7 @@ class CombinedAnalyzer:
         self.idf_analyzer = None
         self.sql_analyzer = None
         self.base_buildings = set()
+        self.parse_types = {"idf": True, "sql": True, "sql_static": True}  # Default
         
         # Identify base buildings from output_IDFs
         if self.job_output_dir:
@@ -89,13 +90,17 @@ class CombinedAnalyzer:
         if sql_files:
             print(f"\nParsing {len(sql_files)} SQL files...")
             
+            # Get static extraction setting from stored parse_types
+            extract_static = self.parse_types.get("sql_static", True)
+            
             self.sql_analyzer.analyze_sql_files(
                 sql_files=sql_files,
                 zone_mappings=zone_mappings if 'zone_mappings' in locals() else {},
                 output_configs=output_configs if 'output_configs' in locals() else {},
                 categories=categories,
                 validate_outputs=validate_outputs,
-                is_modified_results=is_modified_results
+                is_modified_results=is_modified_results,
+                extract_static_data=extract_static
             )
     
     def close(self):
@@ -169,12 +174,15 @@ def run_parsing(
     parser_output_dir = os.path.join(job_output_dir, "parsed_data")
     os.makedirs(parser_output_dir, exist_ok=True)
     
+    # Get parsing configuration details
+    parse_mode = parsing_cfg.get("parse_mode", "all")
+    parse_types = parsing_cfg.get("parse_types", {"idf": True, "sql": True, "sql_static": True})
+    
     # Initialize the combined analyzer
     analyzer = CombinedAnalyzer(parser_output_dir, job_output_dir)
     
-    # Get parsing configuration details
-    parse_mode = parsing_cfg.get("parse_mode", "all")
-    parse_types = parsing_cfg.get("parse_types", {"idf": True, "sql": True})
+    # Store parse_types in analyzer
+    analyzer.parse_types = parse_types
     building_selection = parsing_cfg.get("building_selection", {})
     categories_to_parse = parsing_cfg.get("categories", None)
     
@@ -352,8 +360,14 @@ def run_parsing_modified_results(
     # Get parse categories
     parse_categories = parse_cfg.get("categories", None)
     
+    # Get parse types for static extraction
+    parse_types = parse_cfg.get("parse_types", {"idf": True, "sql": True, "sql_static": True})
+    
     # Run analysis with variant tracking (MODIFIED data)
     try:
+        # Store parse_types in analyzer for use in analyze_project
+        analyzer.parse_types = parse_types
+        
         analyzer.analyze_project(
             idf_sql_pairs=idf_sql_pairs,
             categories=parse_categories,

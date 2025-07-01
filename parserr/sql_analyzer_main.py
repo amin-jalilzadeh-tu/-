@@ -14,6 +14,7 @@ import re
 from .sql_analyzer import EnhancedSQLAnalyzer
 from .sql_data_manager import SQLDataManager
 from .sql_helpers import find_sql_files, validate_sql_outputs
+from .sql_static_extractor import SQLStaticExtractor
 
 class SQLAnalyzerMain:
     """Main coordinator for SQL analysis with base/variant tracking"""
@@ -53,7 +54,8 @@ class SQLAnalyzerMain:
                          start_date: Optional[str] = None,
                          end_date: Optional[str] = None,
                          validate_outputs: bool = True,
-                         is_modified_results: bool = False):
+                         is_modified_results: bool = False,
+                         extract_static_data: bool = True):
         """
         Analyze multiple SQL files
         
@@ -66,6 +68,7 @@ class SQLAnalyzerMain:
             end_date: End date for extraction
             validate_outputs: Whether to validate outputs
             is_modified_results: Whether these are from Modified_Sim_Results
+            extract_static_data: Whether to extract static/summary data (default True)
         """
         
         print(f"\nAnalyzing {len(sql_files)} SQL files")
@@ -122,6 +125,23 @@ class SQLAnalyzerMain:
                     end_date=end_date,
                     variant_id=variant_id
                 )
+                
+                # Extract static data using new extractor
+                if extract_static_data:
+                    print("  Extracting SQL static data...")
+                    static_extractor = SQLStaticExtractor(
+                        Path(sql_path),
+                        self.project_path,  # This is the output directory
+                        building_id,
+                        variant_id
+                    )
+                    try:
+                        static_extractor.extract_all()
+                        print("  ✓ Static data extraction completed")
+                    except Exception as e:
+                        print(f"  ⚠ Static data extraction failed: {e}")
+                    finally:
+                        static_extractor.close()
                 
                 print(f"  ✓ SQL analysis completed for {building_id} ({variant_id})")
                 
