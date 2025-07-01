@@ -1,0 +1,67 @@
+{
+  "job_id": "test_iteration_001",
+  "idf_creation": {
+    "perform_idf_creation": false,
+    "// Note": "We'll use existing IDFs from a previous run"
+  },
+  "parsing": {
+    "perform_parsing": false,
+    "// Note": "We'll use existing parsed data"
+  },
+  "validation": {
+    "perform_validation": true,
+    "config": {
+      "real_data_path": "../validation/data/mock_real_data.csv",
+      "variables_to_validate": ["Electricity", "Heating", "Cooling"],
+      "target_frequency": "daily",
+      "thresholds": {
+        "default": {
+          "cvrmse": 30.0,
+          "nmbe": 10.0
+        }
+      }
+    }
+  },
+  "modification": {
+    "perform_modification": true,
+    "categories_to_modify": {
+      "hvac": {
+        "enabled": true,
+        "parameters": {
+          "heating_setpoint": {
+            "range": [19, 23],
+            "distribution": "uniform"
+          },
+          "cooling_setpoint": {
+            "range": [24, 28],
+            "distribution": "uniform"
+          }
+        }
+      },
+      "lighting": {
+        "enabled": true,
+        "parameters": {
+          "power_density": {
+            "percentage_change": 20,
+            "direction": "both"
+          }
+        }
+      }
+    }
+  },
+  "iteration_control": {
+    "enable_iterations": true,
+    "max_iterations": 3,
+    "selection_strategy": "worst_performers",
+    "selection_count": 3,
+    "convergence_criteria": {
+      "min_improvement": 0.05,
+      "patience": 2
+    },
+    "modification_progression": {
+      "iteration_1": {"intensity": "low"},
+      "iteration_2": {"intensity": "medium"},
+      "iteration_3": {"intensity": "high"}
+    }
+  }
+}

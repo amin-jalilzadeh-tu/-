@@ -11,6 +11,7 @@ from typing import Dict, Any, Optional
 
 from validation.smart_validation_wrapper import run_smart_validation
 from .utils import patch_if_relative
+from .iteration.validation_support import extract_building_summary, save_iteration_validation_results
 
 
 def run_validation(
@@ -183,3 +184,76 @@ def run_validation_stages(
                 results[stage_name] = stage_results
     
     return results if results else None
+
+
+def run_validation_for_iteration(
+    validation_cfg: dict,
+    job_output_dir: str,
+    logger: logging.Logger,
+    iteration: int,
+    parsed_data_path: Optional[str] = None
+) -> Optional[pd.DataFrame]:
+    """
+    Run validation for iteration workflow and return building summary.
+    
+    Args:
+        validation_cfg: Validation configuration
+        job_output_dir: Job output directory
+        logger: Logger instance
+        iteration: Current iteration number
+        parsed_data_path: Override path to parsed data
+        
+    Returns:
+        DataFrame with building-level validation summary or None
+    """
+    from pathlib import Path
+    
+    logger.info(f"[INFO] Running validation for iteration {iteration}")
+    
+    # Determine parsed data path
+    if parsed_data_path is None:
+        if iteration == 0:
+            parsed_data_path = os.path.join(job_output_dir, "parsed_data")
+        else:
+            parsed_data_path = os.path.join(job_output_dir, "iterations", f"iteration_{iteration}", "parsed_data")
+    
+    # Run validation
+    stage_name = f"iteration_{iteration}"
+    results = run_validation(
+        validation_cfg=validation_cfg,
+        job_output_dir=job_output_dir,
+        logger=logger,
+        stage_name=stage_name,
+        parsed_data_path=parsed_data_path
+    )
+    
+    if not results:
+        logger.error(f"[ERROR] Validation failed for iteration {iteration}")
+        return None
+    
+    # Extract building summary
+    building_summary = extract_building_summary(results)
+    
+    if building_summary.empty:
+        logger.error(f"[ERROR] No building summary extracted for iteration {iteration}")
+        return None
+    
+    # Save iteration results
+    iteration_dir = Path(job_output_dir) / "iterations" / f"iteration_{iteration}"
+    iteration_dir.mkdir(parents=True, exist_ok=True)
+    
+    save_iteration_validation_results(
+        validation_results=results,
+        building_summary=building_summary,
+        iteration_dir=iteration_dir,
+        iteration=iteration
+    )
+    
+    # Log summary statistics
+    logger.info(f"[INFO] Validation summary for iteration {iteration}:")
+    logger.info(f"  - Buildings validated: {len(building_summary)}")
+    logger.info(f"  - Buildings passed: {len(building_summary[building_summary['validation_passed']])}")
+    logger.info(f"  - Average CVRMSE: {building_summary['cvrmse'].mean():.2f}%")
+    logger.info(f"  - Average NMBE: {building_summary['nmbe'].mean():.2f}%")
+    
+    return building_summary

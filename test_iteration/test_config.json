@@ -1,0 +1,10 @@
+{
+  "iteration": {
+    "strategy": "adaptive",
+    "max_iterations": 8,
+    "min_iterations": 3,
+    "convergence_tolerance": 0.005,
+    "convergence_metric": "cv_rmse",
+    "learning_rate": 0.1
+  }
+}

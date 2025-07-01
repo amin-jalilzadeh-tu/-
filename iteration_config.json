@@ -1,0 +1,46 @@
+{
+  "iteration_control": {
+    "enable_iterations": true,
+    "max_iterations": 3,
+    "iteration_strategy": "validation_based",
+    "convergence_criteria": {
+      "metric": "cvrmse",
+      "threshold": 0.15,
+      "min_improvement": 0.01,
+      "patience": 2,
+      "check_all_buildings": false
+    },
+    "building_selection": {
+      "iteration_1": {
+        "method": "specified",
+        "buildings": ["413673000", "413674000"],
+        "max_buildings": 10
+      },
+      "iteration_2_plus": {
+        "method": "validation_failures",
+        "fallback": "worst_performers",
+        "max_buildings": 10,
+        "performance_threshold": 0.25
+      }
+    },
+    "parameter_update": {
+      "use_calibration_results": true,
+      "use_sensitivity_rankings": true,
+      "modification_intensity": {
+        "iteration_1": "mild",
+        "iteration_2": "moderate",
+        "iteration_3_plus": "aggressive"
+      }
+    },
+    "data_persistence": {
+      "keep_all_iterations": true,
+      "merge_final_results": true,
+      "save_best_results": true
+    },
+    "validation_settings": {
+      "run_after_each_iteration": true,
+      "save_failed_buildings": true,
+      "metrics_to_track": ["cvrmse", "nmbe", "mbe"]
+    }
+  }
+}

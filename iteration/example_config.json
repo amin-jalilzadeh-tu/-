@@ -1,0 +1,37 @@
+{
+  "iteration": {
+    "enabled": true,
+    "strategy": "adaptive",
+    "max_iterations": 10,
+    "min_iterations": 3,
+    "convergence_tolerance": 0.01,
+    "convergence_metric": "cv_rmse",
+    "check_interval": 1,
+    "parallel_variants": 5,
+    "learning_rate": 0.1,
+    "human_review_threshold": 0.15,
+    "store_all_iterations": true,
+    "parameter_constraints": {
+      "infiltration_rate": {"min": 0.0001, "max": 0.003},
+      "window_u_value": {"min": 0.5, "max": 6.0},
+      "wall_insulation": {"min": 0.01, "max": 0.5},
+      "hvac_efficiency": {"min": 0.7, "max": 0.98},
+      "cooling_cop": {"min": 2.0, "max": 6.0},
+      "lighting_power_density": {"min": 2.0, "max": 20.0},
+      "equipment_power_density": {"min": 2.0, "max": 30.0}
+    },
+    "strategy_specific": {
+      "adaptive": {
+        "exploration_rate": 0.2,
+        "exploitation_rate": 0.8,
+        "stagnation_limit": 3,
+        "improvement_threshold": 0.001
+      },
+      "human_guided": {
+        "review_interval": 3,
+        "auto_approve_threshold": 0.05,
+        "parameter_change_limit": 0.3
+      }
+    }
+  }
+}

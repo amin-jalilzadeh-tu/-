@@ -1616,6 +1616,54 @@
       "output_history_csv": "enhanced_calibration_history.csv",
       "best_params_folder": "calibrated_enhanced",
       "history_folder": "calibrated_enhanced"
+    },
+    "// ITERATION CONTROL": "Configuration for iterative improvement workflow",
+    "iteration_control": {
+      "enable_iterations": false,
+      "// Maximum number of iterations to perform": "",
+      "max_iterations": 5,
+      "// Strategy for selecting buildings in each iteration": "",
+      "selection_strategy": "validation_failure",
+      "// Number of buildings to select per iteration": "",
+      "selection_count": 10,
+      "// Convergence criteria to stop iterations early": "",
+      "convergence_criteria": {
+        "// Minimum relative improvement to continue": "",
+        "min_improvement": 0.01,
+        "// Number of iterations without improvement before stopping": "",
+        "patience": 2
+      },
+      "// Modification intensity progression through iterations": "",
+      "modification_progression": {
+        "iteration_1": {
+          "intensity": "low",
+          "// Low intensity = 10% parameter change range": ""
+        },
+        "iteration_2": {
+          "intensity": "medium",
+          "// Medium intensity = 20% parameter change range": ""
+        },
+        "iteration_3": {
+          "intensity": "high",
+          "// High intensity = 30% parameter change range": ""
+        },
+        "iteration_4": {
+          "intensity": "high"
+        },
+        "iteration_5": {
+          "intensity": "extreme",
+          "// Extreme intensity = 50% parameter change range": ""
+        }
+      },
+      "// Building selection strategies": "",
+      "// - validation_failure: Select buildings that fail validation thresholds": "",
+      "// - worst_performers: Select buildings with highest error metrics": "",
+      "// - least_improved: Select buildings that improved least in previous iteration": "",
+      "selection_strategies_available": [
+        "validation_failure",
+        "worst_performers",
+        "least_improved"
+      ]
     }
   },
   "shading_tree": [

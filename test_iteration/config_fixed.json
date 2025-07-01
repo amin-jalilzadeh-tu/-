@@ -1,0 +1,9 @@
+{
+  "iteration": {
+    "strategy": "fixed",
+    "max_iterations": 6,
+    "min_iterations": 2,
+    "convergence_tolerance": 0.01,
+    "convergence_metric": "cv_rmse"
+  }
+}

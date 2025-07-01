@@ -1,0 +1,11 @@
+{
+  "iteration": 1,
+  "parameters": {
+    "infiltration_rate": 0.5,
+    "window_u_value": 2.0,
+    "wall_insulation": 0.05,
+    "hvac_efficiency": 0.85
+  },
+  "timestamp": "2025-07-01T23:31:37.115106",
+  "previous_best": null
+}

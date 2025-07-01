@@ -1,0 +1,82 @@
+{
+  "v001_f5bb4401": {
+    "iteration_id": 1,
+    "timestamp": "2025-07-01T23:31:14.145544",
+    "metrics_summary": {
+      "cv_rmse": 0.22038380704847946,
+      "rmse": 0.26446056845817534,
+      "r2": 0.4710788630836493
+    },
+    "file": "iterations/test_job_001/parameter_store/versions/v001_f5bb4401.json"
+  },
+  "v002_eaba2d06": {
+    "iteration_id": 2,
+    "timestamp": "2025-07-01T23:31:33.158491",
+    "metrics_summary": {
+      "cv_rmse": 0.20260535743834146,
+      "rmse": 0.24312642892600975,
+      "r2": 0.5137471421479805
+    },
+    "file": "iterations/test_job_001/parameter_store/versions/v002_eaba2d06.json"
+  },
+  "v003_aabac91c": {
+    "iteration_id": 3,
+    "timestamp": "2025-07-01T23:31:33.744186",
+    "metrics_summary": {
+      "cv_rmse": 0.20344616959385436,
+      "rmse": 0.24413540351262522,
+      "r2": 0.5117291929747496
+    },
+    "file": "iterations/test_job_001/parameter_store/versions/v003_aabac91c.json"
+  },
+  "v004_6a3e2a67": {
+    "iteration_id": 4,
+    "timestamp": "2025-07-01T23:31:34.335651",
+    "metrics_summary": {
+      "cv_rmse": 0.17303223413078944,
+      "rmse": 0.20763868095694732,
+      "r2": 0.5847226380861054
+    },
+    "file": "iterations/test_job_001/parameter_store/versions/v004_6a3e2a67.json"
+  },
+  "v005_20c77cd2": {
+    "iteration_id": 5,
+    "timestamp": "2025-07-01T23:31:34.938328",
+    "metrics_summary": {
+      "cv_rmse": 0.15712044892850358,
+      "rmse": 0.1885445387142043,
+      "r2": 0.6229109225715914
+    },
+    "file": "iterations/test_job_001/parameter_store/versions/v005_20c77cd2.json"
+  },
+  "v006_c180b77f": {
+    "iteration_id": 6,
+    "timestamp": "2025-07-01T23:31:35.528471",
+    "metrics_summary": {
+      "cv_rmse": 0.14158236136664024,
+      "rmse": 0.16989883363996827,
+      "r2": 0.6602023327200635
+    },
+    "file": "iterations/test_job_001/parameter_store/versions/v006_c180b77f.json"
+  },
+  "v007_e99e2fae": {
+    "iteration_id": 7,
+    "timestamp": "2025-07-01T23:31:36.145063",
+    "metrics_summary": {
+      "cv_rmse": 0.14413412404775686,
+      "rmse": 0.17296094885730823,
+      "r2": 0.6540781022853835
+    },
+    "file": "iterations/test_job_001/parameter_store/versions/v007_e99e2fae.json"
+  },
+  "v008_1d536ebd": {
+    "iteration_id": 8,
+    "timestamp": "2025-07-01T23:31:36.720950",
+    "metrics_summary": {
+      "cv_rmse": 0.15813160308644797,
+      "rmse": 0.18975792370373756,
+      "r2": 0.6204841525925249
+    },
+    "file": "iterations/test_job_001/parameter_store/versions/v008_1d536ebd.json"
+  }
+}

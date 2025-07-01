@@ -1,0 +1,13 @@
+{
+  "modification_type": "hvac",
+  "parameters": {
+    "hvac_efficiency": {
+      "value": 0.8158910679761934,
+      "idf_object": "Coil:Heating:Gas",
+      "field": "Gas Burner Efficiency",
+      "original_value": 0.8158910679761934
+    }
+  },
+  "apply_to_all_zones": true,
+  "apply_to_all_surfaces": true
+}

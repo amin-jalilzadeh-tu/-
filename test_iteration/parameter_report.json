@@ -1,0 +1,54 @@
+{
+  "job_id": "test_job_001",
+  "total_iterations": 8,
+  "parameter_ranges": {
+    "infiltration_rate": {
+      "min": 0.2873065678404514,
+      "max": 0.5,
+      "mean": 0.36897005771054103,
+      "std": 0.0714950263912649
+    },
+    "window_u_value": {
+      "min": 1.410410610650024,
+      "max": 2.036154102097393,
+      "mean": 1.7234615053545177,
+      "std": 0.2675774430158894
+    },
+    "wall_insulation": {
+      "min": 0.0375807926104629,
+      "max": 0.05101648337440752,
+      "mean": 0.04469373575529309,
+      "std": 0.005400276081699277
+    },
+    "hvac_efficiency": {
+      "min": 0.6976486943294947,
+      "max": 1.1527606658175256,
+      "mean": 0.9542936947927394,
+      "std": 0.16736952500553504
+    }
+  },
+  "parameter_changes": {
+    "infiltration_rate": {
+      "total_change": -0.15504005942117066,
+      "percent_change": -31.008011884234133
+    },
+    "window_u_value": {
+      "total_change": -0.5715315462376265,
+      "percent_change": -28.576577311881323
+    },
+    "wall_insulation": {
+      "total_change": -0.008306589929454197,
+      "percent_change": -16.613179858908396
+    },
+    "hvac_efficiency": {
+      "total_change": 0.3027606658175256,
+      "percent_change": 35.618901860885366
+    }
+  },
+  "final_parameters": {
+    "infiltration_rate": 0.34495994057882934,
+    "window_u_value": 1.4284684537623735,
+    "wall_insulation": 0.041693410070545806,
+    "hvac_efficiency": 1.1527606658175256
+  }
+}

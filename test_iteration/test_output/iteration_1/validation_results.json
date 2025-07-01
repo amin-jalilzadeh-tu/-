@@ -1,0 +1,12 @@
+{
+  "iteration": 1,
+  "buildings": [
+    "413673000",
+    "413674000",
+    "413675000"
+  ],
+  "metrics": {
+    "avg_cvrmse": 20.0,
+    "avg_nmbe": 6.5
+  }
+}
