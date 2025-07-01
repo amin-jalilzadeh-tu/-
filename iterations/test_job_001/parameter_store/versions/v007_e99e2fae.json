@@ -1,0 +1,21 @@
+{
+  "version_id": "v007_e99e2fae",
+  "iteration_id": 7,
+  "timestamp": "2025-07-01T23:31:36.145063",
+  "parameters": {
+    "infiltration_rate": 0.34656693718023124,
+    "window_u_value": 1.4969074817005998,
+    "wall_insulation": 0.0375807926104629,
+    "hvac_efficiency": 1.123386631158452
+  },
+  "metrics": {
+    "rmse": 0.17296094885730823,
+    "cv_rmse": 0.14413412404775686,
+    "nmbe": 0.08586290558576616,
+    "r2": 0.6540781022853835
+  },
+  "metadata": {
+    "strategy": "adaptive"
+  },
+  "parent_version": null
+}

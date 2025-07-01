@@ -1,0 +1,19 @@
+{
+  "modification_type": "envelope",
+  "parameters": {
+    "infiltration_rate": {
+      "value": 0.003,
+      "idf_object": "ZoneInfiltration:DesignFlowRate",
+      "field": "Flow per Exterior Surface Area",
+      "original_value": 0.4395401933211678
+    },
+    "wall_insulation": {
+      "value": 0.05101648337440752,
+      "idf_object": "Material",
+      "field": "Thickness",
+      "original_value": 0.05101648337440752
+    }
+  },
+  "apply_to_all_zones": true,
+  "apply_to_all_surfaces": true
+}

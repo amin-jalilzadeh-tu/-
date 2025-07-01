@@ -1,0 +1,22 @@
+{
+  "scenario_name": "iteration_iteration_008",
+  "description": "Automatically generated from calibration iteration",
+  "timestamp": "2025-07-01T23:31:36.742253",
+  "modifications": [
+    {
+      "type": "envelope",
+      "config_file": "iterations/test_job_001/iteration_008/modification_configs/envelope_modifications.json",
+      "enabled": true
+    },
+    {
+      "type": "fenestration",
+      "config_file": "iterations/test_job_001/iteration_008/modification_configs/fenestration_modifications.json",
+      "enabled": true
+    },
+    {
+      "type": "hvac",
+      "config_file": "iterations/test_job_001/iteration_008/modification_configs/hvac_modifications.json",
+      "enabled": true
+    }
+  ]
+}

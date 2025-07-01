@@ -1,0 +1,7 @@
+{
+  "best_parameters": {
+    "HVAC*Coil:Cooling*COIL_1*Rated COP": 3.5,
+    "DHW*WaterHeater*WATER_HEATER_1*Efficiency": 0.85,
+    "materials*Material*WALL_MAT_1*Conductivity": 0.45
+  }
+}

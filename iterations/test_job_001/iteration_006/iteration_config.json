@@ -1,0 +1,27 @@
+{
+  "iteration": 6,
+  "parameters": {
+    "infiltration_rate": 0.30578985726315344,
+    "window_u_value": 1.410410610650024,
+    "wall_insulation": 0.04135102176023323,
+    "hvac_efficiency": 1.0778266057859922
+  },
+  "timestamp": "2025-07-01T23:31:35.019636",
+  "previous_best": {
+    "iteration_id": 5,
+    "timestamp": "2025-07-01T23:31:34.996927",
+    "rmse": 0.1885445387142043,
+    "cv_rmse": 0.15712044892850358,
+    "nmbe": 0.08328138785272028,
+    "r2": 0.6229109225715914,
+    "parameter_changes": {
+      "infiltration_rate": 0.13844186991960436,
+      "window_u_value": 0.1689834174244479,
+      "wall_insulation": 0.19252901689413487,
+      "hvac_efficiency": 0.21226334830836632
+    },
+    "convergence_score": 0.8450105927230616,
+    "status": "completed",
+    "notes": ""
+  }
+}

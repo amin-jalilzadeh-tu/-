@@ -1,0 +1,17 @@
+{
+  "iteration_id": 6,
+  "timestamp": "2025-07-01 23:31:40.287869",
+  "rmse": 0.22833153913604318,
+  "cv_rmse": 0.19027628261336932,
+  "nmbe": 0.1124680329755609,
+  "r2": 0.5433369217279136,
+  "parameter_changes": {
+    "infiltration_rate": 0.05624809084764963,
+    "window_u_value": 0.008129930084384103,
+    "wall_insulation": 0.04727943992553091,
+    "hvac_efficiency": 0.10289775040539521
+  },
+  "convergence_score": 0.8144043057351237,
+  "status": "IterationStatus.COMPLETED",
+  "notes": ""
+}

@@ -1,0 +1,74 @@
+{
+  "total_iterations": 8,
+  "best_iteration": 6,
+  "best_metrics": {
+    "iteration_id": 6,
+    "timestamp": "2025-07-01 23:31:35.615010",
+    "rmse": 0.16989883363996827,
+    "cv_rmse": 0.14158236136664024,
+    "nmbe": 0.08223443701696125,
+    "r2": 0.6602023327200635,
+    "parameter_changes": {
+      "infiltration_rate": 0.06433298603369553,
+      "window_u_value": 0.1120807711441903,
+      "wall_insulation": 0.06597570274350288,
+      "hvac_efficiency": 0.026133381664699903
+    },
+    "convergence_score": 0.8576463427077033,
+    "status": "IterationStatus.COMPLETED",
+    "notes": ""
+  },
+  "convergence_achieved": false,
+  "metric_trends": {
+    "cv_rmse": [
+      0.22038380704847946,
+      0.20260535743834146,
+      0.20344616959385436,
+      0.17303223413078944,
+      0.15712044892850358,
+      0.14158236136664024,
+      0.14413412404775686,
+      0.15813160308644797
+    ],
+    "rmse": [
+      0.26446056845817534,
+      0.24312642892600975,
+      0.24413540351262522,
+      0.20763868095694732,
+      0.1885445387142043,
+      0.16989883363996827,
+      0.17296094885730823,
+      0.18975792370373756
+    ],
+    "r2": [
+      0.4710788630836493,
+      0.5137471421479805,
+      0.5117291929747496,
+      0.5847226380861054,
+      0.6229109225715914,
+      0.6602023327200635,
+      0.6540781022853835,
+      0.6204841525925249
+    ]
+  },
+  "status": "completed",
+  "best_parameters": {
+    "infiltration_rate": 0.30578985726315344,
+    "window_u_value": 1.410410610650024,
+    "wall_insulation": 0.04135102176023323,
+    "hvac_efficiency": 1.0778266057859922
+  },
+  "config": {
+    "strategy": "adaptive",
+    "max_iterations": 8,
+    "min_iterations": 3,
+    "convergence_tolerance": 0.005,
+    "convergence_metric": "cv_rmse",
+    "check_interval": 1,
+    "parallel_variants": 5,
+    "learning_rate": 0.1,
+    "human_review_threshold": 0.05,
+    "store_all_iterations": true,
+    "resume_from_iteration": null
+  }
+}

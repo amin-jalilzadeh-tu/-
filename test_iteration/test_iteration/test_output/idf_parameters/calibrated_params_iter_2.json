@@ -1,0 +1,30 @@
+{
+  "calibration_stage": "post_calibration",
+  "iteration": 2,
+  "overrides": {
+    "hvac": [
+      {
+        "object_type": "Coil:Cooling",
+        "object_name": "COIL_1",
+        "field": "Rated COP",
+        "value": 3.5
+      }
+    ],
+    "dhw": [
+      {
+        "object_type": "WaterHeater",
+        "object_name": "WATER_HEATER_1",
+        "field": "Efficiency",
+        "value": 0.85
+      }
+    ],
+    "materials": [
+      {
+        "object_type": "Material",
+        "object_name": "WALL_MAT_1",
+        "field": "Conductivity",
+        "value": 0.45
+      }
+    ]
+  }
+}

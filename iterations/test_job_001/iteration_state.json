@@ -1,0 +1,148 @@
+{
+  "job_id": "test_job_001",
+  "current_iteration": 8,
+  "best_parameters": {
+    "infiltration_rate": 0.30578985726315344,
+    "window_u_value": 1.410410610650024,
+    "wall_insulation": 0.04135102176023323,
+    "hvac_efficiency": 1.0778266057859922
+  },
+  "iteration_history": [
+    {
+      "iteration_id": 1,
+      "timestamp": "2025-07-01T23:31:14.182768",
+      "rmse": 0.26446056845817534,
+      "cv_rmse": 0.22038380704847946,
+      "nmbe": 0.1408546528052464,
+      "r2": 0.4710788630836493,
+      "parameter_changes": {
+        "infiltration_rate": 0.0,
+        "window_u_value": 0.0,
+        "wall_insulation": 0.0,
+        "hvac_efficiency": 0.0
+      },
+      "convergence_score": 0.7874361170345122,
+      "status": "completed",
+      "notes": ""
+    },
+    {
+      "iteration_id": 2,
+      "timestamp": "2025-07-01T23:31:33.212797",
+      "rmse": 0.24312642892600975,
+      "cv_rmse": 0.20260535743834146,
+      "nmbe": 0.1280554241486808,
+      "r2": 0.5137471421479805,
+      "parameter_changes": {
+        "infiltration_rate": 0.21175251824032143,
+        "window_u_value": 0.01807705104779265,
+        "wall_insulation": 0.018490609109706072,
+        "hvac_efficiency": 0.040128155317404456
+      },
+      "convergence_score": 0.8026091808774084,
+      "status": "completed",
+      "notes": ""
+    },
+    {
+      "iteration_id": 3,
+      "timestamp": "2025-07-01T23:31:33.798251",
+      "rmse": 0.24413540351262522,
+      "cv_rmse": 0.20344616959385436,
+      "nmbe": 0.11922541853506553,
+      "r2": 0.5117291929747496,
+      "parameter_changes": {
+        "infiltration_rate": 0.11523399314142575,
+        "window_u_value": 0.059079569812556514,
+        "wall_insulation": 0.0395516099158099,
+        "hvac_efficiency": 0.14492421632400612
+      },
+      "convergence_score": 0.8033780471499131,
+      "status": "completed",
+      "notes": ""
+    },
+    {
+      "iteration_id": 4,
+      "timestamp": "2025-07-01T23:31:34.404308",
+      "rmse": 0.20763868095694732,
+      "cv_rmse": 0.17303223413078944,
+      "nmbe": 0.10982561804847187,
+      "r2": 0.5847226380861054,
+      "parameter_changes": {
+        "infiltration_rate": 0.1538869900841476,
+        "window_u_value": 0.061246062259189986,
+        "wall_insulation": 0.021079211338945494,
+        "hvac_efficiency": 0.06197900302603751
+      },
+      "convergence_score": 0.8280960260589978,
+      "status": "completed",
+      "notes": ""
+    },
+    {
+      "iteration_id": 5,
+      "timestamp": "2025-07-01T23:31:34.996927",
+      "rmse": 0.1885445387142043,
+      "cv_rmse": 0.15712044892850358,
+      "nmbe": 0.08328138785272028,
+      "r2": 0.6229109225715914,
+      "parameter_changes": {
+        "infiltration_rate": 0.13844186991960436,
+        "window_u_value": 0.1689834174244479,
+        "wall_insulation": 0.19252901689413487,
+        "hvac_efficiency": 0.21226334830836632
+      },
+      "convergence_score": 0.8450105927230616,
+      "status": "completed",
+      "notes": ""
+    },
+    {
+      "iteration_id": 6,
+      "timestamp": "2025-07-01T23:31:35.615010",
+      "rmse": 0.16989883363996827,
+      "cv_rmse": 0.14158236136664024,
+      "nmbe": 0.08223443701696125,
+      "r2": 0.6602023327200635,
+      "parameter_changes": {
+        "infiltration_rate": 0.06433298603369553,
+        "window_u_value": 0.1120807711441903,
+        "wall_insulation": 0.06597570274350288,
+        "hvac_efficiency": 0.026133381664699903
+      },
+      "convergence_score": 0.8576463427077033,
+      "status": "completed",
+      "notes": ""
+    },
+    {
+      "iteration_id": 7,
+      "timestamp": "2025-07-01T23:31:36.184545",
+      "rmse": 0.17296094885730823,
+      "cv_rmse": 0.14413412404775686,
+      "nmbe": 0.08586290558576616,
+      "r2": 0.6540781022853835,
+      "parameter_changes": {
+        "infiltration_rate": 0.13335000797181865,
+        "window_u_value": 0.061327439251594076,
+        "wall_insulation": 0.09117620267072814,
+        "hvac_efficiency": 0.042270273459253306
+      },
+      "convergence_score": 0.8549654754977748,
+      "status": "completed",
+      "notes": ""
+    },
+    {
+      "iteration_id": 8,
+      "timestamp": "2025-07-01T23:31:36.763814",
+      "rmse": 0.18975792370373756,
+      "cv_rmse": 0.15813160308644797,
+      "nmbe": 0.08896078993067065,
+      "r2": 0.6204841525925249,
+      "parameter_changes": {
+        "infiltration_rate": 0.12809477611011091,
+        "window_u_value": 0.012803252453373656,
+        "wall_insulation": 0.008280044722228349,
+        "hvac_efficiency": 0.0695232977385414
+      },
+      "convergence_score": 0.8432457832493861,
+      "status": "completed",
+      "notes": ""
+    }
+  ]
+}

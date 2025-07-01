@@ -1,0 +1,13 @@
+{
+  "modification_type": "fenestration",
+  "parameters": {
+    "window_u_value": {
+      "value": 2.036154102097393,
+      "idf_object": "WindowMaterial:SimpleGlazingSystem",
+      "field": "U-Factor",
+      "original_value": 2.036154102097393
+    }
+  },
+  "apply_to_all_zones": true,
+  "apply_to_all_surfaces": true
+}

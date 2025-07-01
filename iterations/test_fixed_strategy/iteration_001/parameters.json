@@ -1,0 +1,6 @@
+{
+  "infiltration_rate": 0.5,
+  "window_u_value": 2.0,
+  "wall_insulation": 0.05,
+  "hvac_efficiency": 0.85
+}
