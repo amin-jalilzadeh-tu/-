@@ -1,0 +1,18 @@
+{
+  "total_iterations": 2,
+  "converged": true,
+  "performance_history": [
+    {
+      "avg_cvrmse": 20.0,
+      "avg_nmbe": 6.5
+    },
+    {
+      "avg_cvrmse": 15.0,
+      "avg_nmbe": 5.0
+    }
+  ],
+  "final_metrics": {
+    "avg_cvrmse": 15.0,
+    "avg_nmbe": 5.0
+  }
+}
