@@ -12,6 +12,7 @@ from typing import Dict, List, Optional, Any, Tuple
 import json
 from datetime import datetime
 import logging
+from .sql_schedule_extractor import ScheduleExtractor
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -63,6 +64,9 @@ class SQLStaticExtractor:
         self._extract_building_characteristics()
         self._extract_metadata()
         self._extract_equipment_loads()
+        
+        # Extract detailed schedule data
+        self._extract_detailed_schedules()
         
         logger.info("Static data extraction complete")
         
@@ -372,6 +376,24 @@ class SQLStaticExtractor:
                     logger.info(f"Saved {len(df)} {table_name} records")
             except Exception as e:
                 logger.debug(f"Could not extract {table_name}: {e}")
+    
+    def _extract_detailed_schedules(self):
+        """Extract detailed schedule information"""
+        logger.info("Extracting detailed schedule data...")
+        
+        schedule_extractor = ScheduleExtractor(
+            self.sql_path,
+            self.output_dir,
+            self.building_id,
+            self.variant_id
+        )
+        
+        try:
+            schedule_extractor.extract_all_schedules()
+        except Exception as e:
+            logger.warning(f"Could not extract detailed schedules: {e}")
+        finally:
+            schedule_extractor.close()
     
     def _save_or_append(self, df: pd.DataFrame, output_path: Path):
         """Save dataframe to parquet, appending if file exists"""

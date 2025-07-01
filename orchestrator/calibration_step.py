@@ -9,6 +9,7 @@ import logging
 from typing import Dict, Any
 
 from cal.unified_calibration import run_unified_calibration
+from cal.unified_calibration_parquet import patch_unified_calibration
 from .utils import patch_if_relative
 
 
@@ -21,6 +22,10 @@ def run_calibration(
     Run calibration with enhanced features.
     """
     logger.info("[INFO] Calibration is ENABLED.")
+    
+    # Apply parquet patch to use modifications data directly
+    patch_unified_calibration()
+    logger.info("[INFO] Patched calibration to use parquet files directly")
     
     # Check if using enhanced features
     has_multi_config = bool(cal_cfg.get("calibration_configs"))

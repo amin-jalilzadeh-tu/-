@@ -1,7 +1,0 @@
-File,Rows,Columns,Description
-measured_data_energyplus_format.csv,2920,"['building_id', 'DateTime', 'Variable', 'Value', 'Units']",EnergyPlus variable names and units
-measured_data_hourly.csv,7440,"['building_id', 'DateTime', 'Variable', 'Zone', 'Value', 'Units']",Hourly data with zone-level temperatures
-measured_data_incomplete.csv,2100,"['building_id', 'DateTime', 'Variable', 'Value', 'Units']",Data with gaps and missing values
-measured_data_mixed.csv,270,"['building_id', 'DateTime', 'Variable', 'Value', 'Units']",Mixed units and date formats
-measured_data_simple.csv,2920,"['building_id', 'DateTime', 'Variable', 'Value', 'Units']",Basic daily data with standard units
-measured_data_wide_format.csv,8,"['BuildingID', 'VariableName', 'Units', '01/01', '01/02', '01/03', '01/04', '01/05', '01/06', '01/07', '01/08', '01/09', '01/10', '01/11', '01/12', '01/13', '01/14', '01/15', '01/16', '01/17', '01/18', '01/19', '01/20', '01/21', '01/22', '01/23', '01/24', '01/25', '01/26', '01/27', '01/28', '01/29', '01/30', '01/31']",Wide format with dates as columns

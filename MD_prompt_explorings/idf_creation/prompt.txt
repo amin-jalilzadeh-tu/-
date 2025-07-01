@@ -1,0 +1,9 @@
+in idf creation, you can see, that i create idf objects. well it has you can see, some 
+  lookups, formulas, and at end assigning values based on archetypes. what i want you 
+  that go through each and make md file for rewac object, saying what are input data it 
+  uses, what process does, and to which parametres it assigned, ...     make md in 
+  id_creation. also, for some lookups you can see it is huge, but repeted process, som 
+  you can check few first to just undertsnad the proceess and structure    
+  /mnt/d/Documents/daily/E_Plus_2040_py/orchestrator/idf_creation_step.py
+  /mnt/d/Documents/daily/E_Plus_2040_py/orchestrator/main.py
+  /mnt/d/Documents/daily/E_Plus_2040_py/idf_objects
